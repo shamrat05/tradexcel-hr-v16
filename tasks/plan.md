@@ -11,4 +11,6 @@ Status: proposed, not production complete. This app serves Tradexcel Ceramics Lt
 
 Current blockers: draft payroll includes zero-gross worker slips; leave policies are unsubmitted; ESS has no linked employee users; the bridge repository does **not** yet implement the app's `/api/v1/devices/{serial}/configure` call. Do not call these features ready merely because a UI link or test exists.
 
+Bridge audit and exact compatibility gap: [SenseFace bridge contract](../docs/senseface_bridge_contract.md).
+
 The coordinator's detailed capability map, ordered checklist and OpenCode handoff live in the bench-level `tasks/` directory until reviewed for inclusion here. Never attach raw site data or credentials to agent briefs.
