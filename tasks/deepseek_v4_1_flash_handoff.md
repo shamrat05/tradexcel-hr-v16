@@ -1,6 +1,6 @@
 # DeepSeek V4.1 Flash handoff — Tradexcel HR
 
-Date: 2026-09-17. Status: implementation plan, **not** production acceptance. Private app repository: `shamrat05/tradexcel-hr`, baseline tag `baseline-source-2026-09-17`. SenseFace bridge is a separate private repository. Frappe 15.118.0 / ERPNext 15.119.3 / HRMS 15.63.3 / custom app 0.1.0.
+Date: 2026-09-17. Status: implementation plan, **not** production acceptance. Private app repository: `shamrat05/tradexcel-hr`, baseline tag `baseline-source-2026-09-17`. SenseFace bridge is a separate private repository. Frappe 15.118.0 / ERPNext 15.119.3 / HRMS 15.63.3 / custom app 0.1.0. This versioned handoff and its audit register supersede older bench-level OpenCode notes wherever those still say the app has no Git baseline or the four read-only DeepSeek audits have not run.
 
 ## Outcome and non-negotiables
 
