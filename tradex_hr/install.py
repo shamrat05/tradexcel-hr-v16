@@ -652,7 +652,6 @@ WORKSPACE_NAMES = {
 }
 LEGACY_WORKSPACE_NAMES = (
     "tradex-hr",
-    "HR",
     "TradeX HR Management",
     "tradex-hr-management",
 )
