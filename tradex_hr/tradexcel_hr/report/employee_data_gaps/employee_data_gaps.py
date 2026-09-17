@@ -11,6 +11,7 @@ GAP_DEFINITIONS = (
     ("no_department", "Missing Department", "High", "Set the employee's Department"),
     ("no_employee_number", "Missing Employee Number", "High", "Assign an Employee Number"),
     ("no_active_assignment", "No Active Salary Assignment", "High", "Create a Salary Structure Assignment effective on or before today"),
+    ("no_shift_assignment", "No Shift Assignment", "High", "Create a Shift Assignment for the employee (shift window and grace)"),
     ("duplicate_active_assignments", "Multiple Active Salary Assignments", "Medium", "Cancel the superseded assignment so one active structure remains"),
     ("wage_structure_not_worker", "Latest Structure Is a Wage Structure", "High", "Confirm the employment type and pay basis"),
     ("worker_without_wage_structure", "Worker Without Wage Structure", "High", "Assign a wage Salary Structure or confirm the employment type"),
@@ -44,13 +45,15 @@ def normalize_filters(filters=None):
     return values
 
 
-def employee_gaps(employee, latest_structure, wage_structures, punches_total, assignment_count=1, as_of=None):
+def employee_gaps(employee, latest_structure, wage_structures, punches_total, assignment_count=1, as_of=None, has_shift_assignment=True):
     """Return gap keys for one employee; pure and testable via explicit as_of."""
     gaps = []
     if not employee.get("department"):
         gaps.append("no_department")
     if not employee.get("employee_number"):
         gaps.append("no_employee_number")
+    if not has_shift_assignment:
+        gaps.append("no_shift_assignment")
     if not latest_structure:
         gaps.append("no_active_assignment")
     if int(assignment_count or 0) > 1:
@@ -154,6 +157,13 @@ def execute(filters=None):
             {"names": names}, as_dict=True,
         )
     }
+    shift_assigned = set()
+    if names:
+        shift_assigned = set(frappe.get_all(
+            "Shift Assignment",
+            filters={"docstatus": 1, "employee": ["in", names]},
+            pluck="employee",
+        ))
     wage_structures = set(frappe.get_all(
         "Salary Structure", filters={"name": ["like", "%Wage%"]}, pluck="name"
     ))
@@ -181,6 +191,7 @@ def execute(filters=None):
             wage_structures,
             punch_total,
             int(assignment_counts.get(employee.name, 0)),
+            has_shift_assignment=employee.name in shift_assigned,
         )
         if not gaps:
             continue

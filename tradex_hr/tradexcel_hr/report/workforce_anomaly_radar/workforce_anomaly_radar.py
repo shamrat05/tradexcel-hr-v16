@@ -313,6 +313,34 @@ def execute(filters=None):
 
     tax_slab_count = frappe.db.count("Income Tax Slab", {"company": filters.company, "docstatus": 1})
 
+    assigned_employees = {
+        row["employee"]
+        for row in frappe.get_all(
+            "Shift Assignment",
+            filters={"docstatus": 1, "employee": ["in", names]},
+            fields=["employee"],
+            distinct=True,
+        )
+    }
+    no_shift_assignment = [
+        {"employee": row.name, "employee_name": row.employee_name}
+        for row in employees
+        if row.name not in assigned_employees
+    ]
+    attendance_scope = frappe.db.sql(
+        """
+        SELECT COUNT(*) total, SUM(IFNULL(shift, '') = '') no_shift
+        FROM `tabAttendance`
+        WHERE employee IN %(names)s AND attendance_date BETWEEN %(from_date)s AND %(to_date)s
+        """,
+        {"names": names, "from_date": filters.from_date, "to_date": filters.to_date},
+        as_dict=True,
+    )[0]
+    attendance_no_shift = {
+        "rows": int(attendance_scope.no_shift or 0),
+        "total": int(attendance_scope.total or 0),
+    }
+
     context = {
         "z_threshold": filters.z_threshold,
         "min_cohort": filters.min_cohort,
@@ -338,6 +366,8 @@ def execute(filters=None):
         "company_name": filters.company,
         "period_to_date": filters.to_date,
         "checkin_span": checkin_span,
+        "no_shift_assignment": no_shift_assignment,
+        "attendance_no_shift": attendance_no_shift,
     }
 
     rows = []

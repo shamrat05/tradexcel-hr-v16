@@ -184,6 +184,19 @@ def load_attendance_rules(company):
     return cache[company]
 
 
+def sync_scope_fields(doc, method=None):
+    """Keep Attendance.branch/department derived from the employee (never hand-maintained)."""
+    if not doc.employee:
+        return
+    target = frappe.db.get_value("Employee", doc.employee, ["branch", "department"], as_dict=True)
+    if not target:
+        return
+    if target.branch and doc.get("branch") != target.branch:
+        doc.branch = target.branch
+    if target.department and doc.get("department") != target.department:
+        doc.department = target.department
+
+
 def apply_to_attendance(doc, method=None):
     """Doc event: apply ignore/grace settings to attendance records in scope."""
     if not doc.employee or not doc.attendance_date or not doc.company:
