@@ -1,0 +1,42 @@
+# Python and Frappe generated files
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Local graph/cache and environment
+.codebase-memory/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Never version site data, secrets, payroll exports, or biometric storage
+sites/
+sync/data/
+data/
+backups/
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.sql.gz
+*.bak
+*.log
+*.pem
+*.key
+*tokens*.json
+*credentials*.json
+*export*.csv
+*payroll*.csv
+
+# Historical one-off utilities are not deployable production modules.
+# The employee cleanup contains real identifiers; the importer reads prototype data.
+tradex_hr/tradexcel_hr/cleanup_false_import_employees.py
+tradex_hr/tradexcel_hr/source_staff_salary.py
+tradex_hr/tradexcel_hr/purge_cancelled_salary_slips.py

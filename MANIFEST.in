@@ -1,0 +1,1 @@
+recursive-include tradex_hr *.json *.js *.py *.svg
