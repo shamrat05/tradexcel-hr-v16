@@ -78,9 +78,11 @@ def evaluate_locations(
         })
     candidates.sort(key=lambda item: item["distance_m"])
     nearest = candidates[0] if candidates else None
+    matched = next((item for item in candidates if item["inside"]), None)
     return {
         "nearest": nearest,
-        "inside": bool(nearest and nearest["inside"]),
+        "matched": matched,
+        "inside": bool(matched),
         "candidates": candidates,
     }
 

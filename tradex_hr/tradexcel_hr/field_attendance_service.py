@@ -159,11 +159,12 @@ def enrich_mobile_checkin(doc, method=None):
     )
     if status == "Outside Blocked":
         frappe.throw(_("Mobile check-in is outside the permitted area"))
+    matched_location = evaluation.get("matched") or evaluation.get("nearest")
     doc.custom_tradex_policy = policy.name
     doc.custom_tradex_field_duty = duty.name if duty else doc.get("custom_tradex_field_duty")
     doc.custom_tradex_location_status = status if quality["valid"] else "GPS Invalid"
-    doc.custom_tradex_assigned_location = evaluation["nearest"]["name"] if evaluation["nearest"] else None
-    doc.custom_tradex_distance_m = evaluation["nearest"]["distance_m"] if evaluation["nearest"] else None
+    doc.custom_tradex_assigned_location = matched_location["name"] if matched_location else None
+    doc.custom_tradex_distance_m = matched_location["distance_m"] if matched_location else None
     doc.custom_tradex_review_status = "Pending" if policy.face_match_enabled else "Not Required"
     if policy.face_match_enabled:
         doc.custom_tradex_face_match_status = "Provider Unavailable"
@@ -172,8 +173,8 @@ def enrich_mobile_checkin(doc, method=None):
         doc.custom_tradex_location_reason = quality["reason"]
     elif status in {"Outside Flagged", "WFH Review"}:
         doc.custom_tradex_location_reason = "Outside/WFH attendance accepted according to policy."
-    elif evaluation["nearest"]:
-        doc.custom_tradex_location_reason = f"Matched {evaluation['nearest']['name']} at {evaluation['nearest']['distance_m']} m."
+    elif matched_location:
+        doc.custom_tradex_location_reason = f"Matched {matched_location['name']} at {matched_location['distance_m']} m."
 
 
 @frappe.whitelist(methods=["POST"])

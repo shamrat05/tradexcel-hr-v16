@@ -35,6 +35,16 @@ def test_all_assigned_locations_are_evaluated_and_nearest_wins():
     assert len(result["candidates"]) == 2
 
 
+def test_any_containing_zone_counts_even_when_nearest_zone_is_outside():
+    result = evaluate_locations(23.7900, 90.4100, [
+        {"name": "near-but-outside", "latitude": 23.7901, "longitude": 90.4101, "checkin_radius": 1},
+        {"name": "farther-but-inside", "latitude": 23.7904, "longitude": 90.4100, "checkin_radius": 100},
+    ])
+    assert result["nearest"]["name"] == "near-but-outside"
+    assert result["matched"]["name"] == "farther-but-inside"
+    assert result["inside"] is True
+
+
 def test_location_modes_keep_terminal_path_separate():
     assert location_status("Office Only", has_gps=False, inside_assigned_zone=False) == "Unassigned"
     assert location_status("Field Only", has_gps=False, inside_assigned_zone=False) == "GPS Missing"
