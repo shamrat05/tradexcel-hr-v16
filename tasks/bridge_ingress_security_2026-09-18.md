@@ -125,3 +125,60 @@ socket, which confirmed 411. The code was correct; the corrected suite reports
 
 Both clean, everything pushed. `*.bak-*` was added to `.gitignore` and the
 `server.py` backup was moved out of the repo into the backup folder.
+
+
+---
+
+# Which lineage is canonical — decided, with evidence
+
+## Decision: `Desktop\Projects\SenseFace-HRMS-Bridge` is the base
+
+Compared by function surface, not by line count:
+
+| Capability | `Projects/` | `Desktop/` (hardened) |
+| --- | --- | --- |
+| `/configure`, device profiles | yes | no |
+| backup export / request / restore | yes | no |
+| device transfer (+ plan) | yes | no |
+| command queue (enqueue, remap PIN, query, response) | yes | no |
+| raw-request parsing helpers | yes | no |
+| `registered_serial()` enforcement | was missing | yes |
+| `BoundedThreadingHTTPServer` | was missing | yes |
+
+The hardened clone is **complementary, not superior**: it holds two controls the
+richer implementation lacked, and lacks a dozen features the richer one has.
+That is why repointing the launcher would have been wrong.
+
+## The two missing controls are now ported
+
+`server.py` is 904 lines and has both, so the running copy is now a superset.
+
+**`registered_serial(serial)`** — a terminal is known when an operator configured
+it (a row in `device_profiles`) or when it is listed in
+`SENSEFACE_ALLOWED_SERIALS`; otherwise `/iclock/cdata` returns 403 instead of
+trusting the caller-supplied `SN`.
+
+Implemented against the **existing `device_profiles` table**, so no schema change
+and no migration. The hardened clone used a `registered` column on `devices`,
+which this schema does not have — the profile table is the accurate equivalent
+here and is what `/configure` already writes.
+
+**`BoundedThreadingHTTPServer`** — caps concurrent request threads
+(`SENSEFACE_MAX_CONCURRENT_REQUESTS`, default 64).
+
+## Verified: the full onboarding lifecycle
+
+| Step | Result |
+| --- | --- |
+| Unregistered serial pushes | **403** |
+| Configure it via `/api/v1/devices/<sn>/configure` (with the key) | **200**, profile stored |
+| The same serial pushes again | **200** — registered dynamically, no `.env` edit |
+| Configure without the API key | **401** |
+
+This is the intended flow: **configure the terminal in Frappe → the bridge
+registers it → its punches are accepted.** The `SENSEFACE_ALLOWED_SERIALS` list
+in `.env` is the fallback for the two existing NYU terminals, so they work
+before anyone configures them.
+
+Also re-confirmed: the bridge's own `test_device_config.py` and
+`test_transfer.py` pass (8 passed), and the security suite is ALL PASS.
