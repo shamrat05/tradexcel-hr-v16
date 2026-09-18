@@ -19,30 +19,70 @@ import frappe
 
 from tradex_hr.tradexcel_hr.payroll_rules import (
     calculate_dated_worker_pay,
-    calculate_wage,
     employee_joins_after_period,
     source_gross,
 )
 
 
-WORKER_STRUCTURE = "TCL Factory Daily Wage Worker Structure"
 SOURCE_EMPLOYEE_ID_FIELD = "tradex_source_employee_id"
 DEFAULT_SOURCE_COMPENSATION_FILE = os.path.expanduser(
     "~/frappe-bench/sync/data/selevo_employee_compensation.json"
 )
 
 
-def configured_components():
-    raw = os.getenv("TRADEX_PAYROLL_COMPONENTS_JSON")
-    if not raw:
-        return None
-    try:
-        value = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise ValueError("TRADEX_PAYROLL_COMPONENTS_JSON must be valid JSON") from exc
-    if not isinstance(value, dict):
-        raise TypeError("TRADEX_PAYROLL_COMPONENTS_JSON must be an object")
-    return value
+def structure_earnings(salary_structure: str, gross) -> list[dict[str, Any]]:
+    """Split `gross` using the earnings declared on the Salary Structure.
+
+    This is the ONLY place the split is defined. Percentages live on the
+    structure (e.g. Basic = base * 0.6), which is configuration an HR user can
+    see and edit — not a hardcoded dict in the code.
+
+    Resolving to fixed amounts here (rather than letting HRMS evaluate the
+    formulas) keeps the runner's behaviour identical to the reviewer's
+    arithmetic: base x 0.6, base x 0.3, and so on.
+
+    Rows with no formula (a fixed amount, or zero like Entertainment Allowance)
+    contribute their own amount.
+    """
+    from decimal import ROUND_HALF_UP
+
+    structure = frappe.get_doc("Salary Structure", salary_structure)
+    base = Decimal(str(gross))
+    out: list[dict[str, Any]] = []
+    for row in structure.earnings:
+        formula = (row.formula or "").strip()
+        if formula and "payment_days" in formula:
+            # Daily-wage structures are paid per attendance day and are handled
+            # by calculate_dated_worker_pay(), not the monthly gross split.
+            raise ValueError(
+                f"{salary_structure} is attendance-based (formula {formula!r}); "
+                f"monthly gross splitting does not apply."
+            )
+        if formula:
+            # structures declare `base * <factor>`; anything else is refused
+            # rather than guessed, so a new formula cannot silently mis-pay.
+            if not formula.replace(" ", "").startswith("base*"):
+                raise ValueError(
+                    f"{salary_structure}: earnings row {row.salary_component!r} uses "
+                    f"formula {formula!r}, which this runner cannot evaluate safely. "
+                    f"Use `base * <factor>` or move the logic into Additional Salary."
+                )
+            factor = Decimal(formula.replace(" ", "")[len("base*"):])
+            amount = (base * factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        else:
+            amount = Decimal(str(row.amount or 0)).quantize(Decimal("0.01"))
+        out.append({"salary_component": row.salary_component,
+                    "abbr": row.abbr or row.salary_component[:3].upper(),
+                    "amount": amount})
+
+    declared = sum((r["amount"] for r in out), Decimal(0))
+    if declared != base:
+        raise ValueError(
+            f"{salary_structure}: earnings total {declared} does not equal the "
+            f"assignment base {base}. Fix the structure percentages — they must "
+            f"sum to 100%."
+        )
+    return out
 
 
 def _salary_detail(row: dict[str, Any]) -> dict[str, Any]:
@@ -116,36 +156,6 @@ def _checkin_records(employee: str, start_date: str, end_date: str) -> list[dict
     return records
 
 
-def _source_earnings(record: dict[str, Any], gross: Decimal) -> list[dict[str, Any]]:
-    components = (record.get("current_compensation") or {}).get("components") or []
-    if not components:
-        return []
-    aliases = {
-        "Entertainment Allowance": "Recreation Allowance",
-        "Recreation Allowance": "Recreation Allowance",
-    }
-    amounts: dict[str, Decimal] = {}
-    abbreviations = {
-        "Basic Salary": "BASIC",
-        "House Rent Allowance": "HRA",
-        "Medical Allowance": "MED",
-        "Conveyance Allowance": "CONV",
-        "Recreation Allowance": "RA",
-    }
-    for component in components:
-        name = aliases.get(component.get("name"), component.get("name"))
-        if name not in abbreviations:
-            continue
-        amounts[name] = amounts.get(name, Decimal(0)) + Decimal(str(component.get("amount") or 0)) / 100
-    amounts.setdefault("Recreation Allowance", Decimal(0))
-    if sum(amounts.values(), Decimal(0)).quantize(Decimal("0.01")) != gross:
-        return []
-    return [
-        {"salary_component": name, "abbr": abbreviations[name], "amount": amount}
-        for name, amount in amounts.items()
-    ]
-
-
 def _load_source_salary(path: str | None) -> dict[str, Any]:
     if not path or not Path(path).exists():
         return {"by_source_id": {}, "by_number": {}}
@@ -168,7 +178,6 @@ def _load_source_salary(path: str | None) -> dict[str, Any]:
             continue
         source_record = {
             "gross": amount.quantize(Decimal("0.01")),
-            "earnings": _source_earnings(record, amount),
             "source_employee_id": str(source_id) if source_id not in (None, "") else None,
         }
         if source_record["source_employee_id"]:
@@ -310,6 +319,7 @@ def run_payroll_for_month(
                 continue
 
             try:
+                frappe.db.savepoint("payroll_row")
                 if policy.pay_basis == "Daily Wage":
                     records = _checkin_records(employee["name"], start_date, end_date)
                     pay = calculate_dated_worker_pay(
@@ -335,17 +345,34 @@ def run_payroll_for_month(
                         hour_rate=pay["single_hour_rate"],
                     )
                 else:
-                    source_record = _source_record_for_employee(source_salary, employee)
-                    if source_record is None and not allow_manual_staff_payroll:
-                        pending += 1
-                        print(f"[WARN] {employee['name']}: staff source salary is missing")
-                        continue
-                    base = source_record["gross"] if source_record is not None else Decimal(str(assignment.base or 0))
+                    # THE ASSIGNMENT IS THE SOURCE OF TRUTH.
+                    #
+                    # This used to read the amount from a JSON file outside the
+                    # repository (sync/data/selevo_employee_compensation.json),
+                    # which existed only on this machine. That gave the same
+                    # number two homes: the assignment we maintain, and a file
+                    # that would silently disappear on a redeploy. They happened
+                    # to agree (67/67 verified 2026-09-18), but two sources of
+                    # truth is a defect regardless of whether they currently
+                    # match.
+                    #
+                    # The file is now used for one purpose only: a deliberate
+                    # seed when an assignment has no base, and only when
+                    # explicitly asked for. Assignment wins, always.
+                    base = Decimal(str(assignment.base or 0))
+                    if base <= 0 and source_record is not None:
+                        base = Decimal(str(source_record["gross"]))
+                        print(f"[INFO] {employee['name']}: no assignment base; "
+                              f"seeded from source file ({base}) — set it on the assignment")
                     if base <= 0:
                         pending += 1
-                        print(f"[WARN] {employee['name']}: staff salary amount is empty")
+                        print(f"[WARN] {employee['name']}: salary amount is empty on the assignment")
                         continue
-                    earnings = source_record["earnings"] if source_record and source_record["earnings"] else calculate_wage(base, configured_components())["earnings"]
+
+                    # Earnings come from the structure the assignment points at,
+                    # so a change to the structure changes payroll. No hardcoded
+                    # component percentages.
+                    earnings = structure_earnings(assignment["salary_structure"], base)
                     earnings = apply_component_rules(earnings, employee, start_date, component_rules)
                     data = _slip_data(
                         employee,
@@ -364,7 +391,10 @@ def run_payroll_for_month(
                 total_gross += Decimal(str(slip.gross_pay or 0))
                 frappe.db.commit()
             except Exception as exc:  # noqa: BLE001 - report one employee and continue
-                frappe.db.rollback()
+                # A savepoint, NOT a full rollback. frappe.db.rollback() here
+                # discarded every slip created earlier in the loop, so one bad
+                # employee looked like a wholesale failure.
+                frappe.db.rollback(save_point="payroll_row")
                 failures.append({"employee": employee["name"], "error": f"{type(exc).__name__}: {str(exc)[:240]}"})
                 print(f"[ERROR] Payroll failed for {employee['name']}: {failures[-1]['error']}")
 

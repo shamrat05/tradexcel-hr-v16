@@ -1,5 +1,11 @@
 # Tradexcel HR source-only agent rules
 
+## Start here
+
+**Read `README.md` first.** It carries the one-screen status: what is done and
+verified, what still blocks production, what needs an owner decision, and the
+rules that must not be broken. The full change record is in `tasks/`.
+
 ## Before deleting or migrating data
 
 **Read `BACKUPS.md` in this repository root first.** It lists every backup with

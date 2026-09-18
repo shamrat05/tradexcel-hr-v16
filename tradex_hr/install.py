@@ -961,6 +961,51 @@ def ensure_workspace() -> None:
         save_workspace_doc(doc)
 
 
+def ensure_property_setters() -> dict[str, int]:
+    """Make the app's Property Setters reproducible.
+
+    These were previously created by hand and existed only in the database (five
+    of them on Salary Structure Assignment, created 2026-09-17). Nothing in the
+    app recreated them, so a fresh install or a Contabo deploy would silently
+    lose the list-view sorting and standard filters.
+
+    Idempotent: create if missing, correct the value if it drifted, leave alone
+    if already right.
+    """
+    DOC = "Salary Structure Assignment"
+    WANTED = [
+        ("company", "in_standard_filter", "1"),
+        ("department", "in_standard_filter", "1"),
+        ("designation", "in_standard_filter", "1"),
+        (None, "sort_field", "from_date"),
+        (None, "sort_order", "DESC"),
+    ]
+    created = corrected = 0
+    for field_name, prop, value in WANTED:
+        name = frappe.db.get_value(
+            "Property Setter",
+            {"doc_type": DOC, "field_name": field_name, "property": prop},
+            "name",
+        )
+        if name:
+            current = frappe.db.get_value("Property Setter", name, "value")
+            if str(current or "") != value:
+                frappe.db.set_value("Property Setter", name, "value", value)
+                corrected += 1
+            continue
+        prop_doc = frappe.new_doc("Property Setter")
+        prop_doc.doctype_or_field = "DocField" if field_name else "DocType"
+        prop_doc.doc_type = DOC
+        prop_doc.field_name = field_name
+        prop_doc.property = prop
+        prop_doc.property_type = "Text"
+        prop_doc.value = value
+        prop_doc.flags.ignore_permissions = True
+        prop_doc.insert()
+        created += 1
+    return {"created": created, "corrected": corrected}
+
+
 def after_install():
     after_migrate()
 
@@ -981,5 +1026,6 @@ def after_migrate():
     rename_legacy_reports()
     remove_orphaned_dashboard_records()
     ensure_workspace()
+    ensure_property_setters()
     frappe.db.commit()
     frappe.clear_cache()

@@ -12,19 +12,32 @@ from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
+# FALLBACK ONLY — not the source of truth.
+#
+# The salary split belongs to the Salary Structure (TCL Standard declares
+# `base * 0.6` etc.), which is configuration an HR user can see and edit. These
+# constants exist only as a last resort when no structure is supplied.
+#
+# Values verified against the Selevo VPS backup on 2026-09-18: of 67 Tradexcel
+# employees' latest compensation rows, 66 used exactly this 60/30/5/5 set, and
+# the measured averages were Basic 59.92%, HRA 29.96%, Medical 4.99%,
+# Conveyance 4.99%, Entertainment 0.13%.
+#
+# The previous values here (50/25/10/10/5 with Food Allowance) matched NOTHING in
+# the VPS. They were fabricated and have been corrected.
 DEFAULT_COMPONENTS = {
-    "Basic Salary": Decimal(50),
-    "House Rent Allowance": Decimal(25),
-    "Medical Allowance": Decimal(10),
-    "Conveyance Allowance": Decimal(10),
-    "Food Allowance": Decimal(5),
+    "Basic Salary": Decimal(60),
+    "House Rent Allowance": Decimal(30),
+    "Medical Allowance": Decimal(5),
+    "Conveyance Allowance": Decimal(5),
 }
+# Abbreviations must match the Salary Components, or the generated rows will not
+# link to the structure. MED/CON — not MA/CA.
 ABBR = {
     "Basic Salary": "BS",
     "House Rent Allowance": "HRA",
-    "Medical Allowance": "MA",
-    "Conveyance Allowance": "CA",
-    "Food Allowance": "FA",
+    "Medical Allowance": "MED",
+    "Conveyance Allowance": "CON",
 }
 MONEY = Decimal("0.01")
 
