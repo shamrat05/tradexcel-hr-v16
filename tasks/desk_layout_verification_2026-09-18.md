@@ -204,8 +204,19 @@ widening the container inflates the sidebar with it.
 
 **Fix:** pin `.layout-side-section { max-width: 215px }` to Frappe's stock
 proportion (the adjacent `col` absorbs the reclaimed width), and give
-`header.navbar .container` 24px horizontal padding so the search bar, Help menu
-and avatar are not flush against the edge.
+`header.navbar .container` the **same 15px horizontal padding as
+`.page-head > .container`** so the whole frame sits on one set of vertical lines.
+
+Choosing the navbar inset by eye does not work: at 24px the avatar sat 9px
+*inside* the content card's right edge, and at the stock 16px it sat 8px
+*outside* it — the latter reads as "cut off". 15px makes it exact:
+
+| | 1600px | 1920px |
+| --- | --- | --- |
+| navbar content right | 1570 | 1890 |
+| content card right | 1570 | 1890 |
+| navbar content left | 15 | 15 |
+| page-head content left | 15 | 15 |
 
 Compared with stock after the fix:
 
@@ -215,7 +226,7 @@ Compared with stock after the fix:
 | page head | y=48, h=60 | y=48, h=60 |
 | main section | y=113 | y=113 |
 | first sidebar item | y=146, gap 30 | y=146, gap 30 |
-| nav inset from right | 178 | 39 |
+| nav inset from right | 178 | 15 (matches the content card) |
 
 Vertical geometry is identical to stock — the widening changed horizontal
 proportions only. Note below ~1280px our CSS is byte-identical to stock, because

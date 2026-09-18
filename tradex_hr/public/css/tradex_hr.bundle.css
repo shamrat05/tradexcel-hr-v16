@@ -43,12 +43,16 @@ header.navbar .container,
 	max-width: 215px;
 }
 
-/* Full bleed would leave the search bar, help menu and user avatar hard against
-   the screen edge (stock inset ~178px, ours ~31px). Give the bar breathing
-   room instead of leaving them flush. */
+/* Full bleed puts the search bar, help menu and user avatar on a different
+   vertical line from the content below. Match the page head and the content
+   card instead of picking an arbitrary inset: measured, `.page-head > .container`
+   pads 15px and `.layout-main-section` ends 15px from the container edge, so the
+   navbar uses the same 15px and the avatar lines up with the card's right edge.
+   At 24px the avatar sat 9px inside the card; at the stock 16px it sat 8px
+   outside it, which reads as "cut off". */
 header.navbar .container {
-	padding-left: 24px !important;
-	padding-right: 24px !important;
+	padding-left: 15px !important;
+	padding-right: 15px !important;
 }
 
 /* Hide the navbar app logo.
