@@ -182,3 +182,57 @@ before anyone configures them.
 
 Also re-confirmed: the bridge's own `test_device_config.py` and
 `test_transfer.py` pass (8 passed), and the security suite is ALL PASS.
+
+
+---
+
+# Promoted to main — 2026-09-18
+
+`Projects/SenseFace-HRMS-Bridge` is now on **`main`** (`2cb9c50`), clean, with
+`server.py` at 904 lines. `main` was `c4839d5` (327 lines, open read API, no
+device configuration, no limits, no registration check); it now carries the
+implementation that runs plus the ported hardening.
+
+Merged with `--no-ff` so the promotion is a dated, identifiable event:
+
+```
+* 2cb9c50 Merge the canonical bridge into main
+* f30a3da docs: make the bridge configurable and safe to onboard from the README
+* a97206b feat(security): enforce device registration and bound concurrency
+* de40695 chore: ignore editor/backup artefacts
+* 673bb77 fix(security): close the ingress gaps in the running bridge
+* adf1f19 chore: preserve uncommitted bridge work
+```
+
+`start_biometric_bridge.bat` is **unchanged** and now correct: it already pointed
+at `Desktop\Projects\SenseFace-HRMS-Bridge`, which is the canonical checkout.
+
+## Repo made self-documenting
+
+`.env.example` documented 4 settings while the code read 11, so a fresh
+deployment could not be configured correctly. It now documents all of them -
+verified programmatically as `documented == read`, with no gaps and no unused
+entries - and states that `SENSEFACE_API_KEY` is required because the bridge
+fails closed.
+
+The README gains **Required configuration**, **Security posture** and
+**Onboarding a terminal**, including the non-obvious point that `/iclock/*`
+cannot use an API key (ADMS terminals send no headers) and is therefore protected
+by device registration instead.
+
+## Verified on the merged tree
+
+- security suite from `main`: **ALL PASS** (401 / 413 / 403 / 200 as expected)
+- the bridge's own `test_device_config.py` + `test_transfer.py`: **8 passed**
+- `wip/preserve-uncommitted-20260918` confirmed an ancestor of `main`, so nothing
+  was dropped in the promotion
+
+## A mistake worth recording
+
+The first merge attempt failed on **no git identity** (the individual commits had
+used `-c user.name=...`, but `git merge` did not). The `git checkout main` that
+preceded it had already removed the new modules from the working tree, so for a
+moment the on-disk bridge was the old 327-line version. It was detected by the
+verification step, fixed by setting a repo-local identity and completing the
+merge, and confirmed whole afterwards. Run the verification after a branch
+switch, not before it.
