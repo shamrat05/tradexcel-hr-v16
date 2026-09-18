@@ -5,7 +5,7 @@ app_description = "Configurable Tradexcel HRMS integration for SelevoHR and Sens
 app_email = "admin@tradex.com"
 app_license = "MIT"
 
-app_include_css = ["/assets/tradex_hr/css/tradexcel_desk.css"]
+app_include_css = ["tradex_hr.bundle.css"]
 
 add_to_apps_screen = [{
     "name": "tradex_hr",

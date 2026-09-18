@@ -28,9 +28,12 @@ page.wait_for_selector(".page-head")
 ```
 
 Playwright lives in the bench env: `/home/sanchita/frappe-bench/env/bin/python`
-with chromium at `~/.cache/ms-playwright`. `developer_mode: 1` means
-`app_include_css` is served by direct path, so **no `bench build` is needed** —
-edit the CSS and reload.
+with chromium at `~/.cache/ms-playwright`.
+
+**The desk CSS is now a built bundle, so `bench build` IS required after every
+edit** — see "Asset caching" below for why. On a fresh Playwright context the
+browser cache is empty, so fine-grained CSS checks are reliable there in a way
+they are not in a long-lived Chrome profile.
 
 ### Authentication
 
@@ -117,3 +120,69 @@ setting takes priority and needs no code change.
 
 Note: `tabNavbar Settings` does not exist on this site, so the Navbar Settings
 fallback is inert and the hook is what renders.
+
+## Asset caching — why the desk looked stale for hours
+
+`/assets` is served by werkzeug's `SharedDataMiddleware` (`frappe/app.py`):
+
+```python
+SharedDataMiddleware(application, {"/assets": ...})   # default cache_timeout=43200
+```
+
+That emits `Cache-Control: max-age=43200, public` — **12 hours with no
+revalidation**. Frappe only escapes this for *built bundles*, because
+`bundled_asset()` skips versioning for raw paths:
+
+```python
+def bundled_asset(path, rtl=None):
+	if ".bundle." in path and not path.startswith("/assets"):   # raw paths fail this
+		path = bundled_assets.get(path) or path
+	return abs_url(path)
+```
+
+The original `app_include_css = ["/assets/tradex_hr/css/tradexcel_desk.css"]`
+started with `/assets` and had no hash, so the browser legitimately reused a
+stale copy for 12 hours. No amount of reloading from the app could help.
+
+### Fix: serve it as a content-hashed bundle
+
+Frappe discovers bundles by filename — source files must literally be named
+`*.bundle.css` / `*.bundle.js` (compare `frappe/public/js/desk.bundle.js`). A
+`build.json` is not required for this; `get_all_files_to_build()` globs
+`**/*.bundle.{js,css}`.
+
+```bash
+git mv tradex_hr/public/css/tradexcel_desk.css \
+       tradex_hr/public/css/tradex_hr.bundle.css
+# hooks.py
+app_include_css = ["tradex_hr.bundle.css"]
+bench build --app tradex_hr
+```
+
+Result:
+
+```
+sites/assets/assets.json
+  "tradex_hr.bundle.css": "/assets/tradex_hr/dist/css/tradex_hr.bundle.2P673ZWD.css"
+```
+
+The filename now carries a content hash, so **the URL changes whenever the CSS
+changes** and a stale cache cannot be served. The 12-hour `max-age` is harmless
+once the name is content-addressed.
+
+### Working on the CSS
+
+```bash
+# edit tradex_hr/public/css/tradex_hr.bundle.css, then:
+cd ~/frappe-bench && bench build --app tradex_hr
+```
+
+The hash changes, so even a long-lived Chrome profile picks it up on a normal
+reload — no cache clearing. `bench watch` rebuilds automatically if you want it.
+
+### Same exposure on the JS files
+
+`doctype_js` / `doctype_list_js` entries still reference raw paths
+(`public/js/list_scope.js`, `public/js/employee_calendar.js`), so they carry the
+same 12-hour cache and will appear stale after an edit until rebuilt as bundles
+or cache-cleared. Not changed here; recorded as a known gap.
