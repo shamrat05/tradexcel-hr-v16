@@ -105,7 +105,69 @@ up alongside.
 ERPNext sales/purchase at all, and these are the *only* items, customers and
 suppliers present, so there is nothing real interleaved with them.
 
-## Not done
+## Removal — executed 2026-09-18
 
-No document was cancelled, deleted or modified. No backup was taken. The only
-change applied in this session is the Help-menu visibility above.
+**Backup first.** `bench --site hrms.localhost backup --with-files` produced a
+2.8 MiB database dump plus public/private files, mirrored to
+`Desktop/tradex_hr_backup_20260918/site_backup_before_demo_removal/`.
+
+**Frappe's own path was proven impossible before touching data.** A trial
+(cancelled and rolled back) showed every doctype refuses to cancel, because the
+company's warehouses and accounts were destroyed with it:
+
+| Doctype | Cancel result |
+| --- | --- |
+| Payment Entry | `TypeError: cannot unpack non-iterable NoneType` |
+| Sales Invoice | `LinkValidationError: Could not find Warehouse: Finished Goods - SD, Company: Shamrat (Demo)` |
+| Purchase Invoice | `LinkValidationError: Could not find Warehouse: Goods In Transit - SD, Company: Shamrat (Demo)` |
+| Sales Order | `LinkExistsError` — linked Sales Invoice |
+| Purchase Order | `LinkExistsError` — linked Purchase Invoice |
+
+So the removal was surgical and **metadata-driven** — child tables are
+enumerated from `frappe.get_meta(dt).get_table_fields()` rather than hardcoded,
+so it stays correct as doctypes change.
+
+Deleted, in dependency order:
+
+| Stage | Removed |
+| --- | --- |
+| Submitted transactions | Payment Entry 5, Sales Invoice 5, Purchase Invoice 6, Sales Order 5, Purchase Order 10 (**31 docs**, plus their child tables) |
+| Ledger rows for the phantom company | GL Entry 42, Payment Ledger Entry 16, Stock Ledger Entry 16 (Repost Item Valuation 0) |
+| Demo masters | Customer 3, Supplier 3, Item 10, plus `Demo Item Group`, `Demo Customer Group`, `Demo Supplier Group` |
+| Stale pointers | `demo_company` → empty, `default_company` `Shamrat` → `Tradexcel Ceramics Ltd.` |
+
+**Verified after:**
+
+| Check | Result |
+| --- | --- |
+| Transactions under the phantom company | 0 |
+| Ledger rows under the phantom company | 0 |
+| Documents named like `%Demo%` | 0 |
+| Global Defaults | `demo_company` empty, `default_company = Tradexcel Ceramics Ltd.` |
+| `tabDefaultValue.company` | `Tradexcel Ceramics Ltd.` (now consistent with the above) |
+| Real data | 2 companies, 241 Employees, 10 Warehouses — unchanged |
+| Site health | `/login` 200, `/api/method/ping` 200, no error-log entries |
+
+### The dialog is now gone at the source
+
+`erpnext/public/js/utils/demo.js` renders the menu item only when the pointer is
+truthy:
+
+```js
+$(document).on("toolbar_setup", function () {
+	if (frappe.boot.sysdefaults.demo_company) {   // now empty
+		render_clear_demo_action();
+	}
+});
+```
+
+With `demo_company` cleared, `frappe.defaults.get_defaults()` returns `None` for
+it, so **"Clear Demo Data" no longer appears at all** — the failure cannot
+recur. Caches were flushed (`clear-cache`, `clear-website-cache`) so boot picks
+up the new value without a server restart.
+
+### Note on `default_company`
+
+It previously read `Shamrat`, a company that does not exist — a latent bug that
+would surface wherever `Global Defaults.default_company` is consulted. It is now
+set to `Tradexcel Ceramics Ltd.`, matching the effective `tabDefaultValue.company`.
