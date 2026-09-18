@@ -602,49 +602,124 @@ LEGACY_DASHBOARD_CHART_NAMES = {
 
 
 WORKSPACE_SHORTCUTS = [
-    ("Daily Attendance Summary", "Daily Attendance Summary", "Report"),
-    ("Tradexcel Daily Attendance Board", "Tradexcel Daily Attendance Board", "Report"),
-    ("Tradexcel Payroll Register", "Tradexcel Payroll Register", "Report"),
-    ("Tradexcel Salary Coverage Board", "Tradexcel Salary Coverage Board", "Report"),
-    ("Tradexcel Leave Balance Board", "Tradexcel Leave Balance Board", "Report"),
-    ("Employee Data Gaps", "Employee Data Gaps", "Report"),
-    ("Workforce Anomaly Radar", "Workforce Anomaly Radar", "Report"),
-    ("Employees", "Employee", "DocType"),
-    ("Attendance", "Attendance", "DocType"),
+    ("Today's Attendance", "Tradexcel Daily Attendance Board", "Report"),
+    ("Attendance Summary", "Daily Attendance Summary", "Report"),
+    ("Punch Log", "Employee Checkin", "DocType"),
+    ("Attendance Records", "Attendance", "DocType"),
+    ("Employee Directory", "Employee", "DocType"),
     ("Departments", "Department", "DocType"),
     ("Designations", "Designation", "DocType"),
-    ("Branches", "Branch", "DocType"),
-    ("Employee Checkin", "Employee Checkin", "DocType"),
-    ("Tradexcel Biometric Device", "Tradexcel Biometric Device", "DocType"),
-    ("Tradexcel Employee Biometric", "Tradexcel Employee Biometric", "DocType"),
-    ("Salary Component", "Salary Component", "DocType"),
-    ("Salary Structure", "Salary Structure", "DocType"),
-    ("Salary Structure Assignment", "Salary Structure Assignment", "DocType"),
-    ("Tradexcel Payroll Policy", "Tradexcel Payroll Policy", "DocType"),
-    ("Policy Exceptions", "Tradexcel Policy Exception", "DocType"),
-    ("Additional Salary", "Additional Salary", "DocType"),
-    ("Payroll Entry", "Payroll Entry", "DocType"),
-    ("Salary Slip", "Salary Slip", "DocType"),
-    ("Leave Allocation", "Leave Allocation", "DocType"),
-    ("Leave Application", "Leave Application", "DocType"),
+    ("Branches / Locations", "Branch", "DocType"),
+    ("Joiners & Leavers", "Tradexcel Joiners and Leavers", "Report"),
+    ("Employee Transfers", "Employee Transfer", "DocType"),
+    ("Exits / Separations", "Employee Separation", "DocType"),
+    ("Final Settlements", "Full and Final Statement", "DocType"),
+    ("Run Monthly Payroll", "Payroll Entry", "DocType"),
+    ("Salary Slips", "Salary Slip", "DocType"),
+    ("Salary Structures", "Salary Structure", "DocType"),
+    ("Salary Assignments", "Salary Structure Assignment", "DocType"),
+    ("Salary Components", "Salary Component", "DocType"),
+    ("Extra Pay & Deductions", "Additional Salary", "DocType"),
+    ("Payroll Register", "Tradexcel Payroll Register", "Report"),
     ("Payroll Variance", "Tradexcel Payroll Variance", "Report"),
     ("Pay Component Register", "Tradexcel Pay Component Register", "Report"),
-    ("Joiners and Leavers", "Tradexcel Joiners and Leavers", "Report"),
+    ("Salary Setup Coverage", "Tradexcel Salary Coverage Board", "Report"),
+    ("Payroll Rules", "Tradexcel Payroll Policy", "DocType"),
+    ("Policy Exceptions", "Tradexcel Policy Exception", "DocType"),
+    ("Leave Requests", "Leave Application", "DocType"),
+    ("Leave Allocations", "Leave Allocation", "DocType"),
+    ("Leave Balances", "Tradexcel Leave Balance Board", "Report"),
+    ("Shift Types", "Shift Type", "DocType"),
+    ("Shift Planner", "Shift Schedule", "DocType"),
+    ("Shift Assignments", "Shift Schedule Assignment", "DocType"),
     ("Shift Coverage", "Tradexcel Shift Coverage", "Report"),
+    ("Anomaly Radar", "Workforce Anomaly Radar", "Report"),
+    ("Missing Employee Data", "Employee Data Gaps", "Report"),
+    ("Biometric ID Audit", "Biometric ID Audit", "Report"),
+    ("Biometric Devices", "Tradexcel Biometric Device", "DocType"),
+    ("Employee Biometric IDs", "Tradexcel Employee Biometric", "DocType"),
+    ("Bulk Data Import", "Data Import", "DocType"),
 ]
 
 BULK_WORKSPACE_SHORTCUTS = [
+    ("Bulk Salary Structure Assignment", "Salary Structure Assignment Tool", "DocType"),
+    ("Attendance Fix Requests", "Attendance Request", "DocType"),
     ("Bulk Leave Allocation", "Leave Control Panel", "DocType"),
     ("Bulk Shift Assignment", "Shift Assignment Tool", "DocType"),
-    ("Shift Schedules", "Shift Schedule", "DocType"),
-    ("Shift Schedule Assignments", "Shift Schedule Assignment", "DocType"),
-    ("Bulk Salary Structure Assignment", "Salary Structure Assignment Tool", "DocType"),
-    ("Bulk Data Import", "Data Import", "DocType"),
-    ("Employee Transfers", "Employee Transfer", "DocType"),
-    ("Attendance Requests", "Attendance Request", "DocType"),
-    ("Employee Separations", "Employee Separation", "DocType"),
-    ("Full and Final Statements", "Full and Final Statement", "DocType"),
 ]
+
+# Frappe stores icons on Workspace Shortcut rows. These names are from the
+# installed timeless icon set, so no custom icon bundle is needed.
+WORKSPACE_SHORTCUT_ICONS = {
+    "Today's Attendance": "today",
+    "Attendance Summary": "calendar",
+    "Punch Log": "scan",
+    "Attendance Records": "check",
+    "Attendance Fix Requests": "clipboard",
+    "Employee Directory": "users",
+    "Departments": "organization",
+    "Designations": "hr",
+    "Branches / Locations": "branch",
+    "Joiners & Leavers": "change",
+    "Employee Transfers": "assign",
+    "Exits / Separations": "remove",
+    "Final Settlements": "money-coins-1",
+    "Run Monthly Payroll": "accounting",
+    "Salary Slips": "file",
+    "Salary Structures": "income",
+    "Salary Assignments": "assign",
+    "Salary Components": "money-coins-1",
+    "Extra Pay & Deductions": "money-coins-1",
+    "Payroll Register": "list-alt",
+    "Payroll Variance": "chart",
+    "Pay Component Register": "clipboard",
+    "Salary Setup Coverage": "check",
+    "Payroll Rules": "setting-gear",
+    "Policy Exceptions": "workflow",
+    "Leave Requests": "clipboard",
+    "Leave Allocations": "assign",
+    "Leave Balances": "chart",
+    "Shift Types": "hr",
+    "Shift Planner": "calendar",
+    "Shift Assignments": "assign",
+    "Bulk Leave Allocation": "assign",
+    "Bulk Shift Assignment": "assign",
+    "Bulk Salary Structure Assignment": "assign",
+    "Shift Coverage": "check",
+    "Anomaly Radar": "solid-warning",
+    "Missing Employee Data": "solid-warning",
+    "Biometric ID Audit": "scan",
+    "Biometric Devices": "integration",
+    "Employee Biometric IDs": "users",
+    "Bulk Data Import": "upload",
+    "Attendance Fix Requests": "clipboard",
+}
+
+WORKSPACE_SECTIONS = (
+    ("Every day", "Start here: attendance, missing punches, and corrections.", (
+        "Today's Attendance", "Attendance Summary", "Punch Log", "Attendance Records", "Attendance Fix Requests",
+    )),
+    ("People", "Employees, organization structure, movement, and exits.", (
+        "Employee Directory", "Departments", "Designations", "Branches / Locations",
+        "Joiners & Leavers", "Employee Transfers", "Exits / Separations", "Final Settlements",
+    )),
+    ("Payroll & salary", "Prepare payroll, maintain pay rules, and review every amount.", (
+        "Run Monthly Payroll", "Salary Slips", "Salary Structures", "Salary Assignments",
+        "Salary Components", "Extra Pay & Deductions", "Payroll Register", "Payroll Variance",
+        "Pay Component Register", "Salary Setup Coverage", "Payroll Rules", "Policy Exceptions",
+        "Bulk Salary Structure Assignment",
+    )),
+    ("Leave & shifts", "Plan shifts, allocate leave, and check coverage before payroll.", (
+        "Leave Requests", "Leave Allocations", "Bulk Leave Allocation", "Leave Balances",
+        "Shift Types", "Shift Planner", "Shift Assignments", "Bulk Shift Assignment", "Shift Coverage",
+    )),
+    ("Checks & alerts", "Review exceptions before they become payroll or attendance mistakes.", (
+        "Anomaly Radar", "Missing Employee Data", "Biometric ID Audit",
+    )),
+    ("Devices & data", "Connect attendance devices and safely fill verified master data.", (
+        "Biometric Devices", "Employee Biometric IDs", "Bulk Data Import", "Attendance Requests",
+    )),
+)
 
 
 WORKSPACE_NAMES = {
@@ -666,34 +741,27 @@ def workspace_is_visible(name: str) -> bool:
 def workspace_blocks(shortcuts=None):
     """Return the dashboard layout used by both fresh installs and migrations."""
     shortcuts = shortcuts if shortcuts is not None else list(WORKSPACE_SHORTCUTS) + list(BULK_WORKSPACE_SHORTCUTS)
-    general_labels = {row[0] for row in WORKSPACE_SHORTCUTS}
-    bulk_labels = {row[0] for row in BULK_WORKSPACE_SHORTCUTS}
+    available = {row[0]: row for row in shortcuts}
     blocks = [{"type": "header", "data": {"text": "<h2>Tradexcel HR Action Board</h2>", "col": 12}}]
     blocks.extend(
         {"type": "number_card", "data": {"number_card_name": name, "col": 3}}
         for name in NUMBER_CARDS
     )
     blocks.extend([
-        {"type": "header", "data": {"text": "<h4>Workforce and Payroll Analytics</h4>", "col": 12}},
+        {"type": "header", "data": {"text": "<h3>Overview</h3>", "col": 12}},
     ])
     blocks.extend(
         {"type": "chart", "data": {"chart_name": name, "col": 6}}
         for name in DASHBOARD_CHARTS
     )
-    blocks.extend([
-        {"type": "header", "data": {"text": "<h4>Daily Operations and Payroll Setup</h4>", "col": 12}},
-    ])
-    blocks.extend(
-        {"type": "shortcut", "data": {"shortcut_name": label, "col": 3}}
-        for label, _link_to, _link_type in shortcuts
-        if label in general_labels
-    )
-    blocks.append({"type": "header", "data": {"text": "<h4>Bulk Operations and Lifecycle</h4>", "col": 12}})
-    blocks.extend(
-        {"type": "shortcut", "data": {"shortcut_name": label, "col": 3}}
-        for label, _link_to, _link_type in shortcuts
-        if label in bulk_labels
-    )
+    for title, description, labels in WORKSPACE_SECTIONS:
+        blocks.append({"type": "header", "data": {"text": f"<h3>{title}</h3>", "col": 12}})
+        blocks.append({"type": "paragraph", "data": {"text": description, "col": 12}})
+        blocks.extend(
+            {"type": "shortcut", "data": {"shortcut_name": label, "col": 3}}
+            for label in labels
+            if label in available
+        )
     return blocks
 
 
@@ -883,7 +951,13 @@ def ensure_workspace() -> None:
                 doc.append("number_cards", {"number_card_name": card_name, "label": card_name})
         doc.shortcuts = []
         for label, link_to, link_type in shortcuts:
-            doc.append("shortcuts", {"label": label, "link_to": link_to, "type": link_type, "color": "Blue"})
+            doc.append("shortcuts", {
+                "label": label,
+                "link_to": link_to,
+                "type": link_type,
+                "icon": WORKSPACE_SHORTCUT_ICONS.get(label),
+                "color": "Blue",
+            })
         save_workspace_doc(doc)
 
 

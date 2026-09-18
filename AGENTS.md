@@ -1,5 +1,11 @@
 # Tradexcel HR source-only agent rules
 
+## Canonical checkout — do not work anywhere else
+
+- **This checkout is the only one to edit:** `/home/sanchita/frappe-bench/apps/tradex_hr` (WSL). It is the app directory the live bench loads via `~/frappe-bench/sites/apps.txt`, so it is the only tree whose edits affect runtime.
+- A second clone exists at `/mnt/c/Users/Sanchita/Desktop/tradexcel-hr-audit-app` (Windows, reached through `/mnt/c`). Treat it as a stale read-only reference. Do not edit, commit, or branch there. It holds no unique content.
+- Line endings are pinned to LF by `.gitattributes`. If `git status` reports the entire tree modified with equal insertion and deletion counts, that is a CRLF artifact, not real work. Confirm with `git diff --ignore-cr-at-eol` before acting on it.
+
 - This repository contains the Frappe custom app, **not** the live bench/site or the standalone SenseFace listener. Never read or copy `sites/`, `sync/data/`, tokens, backups, payroll exports or employee records into this repository or an agent prompt.
 - Frappe HR/ERPNext native Employee, Checkin, Attendance, Leave, Shift and Payroll documents are canonical. Build guided previews and audited actions around them; do not duplicate ledgers.
 - No agent may run migrations, import employees, alter salary slips, submit payroll, or issue device commands against the live site. Coordinator owns staging verification and live cutover.
