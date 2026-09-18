@@ -91,6 +91,11 @@ CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     "Tradex Mobile Event": {
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
+    "Tradex Face Match Settings": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
 }
 
 # Core HRMS access for the custom roles. Record-level restriction is applied

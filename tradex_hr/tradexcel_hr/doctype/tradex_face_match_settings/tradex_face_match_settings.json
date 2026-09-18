@@ -1,0 +1,23 @@
+{
+ "doctype":"DocType",
+ "issingle":1,
+ "engine":"InnoDB",
+ "field_order":["enabled","provider","detector_model_path","recognizer_model_path","cosine_threshold","minimum_face_confidence","notes"],
+ "fields":[
+  {"fieldname":"enabled","fieldtype":"Check","label":"Enable Local Face Matching","default":"0"},
+  {"fieldname":"provider","fieldtype":"Select","label":"Provider","options":"OpenCV YuNet + SFace","default":"OpenCV YuNet + SFace"},
+  {"fieldname":"detector_model_path","fieldtype":"Data","label":"YuNet Model Path","description":"Relative to the site directory; store the verified model checksum in deployment documentation.","depends_on":"eval:doc.enabled"},
+  {"fieldname":"recognizer_model_path","fieldtype":"Data","label":"SFace Model Path","description":"Relative to the site directory; store the verified model checksum in deployment documentation.","depends_on":"eval:doc.enabled"},
+  {"fieldname":"cosine_threshold","fieldtype":"Float","label":"Cosine Match Threshold","default":"0.363","description":"OpenCV SFace baseline. Tune only using a documented validation set.","depends_on":"eval:doc.enabled"},
+  {"fieldname":"minimum_face_confidence","fieldtype":"Float","label":"Minimum Face Detection Confidence","default":"0.90","depends_on":"eval:doc.enabled"},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"Operational Notes"}
+ ],
+ "module":"Tradexcel HR",
+ "name":"Tradex Face Match Settings",
+ "permissions":[
+  {"role":"System Manager","read":1,"write":1},
+  {"role":"Tradexcel HR Manager","read":1,"write":1},
+  {"role":"Tradexcel Compliance Auditor","read":1,"print":1}
+ ],
+ "track_changes":1
+}

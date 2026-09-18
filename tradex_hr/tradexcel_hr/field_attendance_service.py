@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import frappe
@@ -17,6 +18,7 @@ from tradex_hr.tradexcel_hr.field_attendance import (
     location_status,
     validate_gps_quality,
 )
+from tradex_hr.tradexcel_hr.face_match import FaceMatchUnavailable, match_images
 
 SUPERVISOR_ROLES = {
     "System Manager",
@@ -39,7 +41,7 @@ def _employee(employee: str | dict[str, Any]) -> frappe._dict:
     value = frappe.db.get_value(
         "Employee",
         employee,
-        ["name", "employee_name", "company", "branch", "department", "designation", "employment_type", "status", "user_id"],
+        ["name", "employee_name", "company", "branch", "department", "designation", "employment_type", "status", "user_id", "custom_tradex_face_reference"],
         as_dict=True,
     )
     if not value:
@@ -147,6 +149,42 @@ def _assert_identity(employee: frappe._dict) -> None:
         frappe.throw(_("You may only create mobile attendance for your own linked Employee"), frappe.PermissionError)
 
 
+def _site_file_path(file_url: str) -> str:
+	if not file_url or not file_url.startswith(("/private/files/", "/files/")):
+		raise FaceMatchUnavailable("Face evidence must be a local Frappe file")
+	root = Path(frappe.get_site_path()).resolve()
+	candidate = (root / file_url.lstrip("/")).resolve()
+	if root not in candidate.parents or not candidate.is_file():
+		raise FaceMatchUnavailable("Face evidence file is unavailable")
+	return str(candidate)
+
+
+def _model_file_path(relative_path: str) -> str:
+	if not relative_path or str(relative_path).startswith("/"):
+		raise FaceMatchUnavailable("Face model paths must be relative to the site")
+	root = Path(frappe.get_site_path()).resolve()
+	candidate = (root / str(relative_path)).resolve()
+	if root not in candidate.parents or not candidate.is_file():
+		raise FaceMatchUnavailable("Configured face model is unavailable")
+	return str(candidate)
+
+
+def _run_face_match(employee: frappe._dict, selfie_url: str) -> dict[str, Any]:
+	settings = frappe.get_single("Tradex Face Match Settings")
+	if not settings.enabled or settings.provider != "OpenCV YuNet + SFace":
+		raise FaceMatchUnavailable("Face-match provider is not enabled")
+	if not employee.custom_tradex_face_reference:
+		raise FaceMatchUnavailable("Employee has no face reference photo")
+	return match_images(
+		_site_file_path(employee.custom_tradex_face_reference),
+		_site_file_path(selfie_url),
+		_model_file_path(settings.detector_model_path),
+		_model_file_path(settings.recognizer_model_path),
+		cosine_threshold=float(settings.cosine_threshold or 0.363),
+		minimum_face_confidence=float(settings.minimum_face_confidence or 0.90),
+	)
+
+
 def _claim_event(sync_id, event_type, employee, received_at, device_time=None):
     """Claim an immutable client event before creating its target document."""
     existing = frappe.db.get_value(
@@ -204,6 +242,10 @@ def enrich_mobile_checkin(doc, method=None):
         validate_gps_quality(doc.latitude, doc.longitude, doc.get("custom_tradex_gps_accuracy_m"))
         if has_gps else {"valid": False, "reason": "missing_coordinates", "accuracy_m": None}
     )
+    if policy.require_gps and has_gps and doc.get("custom_tradex_gps_accuracy_m") in (None, ""):
+        quality = {"valid": False, "reason": "accuracy_missing", "accuracy_m": None}
+    if (policy.require_gps or policy.outside_action == "Block") and not quality["valid"]:
+        frappe.throw(_("This attendance policy requires a valid GPS fix"))
     shift_actual = get_actual_start_end_datetime_of_shift(employee.name, get_datetime(doc.time), True)
     shift_type = shift_actual.shift_type.name if shift_actual else None
     locations = _assigned_locations(employee, getdate(doc.time), duty, shift_type)
@@ -223,10 +265,20 @@ def enrich_mobile_checkin(doc, method=None):
     doc.custom_tradex_location_status = status if quality["valid"] else "GPS Invalid"
     doc.custom_tradex_assigned_location = matched_location["name"] if matched_location else None
     doc.custom_tradex_distance_m = matched_location["distance_m"] if matched_location else None
-    doc.custom_tradex_review_status = "Pending" if policy.face_match_enabled else "Not Required"
+    doc.custom_tradex_review_status = "Not Required"
     if policy.face_match_enabled:
-        doc.custom_tradex_face_match_status = "Provider Unavailable"
-        doc.custom_tradex_location_reason = "Face-match provider is not configured; attendance remains recorded."
+        if not doc.get("custom_tradex_selfie"):
+            frappe.throw(_("Face matching requires a selfie"))
+        try:
+            face_result = _run_face_match(employee, doc.custom_tradex_selfie)
+        except FaceMatchUnavailable as exc:
+            frappe.throw(_("Face-match provider is not ready: {0}").format(exc))
+        doc.custom_tradex_face_match_status = face_result["status"]
+        doc.custom_tradex_face_match_score = face_result["score"]
+        doc.custom_tradex_location_reason = (
+            f"Face match {face_result['status']} ({face_result['score']:.3f}; "
+            f"threshold {face_result['threshold']:.3f})."
+        )
     elif not quality["valid"]:
         doc.custom_tradex_location_reason = quality["reason"]
     elif status in {"Outside Flagged", "WFH Review"}:
@@ -368,6 +420,12 @@ def get_mobile_context():
     employee = _employee(employee_name)
     policy = _policy(employee)
     last = frappe.get_all("Employee Checkin", filters={"employee": employee.name}, fields=["name", "log_type", "time"], order_by="time desc", limit=1)
+    duty_rows = frappe.get_all(
+        "Tradexcel Field Duty",
+        filters={"employee": employee.name, "duty_date": today(), "docstatus": 1, "status": ["in", ["Approved", "In Progress"]]},
+        fields=["name", "duty_type", "purpose", "tracking_enabled"], limit=1,
+    )
+    duty = duty_rows[0] if duty_rows else None
     return {
         "employee": employee.name,
         "employee_name": employee.employee_name,
@@ -377,9 +435,45 @@ def get_mobile_context():
         "require_gps": bool(policy.require_gps),
         "require_selfie": bool(policy.require_selfie),
         "tracking_mode": policy.tracking_mode,
+        "field_duty": duty,
+        "tracking_active": bool(duty and duty.tracking_enabled and last and last[0].log_type == "IN"),
+        "tracking_interval_minutes": int(policy.tracking_interval_minutes or 30),
         "next_action": "OUT" if last and last[0].log_type == "IN" else "IN",
         "last_checkin": last[0] if last else None,
     }
+
+
+@frappe.whitelist()
+def get_live_locations(employee=None, company=None):
+    """Return latest active-duty positions to authorized HR/supervisor users."""
+    if not (set(frappe.get_roles(frappe.session.user)) & SUPERVISOR_ROLES):
+        frappe.throw(_("Live location is restricted to authorized HR and managers"), frappe.PermissionError)
+    filters = ""
+    values = []
+    if employee:
+        filters += " AND p.employee=%s"
+        values.append(employee)
+    if company:
+        filters += " AND p.company=%s"
+        values.append(company)
+    return frappe.db.sql(
+        f"""
+        SELECT p.employee, e.employee_name, p.company, p.field_duty,
+               p.ping_time, p.latitude, p.longitude, p.accuracy_m,
+               p.suspicious_jump, p.speed_kmh
+        FROM `tabTradexcel Location Ping` p
+        JOIN `tabEmployee` e ON e.name=p.employee
+        JOIN (
+            SELECT employee, MAX(ping_time) AS latest_time
+            FROM `tabTradexcel Location Ping`
+            GROUP BY employee
+        ) latest ON latest.employee=p.employee AND latest.latest_time=p.ping_time
+        WHERE 1=1 {filters}
+        ORDER BY p.ping_time DESC
+        """,
+        values,
+        as_dict=True,
+    )
 
 
 @frappe.whitelist(methods=["POST"])
@@ -387,8 +481,20 @@ def attach_selfie(checkin, file_url):
     doc = frappe.get_doc("Employee Checkin", checkin)
     employee = _employee(doc.employee)
     _assert_identity(employee)
-    file_owner = frappe.db.get_value("File", {"file_url": file_url}, "owner")
-    if file_owner not in {frappe.session.user, "Administrator"}:
+    file_doc = frappe.db.get_value(
+        "File", {"file_url": file_url},
+        ["name", "owner", "attached_to_doctype", "attached_to_name"], as_dict=True,
+    )
+    if not file_doc or file_doc.owner != frappe.session.user:
         frappe.throw(_("The selfie file is not owned by the current user"), frappe.PermissionError)
+    if file_doc.attached_to_name and (
+        file_doc.attached_to_doctype != "Employee Checkin" or file_doc.attached_to_name != checkin
+    ):
+        frappe.throw(_("This file is already attached to another document"), frappe.PermissionError)
+    frappe.db.set_value("File", file_doc.name, {
+        "attached_to_doctype": "Employee Checkin",
+        "attached_to_name": checkin,
+        "attached_to_field": "custom_tradex_selfie",
+    }, update_modified=False)
     doc.db_set("custom_tradex_selfie", file_url)
     return {"checkin": checkin, "file_url": file_url}

@@ -20,6 +20,9 @@ frappe.pages["tradexcel_mobile_attendance"].on_page_load = function (wrapper) {
   const resultEl = root.find("[data-result]");
   const actionEl = root.find("[data-action]");
   let context = null;
+  let trackingTimer = null;
+  let watchId = null;
+  let lastPosition = null;
 
   function syncId(prefix) {
     return prefix + "-" + Date.now() + "-" + Math.random().toString(16).slice(2);
@@ -47,12 +50,50 @@ frappe.pages["tradexcel_mobile_attendance"].on_page_load = function (wrapper) {
   function refreshButton() {
     if (context) actionEl.prop("disabled", false).text(context.next_action === "IN" ? __("Check In") : __("Check Out"));
   }
+  function stopTracking() {
+    if (trackingTimer) window.clearInterval(trackingTimer);
+    if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    trackingTimer = null;
+    watchId = null;
+    lastPosition = null;
+  }
+  function startTracking() {
+    stopTracking();
+    if (!context || !context.tracking_active || !context.field_duty) return;
+    if (!navigator.geolocation) return;
+    watchId = navigator.geolocation.watchPosition((position) => {
+      lastPosition = position;
+    }, () => {}, {enableHighAccuracy: true, maximumAge: 30000, timeout: 15000});
+    trackingTimer = window.setInterval(async () => {
+      if (!lastPosition) return;
+      const position = lastPosition;
+      try {
+        await frappe.call({
+          method: "tradex_hr.tradexcel_hr.field_attendance_service.location_ping",
+          args: {
+            employee: context.employee,
+            field_duty: context.field_duty.name,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy_m: position.coords.accuracy,
+            ping_time: new Date().toISOString(),
+            sync_id: syncId("ping")
+          }
+        });
+        locationEl.text(__("Live location sent · accuracy {0} m", [Math.round(position.coords.accuracy || 0)]));
+      } catch (error) {
+        // The server enforces the interval/duty window. Keep the watch alive
+        // so a transient network or interval response does not stop tracking.
+      }
+    }, Math.max(1, context.tracking_interval_minutes) * 60000);
+  }
   async function loadContext() {
     const response = await frappe.call({method: "tradex_hr.tradexcel_hr.field_attendance_service.get_mobile_context"});
     context = response.message;
     contextEl.text(context.employee_name + " · " + context.attendance_mode + " · " + context.company);
     lastEl.text(context.last_checkin ? __("Last {0}: {1}", [context.last_checkin.log_type, context.last_checkin.time]) : __("No mobile check-in yet"));
     refreshButton();
+    startTracking();
   }
   actionEl.on("click", async () => {
     actionEl.prop("disabled", true);
@@ -66,7 +107,7 @@ frappe.pages["tradexcel_mobile_attendance"].on_page_load = function (wrapper) {
       const selfieUrl = file ? await uploadSelfie(file) : null;
       const response = await frappe.call({
         method: "tradex_hr.tradexcel_hr.field_attendance_service.mobile_checkin",
-        args: {employee: context.employee, log_type: context.next_action, latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy_m: position.coords.accuracy, time: new Date().toISOString(), sync_id: syncId("mobile"), selfie: selfieUrl}
+        args: {employee: context.employee, log_type: context.next_action, latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy_m: position.coords.accuracy, time: new Date().toISOString(), field_duty: context.field_duty && context.field_duty.name, sync_id: syncId("mobile"), selfie: selfieUrl}
       });
       const checkin = response.message;
       if (selfieUrl) await frappe.call({method: "tradex_hr.tradexcel_hr.field_attendance_service.attach_selfie", args: {checkin: checkin.name, file_url: selfieUrl}});
