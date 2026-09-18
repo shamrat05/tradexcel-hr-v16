@@ -60,7 +60,14 @@ def resolve_policy(employee: dict | str, as_of: date | str | None = None):
     policy = frappe._dict(dict(matching[0]))
     exceptions = frappe.get_all(
         "Tradexcel Policy Exception",
-        filters={"docstatus": 1, "company": employee.get("company"), "effective_from": ["<=", as_of]},
+        # exception_type is REQUIRED here. The approval preview filters on
+        # "Payroll" (tradexcel_policy_exception.py). Omitting the filter meant
+        # runtime applied a strictly larger set than was ever previewed, so a
+        # non-payroll exception carrying a payroll field_name could change wages
+        # without appearing in the preview at all.
+        filters={"docstatus": 1, "company": employee.get("company"),
+                 "exception_type": "Payroll",
+                 "effective_from": ["<=", as_of]},
         fields=["name", "company", "employee_category", "branch", "department", "designation",
                 "employee", "min_tenure_months", "field_name", "value", "effective_from", "effective_to"],
     )

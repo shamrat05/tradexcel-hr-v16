@@ -77,9 +77,28 @@ def structure_deductions(salary_structure, gross, **context):
 
 
 def recompute_totals(doc):
-    """Rebuild gross/deduction/net totals from the slip's own rows."""
-    gross = sum(float(row.amount or 0) for row in doc.earnings)
-    total_deduction = sum(float(row.amount or 0) for row in doc.deductions)
+    """Rebuild gross/deduction/net totals from the slip's own rows.
+
+    Rows flagged `do_not_include_in_total` are excluded, matching HRMS's own
+    `SalarySlip.get_component_totals`. Before this, every row was summed, so a
+    non-total component silently inflated gross and net.
+    """
+    def total(rows):
+        # Rows arrive either as Frappe child documents (support .get) or as plain
+        # objects in tests, so read defensively.
+        def excluded(row):
+            value = row.get("do_not_include_in_total") if hasattr(row, "get") \
+                else getattr(row, "do_not_include_in_total", 0)
+            return int(value or 0)
+
+        return sum(
+            float((row.get("amount") if hasattr(row, "get") else getattr(row, "amount", 0)) or 0)
+            for row in rows
+            if not excluded(row)
+        )
+
+    gross = total(doc.earnings)
+    total_deduction = total(doc.deductions)
     doc.gross_pay = gross
     doc.total_deduction = total_deduction
     loan_repayment = float(getattr(doc, "total_loan_repayment", 0) or 0)

@@ -179,8 +179,23 @@ def apply_to_salary_slip(doc, method=None):
         return
     day = doc.start_date or frappe.utils.today()
     original = [(row.salary_component, round(float(row.amount or 0), 2)) for row in doc.earnings]
+
+    # Carry the row's own semantics through the rebuild. Rebuilding with only
+    # component/abbr/amount dropped flags such as do_not_include_in_total,
+    # is_tax_applicable and the account links, which silently changed gross, net
+    # and tax treatment for any component using them.
+    PRESERVE = (
+        "do_not_include_in_total", "is_tax_applicable", "variable_based_on_taxable_salary",
+        "exempted_from_income_tax", "statistical_component", "depends_on_payment_days",
+        "amount_based_on_formula", "formula", "condition", "default_amount",
+        "additional_amount", "additional_salary", "salary_component_type",
+        "payment_days", "is_recurring_additional_salary",
+    )
+
     kept = apply_component_rules(
-        [{"salary_component": row.salary_component, "abbr": row.abbr, "amount": row.amount}
+        [{**{f: row.get(f) for f in PRESERVE if row.meta.has_field(f)},
+          "salary_component": row.salary_component, "abbr": row.abbr,
+          "amount": row.amount}
          for row in doc.earnings],
         employee, day, rules,
     )

@@ -96,3 +96,29 @@ def test_recompute_totals_reflects_exceptions(monkeypatch):
     slip.deductions = []  # tax exemption stripped the line
     recompute_totals(slip)
     assert slip.net_pay == 1000.0 and slip.rounded_total == 1000
+
+
+def test_do_not_include_in_total_is_excluded_from_totals():
+    """A non-total component must not inflate gross/net.
+
+    This flag was previously dropped when rows were rebuilt and then summed, so
+    an informational component silently changed take-home pay. Borrowed from
+    HRMS's own get_component_totals behaviour.
+    """
+    from types import SimpleNamespace
+    import tradex_hr.tradexcel_hr.deduction_rules as dr
+
+    doc = SimpleNamespace(
+        earnings=[
+            SimpleNamespace(amount=1000, do_not_include_in_total=0),
+            SimpleNamespace(amount=500, do_not_include_in_total=1),   # informational
+        ],
+        deductions=[SimpleNamespace(amount=100, do_not_include_in_total=0)],
+        total_loan_repayment=0,
+        exchange_rate=1,
+    )
+    dr.recompute_totals(doc)
+
+    assert doc.gross_pay == 1000, "non-total earning leaked into gross"
+    assert doc.total_deduction == 100
+    assert doc.net_pay == 900
