@@ -35,6 +35,22 @@ header.navbar .container,
 	margin-right: 0 !important;
 }
 
+/* `.layout-side-section` (the expanded left menu) is col-lg-2 — a PERCENTAGE of
+   the container. Widening the container to full bleed inflates it with the
+   screen: measured 214px stock -> 264px at 1600px and rising. Pin it near
+   Frappe's stock proportion; the `col` beside it absorbs the reclaimed width. */
+.layout-side-section {
+	max-width: 215px;
+}
+
+/* Full bleed would leave the search bar, help menu and user avatar hard against
+   the screen edge (stock inset ~178px, ours ~31px). Give the bar breathing
+   room instead of leaving them flush. */
+header.navbar .container {
+	padding-left: 24px !important;
+	padding-right: 24px !important;
+}
+
 /* Hide the navbar app logo.
 
    Nothing sets `app_logo` in Website Settings or Navbar Settings, so

@@ -186,3 +186,47 @@ reload — no cache clearing. `bench watch` rebuilds automatically if you want i
 (`public/js/list_scope.js`, `public/js/employee_calendar.js`), so they carry the
 same 12-hour cache and will appear stale after an edit until rebuilt as bundles
 or cache-cleared. Not changed here; recorded as a known gap.
+
+## Proportions on wide screens
+
+Going full bleed changed proportions, not just width, because two things are
+percentage-based. Measured stock vs full-bleed at 1600px:
+
+| Metric | Stock | Full bleed | Effect |
+| --- | --- | --- | --- |
+| navbar container | 1290 | 1585 | — |
+| nav inset from right edge | 178px | **31px** | Help/avatar appear hard against the screen edge |
+| `.layout-side-section` | 215px (13.4%) | **264px (16.5%)** | the expanded left menu inflates, and keeps growing with the screen |
+| main wrapper | 1075 | 1321 | gains the space instead |
+
+`.layout-side-section` is `col-lg-2` — a percentage of the container — so
+widening the container inflates the sidebar with it.
+
+**Fix:** pin `.layout-side-section { max-width: 215px }` to Frappe's stock
+proportion (the adjacent `col` absorbs the reclaimed width), and give
+`header.navbar .container` 24px horizontal padding so the search bar, Help menu
+and avatar are not flush against the edge.
+
+Compared with stock after the fix:
+
+| Metric | Stock | Ours |
+| --- | --- | --- |
+| sidebar | y=113, h=787, w=215 | y=113, h=787, w=215 |
+| page head | y=48, h=60 | y=48, h=60 |
+| main section | y=113 | y=113 |
+| first sidebar item | y=146, gap 30 | y=146, gap 30 |
+| nav inset from right | 178 | 39 |
+
+Vertical geometry is identical to stock — the widening changed horizontal
+proportions only. Note below ~1280px our CSS is byte-identical to stock, because
+Frappe's container is already full width there; these effects appear only on
+wide screens.
+
+### If the layout looks stale
+
+The bundle filename carries a content hash, so a CSS change produces a new URL
+and is picked up on a normal reload. Check which file the page requests:
+
+```bash
+curl -s http://localhost:8000/app | grep -o 'tradex_hr.bundle[^"]*css'
+```
