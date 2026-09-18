@@ -604,6 +604,8 @@ LEGACY_DASHBOARD_CHART_NAMES = {
 WORKSPACE_SHORTCUTS = [
     ("Today's Attendance", "Tradexcel Daily Attendance Board", "Report"),
     ("Attendance Summary", "Daily Attendance Summary", "Report"),
+    ("Mobile Attendance", "tradexcel-mobile-attendance", "Page"),
+    ("Live Locations", "tradex-live-locations", "Page"),
     ("Punch Log", "Employee Checkin", "DocType"),
     ("Attendance Records", "Attendance", "DocType"),
     ("Employee Directory", "Employee", "DocType"),
@@ -633,11 +635,15 @@ WORKSPACE_SHORTCUTS = [
     ("Shift Planner", "Shift Schedule", "DocType"),
     ("Shift Assignments", "Shift Schedule Assignment", "DocType"),
     ("Shift Coverage", "Tradexcel Shift Coverage", "Report"),
+    ("Attendance Policies", "Tradexcel Attendance Policy", "DocType"),
+    ("Field Duties", "Tradexcel Field Duty", "DocType"),
+    ("Location Pings", "Tradexcel Location Ping", "DocType"),
     ("Anomaly Radar", "Workforce Anomaly Radar", "Report"),
     ("Missing Employee Data", "Employee Data Gaps", "Report"),
     ("Biometric ID Audit", "Biometric ID Audit", "Report"),
     ("Biometric Devices", "Tradexcel Biometric Device", "DocType"),
     ("Employee Biometric IDs", "Tradexcel Employee Biometric", "DocType"),
+    ("Face Match Settings", "Tradex Face Match Settings", "DocType"),
     ("Bulk Data Import", "Data Import", "DocType"),
 ]
 
@@ -653,6 +659,8 @@ BULK_WORKSPACE_SHORTCUTS = [
 WORKSPACE_SHORTCUT_ICONS = {
     "Today's Attendance": "today",
     "Attendance Summary": "calendar",
+    "Mobile Attendance": "location",
+    "Live Locations": "map",
     "Punch Log": "scan",
     "Attendance Records": "check",
     "Attendance Fix Requests": "clipboard",
@@ -686,18 +694,25 @@ WORKSPACE_SHORTCUT_ICONS = {
     "Bulk Shift Assignment": "assign",
     "Bulk Salary Structure Assignment": "assign",
     "Shift Coverage": "check",
+    "Attendance Policies": "setting-gear",
+    "Field Duties": "location",
+    "Location Pings": "map",
     "Anomaly Radar": "solid-warning",
     "Missing Employee Data": "solid-warning",
     "Biometric ID Audit": "scan",
     "Biometric Devices": "integration",
     "Employee Biometric IDs": "users",
+    "Face Match Settings": "setting-gear",
     "Bulk Data Import": "upload",
     "Attendance Fix Requests": "clipboard",
 }
 
 WORKSPACE_SECTIONS = (
     ("Every day", "Start here: attendance, missing punches, and corrections.", (
-        "Today's Attendance", "Attendance Summary", "Punch Log", "Attendance Records", "Attendance Fix Requests",
+        "Today's Attendance", "Attendance Summary", "Mobile Attendance", "Live Locations", "Punch Log", "Attendance Records", "Attendance Fix Requests",
+    )),
+    ("Field & mobile", "Use GPS, field duties, live positions, and biometric evidence without affecting terminal punches.", (
+        "Attendance Policies", "Field Duties", "Location Pings", "Face Match Settings",
     )),
     ("People", "Employees, organization structure, movement, and exits.", (
         "Employee Directory", "Departments", "Designations", "Branches / Locations",
