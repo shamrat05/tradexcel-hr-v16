@@ -1,0 +1,17 @@
+{
+ "doctype":"Page",
+ "name":"tradex-live-locations",
+ "page_name":"tradex-live-locations",
+ "title":"Tradexcel Live Locations",
+ "module":"Tradexcel HR",
+ "standard":"Yes",
+ "roles":[
+  {"role":"System Manager"},
+  {"role":"Tradexcel Owner/Director"},
+  {"role":"Tradexcel HR Manager"},
+  {"role":"Tradexcel HR/Attendance Officer"},
+  {"role":"Tradexcel Factory Supervisor"},
+  {"role":"Tradexcel Branch Manager"},
+  {"role":"Tradexcel Department Manager"}
+ ]
+}
