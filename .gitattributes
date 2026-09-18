@@ -1,0 +1,23 @@
+# Normalize line endings repo-wide.
+#
+# Without this, a Windows checkout rewrites every file with CRLF and `git status`
+# reports the whole tree as modified even though no content changed. That
+# phantom diff previously produced 78 false "modified" files.
+#
+# Rule: LF in the repository AND in the working tree, on every platform.
+* text=auto eol=lf
+
+# Binary assets must never be normalized.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.xlsx binary
+*.xls  binary
+*.zip  binary
+*.woff  binary
+*.woff2 binary
+*.ttf  binary
+*.eot  binary

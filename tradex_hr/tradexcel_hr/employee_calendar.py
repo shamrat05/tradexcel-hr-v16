@@ -87,14 +87,26 @@ def get_employee_calendar(employee: str, month: str | None = None) -> dict:
                 shifts[day.isoformat()] = row.shift_type
             day += timedelta(days=1)
 
-    checkins = dict(frappe.db.sql(
+    checkin_events = {}
+    for row in frappe.db.sql(
         """
-        SELECT DATE(time), COUNT(*) FROM `tabEmployee Checkin`
+        SELECT time, log_type FROM `tabEmployee Checkin`
         WHERE employee = %(employee)s AND time >= %(start)s AND time < %(end)s
-        GROUP BY DATE(time)
+        ORDER BY time
         """,
         {"employee": employee, "start": start, "end": end + timedelta(days=1)},
-    ))
+        as_dict=True,
+    ):
+        checkin_events.setdefault(row.time.date(), []).append((row.time, row.log_type))
+    checkin_summary = {}
+    for day_key, events in checkin_events.items():
+        ins = [moment for moment, log_type in events if log_type == "IN"]
+        outs = [moment for moment, log_type in events if log_type == "OUT"]
+        checkin_summary[day_key] = {
+            "count": len(events),
+            "in_time": min(ins).strftime("%H:%M") if ins else None,
+            "out_time": max(outs).strftime("%H:%M") if outs else None,
+        }
     weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     weekoff_index = weekdays.index(weekly_off) if weekly_off in weekdays else None
 
@@ -105,7 +117,13 @@ def get_employee_calendar(employee: str, month: str | None = None) -> dict:
         key = day.isoformat()
         att = attendance.get(key)
         category, detail = "No Record", ""
-        if key in holidays:
+        if att and att.status in ("Present", "Half Day"):
+            category = att.status
+            flags = [name for name, flag in (("Late", att.late_entry), ("Early exit", att.early_exit)) if flag]
+            if key in holidays:
+                flags.append("worked on holiday/off day (%s)" % holidays[key])
+            detail = ", ".join(flags)
+        elif key in holidays:
             category, detail = "Holiday", holidays[key]
         elif key in leave_days:
             category, detail = "Leave", leave_days[key]
@@ -117,7 +135,7 @@ def get_employee_calendar(employee: str, month: str | None = None) -> dict:
             category = "Weekly Off"
         elif day > today:
             category = "Future"
-        elif int(checkins.get(day, 0)) > 0:
+        elif checkin_summary.get(day, {}).get("count"):
             category = "Punched Only"
             detail = "attendance not generated for this day"
 
@@ -133,10 +151,12 @@ def get_employee_calendar(employee: str, month: str | None = None) -> dict:
             label = category
         legend[label] = color
 
+        summary = checkin_summary.get(day, {})
         days.append({
             "date": key, "day": day.day, "category": category, "label": label,
             "color": color, "detail": detail,
-            "shift": shifts.get(key, ""), "checkins": int(checkins.get(day, 0)),
+            "shift": shifts.get(key, ""), "checkins": int(summary.get("count") or 0),
+            "in_time": summary.get("in_time"), "out_time": summary.get("out_time"),
         })
         day += timedelta(days=1)
 

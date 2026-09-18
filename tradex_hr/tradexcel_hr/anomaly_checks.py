@@ -316,11 +316,47 @@ def check_missing_tax_slab(context):
     )]
 
 
+def check_employee_without_shift_assignment(context):
+    findings = []
+    for row in context.get("no_shift_assignment", []):
+        findings.append(_finding(
+            "Attendance", "High", "Employee", row.get("employee_name") or row["employee"],
+            row["employee"], "Shift assignment missing",
+            "no active Shift Assignment",
+            "Every active employee needs a shift to derive late/absent",
+            "missing",
+            "Without an assigned shift, device punches cannot be turned into "
+            "late/early/absent and this employee's days stay uncounted by rule.",
+            "Create a Shift Assignment for this employee with the correct shift and window",
+        ))
+    return findings
+
+
+def check_attendance_without_shift_link(context):
+    data = context.get("attendance_no_shift") or {}
+    total = int(data.get("total") or 0)
+    rows = int(data.get("rows") or 0)
+    if not total or not rows:
+        return []
+    pct = rows * 100.0 / total
+    return [_finding(
+        "Attendance", "Medium", "Company", context.get("company_name") or "", "",
+        "Attendance rows not linked to a shift",
+        f"{rows:,} of {total:,} rows in the period",
+        "Attendance should reference the shift it was counted against",
+        f"{pct:.0f}%",
+        "Without a shift link, late/early/absent cannot be re-derived or audited from punches.",
+        "Link shifts on attendance records (backfill) or enable shift-based auto attendance",
+    )]
+
+
 CHECKS = (
     ("Checkin", check_unpaired_punches),
     ("Checkin", check_shift_duration_outliers),
     ("Checkin", check_punch_trend_outliers),
     ("Attendance", check_present_without_punch),
+    ("Attendance", check_employee_without_shift_assignment),
+    ("Attendance", check_attendance_without_shift_link),
     ("Payroll", check_slip_arithmetic),
     ("Payroll", check_zero_gross_with_punches),
     ("Payroll", check_duplicate_slips),

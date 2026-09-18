@@ -14,12 +14,37 @@ import frappe
 import requests
 
 
+LOCAL_BRIDGE_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def _require_post():
+    request = getattr(frappe, "request", None)
+    if request and getattr(request, "method", "POST") != "POST":
+        raise frappe.PermissionError("This device action requires POST")
+
+
+def _require_permission(doc, ptype: str):
+    doc.check_permission(ptype)
+
+
 def _bridge_url(value: str) -> str:
     parsed = urlparse(str(value or "").strip())
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise frappe.ValidationError("Bridge URL must be an absolute http:// or https:// URL")
     if parsed.username or parsed.password or ".." in parsed.path:
         raise frappe.ValidationError("Bridge URL contains unsupported path or credentials")
+    hostname = (parsed.hostname or "").rstrip(".").lower()
+    allowed = frappe.conf.get("tradex_allowed_bridge_hosts") or []
+    if isinstance(allowed, str):
+        allowed = [item.strip() for item in allowed.split(",") if item.strip()]
+    allowed = LOCAL_BRIDGE_HOSTS | {str(item).rstrip(".").lower() for item in allowed}
+    if hostname not in allowed:
+        raise frappe.ValidationError(
+            "Bridge host is not allowlisted. Add the exact HTTPS host to "
+            "tradex_allowed_bridge_hosts in site configuration."
+        )
+    if hostname not in LOCAL_BRIDGE_HOSTS and parsed.scheme != "https":
+        raise frappe.ValidationError("A non-local bridge must use HTTPS")
     return str(value).rstrip("/")
 
 
@@ -40,7 +65,9 @@ def _payload(doc) -> dict:
 
 @frappe.whitelist()
 def push_device_configuration(device_name: str) -> dict:
+    _require_post()
     doc = frappe.get_doc("Tradexcel Biometric Device", device_name)
+    _require_permission(doc, "write")
     bridge_url = _bridge_url(doc.bridge_url)
     headers = {"Accept": "application/json"}
     api_key = _api_key(doc)
@@ -49,27 +76,35 @@ def push_device_configuration(device_name: str) -> dict:
     try:
         response = requests.post(
             f"{bridge_url}/api/v1/devices/{quote(doc.device_serial, safe='')}/configure",
-            json=_payload(doc), headers=headers, timeout=(5, 20),
+            json=_payload(doc), headers=headers, timeout=(5, 20), allow_redirects=False,
         )
         response.raise_for_status()
         result = response.json()
     except (requests.RequestException, ValueError) as exc:
         doc.db_set({"last_sync_status": "Error", "last_sync_error": str(exc)[:500]}, update_modified=False)
         raise frappe.ValidationError(f"Bridge configuration failed: {exc}") from exc
-    doc.db_set({"last_sync_status": "Healthy", "last_sync_error": ""}, update_modified=False)
+    status = "Warning" if (
+        isinstance(result, dict)
+        and result.get("terminal_configuration_status") == "manual_required"
+    ) else "Healthy"
+    doc.db_set({"last_sync_status": status, "last_sync_error": ""}, update_modified=False)
     return result
 
 
 @frappe.whitelist()
 def check_device_bridge(device_name: str) -> dict:
+    _require_post()
     doc = frappe.get_doc("Tradexcel Biometric Device", device_name)
+    _require_permission(doc, "write")
     bridge_url = _bridge_url(doc.bridge_url)
     headers = {"Accept": "application/json"}
     api_key = _api_key(doc)
     if api_key:
         headers["X-API-Key"] = api_key
     try:
-        response = requests.get(f"{bridge_url}/health", headers=headers, timeout=(5, 15))
+        response = requests.get(
+            f"{bridge_url}/health", headers=headers, timeout=(5, 15), allow_redirects=False
+        )
         response.raise_for_status()
         result = response.json()
     except (requests.RequestException, ValueError) as exc:
@@ -86,6 +121,7 @@ def assign_employee_biometric(
     source: str = "Manual", source_reference: str = "",
 ) -> dict:
     """Assign a PIN to one terminal without allowing same-device ownership conflicts."""
+    _require_post()
     employee_name = str(employee or "").strip()
     device_name = str(device or "").strip()
     pin = str(biometric_id or "").strip()
@@ -121,6 +157,8 @@ def assign_employee_biometric(
             f"to {existing.employee}"
         )
     if existing:
+        if not frappe.has_permission("Tradexcel Employee Biometric", "write", existing.name):
+            raise frappe.PermissionError("You cannot change this biometric assignment")
         frappe.db.set_value(
             "Tradexcel Employee Biometric", existing.name,
             {"enabled": 1, "enrollment_status": "Pending"},
@@ -128,6 +166,8 @@ def assign_employee_biometric(
         )
         assignment_name = existing.name
     else:
+        if not frappe.has_permission("Tradexcel Employee Biometric", "create"):
+            raise frappe.PermissionError("You cannot create biometric assignments")
         assignment = frappe.get_doc({
             "doctype": "Tradexcel Employee Biometric",
             "employee": employee_name,
@@ -163,6 +203,7 @@ def transfer_employee_biometric(
     Frappe records the target PIN only after the bridge accepts the job. Raw
     face/fingerprint templates never pass through the browser or Frappe DB.
     """
+    _require_post()
     employee_name = str(employee or "").strip()
     source_name = str(source_device or "").strip()
     target_name = str(target_device or "").strip()
@@ -176,7 +217,7 @@ def transfer_employee_biometric(
     source_doc = frappe.get_doc("Tradexcel Biometric Device", source_name)
     target_doc = frappe.get_doc("Tradexcel Biometric Device", target_name)
     source_doc.check_permission("read")
-    target_doc.check_permission("read")
+    target_doc.check_permission("write")
     source_serial = str(source_doc.device_serial or "").strip()
     target_serial = str(target_doc.device_serial or "").strip()
     if not source_serial or not target_serial:
@@ -250,6 +291,7 @@ def assign_biometric_id(employee: str, biometric_id: str) -> dict:
     Multi-device installations must use ``assign_employee_biometric`` so a
     global Employee PIN can never be mistaken for a terminal assignment.
     """
+    _require_post()
     devices = frappe.get_all(
         "Tradexcel Biometric Device",
         filters={"enabled": 1},

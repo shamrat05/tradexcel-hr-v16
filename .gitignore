@@ -35,6 +35,12 @@ backups/
 *export*.csv
 *payroll*.csv
 
+# Local agent configuration. The locked-down audit profile is versioned at
+# tasks/audits/opencode.readonly.json and copied here only while auditing, so
+# the active file must never be committed.
+opencode.json
+opencode.jsonc
+
 # Historical one-off utilities are not deployable production modules.
 # The employee cleanup contains real identifiers; the importer reads prototype data.
 tradex_hr/tradexcel_hr/cleanup_false_import_employees.py

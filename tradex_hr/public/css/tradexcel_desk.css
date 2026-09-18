@@ -1,0 +1,28 @@
+/* Keep Desk usable on wide laptop and desktop screens. Frappe's default
+   centred max-width wastes space for HR lists, reports and action boards. */
+.page-container,
+.page-container > .container,
+.layout-main-section-wrapper,
+.layout-main-section,
+.workspace-page,
+.workspace-container {
+	max-width: none !important;
+	width: 100% !important;
+}
+
+.page-container {
+	padding-left: 24px;
+	padding-right: 24px;
+}
+
+.layout-main-section {
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+}
+
+@media (max-width: 767px) {
+	.page-container {
+		padding-left: 12px;
+		padding-right: 12px;
+	}
+}

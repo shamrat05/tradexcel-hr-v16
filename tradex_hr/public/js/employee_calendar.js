@@ -1,8 +1,18 @@
-frappe.ui.form.on('Employee', {
-	refresh(frm) {
-		if (frm.is_new()) return;
-		frm.add_custom_button(__('Calendar'), () => show_employee_calendar(frm));
-	}
+// doctype -> how to get the employee to show the calendar for
+const TRADEX_CALENDAR_FORMS = {
+	'Employee': (frm) => ({ employee: frm.doc.name, name: frm.doc.employee_name }),
+	'Attendance': (frm) => ({ employee: frm.doc.employee, name: frm.doc.employee_name }),
+};
+
+Object.keys(TRADEX_CALENDAR_FORMS).forEach((doctype) => {
+	frappe.ui.form.on(doctype, {
+		refresh(frm) {
+			if (frm.is_new()) return;
+			const target = TRADEX_CALENDAR_FORMS[doctype](frm);
+			if (!target.employee) return;
+			frm.add_custom_button(__('Calendar'), () => show_employee_calendar(target.employee, target.name));
+		},
+	});
 });
 
 const EMPLOYEE_CALENDAR_COLORS = {
@@ -19,20 +29,21 @@ const EMPLOYEE_CALENDAR_COLORS = {
 };
 
 function shift_calendar_month(month, delta) {
-	const parsed = new Date(month + '-01T00:00:00');
-	parsed.setMonth(parsed.getMonth() + delta);
-	return parsed.toISOString().slice(0, 7);
+	const parts = month.split('-');
+	const total = Number(parts[0]) * 12 + (Number(parts[1]) - 1) + delta;
+	const year = Math.floor(total / 12);
+	const month_index = (total % 12) + 1;
+	return `${year}-${String(month_index).padStart(2, '0')}`;
 }
 
-function show_employee_calendar(frm) {
-	frm.doc.__calendar_month = frappe.datetime.get_today().slice(0, 7);
-	const dialog = new frappe.ui.Dialog({ title: __('{0} Calendar', [frm.doc.employee_name || frm.doc.name]), size: 'extra-large' });
+function show_employee_calendar(employee, employee_name) {
+	let month = frappe.datetime.get_today().slice(0, 7);
+	const dialog = new frappe.ui.Dialog({ title: __('{0} Calendar', [employee_name || employee]), size: 'extra-large' });
 
 	const render = () => {
-		const month = frm.doc.__calendar_month;
 		frappe.call({
 			method: 'tradex_hr.tradexcel_hr.employee_calendar.get_employee_calendar',
-			args: { employee: frm.doc.name, month },
+			args: { employee: employee, month },
 		}).then((response) => {
 			const data = response.message;
 			if (!data) return;
@@ -52,11 +63,12 @@ function show_employee_calendar(frm) {
 				const color = entry.color || '#ffffff';
 				const outline = entry.date === data.today ? 'outline:2px solid #2490ef;' : '';
 				const detailLine = [entry.detail, entry.shift].filter(Boolean).join(' · ');
-				html += `<td style="background:${color};${outline}height:86px;vertical-align:top;color:#1f2933;padding:6px">
+				html += `<td style="background:${color};${outline}height:92px;vertical-align:top;color:#1f2933;padding:6px">
 					<div style="font-size:15px;font-weight:700">${entry.day}</div>
-					<div style="font-size:12px;font-weight:600">${__(entry.category)}</div>
-					${detailLine ? `<div style="font-size:11px;line-height:1.4">${frappe.utils.escape_html(detailLine)}</div>` : ''}
-					${entry.checkins ? `<div style="font-size:11px;color:#4b5563">${entry.checkins} ${__('punch(es)')}</div>` : ''}</td>`;
+					<div style="font-size:12px;font-weight:600">${__(entry.label || entry.category)}</div>
+					${entry.in_time ? `<div style="font-size:12px;color:#14532d"><b>${entry.in_time}</b> – ${entry.out_time || '…'}</div>` : ''}
+					${detailLine && !entry.in_time ? `<div style="font-size:11px;line-height:1.4">${frappe.utils.escape_html(detailLine)}</div>` : ''}
+					${entry.checkins ? `<div style="font-size:10px;color:#4b5563">${entry.checkins} ${__('punch(es)')}</div>` : ''}</td>`;
 				if ((first_dow + index + 1) % 7 === 0) html += '</tr><tr>';
 			});
 			html += '</tr></tbody></table>';
@@ -67,7 +79,7 @@ function show_employee_calendar(frm) {
 			dialog.$body.html(html);
 			dialog.$body.find('[data-nav]').on('click', (event) => {
 				const nav = event.currentTarget.dataset.nav;
-				frm.doc.__calendar_month = nav === 'today'
+				month = nav === 'today'
 					? frappe.datetime.get_today().slice(0, 7)
 					: shift_calendar_month(month, nav === 'next' ? 1 : -1);
 				render();
