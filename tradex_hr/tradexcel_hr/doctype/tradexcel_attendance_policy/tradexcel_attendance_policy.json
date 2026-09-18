@@ -1,0 +1,43 @@
+{
+ "doctype":"DocType",
+ "name":"Tradexcel Attendance Policy",
+ "module":"Tradexcel HR",
+ "engine":"InnoDB",
+ "autoname":"field:policy_name",
+ "field_order":["policy_name","enabled","company","branch","department","designation","employee_category","employee","effective_from","effective_to","attendance_mode","outside_action","require_gps","require_selfie","face_match_enabled","tracking_mode","tracking_interval_minutes","retention_days","allowance_mode","rate_per_km","fixed_area_amount","allowance_multiplier","max_km_per_day","allowance_requires_approval","notes"],
+ "fields":[
+  {"fieldname":"policy_name","fieldtype":"Data","label":"Policy Name","reqd":1,"unique":1,"in_list_view":1},
+  {"fieldname":"enabled","fieldtype":"Check","label":"Enabled","default":"1","in_list_view":1},
+  {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
+  {"fieldname":"branch","fieldtype":"Link","label":"Branch"},
+  {"fieldname":"department","fieldtype":"Link","label":"Department"},
+  {"fieldname":"designation","fieldtype":"Link","label":"Designation"},
+  {"fieldname":"employee_category","fieldtype":"Select","label":"Employee Category","options":"All\u000aWorker\u000aStaff","default":"All"},
+  {"fieldname":"employee","fieldtype":"Link","label":"Employee","options":"Employee"},
+  {"fieldname":"effective_from","fieldtype":"Date","label":"Effective From","reqd":1,"in_list_view":1},
+  {"fieldname":"effective_to","fieldtype":"Date","label":"Effective To"},
+  {"fieldname":"attendance_mode","fieldtype":"Select","label":"Attendance Mode","options":"Office Only\u000aField Only\u000aHybrid\u000aWork From Home","default":"Office Only","reqd":1,"in_list_view":1},
+  {"fieldname":"outside_action","fieldtype":"Select","label":"Outside Location","options":"Accept\u000aFlag\u000aBlock","default":"Flag","reqd":1},
+  {"fieldname":"require_gps","fieldtype":"Check","label":"Require GPS","default":"0"},
+  {"fieldname":"require_selfie","fieldtype":"Check","label":"Require Selfie","default":"0"},
+  {"fieldname":"face_match_enabled","fieldtype":"Check","label":"Enable Face Match","default":"0"},
+  {"fieldname":"tracking_mode","fieldtype":"Select","label":"Location Tracking","options":"Check-in/out Only\u000aActive Duty Pings","default":"Check-in/out Only","reqd":1},
+  {"fieldname":"tracking_interval_minutes","fieldtype":"Int","label":"Ping Interval (Minutes)","default":"15"},
+  {"fieldname":"retention_days","fieldtype":"Int","label":"Evidence Retention (Days)","default":"90"},
+  {"fieldname":"allowance_mode","fieldtype":"Select","label":"Allowance Mode","options":"None\u000aPer Km\u000aFixed Area\u000aManual","default":"None","reqd":1},
+  {"fieldname":"rate_per_km","fieldtype":"Currency","label":"Rate per Km","default":"0"},
+  {"fieldname":"fixed_area_amount","fieldtype":"Currency","label":"Fixed Area Amount","default":"0"},
+  {"fieldname":"allowance_multiplier","fieldtype":"Float","label":"Allowance Multiplier","default":"1"},
+  {"fieldname":"max_km_per_day","fieldtype":"Float","label":"Maximum Km per Day"},
+  {"fieldname":"allowance_requires_approval","fieldtype":"Check","label":"Require Allowance Approval","default":"1"},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"Notes"}
+ ],
+ "is_submittable":1,
+ "permissions":[
+  {"role":"System Manager","read":1,"write":1,"create":1,"submit":1,"cancel":1,"delete":1,"export":1,"print":1,"report":1},
+  {"role":"Tradexcel HR Manager","read":1,"write":1,"create":1,"submit":1,"cancel":1,"export":1,"print":1,"report":1},
+  {"role":"Tradexcel HR/Attendance Officer","read":1,"write":1,"create":1,"export":1,"print":1,"report":1},
+  {"role":"Tradexcel Compliance Auditor","read":1,"export":1,"print":1,"report":1}
+ ],
+ "track_changes":1
+}

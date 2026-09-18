@@ -1014,10 +1014,12 @@ def after_migrate():
     from tradex_hr.branch_setup import ensure_branch_hierarchy
     from tradex_hr.role_setup import ensure_tradex_roles
     from tradex_hr.approval_setup import ensure_tradex_workflows
+    from tradex_hr.field_attendance_setup import ensure_field_attendance_fields
 
     ensure_branch_hierarchy()
     ensure_tradex_roles()
     ensure_tradex_workflows()
+    ensure_field_attendance_fields()
     rename_legacy_dashboard_charts()
     ensure_reports()
     ensure_number_cards()

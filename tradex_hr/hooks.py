@@ -49,6 +49,9 @@ doc_events = {
         "before_save": "tradex_hr.tradexcel_hr.attendance_exceptions.apply_to_attendance",
         "validate": "tradex_hr.tradexcel_hr.attendance_exceptions.sync_scope_fields",
     },
+    "Employee Checkin": {
+        "before_validate": "tradex_hr.tradexcel_hr.field_attendance_service.enrich_mobile_checkin",
+    },
 }
 
 after_install = "tradex_hr.install.after_install"

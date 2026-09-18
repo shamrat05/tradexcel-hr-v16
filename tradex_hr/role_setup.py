@@ -46,6 +46,11 @@ PERMISSION_FIELDS = (
 # These permissions cover Tradexcel HR's custom operational records. Standard
 # HRMS permissions remain managed by HR User/Manager and can be narrowed with
 # User Permissions for a specific company, branch, or department.
+READ_ONLY_PERMS = {"select", "read", "report", "export", "print"}
+EDIT_PERMS = READ_ONLY_PERMS | {"write", "create"}
+SUBMIT_PERMS = EDIT_PERMS | {"submit"}
+APPROVE_PERMS = READ_ONLY_PERMS | {"write", "submit", "cancel"}
+
 CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     "Tradexcel Biometric Device": {
         "Tradexcel Owner/Director": {"read", "report", "export", "print"},
@@ -63,12 +68,27 @@ CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Compliance Auditor": {"read", "report", "export", "print"},
         "Tradexcel Import Reviewer": {"read", "write", "report", "export", "print"},
     },
+    "Tradexcel Attendance Policy": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit", "cancel"},
+        "Tradexcel HR/Attendance Officer": EDIT_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Field Duty": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit", "cancel"},
+        "Tradexcel HR/Attendance Officer": EDIT_PERMS,
+        "Tradexcel Factory Supervisor": EDIT_PERMS | {"submit"},
+        "Tradexcel Branch Manager": EDIT_PERMS | {"submit"},
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Location Ping": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+        "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
 }
-
-READ_ONLY_PERMS = {"select", "read", "report", "export", "print"}
-EDIT_PERMS = READ_ONLY_PERMS | {"write", "create"}
-SUBMIT_PERMS = EDIT_PERMS | {"submit"}
-APPROVE_PERMS = READ_ONLY_PERMS | {"write", "submit", "cancel"}
 
 # Core HRMS access for the custom roles. Record-level restriction is applied
 # separately with Frappe User Permissions (company, branch, or department), so
@@ -92,7 +112,8 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": READ_ONLY_PERMS,
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
-        "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
+        "Tradexcel Employee/Worker": {"create"},
+        "Tradexcel Factory Supervisor": READ_ONLY_PERMS | {"create"},
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
         "Tradexcel Device/IT Administrator": READ_ONLY_PERMS,

@@ -1,0 +1,26 @@
+{
+ "doctype":"DocType",
+ "autoname":"field:sync_id",
+ "module":"Tradexcel HR",
+ "name":"Tradexcel Location Ping",
+ "engine":"InnoDB",
+ "field_order":["sync_id","employee","company","field_duty","ping_time","latitude","longitude","accuracy_m","source"],
+ "fields":[
+  {"fieldname":"sync_id","fieldtype":"Data","label":"Sync ID","reqd":1,"unique":1,"read_only":1},
+  {"fieldname":"employee","fieldtype":"Link","label":"Employee","options":"Employee","reqd":1,"in_list_view":1},
+  {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
+  {"fieldname":"field_duty","fieldtype":"Link","label":"Field Duty","options":"Tradexcel Field Duty","reqd":1,"in_list_view":1},
+  {"fieldname":"ping_time","fieldtype":"Datetime","label":"Ping Time","reqd":1,"in_list_view":1},
+  {"fieldname":"latitude","fieldtype":"Float","label":"Latitude","reqd":1},
+  {"fieldname":"longitude","fieldtype":"Float","label":"Longitude","reqd":1},
+  {"fieldname":"accuracy_m","fieldtype":"Float","label":"Accuracy (m)"},
+  {"fieldname":"source","fieldtype":"Data","label":"Source","read_only":1}
+ ],
+ "permissions":[
+  {"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"export":1,"print":1,"report":1},
+  {"role":"Tradexcel HR Manager","read":1,"write":1,"create":1,"export":1,"print":1,"report":1},
+  {"role":"Tradexcel HR/Attendance Officer","read":1,"create":1,"export":1,"print":1,"report":1},
+  {"role":"Tradexcel Compliance Auditor","read":1,"export":1,"print":1,"report":1}
+ ],
+ "track_changes":1
+}
