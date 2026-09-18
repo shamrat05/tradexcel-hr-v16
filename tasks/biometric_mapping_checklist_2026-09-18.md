@@ -212,8 +212,52 @@ versioned app's 28 `as_dict=True` queries found **no other instances** — the
 three candidates were false positives (a locally-built dict, a projection that
 does include the key, and a Frappe child-document row).
 
-The fix is **valid**, but it is **not durable**: see the version-control warning
-above. Until the runtime is packaged, this fix exists only on this machine.
+The fix is **valid** — and now **durable**. See the packaging note below.
+
+## Durability — resolved
+
+`sync/` is not a git repository, so the fix previously existed only on this
+machine. The biometric runtime has now been packaged into the app:
+
+| Canonical (versioned) | Purpose |
+| --- | --- |
+| `tradex_hr/tradexcel_hr/biometric/worker.py` | the worker (fixed) |
+| `tradex_hr/tradexcel_hr/biometric/state_store.py` | sync state store |
+| `tradex_hr/tests/test_biometric_worker_contract.py` | contract guard |
+| `tradex_hr/tests/test_reliable_bridge.py`, `test_state_store.py` | were unversioned in `sync/` |
+
+`sync/reliable_bridge_worker.py` and `sync/state_store.py` are now **thin shims**
+that import the app modules, so `start_biometric_bridge.bat` and the existing
+launchers keep working unchanged. Verified after the move:
+
+- `../env/bin/python ../sync/reliable_bridge_worker.py --help` → OK
+- `from reliable_bridge_worker import process_punches` resolves to
+  `tradex_hr.tradexcel_hr.biometric.worker`
+- the unversioned `sync/` tests still pass through the shim (10 passed)
+- the versioned app suite: **13 passed**
+
+The contract guard is **negatively tested**: reintroducing
+`employee["name"]` makes it fail with `KeyError`, and restoring the fix returns
+the file to `sha256 361f1735…`.
+
+### Two findings from this work
+
+1. **There are 31 test files in `sync/`, all unversioned** — not "zero tests" as
+   previously recorded. They exercise app code (payroll rules, deduction rules,
+   role safety, reports). Three are now versioned; the remaining 28 still live
+   only on this machine and nothing runs them.
+2. **The launcher runs the *unhardened* bridge.** `start_biometric_bridge.bat`
+   starts `Desktop\Projects\SenseFace-HRMS-Bridge`, which is on `main`
+   (`c4839d5`). The hardened branch `fix/bridge-ingress-hardening` (`66a3bd9`)
+   sits in the *other* folder, `Desktop\SenseFace-HRMS-Bridge`. So the security
+   fixes are not the code that runs.
+
+### Still not packaged
+
+- `sync/run_payroll.py` and the remaining runtime scripts. Deliberately staged:
+  payroll touches money and `run_payroll` is imported by four other scripts, so
+  it needs its own careful pass.
+- The remaining 28 unversioned tests.
 
 ## What I cannot prove without the device
 
