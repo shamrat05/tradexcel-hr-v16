@@ -13,3 +13,8 @@ build-backend = "flit_core.buildapi"
 frappe = ">=15.0.0,<16.0.0"
 erpnext = ">=15.0.0,<16.0.0"
 hrms = ">=15.0.0,<16.0.0"
+
+[project.optional-dependencies]
+# PyYAML reads tradex_hr/tradexcel_hr/salary_setup.yaml. It ships with Frappe,
+# so this is documentation rather than a new install.
+salary-config = ["PyYAML>=6.0"]

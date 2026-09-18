@@ -1,0 +1,149 @@
+# Tradexcel salary configuration — single source of truth.
+#
+# Consumed by `tradex_hr.tradexcel_hr.salary_setup.ensure_salary_setup()`.
+# Declarative: change this file, re-run the installer, the site converges.
+# Nothing is hardcoded in Python.
+#
+# Derived from the Tradexcel data in the VPS backup
+# (selevo_postgres_all.sql.gz, database `selevohr`, organisation slug `tradex`).
+#
+# FIELD MAPPING NOTE
+# The Selevo model had `is_basic` and `is_gratuity_base`. **Frappe has neither**,
+# and inventing custom fields for them would be wrong. The real equivalents are:
+#   Selevo is_basic          -> Employee/HRMS identifies basic via the structure;
+#                               here we only mark tax treatment.
+#   Selevo is_gratuity_base  -> no Frappe field; gratuity is computed by HRMS's
+#                               own Gratuity tooling, not flagged per component.
+#   Selevo is_taxable        -> `is_tax_applicable` (component) and
+#                               `exempted_from_income_tax`.
+# So only fields that actually exist are set below.
+
+version: 2
+company: Tradexcel Ceramics Ltd.
+currency: BDT
+
+# ---------------------------------------------------------------------------
+# SALARY COMPONENTS — global masters, created once, reused by every structure.
+# A structure references these; it does not own them.
+# ---------------------------------------------------------------------------
+components:
+  - name: Basic Salary
+    abbr: BS
+    type: Earning
+    description: >-
+      Core pay, 60% of gross under the TCL Standard split.
+    fields:
+      is_tax_applicable: true
+
+  - name: House Rent Allowance
+    abbr: HRA
+    type: Earning
+    description: 30% of gross.
+    fields:
+      # VPS recorded this as not taxable. Confirm with the tax decision before
+      # relying on it; the register still shows 0 Income Tax Slabs configured.
+      is_tax_applicable: false
+      exempted_from_income_tax: true
+
+  - name: Medical Allowance
+    abbr: MED
+    type: Earning
+    description: 5% of gross.
+    fields:
+      is_tax_applicable: false
+      exempted_from_income_tax: true
+
+  - name: Conveyance Allowance
+    abbr: CON
+    type: Earning
+    description: 5% of gross.
+    fields:
+      is_tax_applicable: false
+      exempted_from_income_tax: true
+
+  - name: Entertainment Allowance
+    abbr: ENT
+    type: Earning
+    description: >-
+      In the structure but zero by default. Individuals who genuinely receive it
+      are handled with an Additional Salary — dated, auditable, cancellable —
+      rather than a separate structure. VPS: 64 of 66 staff were zero, one 2,000.
+    fields:
+      remove_if_zero_valued: true
+
+  - name: Daily Wage
+    abbr: DW
+    type: Earning
+    description: >-
+      Factory workers only: gross daily rate x attendance days. The rate is a
+      gross per day (Tk 350), not a split.
+    fields:
+      depends_on_payment_days: true
+
+  - name: Overtime Pay
+    abbr: OT
+    type: Earning
+    description: Paid overtime; rate and thresholds come from the Payroll Policy.
+    fields:
+      remove_if_zero_valued: true
+
+# ---------------------------------------------------------------------------
+# SALARY STRUCTURES — templates, NOT per person.
+# The per-person amount lives on the Salary Structure Assignment's `base`.
+# ---------------------------------------------------------------------------
+structures:
+  - name: TCL Standard
+    description: >-
+      Salaried staff. Gross splits 60% Basic / 30% HRA / 5% Medical /
+      5% Conveyance, derived from `base` (the assignment's gross).
+    pay_basis: Monthly Salary
+    earnings:
+      - component: Basic Salary
+        formula: base * 0.6
+      - component: House Rent Allowance
+        formula: base * 0.3
+      - component: Medical Allowance
+        formula: base * 0.05
+      - component: Conveyance Allowance
+        formula: base * 0.05
+      - component: Entertainment Allowance
+        amount: 0
+
+  - name: TCL Daily Wage
+    description: >-
+      Factory workers. Gross daily rate x attendance days; no percentage split.
+    pay_basis: Daily Wage
+    earnings:
+      - component: Daily Wage
+        formula: base * payment_days
+      - component: Overtime Pay
+        amount: 0
+
+  # Same components and formulas as TCL Standard, different legal entity. Frappe
+  # validates that a Salary Structure's company matches the employee's, so a
+  # shared structure cannot be used across companies even though the arithmetic
+  # is identical. The components themselves are still global and reused — only
+  # the structure wrapper differs.
+  - name: EFL Standard
+    company: Elegance Footwear Ltd.
+    description: >-
+      Salaried staff of Elegance Footwear Ltd. Identical split to TCL Standard
+      (60/30/5/5) and reuses the same global Salary Components.
+    pay_basis: Monthly Salary
+    earnings:
+      - component: Basic Salary
+        formula: base * 0.6
+      - component: House Rent Allowance
+        formula: base * 0.3
+      - component: Medical Allowance
+        formula: base * 0.05
+      - component: Conveyance Allowance
+        formula: base * 0.05
+      - component: Entertainment Allowance
+        amount: 0
+
+# ---------------------------------------------------------------------------
+# RETIRED — deactivate if unused; never delete.
+# ---------------------------------------------------------------------------
+retired_structures:
+  - TCL Base
