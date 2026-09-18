@@ -39,12 +39,13 @@ frappe.provide("frappe.ui.tradex_hr");
 	};
 
 	frappe.ui.tradex_hr.render = function () {
-		// The notifications / help / user menus live in this list.
-		// NOTE: the <header> element itself carries the `navbar` class, so the
-		// selector must be `header.navbar` — `header .navbar` (descendant)
-		// matches nothing.
-		const $nav = $("header.navbar ul.navbar-nav").first();
-		if (!$nav.length) return;
+		// There are TWO `ul.navbar-nav` elements: `#navbar-breadcrumbs` also
+		// carries that class, and Frappe re-renders breadcrumbs on every route
+		// change — injecting there makes the button vanish immediately. Anchor
+		// on the user dropdown instead, which lives in the list that actually
+		// holds the notifications / help / user menus.
+		const $nav = $("#toolbar-user").closest("ul.navbar-nav");
+		if (!$nav.length) return false;
 
 		$nav.find(SEL).remove();
 
@@ -64,10 +65,28 @@ frappe.provide("frappe.ui.tradex_hr");
 
 		$li.find("button").on("click", frappe.ui.tradex_hr.toggle_theme);
 		$nav.prepend($li);
+		return true;
 	};
 
-	$(document).on("toolbar_setup", frappe.ui.tradex_hr.render);
-	$(document).on("page-change", function () {
-		setTimeout(frappe.ui.tradex_hr.render, 0);
+	// Rendering once is not enough. `app_include_js` and the Toolbar
+	// constructor both run during desk boot and their relative order is not
+	// guaranteed, so `toolbar_setup` may already have fired before this file
+	// executed — in which case a one-shot listener never runs. Poll briefly
+	// until the navbar exists, and re-arm on every `page-change`.
+	frappe.ui.tradex_hr.ensure = function (attempt) {
+		attempt = attempt || 0;
+		if (frappe.ui.tradex_hr.render()) return;
+		if (attempt < 40) {
+			setTimeout(function () {
+				frappe.ui.tradex_hr.ensure(attempt + 1);
+			}, 250);
+		}
+	};
+
+	$(function () {
+		frappe.ui.tradex_hr.ensure();
+	});
+	$(document).on("toolbar_setup page-change", function () {
+		frappe.ui.tradex_hr.ensure();
 	});
 })();
