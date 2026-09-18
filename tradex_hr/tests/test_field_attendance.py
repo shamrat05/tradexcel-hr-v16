@@ -10,6 +10,7 @@ from tradex_hr.tradexcel_hr.field_attendance import (
     location_status,
     validate_coordinates,
     validate_gps_quality,
+    track_distance_km,
 )
 
 
@@ -65,6 +66,15 @@ def test_allowance_is_configurable_and_capped():
     assert result["amount"] == 150
     assert calculate_allowance("Fixed Area", fixed_amount=75)["amount"] == 75
     assert calculate_allowance("None", distance_km=100, rate_per_km=100)["amount"] == 0
+
+
+def test_track_distance_is_time_ordered_and_ignores_bad_points():
+    points = [
+        {"time": "2026-09-19T09:10:00+00:00", "latitude": 23.80, "longitude": 90.42},
+        {"time": "2026-09-19T09:00:00+00:00", "latitude": 23.79, "longitude": 90.41},
+        {"time": "bad", "latitude": 500, "longitude": 500},
+    ]
+    assert track_distance_km(points) == pytest.approx(distance_meters(23.79, 90.41, 23.80, 90.42) / 1000, abs=0.001)
 
 
 def test_impossible_jump_is_a_flag_not_a_rejection():

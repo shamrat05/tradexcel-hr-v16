@@ -16,6 +16,8 @@ from tradex_hr.tradexcel_hr.field_attendance import (
     detect_impossible_jump,
     evaluate_locations,
     location_status,
+    calculate_allowance,
+    track_distance_km,
     validate_gps_quality,
 )
 from tradex_hr.tradexcel_hr.face_match import FaceMatchUnavailable, match_images
@@ -218,6 +220,63 @@ def _claim_event(sync_id, event_type, employee, received_at, device_time=None):
     return None
 
 
+def _duty_points(duty_name, employee_name):
+    points = frappe.get_all(
+        "Employee Checkin",
+        filters={"employee": employee_name, "custom_tradex_field_duty": duty_name},
+        fields=["time", "latitude", "longitude"],
+    )
+    points += frappe.get_all(
+        "Tradexcel Location Ping",
+        filters={"employee": employee_name, "field_duty": duty_name},
+        fields=["ping_time as time", "latitude", "longitude"],
+    )
+    return points
+
+
+def settle_field_duty_allowance(duty_name):
+	"""Create one draft Additional Salary from a completed duty, idempotently."""
+	duty = frappe.get_doc("Tradexcel Field Duty", duty_name)
+	employee = _employee(duty.employee)
+	policy = _policy(employee, duty.duty_date)
+	if policy.allowance_mode in (None, "None", "Manual"):
+		return {"duty": duty.name, "amount": 0, "status": "No automatic allowance"}
+	key = f"field-duty:{duty.name}"
+	existing = frappe.db.get_value("Additional Salary", {"custom_tradex_allowance_key": key}, "name")
+	if existing:
+		return {"duty": duty.name, "amount": frappe.db.get_value("Additional Salary", existing, "amount"), "additional_salary": existing, "status": "Existing"}
+	distance_km = track_distance_km(_duty_points(duty.name, employee.name))
+	result = calculate_allowance(
+		policy.allowance_mode,
+		distance_km=distance_km,
+		rate_per_km=policy.rate_per_km,
+		fixed_amount=policy.fixed_area_amount,
+		multiplier=policy.allowance_multiplier or 1,
+		max_km=policy.max_km_per_day,
+	)
+	if result["amount"] <= 0:
+		return {"duty": duty.name, **result, "status": "Zero allowance"}
+	currency = frappe.db.get_value("Company", employee.company, "default_currency") or "BDT"
+	doc = frappe.get_doc({
+		"doctype": "Additional Salary",
+		"employee": employee.name,
+		"company": employee.company,
+		"salary_component": policy.allowance_salary_component,
+		"amount": result["amount"],
+		"currency": currency,
+		"is_recurring": 0,
+		"payroll_date": duty.duty_date,
+		"ref_doctype": "Tradexcel Field Duty",
+		"ref_docname": duty.name,
+		"custom_tradex_field_duty": duty.name,
+		"custom_tradex_allowance_key": key,
+		"custom_tradex_distance_km": result["distance_km"],
+		"custom_tradex_calculation_note": f"{result['distance_km']} km × {result['rate_per_km']} × {policy.allowance_multiplier or 1}",
+	})
+	doc.insert(ignore_permissions=True)
+	return {"duty": duty.name, **result, "additional_salary": doc.name, "status": "Draft"}
+
+
 def enrich_mobile_checkin(doc, method=None):
     """Enrich explicitly mobile-sourced check-ins; terminal rows are untouched."""
     source = doc.get("custom_tradex_source")
@@ -337,6 +396,13 @@ def mobile_checkin(employee, log_type, latitude=None, longitude=None, accuracy_m
     frappe.db.set_value("Tradex Mobile Event", sync_id, {
         "target_doctype": "Employee Checkin", "target_name": checkin.name, "status": "Created"
     }, update_modified=False)
+    if log_type == "OUT" and field_duty:
+        frappe.enqueue(
+            "tradex_hr.tradexcel_hr.field_attendance_service.settle_field_duty_allowance",
+            duty_name=field_duty,
+            queue="short",
+            enqueue_after_commit=True,
+        )
     return checkin.as_dict()
 
 

@@ -164,6 +164,24 @@ def calculate_allowance(
     }
 
 
+def track_distance_km(points: Iterable[dict[str, Any]]) -> float:
+	"""Sum sequential GPS points in time order, ignoring malformed points."""
+	ordered = []
+	for point in points:
+		try:
+			lat, lon = validate_coordinates(point.get("latitude"), point.get("longitude"))
+			exact_time = _as_utc(point.get("time"))
+			exact_time = exact_time or datetime.min.replace(tzinfo=timezone.utc)
+			ordered.append((exact_time, lat, lon))
+		except (AttributeError, TypeError, ValueError):
+			continue
+	ordered.sort(key=lambda item: item[0])
+	return round(sum(
+		distance_meters(previous[1], previous[2], current[1], current[2])
+		for previous, current in zip(ordered, ordered[1:])
+	) / 1000, 3)
+
+
 def detect_impossible_jump(
     previous: dict[str, Any] | None,
     current: dict[str, Any],

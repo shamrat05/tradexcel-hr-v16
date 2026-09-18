@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
@@ -130,8 +131,52 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "insert_after": "custom_tradex_device_time",
             },
         ],
+        "Additional Salary": [
+            {
+                "fieldname": "custom_tradex_field_duty",
+                "label": "Field Duty",
+                "fieldtype": "Link",
+                "options": "Tradexcel Field Duty",
+                "insert_after": "ref_docname",
+                "read_only": 1,
+            },
+            {
+                "fieldname": "custom_tradex_allowance_key",
+                "label": "Allowance Idempotency Key",
+                "fieldtype": "Data",
+                "insert_after": "custom_tradex_field_duty",
+                "read_only": 1,
+            },
+            {
+                "fieldname": "custom_tradex_distance_km",
+                "label": "Approved Travel (Km)",
+                "fieldtype": "Float",
+                "insert_after": "custom_tradex_allowance_key",
+                "read_only": 1,
+            },
+            {
+                "fieldname": "custom_tradex_calculation_note",
+                "label": "Allowance Calculation",
+                "fieldtype": "Small Text",
+                "insert_after": "custom_tradex_distance_km",
+                "read_only": 1,
+            },
+        ],
     }
 
 
 def ensure_field_attendance_fields() -> None:
     create_custom_fields(_fields(), update=True)
+
+
+def ensure_field_transport_component() -> None:
+    if frappe.db.exists("Salary Component", "Field Transport Allowance"):
+        return
+    frappe.get_doc({
+        "doctype": "Salary Component",
+        "salary_component": "Field Transport Allowance",
+        "salary_component_abbr": "FTA",
+        "type": "Earning",
+        "amount": 0,
+        "is_tax_applicable": 0,
+    }).insert(ignore_permissions=True)

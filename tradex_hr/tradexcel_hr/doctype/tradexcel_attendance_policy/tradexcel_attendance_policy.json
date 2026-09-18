@@ -4,7 +4,7 @@
  "module":"Tradexcel HR",
  "engine":"InnoDB",
  "autoname":"field:policy_name",
- "field_order":["policy_name","enabled","company","branch","department","designation","employee_category","employee","effective_from","effective_to","attendance_mode","outside_action","require_gps","require_selfie","face_match_enabled","tracking_mode","tracking_interval_minutes","retention_days","allowance_mode","rate_per_km","fixed_area_amount","allowance_multiplier","max_km_per_day","allowance_requires_approval","notes"],
+ "field_order":["policy_name","enabled","company","branch","department","designation","employee_category","employee","effective_from","effective_to","attendance_mode","outside_action","require_gps","require_selfie","face_match_enabled","tracking_mode","tracking_interval_minutes","retention_days","allowance_mode","rate_per_km","fixed_area_amount","allowance_multiplier","max_km_per_day","allowance_salary_component","allowance_requires_approval","notes"],
  "fields":[
   {"fieldname":"policy_name","fieldtype":"Data","label":"Policy Name","reqd":1,"unique":1,"in_list_view":1},
   {"fieldname":"enabled","fieldtype":"Check","label":"Enabled","default":"1","in_list_view":1},
@@ -29,7 +29,8 @@
   {"fieldname":"fixed_area_amount","fieldtype":"Currency","label":"Fixed Area Amount","default":"0"},
   {"fieldname":"allowance_multiplier","fieldtype":"Float","label":"Allowance Multiplier","default":"1"},
   {"fieldname":"max_km_per_day","fieldtype":"Float","label":"Maximum Km per Day"},
-  {"fieldname":"allowance_requires_approval","fieldtype":"Check","label":"Require Allowance Approval","default":"1"},
+  {"fieldname":"allowance_salary_component","fieldtype":"Link","label":"Allowance Salary Component","options":"Salary Component","default":"Field Transport Allowance","depends_on":"eval:doc.allowance_mode!='None'"},
+  {"fieldname":"allowance_requires_approval","fieldtype":"Check","label":"Require Allowance Approval","default":"0"},
   {"fieldname":"notes","fieldtype":"Small Text","label":"Notes"}
  ],
  "is_submittable":1,

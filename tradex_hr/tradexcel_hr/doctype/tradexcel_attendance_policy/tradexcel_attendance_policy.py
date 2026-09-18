@@ -21,6 +21,8 @@ class TradexcelAttendancePolicy(Document):
             frappe.throw("Per Km allowance requires a positive rate")
         if self.allowance_mode == "Fixed Area" and float(self.fixed_area_amount or 0) <= 0:
             frappe.throw("Fixed Area allowance requires a positive amount")
+        if self.allowance_mode != "None" and not self.allowance_salary_component:
+            frappe.throw("Select the Salary Component used for travel allowance")
 
     def on_submit(self):
         self.enabled = 1
