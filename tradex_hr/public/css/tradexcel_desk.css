@@ -1,22 +1,25 @@
 /* Keep Desk usable on wide laptop and desktop screens. Frappe's default
    centred max-width wastes space for HR lists, reports and action boards.
 
-   Two rules learned the hard way — do not reintroduce them:
+   Rules learned the hard way — do not reintroduce either:
 
-   1. Do NOT add padding to `.page-container`. In Frappe 15 a desk page IS
-      `.content.page-container`, and both the page head and the sidebar
-      (`.layout-side-section`) live inside it. Padding there shifts the entire
+   1. Do NOT add padding to `.page-container`. A desk page IS
+      `.content.page-container`, and both `.page-head` and the sidebar
+      (`.layout-side-section`) live inside it. Padding there shifts the whole
       page, sidebar included, to the right.
 
-   2. Widen the page head and the page body together. A direct-child selector
-      (`.page-container > .container`) reaches `.container.page-body` but NOT
-      `.page-head > .container`, which then keeps Bootstrap's centred max-width.
-      The header and the content below it end up on different left edges.
+   2. Widen every container TOGETHER. `.page-head > .container` is not matched
+      by a direct-child selector on `.page-container`, and
+      `header.navbar .container` sits outside `.page-container` entirely. Widen
+      some and not the others and the regions land on different left edges —
+      measured as a 148px offset between the navbar brand and the page head at a
+      1600px viewport.
 
-   Widening only is safe: Bootstrap's own container padding still provides the
-   inset, so content never touches the screen edge. */
+   Widening only is safe: Bootstrap's own container padding still supplies the
+   inset, so nothing touches the screen edge. */
 
 .page-container,
+header.navbar .container,
 .page-head > .container,
 .page-body.container,
 .layout-main-section-wrapper,
@@ -30,4 +33,16 @@
 .layout-main-section {
 	margin-left: 0 !important;
 	margin-right: 0 !important;
+}
+
+/* Hide the navbar app logo.
+
+   Nothing sets `app_logo` in Website Settings or Navbar Settings, so
+   frappe.core.doctype.navbar_settings.get_app_logo() falls through to
+   frappe.get_hooks("app_logo_url") and renders ERPNext's "e" above a Tradexcel
+   desk. To show a Tradexcel logo here instead of hiding it, set the logo at
+   Desk > Website > Website Settings > App Logo (that setting takes priority). */
+
+header.navbar .navbar-brand {
+	display: none !important;
 }
