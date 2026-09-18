@@ -175,11 +175,45 @@ the change.
 
 ## Verification performed
 
-1. The worker's own `_employee_map()` query returns **221 unique keys, 0
-   ambiguous**.
-2. `process_punches()` was exercised with the worker's real code path against
-   sample PINs from the backup, with `insert_checkin` stubbed so **nothing was
-   written** — every sampled punch resolved to the correct employee, 0 unmapped.
+Re-validated after the fix, using the worker's **real** code path
+(`_employee_map`, `process_punches`, `_insert_checkin`) with a throwaway state
+database and the check-in writer stubbed, so **nothing is written to Frappe**.
+
+| # | Test | Result |
+| --- | --- | --- |
+| T1 | Resolver returns 221 unique keys, 0 ambiguous | **PASS** |
+| T2 | All 221 real PINs resolve and insert | **PASS** — 221 inserted, 0 failed, 0 unmapped |
+| T3 | Re-running the same batch is idempotent | **PASS** — 221 `already_done`, 0 re-inserted |
+| T4 | Unknown PIN goes to `unmapped`, does not crash | **PASS** |
+| T5 | Correct PIN under the **wrong** device serial does **not** match | **PASS** — device-scoped, as designed |
+| T6 | Every attribution matches the Selevo source of truth | **PASS** — 221 checked, 0 wrong |
+| T7 | Status `1` maps to `log_type = OUT` | **PASS** |
+
+### Regression guard, and proof that it works
+
+`tradex_hr/tests/test_biometric_worker_contract.py` asserts that the resolver's
+value exposes the keys `_insert_checkin` reads, that no `(serial, PIN)` is
+ambiguous, and that the real writer runs against the real resolver shape.
+
+A test that only ever passes proves nothing, so it was **negatively tested**:
+
+| Step | Result |
+| --- | --- |
+| Original (buggy) code + contract test | **FAIL** — `KeyError: 'name'` |
+| Fixed code restored, `sha256` compared | **matches** `5e28e3f0…` |
+
+The guard genuinely catches the regression it exists for.
+
+### Bug-class sweep
+
+Every dict subscript in the worker was checked against its source. All are
+valid, and the only mismatch was the one fixed. The same sweep over the
+versioned app's 28 `as_dict=True` queries found **no other instances** — the
+three candidates were false positives (a locally-built dict, a projection that
+does include the key, and a Frappe child-document row).
+
+The fix is **valid**, but it is **not durable**: see the version-control warning
+above. Until the runtime is packaged, this fix exists only on this machine.
 
 ## What I cannot prove without the device
 
