@@ -6,6 +6,7 @@ app_email = "admin@tradex.com"
 app_license = "MIT"
 
 app_include_css = ["tradex_hr.bundle.css"]
+app_include_js = ["tradex_hr.bundle.js"]
 
 add_to_apps_screen = [{
     "name": "tradex_hr",

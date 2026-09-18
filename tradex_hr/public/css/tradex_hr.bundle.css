@@ -55,6 +55,16 @@ header.navbar .container {
 	padding-right: 15px !important;
 }
 
+/* Frappe sets `scrollbar-gutter: stable`, which reserves the scrollbar's width
+   on the RIGHT only. At stock's centred layout the page gutters were wide enough
+   that this was invisible; with a full-bleed layout the card nearly touches the
+   edges, so the reserved strip made the right gap measure 30px against 15px on
+   the left (measured, sidebar collapsed). Reserving on both edges makes the
+   frame symmetric without moving the navbar out of line with the content. */
+html {
+	scrollbar-gutter: stable both-edges;
+}
+
 /* Hide the navbar app logo.
 
    Nothing sets `app_logo` in Website Settings or Navbar Settings, so
