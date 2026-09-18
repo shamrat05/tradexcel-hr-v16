@@ -1,5 +1,13 @@
 # Tradexcel HR source-only agent rules
 
+## Before deleting or migrating data
+
+**Read `BACKUPS.md` in this repository root first.** It lists every backup with
+exact timestamps, file names, sizes and SHA-256 checksums, including the restore
+point for each destructive operation. Take a fresh `bench backup --with-files` and
+add a row to it before changing data. Note that a `bench restore` has never been
+rehearsed on this machine — see the limitation recorded there.
+
 ## Canonical checkout — do not work anywhere else
 
 - **This checkout is the only one to edit:** `/home/sanchita/frappe-bench/apps/tradex_hr` (WSL). It is the app directory the live bench loads via `~/frappe-bench/sites/apps.txt`, so it is the only tree whose edits affect runtime.
