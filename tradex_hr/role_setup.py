@@ -88,6 +88,9 @@ CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
+    "Tradex Mobile Event": {
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
 }
 
 # Core HRMS access for the custom roles. Record-level restriction is applied
@@ -112,8 +115,8 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": READ_ONLY_PERMS,
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
-        "Tradexcel Employee/Worker": {"create"},
-        "Tradexcel Factory Supervisor": READ_ONLY_PERMS | {"create"},
+        "Tradexcel Employee/Worker": READ_ONLY_PERMS,
+        "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
         "Tradexcel Device/IT Administrator": READ_ONLY_PERMS,
@@ -251,6 +254,15 @@ def ensure_tradex_roles() -> dict[str, int]:
             for role_name, allowed in role_permissions.items():
                 _ensure_permission(doctype, role_name, allowed)
                 permission_count += 1
+
+    # Native HRMS gives the standard Employee role direct Employee Checkin
+    # creation. Mobile attendance must go through the server-side policy API;
+    # the endpoint inserts only after identity and evidence checks.
+    setup_custom_perms("Employee Checkin")
+    for fieldname in ("create", "write", "delete"):
+        update_permission_property(
+            "Employee Checkin", "Employee", 0, fieldname, 0, validate=False
+        )
 
     frappe.clear_cache()
     return {

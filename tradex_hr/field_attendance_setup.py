@@ -117,6 +117,13 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "insert_after": "custom_tradex_location_reason",
             },
             {
+                "fieldname": "custom_tradex_clock_skew_seconds",
+                "label": "Device Clock Skew (seconds)",
+                "fieldtype": "Float",
+                "insert_after": "custom_tradex_device_time",
+                "read_only": 1,
+            },
+            {
                 "fieldname": "custom_tradex_sync_id",
                 "label": "Mobile Sync ID",
                 "fieldtype": "Data",
