@@ -22,7 +22,14 @@ def _load_image(path: str):
 	image = cv2.imread(path)
 	if image is None:
 		raise FaceMatchUnavailable("Face image could not be decoded")
-	return cv2, image
+	return cv2, _prepare_image(image)
+
+
+def _prepare_image(image):
+	"""Normalize camera uploads before YuNet sees high-resolution backgrounds."""
+	import cv2
+
+	return cv2.resize(image, (320, 320), interpolation=cv2.INTER_AREA)
 
 
 def match_images(

@@ -34,7 +34,15 @@ SUPERVISOR_ROLES = {
 
 
 def _category(employee: dict[str, Any]) -> str:
-    return "Worker" if employee.get("employment_type") == "Worker" else "Staff"
+	return "Worker" if employee.get("employment_type") == "Worker" else "Staff"
+
+
+def _device_datetime(value):
+	"""Normalize browser ISO timestamps before writing MariaDB Datetime fields."""
+	if not value:
+		return None
+	parsed = get_datetime(value)
+	return parsed.replace(tzinfo=None) if getattr(parsed, "tzinfo", None) else parsed
 
 
 def _employee(employee: str | dict[str, Any]) -> frappe._dict:
@@ -187,6 +195,17 @@ def _run_face_match(employee: frappe._dict, selfie_url: str) -> dict[str, Any]:
 	)
 
 
+def _face_match_rejection_message(face_result: dict[str, Any]) -> str | None:
+	"""Return a user-facing rejection for a non-matching verified selfie."""
+	if face_result.get("status") == "Matched":
+		return None
+	score = float(face_result.get("score") or 0)
+	threshold = float(face_result.get("threshold") or 0)
+	return _(
+		"Selfie does not match the enrolled face (score {0:.3f}; required {1:.3f})"
+	).format(score, threshold)
+
+
 def _claim_event(sync_id, event_type, employee, received_at, device_time=None):
     """Claim an immutable client event before creating its target document."""
     existing = frappe.db.get_value(
@@ -331,7 +350,10 @@ def enrich_mobile_checkin(doc, method=None):
         try:
             face_result = _run_face_match(employee, doc.custom_tradex_selfie)
         except FaceMatchUnavailable as exc:
-            frappe.throw(_("Face-match provider is not ready: {0}").format(exc))
+            frappe.throw(_("Face verification could not be completed: {0}").format(exc))
+        rejection = _face_match_rejection_message(face_result)
+        if rejection:
+            frappe.throw(rejection)
         doc.custom_tradex_face_match_status = face_result["status"]
         doc.custom_tradex_face_match_score = face_result["score"]
         doc.custom_tradex_location_reason = (
@@ -363,7 +385,7 @@ def mobile_checkin(employee, log_type, latitude=None, longitude=None, accuracy_m
             frappe.throw(_("This sync ID belongs to another employee"), frappe.PermissionError)
         return frappe.get_doc("Employee Checkin", existing.name).as_dict()
     policy = _policy(employee_doc, now_datetime())
-    device_time = get_datetime(time) if time else None
+    device_time = _device_datetime(time)
     if (policy.require_selfie or policy.face_match_enabled) and not selfie:
         frappe.throw(_("This attendance policy requires a selfie"))
     if selfie:
@@ -421,7 +443,7 @@ def location_ping(employee, field_duty, latitude, longitude, accuracy_m=None, pi
             frappe.throw(_("This sync ID belongs to another employee"), frappe.PermissionError)
         return frappe.get_doc("Tradexcel Location Ping", existing.name).as_dict()
     received_at = now_datetime()
-    device_time = get_datetime(ping_time) if ping_time else None
+    device_time = _device_datetime(ping_time)
     duty = _approved_duty(employee_doc, field_duty, getdate(received_at))
     policy = _policy(employee_doc, received_at)
     if policy.tracking_mode != "Active Duty Pings" or not duty.tracking_enabled:

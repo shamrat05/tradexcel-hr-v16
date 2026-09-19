@@ -1,4 +1,4 @@
-frappe.pages["tradex_live_locations"].on_page_load = function (wrapper) {
+frappe.pages["tradex-live-locations"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({parent: wrapper, title: __("Live Locations"), single_column: true});
   const root = $(wrapper).find(".layout-main-section");
   root.html(
