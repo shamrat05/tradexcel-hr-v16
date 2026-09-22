@@ -1,0 +1,90 @@
+# Tradexcel HR v16 staging migration — 2026-09-22
+
+## Scope and safety
+
+- Branch: `feature/hrms-v16-hr-only` (local canonical app repository).
+- Production/current site `hrms.localhost` was not migrated or written.
+- Staging bench: `/home/sanchita/frappe-bench-v16`.
+- Staging site: `hrms-v16.localhost`.
+- Staging MariaDB: separate database on port `3307`.
+- A fresh source backup was taken before migration and recorded in `BACKUPS.md`.
+
+## Runtime installed
+
+| App | Version | Branch |
+|---|---:|---|
+| Frappe | 16.34.0 | version-16 |
+| ERPNext | 16.35.0 | version-16 |
+| Frappe HRMS | 16.19.0 | version-16 |
+| tradex_hr | 0.1.0 | feature/hrms-v16-hr-only |
+
+Frappe HRMS v16 declares ERPNext v16 as a required Frappe dependency. ERPNext is
+therefore installed in the bench even though the user-facing navigation is HR-only;
+removing ERPNext would make HRMS unsupported.
+
+## Source backup
+
+- Database backup: `20260922_121725-hrms_localhost-database.sql.gz`
+- Database SHA-256: `8e62a570fe6a6c430a95b6c8ed7c2f5682c8c2ce9bf2cb4c2d09b30c60d5146f`
+- `gzip -t` passed.
+- Public/private file archives were restored into staging.
+
+The Bench restore wrapper did not populate the isolated database, so the same
+verified dump was imported directly through the staging site's configured DB
+credentials. The source backup remains unchanged.
+
+## Data verification after restore and v16 migration
+
+| DocType | Rows |
+|---|---:|
+| Employee | 242 |
+| Employee Checkin | 22,302 |
+| Attendance | 16,077 |
+| Salary Slip | 0 |
+| Salary Structure Assignment | 227 |
+| Leave Application | 7 |
+| Leave Allocation | 1,190 |
+| Shift Assignment | 237 |
+| Tradexcel Biometric Device | 2 |
+| Tradexcel Employee Biometric | 221 |
+
+The zero Salary Slip count matches the source site at backup time; the migration
+did not invent or recreate payroll slips.
+
+## v16 fixes included
+
+1. App-owned reports, number cards and dashboard charts are custom records, not
+   Frappe standard records. This avoids the v16 runtime rejection “Cannot edit a
+   standard report/chart”. Existing app-owned legacy standard reports are safely
+   converted during migration; records owned by another module are not deleted.
+2. Report roles are normalized into child rows before document construction.
+3. The title-named `Tradexcel HR` workspace is retired. Only the canonical public
+   `tradexcel-hr` workspace remains.
+4. A persistent grouped HR navigation rail is included in the Desk bundle:
+   248px expanded, 64px icon-only collapsed, active route highlighting, keyboard
+   buttons, accessible labels, and grouped Home/People/Time/Leave/Payroll/
+   Operations/Devices/Analytics/Administration links.
+
+## Validation
+
+- v16 asset build passed with Node 24.15.0.
+- Custom app v16 non-site-mutating tests: **130 passed, 6 skipped**.
+- JavaScript syntax check passed with Node 24.
+- Focused dashboard/navigation tests passed.
+- Staging Desk login and `/app/tradexcel-hr` returned HTTP 200 and loaded the
+  hashed `tradex_hr` JS/CSS assets.
+- Chrome DevTools MCP is not configured in this environment, so screenshot,
+  computed-style and accessibility-tree checks remain a manual staging step.
+
+## Remaining gates before any production cutover
+
+1. Push the local branch to the private GitHub app repository after GitHub
+   credentials are available; it has not been pushed from this session.
+2. Repair the legacy integration-test fixture that points to the obsolete
+   Desktop mirror (`/mnt/c/Users/Sanchita/Desktop/hrms.localhost/logs`), then run
+   the integration suite against an explicitly selected staging site.
+3. Perform manual browser checks at laptop width: expanded/collapsed rail,
+   workspace, list, report, form and payroll routes; verify no console errors.
+4. Reconcile payroll/leave business rules and test a draft-only payroll cycle in
+   staging before production cutover.
+5. Take a new production backup immediately before any eventual v16 cutover.
