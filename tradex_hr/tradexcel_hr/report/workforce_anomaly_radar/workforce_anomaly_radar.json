@@ -22,7 +22,15 @@
  "ref_doctype": "Employee",
  "report_name": "Workforce Anomaly Radar",
  "report_type": "Script Report",
- "roles": [],
+ "roles": [
+  {"role": "System Manager"},
+  {"role": "HR Manager"},
+  {"role": "Tradexcel Owner/Director"},
+  {"role": "Tradexcel HR Manager"},
+  {"role": "Tradexcel HR/Attendance Officer"},
+  {"role": "Tradexcel Payroll Manager"},
+  {"role": "Tradexcel Compliance Auditor"}
+ ],
  "snapshot_report": 0,
  "timeout": 0
 }

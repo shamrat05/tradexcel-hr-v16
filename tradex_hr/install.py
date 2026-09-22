@@ -428,13 +428,14 @@ def ensure_standard_script_reports() -> None:
     for report_name in STANDARD_SCRIPT_REPORT_NAMES:
         if frappe.db.exists("Report", report_name):
             doc = frappe.get_doc("Report", report_name)
-            if doc.is_standard == "Yes":
-                continue
-            if doc.module not in (None, "", "Tradexcel HR"):
-                frappe.throw(
-                    f"Cannot repair standard report {report_name!r} owned by module {doc.module!r}"
-                )
-            frappe.delete_doc("Report", report_name, force=True, ignore_permissions=True)
+            if doc.is_standard != "Yes":
+                if doc.module not in (None, "", "Tradexcel HR"):
+                    frappe.throw(
+                        f"Cannot repair standard report {report_name!r} owned by module {doc.module!r}"
+                    )
+                frappe.delete_doc("Report", report_name, force=True, ignore_permissions=True)
+        # Always reload the app-owned JSON so role-table changes self-heal on
+        # existing standard reports without converting them to custom reports.
         frappe.reload_doc("tradexcel_hr", "report", frappe.scrub(report_name), force=True)
 
 NUMBER_CARDS = {

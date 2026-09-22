@@ -85,6 +85,30 @@ def test_python_script_reports_are_app_owned_standard_reports():
     assert all(REPORTS[name].get("is_standard") == "Yes" for name in script_reports)
 
 
+def test_sensitive_standard_reports_have_explicit_non_employee_roles():
+    """Standard reports must not silently become public when roles are empty."""
+    import json
+
+    report_root = Path(__file__).resolve().parents[1] / "tradexcel_hr" / "report"
+    report_files = list(report_root.glob("*/*.json"))
+    definitions = {
+        definition["report_name"]: definition
+        for path in report_files
+        for definition in [json.loads(path.read_text())]
+    }
+    protected = {
+        "Daily Attendance Summary",
+        "Tradexcel Salary Coverage Board",
+        "Biometric ID Audit",
+        "Employee Data Gaps",
+        "Workforce Anomaly Radar",
+    }
+    for name in protected:
+        roles = {row["role"] for row in definitions[name]["roles"]}
+        assert roles
+        assert not roles.intersection({"Employee", "Employee Self Service"})
+
+
 def test_only_canonical_tradexcel_workspace_is_managed():
     assert set(WORKSPACE_NAMES) == {"tradexcel-hr"}
     assert CANONICAL_WORKSPACE_NAME == "tradexcel-hr"

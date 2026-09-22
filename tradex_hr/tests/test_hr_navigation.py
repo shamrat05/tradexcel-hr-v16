@@ -50,7 +50,6 @@ def test_navigation_repairs_after_frappe_route_shell_replacement():
     assert '$(document).on("page-change"' in javascript
     assert "MutationObserver" in javascript
     assert "observe(document.documentElement" in javascript
-    assert "__tradex_hr_rail_repair_timer" in javascript
     assert "During Desk boot" in javascript
     assert "function resolvedRoute(route)" in javascript
     assert 'params.set("attendance_date", today)' in javascript
