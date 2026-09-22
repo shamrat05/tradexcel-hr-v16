@@ -158,6 +158,10 @@ calculate Salary Slip amounts, submit payroll, post accounting, or read raw
 Employee Checkin. A second call returns the existing exact-period native
 Payroll Entry instead of creating another batch.
 
+The native input writer does not bypass Additional Salary permissions. Payroll
+account configuration is checked before any Daily Wage input is written, and
+Payroll Entry creation checks native create permission before insertion.
+
 The native staging integration proved:
 
 ```text
@@ -184,8 +188,8 @@ Current read-only staging inspection for September 2026:
 Phase B verification:
 
 - Focused rerun on 2026-09-23: `FRAPPE_TEST_SITE=hrms-v16.localhost FRAPPE_TEST_SITES_PATH=/home/sanchita/frappe-bench-v16/sites env/bin/pytest apps/tradex_hr/tradex_hr/tests/test_native_payroll.py` from the bench root: **4 passed, 1 warning** (Frappe `txt` deprecation warning).
-- Focused Phase A + Phase B tests: **26 passed, 3 warnings**.
-- Full app suite: **212 passed, 2 skipped, 3 warnings**.
+- Focused Phase A + Phase B tests: **28 passed, 3 warnings**.
+- Full app suite: **214 passed, 2 skipped, 3 warnings**.
 - Compilation: **passed** with `/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q tradex_hr`.
 - `git diff --check`: **passed**.
 - Staging test records: explicitly cleaned; no synthetic records remain.

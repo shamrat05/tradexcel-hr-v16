@@ -194,7 +194,7 @@ def create_daily_wage_input(
         "custom_tradex_payroll_input_key": key,
     })
     try:
-        doc.insert(ignore_permissions=True)
+        doc.insert()
         if submit:
             doc.submit()
     except frappe.DuplicateEntryError:

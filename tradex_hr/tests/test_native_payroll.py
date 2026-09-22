@@ -80,6 +80,54 @@ def test_prepare_reuses_existing_native_payroll_entry(monkeypatch):
     assert result["payroll_entry"] == "PAY-1"
 
 
+def test_prepare_blocks_missing_payroll_account_before_daily_input(monkeypatch):
+    readiness = {
+        "status": "READY",
+        "outcomes": [{"employee": "EMP-DAILY", "employee_data": {}, "pay_basis": {"status": "Daily Wage"}}],
+        "employee_count": 1,
+        "ready_count": 1,
+        "blocked_count": 0,
+    }
+    monkeypatch.setattr(native_payroll, "inspect_native_payroll_readiness", lambda *_args, **_kwargs: readiness)
+    monkeypatch.setattr(native_payroll, "_existing_payroll_entry", lambda *_args: None)
+    monkeypatch.setattr(native_payroll.frappe, "get_cached_value", lambda *_args: (None, None))
+    monkeypatch.setattr(
+        native_payroll,
+        "create_daily_wage_input",
+        lambda *_args: pytest.fail("payroll inputs must not be written without a payable account"),
+    )
+
+    result = native_payroll.prepare_native_payroll("TCL", date(2026, 9, 1), date(2026, 9, 30))
+
+    assert result["status"] == "BLOCKED_PAYROLL_ACCOUNT"
+
+
+def test_prepare_checks_payroll_entry_permission_before_insert(monkeypatch):
+    readiness = {
+        "status": "READY",
+        "outcomes": [{"employee": "EMP-MONTHLY", "employee_data": {}, "pay_basis": {"status": "Monthly Salary"}}],
+        "employee_count": 1,
+        "ready_count": 1,
+        "blocked_count": 0,
+    }
+    monkeypatch.setattr(native_payroll, "inspect_native_payroll_readiness", lambda *_args, **_kwargs: readiness)
+    monkeypatch.setattr(native_payroll, "_existing_payroll_entry", lambda *_args: None)
+    monkeypatch.setattr(native_payroll.frappe, "get_cached_value", lambda *_args: ("BDT", "ACC-PAYABLE"))
+    monkeypatch.setattr(
+        native_payroll.frappe,
+        "has_permission",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(frappe.PermissionError("denied")),
+    )
+    monkeypatch.setattr(
+        native_payroll.frappe,
+        "get_doc",
+        lambda *_args: pytest.fail("Payroll Entry must not be inserted without permission"),
+    )
+
+    with pytest.raises(frappe.PermissionError, match="denied"):
+        native_payroll.prepare_native_payroll("TCL", date(2026, 9, 1), date(2026, 9, 30))
+
+
 def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attendance(monkeypatch):
     employee = frappe.db.get_value(
         "Employee",
