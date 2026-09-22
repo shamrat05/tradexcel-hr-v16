@@ -1,8 +1,8 @@
 # Mixed pay basis and Daily Wage input — 2026-09-23
 
-Branch: `feat/mixed-pay-basis-wage-input`  
-Base: `a36582263e9845f3d2b7d132e6297eebf9d798a3`  
-Staging only: `hrms-v16.localhost`  
+Branch: `feat/mixed-pay-basis-wage-input`
+Base: `a36582263e9845f3d2b7d132e6297eebf9d798a3`
+Staging only: `hrms-v16.localhost`
 Production touched: **NO**
 
 ## Decision
