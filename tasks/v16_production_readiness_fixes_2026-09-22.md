@@ -12,8 +12,14 @@ changed.
   remain branches under TCL.
 - The four company-required Script Reports validate Company read permission
   before their raw SQL runs.
+- The seven native Query Reports were exercised through Frappe's real
+  `frappe.desk.query_report.run()` path with JSON-style filters. They remain
+  native Query Reports; no unnecessary Script Report conversion was made.
 - The Tradexcel HR Desktop tile is normalized to `/desk/tradexcel-hr` in the
   current tab without changing Frappe core or other external links.
+- HR rail report links now pass initial filters through native
+  `frappe.route_options`; query strings are no longer embedded into the route
+  path and URL-encoded as part of the report name.
 - Mobile attendance now has a browser IndexedDB queue. Check-in/out events,
   GPS evidence, and selfie blobs survive a temporary network outage and replay
   with the original idempotent `sync_id`. Server-rejected events remain visible
@@ -39,8 +45,12 @@ changed.
   `20260922_164856-hrms-v16_localhost-database.sql.gz` (3,248,003 bytes,
   SHA-256 first 16 `9d45b229d7caf76f`). The complete backup set is indexed in
   `BACKUPS.md`.
-- Focused tests: `11 passed`.
-- Full v16 suite against `hrms-v16.localhost`: `157 passed, 2 skipped`.
+- Focused tests: `11 passed` before the rail regression extension.
+- Full v16 suite against `hrms-v16.localhost`: `158 passed, 2 skipped`.
+- Operational-report fixtures default to the v16 site/bench while retaining
+  `FRAPPE_TEST_SITE` and `FRAPPE_TEST_SITES_PATH` overrides. The endpoint test
+  covers all seven Query Reports, preventing a silent fallback to the old v15
+  site from hiding report regressions.
 - Python compilation passed.
 - JavaScript syntax checks passed for the navigation and mobile page.
 - Staging assets rebuilt successfully with Node 24 (`bench build --app

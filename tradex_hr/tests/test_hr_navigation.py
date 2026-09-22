@@ -51,8 +51,16 @@ def test_navigation_repairs_after_frappe_route_shell_replacement():
     assert "MutationObserver" not in javascript
     assert "During Desk boot" in javascript
     assert "function resolvedRoute(route)" in javascript
-    assert 'params.set("attendance_date", today)' in javascript
-    assert 'params.set("from_date"' in javascript
+    assert "options.attendance_date = today" in javascript
+    assert "options.from_date =" in javascript
+
+
+def test_report_navigation_uses_native_route_options():
+    javascript = NAVIGATION
+    assert "frappe.route_options = Object.keys(destination.options).length" in javascript
+    assert "frappe.set_route(destination.route)" in javascript
+    assert "return { route, options }" in javascript
+    assert "?${query}" not in javascript
 
 
 def test_tradexcel_desktop_tile_stays_in_same_tab():

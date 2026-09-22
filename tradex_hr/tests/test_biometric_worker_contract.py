@@ -104,12 +104,12 @@ def site_worker():
     import os
     import sys
 
-    bench = pathlib.Path(os.environ.get("FRAPPE_TEST_BENCH", pathlib.Path.home() / "frappe-bench"))
+    bench = pathlib.Path(os.environ.get("FRAPPE_TEST_BENCH", pathlib.Path.home() / "frappe-bench-v16"))
     if not (bench / "sites").is_dir():
         pytest.skip("no bench sites directory")
     try:
         frappe.init(
-            site=os.environ.get("FRAPPE_TEST_SITE", "hrms.localhost"),
+            site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
             sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", str(bench / "sites")),
         )
         frappe.connect()

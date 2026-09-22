@@ -16,9 +16,9 @@ def value(row, label):
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms.localhost"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
         sites_path=os.environ.get(
-            "FRAPPE_TEST_SITES_PATH", os.path.expanduser("~/frappe-bench/sites")
+            "FRAPPE_TEST_SITES_PATH", os.path.expanduser("~/frappe-bench-v16/sites")
         ),
     )
     frappe.connect()
@@ -162,6 +162,28 @@ def test_desk_report_endpoint_renders_both_reports():
 
     frappe.set_user("Administrator")
     for report_name, filters in (
+        (
+            "Tradexcel Daily Attendance Board",
+            {
+                "company": "Tradexcel Ceramics Ltd.",
+                "attendance_date": "2026-09-17",
+            },
+        ),
+        (
+            "Tradexcel Leave Balance Board",
+            {
+                "company": "Tradexcel Ceramics Ltd.",
+                "as_of_date": "2026-09-17",
+            },
+        ),
+        (
+            "Tradexcel Payroll Register",
+            {
+                "company": "Tradexcel Ceramics Ltd.",
+                "from_date": "2026-09-01",
+                "to_date": "2026-09-30",
+            },
+        ),
         (
             "Tradexcel Shift Coverage",
             {

@@ -293,7 +293,14 @@ frappe.provide("frappe.ui.tradex_hr");
 	}
 
 	function navigate(route) {
-		frappe.set_route(resolvedRoute(route));
+		const destination = resolvedRoute(route);
+		// Frappe treats the route as path segments. Query-string text passed to
+		// set_route() is encoded into the report name, so use the native
+		// route_options hand-off for initial report filters.
+		frappe.route_options = Object.keys(destination.options).length
+			? destination.options
+			: null;
+		frappe.set_route(destination.route);
 	}
 
 	function resolvedRoute(route) {
@@ -303,20 +310,19 @@ frappe.provide("frappe.ui.tradex_hr");
 		const company =
 			(frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) ||
 			"";
-		const params = new URLSearchParams();
+		const options = {};
 		if (route === "query-report/Tradexcel Daily Attendance Board") {
-			params.set("attendance_date", today);
-			params.set("company", company);
+			options.attendance_date = today;
+			if (company) options.company = company;
 		} else if (route === "query-report/Tradexcel Leave Balance Board") {
-			params.set("as_of_date", today);
-			params.set("company", company);
+			options.as_of_date = today;
+			if (company) options.company = company;
 		} else if (route === "query-report/Tradexcel Payroll Register") {
-			params.set("from_date", (frappe.datetime.month_start && frappe.datetime.month_start()) || today);
-			params.set("to_date", today);
-			params.set("company", company);
+			options.from_date = (frappe.datetime.month_start && frappe.datetime.month_start()) || today;
+			options.to_date = today;
+			if (company) options.company = company;
 		}
-		const query = params.toString();
-		return query ? `${route}?${query}` : route;
+		return { route, options };
 	}
 
 	function render() {
@@ -354,7 +360,7 @@ frappe.provide("frappe.ui.tradex_hr");
 			group.items.forEach((item) => {
 				const link = document.createElement("a");
 				link.className = `tradex-hr-rail-item${item.primary ? " is-primary" : ""}${active(item.route) ? " is-active" : ""}`;
-				link.href = `#${resolvedRoute(item.route)}`;
+				link.href = `#${item.route}`;
 				link.title = item.label;
 				link.dataset.route = item.route;
 				link.innerHTML = `${icon(group.icon, "tradex-hr-rail-item-icon")}<span>${item.label}</span>`;
