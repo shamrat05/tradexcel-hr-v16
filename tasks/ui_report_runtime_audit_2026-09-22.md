@@ -42,4 +42,5 @@ The repair is deliberately allow-listed. If a report with one of these names is 
 - Playwright sweep: 44/44 unique Tradexcel rail routes passed; 0 navigation errors, 0 page error surfaces, 0 non-Socket.IO HTTP errors, and 0 horizontal-overflow findings at 1440px.
 - Rail persistence: 9 groups and 49 links were present after direct navigation to workspace, list, and leave-calendar pages.
 - Runtime report calls returned HTTP 200 for Workforce Anomaly Radar, Employee Data Gaps, Biometric ID Audit, Daily Attendance Summary, and Tradexcel Salary Coverage Board.
+- The three required-filter menu reports now open with safe current-date/current-month and user-default-company parameters; their runtime calls also returned HTTP 200.
 - `bench serve` still emits Socket.IO 404 polling noise because it is only the web process. That is not a page failure; a full `bench start`/supervisor deployment supplies the Socket.IO process.
