@@ -11,6 +11,7 @@ import calendar
 import json
 import os
 from collections import defaultdict
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,105 @@ SOURCE_EMPLOYEE_ID_FIELD = "tradex_source_employee_id"
 DEFAULT_SOURCE_COMPENSATION_FILE = os.path.expanduser(
     "~/frappe-bench/sync/data/selevo_employee_compensation.json"
 )
+
+
+def _as_date(value):
+    if value in (None, ""):
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value)[:10])
+
+
+def preflight_payroll_assignments(rows, start_date, end_date):
+    """Return deterministic, money-safe assignment decisions for a period.
+
+    Salary Structure Assignment has no end-date contract that this legacy
+    runner can safely prorate.  Therefore one assignment effective at the
+    period start is accepted; missing, overlapping, and mid-period changes
+    are explicit blockers rather than a silent ``latest`` choice.
+    """
+    start = _as_date(start_date)
+    end = _as_date(end_date)
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[row["employee_name"]].append(dict(row))
+
+    results = []
+    for employee_name in sorted(grouped):
+        employee_rows = grouped[employee_name]
+        assignments = [row for row in employee_rows if row.get("assignment_name")]
+        employee = dict(employee_rows[0])
+        employee["name"] = employee_name
+
+        if not assignments:
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": None,
+                "status": "BLOCKED_MISSING_ASSIGNMENT",
+                "reason": "No submitted Salary Structure Assignment applies to the payroll period.",
+            })
+            continue
+
+        dates = [_as_date(row.get("from_date")) for row in assignments]
+        if any(value is None for value in dates):
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": None,
+                "status": "BLOCKED_INVALID_ASSIGNMENT",
+                "reason": "An applicable Salary Structure Assignment has no effective date.",
+            })
+            continue
+
+        mid_period = [
+            row for row, effective_date in zip(assignments, dates)
+            if start < effective_date <= end
+        ]
+        if mid_period:
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": None,
+                "status": "BLOCKED_MID_PERIOD_CHANGE",
+                "reason": "Salary Structure Assignment changes during the period; legacy runner does not prorate it.",
+            })
+            continue
+
+        if len(assignments) != 1:
+            names = ", ".join(sorted(str(row["assignment_name"]) for row in assignments))
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": None,
+                "status": "BLOCKED_ASSIGNMENT_OVERLAP",
+                "reason": f"Multiple applicable assignments overlap the period: {names}.",
+            })
+            continue
+
+        assignment = assignments[0]
+        if Decimal(str(assignment.get("base") or 0)) <= 0:
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": assignment,
+                "status": "BLOCKED_MISSING_BASE",
+                "reason": "Salary Structure Assignment base must be greater than zero.",
+            })
+            continue
+
+        results.append({
+            "employee": employee_name,
+            "employee_data": employee,
+            "assignment": assignment,
+            "status": "READY",
+            "reason": "One valid assignment applies for the complete period.",
+        })
+
+    return results
 
 
 def structure_earnings(salary_structure: str, gross) -> list[dict[str, Any]]:
@@ -157,6 +257,11 @@ def _checkin_records(employee: str, start_date: str, end_date: str) -> list[dict
 
 
 def _load_source_salary(path: str | None) -> dict[str, Any]:
+    """Load the old Selevo snapshot for audit/comparison utilities only.
+
+    This function is intentionally not called by ``run_payroll_for_month``.
+    Salary Structure Assignment is the sole calculation input.
+    """
     if not path or not Path(path).exists():
         return {"by_source_id": {}, "by_number": {}}
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -251,19 +356,27 @@ def run_payroll_for_month(
     month,
     company="Tradexcel Ceramics Ltd.",
     *,
-    source_compensation_file: str | None = None,
-    allow_manual_staff_payroll: bool = False,
+    site: str | None = None,
+    sites_path: str | None = None,
 ):
-    sites_path = os.path.expanduser("~/frappe-bench/sites")
-    frappe.init(site="hrms.localhost", sites_path=sites_path)
-    frappe.connect()
+    current_site = getattr(getattr(frappe, "local", None), "site", None)
+    initialized_here = False
+    if current_site:
+        if site and site != current_site:
+            raise ValueError(f"Payroll site {site!r} does not match active Frappe site {current_site!r}")
+    else:
+        if not site or not sites_path:
+            raise ValueError(
+                "Payroll requires an existing Frappe context or explicit site and sites_path; "
+                "refusing to guess a bench or site."
+            )
+        frappe.init(site=site, sites_path=sites_path)
+        frappe.connect()
+        initialized_here = True
     try:
         days = calendar.monthrange(year, month)[1]
         start_date = f"{year:04d}-{month:02d}-01"
         end_date = f"{year:04d}-{month:02d}-{days:02d}"
-        if source_compensation_file is None and Path(DEFAULT_SOURCE_COMPENSATION_FILE).exists():
-            source_compensation_file = DEFAULT_SOURCE_COMPENSATION_FILE
-
         from tradex_hr.tradexcel_hr.component_exceptions import apply_component_rules, load_component_rules
         from tradex_hr.tradexcel_hr.payroll_policy import resolve_policy
 
@@ -271,42 +384,32 @@ def run_payroll_for_month(
 
         assignments = frappe.db.sql(
             """
-            SELECT a.employee, a.salary_structure, a.base, e.name, e.employee_name,
+            SELECT e.name AS employee_name, e.employee_name AS employee_full_name,
                    e.company, e.department, e.branch, e.employment_type, e.employee_number,
-                   e.tradex_source_employee_id, e.date_of_joining
-            FROM `tabSalary Structure Assignment` a
-            JOIN `tabEmployee` e ON e.name = a.employee
-            WHERE a.company = %s AND a.docstatus = 1 AND a.from_date <= %s
+                   e.tradex_source_employee_id, e.date_of_joining,
+                   a.name AS assignment_name, a.salary_structure, a.base, a.from_date
+            FROM `tabEmployee` e
+            LEFT JOIN `tabSalary Structure Assignment` a
+              ON a.employee = e.name AND a.company = e.company
+             AND a.docstatus = 1 AND a.from_date <= %s
+            WHERE e.company = %s
               AND (e.relieving_date IS NULL OR e.relieving_date >= %s)
               AND e.status = 'Active'
             ORDER BY e.name ASC, a.from_date DESC, a.creation DESC
             """,
-            (company, end_date, start_date),
+            (end_date, company, start_date),
             as_dict=True,
         )
-        latest_by_employee = {}
-        for assignment in assignments:
-            latest_by_employee.setdefault(assignment.employee, assignment)
-
-        source_salary = _load_source_salary(source_compensation_file)
         created = 0
         skipped = 0
-        pending = 0
+        blocked = 0
         total_gross = Decimal(0)
         failures = []
 
-        for assignment in latest_by_employee.values():
-            employee = dict(assignment)
-            if employee_joins_after_period(employee.get("date_of_joining"), end_date):
-                pending += 1
-                print(f"[WARN] {employee['name']}: joined after payroll period; skipped")
-                continue
-            policy = resolve_policy(employee["name"], start_date)
-            if not policy:
-                pending += 1
-                print(f"[WARN] {employee['name']}: no active Tradexcel Payroll Policy")
-                continue
-
+        for decision in preflight_payroll_assignments(assignments, start_date, end_date):
+            employee = dict(decision["employee_data"])
+            employee["name"] = decision["employee"]
+            assignment = decision["assignment"]
             existing = frappe.db.get_value(
                 "Salary Slip",
                 {"employee": employee["name"], "start_date": start_date, "docstatus": ["<", 2]},
@@ -315,12 +418,29 @@ def run_payroll_for_month(
             )
             if existing:
                 skipped += 1
-                print(f"[INFO] {employee['name']}: {'submitted' if existing.docstatus == 1 else 'draft'} slip already exists; not overwritten")
+                print(f"[SKIPPED_EXISTING] {employee['name']}: {'submitted' if existing.docstatus == 1 else 'draft'} slip already exists; not overwritten")
+                continue
+
+            if employee_joins_after_period(employee.get("date_of_joining"), end_date):
+                blocked += 1
+                print(f"[SKIPPED_NOT_ACTIVE_IN_PERIOD] {employee['name']}: joined after payroll period")
+                continue
+
+            if decision["status"] != "READY":
+                blocked += 1
+                print(f"[{decision['status']}] {employee['name']}: {decision['reason']}")
+                continue
+
+            policy = resolve_policy(employee["name"], start_date)
+            if not policy:
+                blocked += 1
+                print(f"[BLOCKED_NO_POLICY] {employee['name']}: no active Tradexcel Payroll Policy")
                 continue
 
             try:
                 frappe.db.savepoint("payroll_row")
                 if policy.pay_basis == "Daily Wage":
+                    print(f"[LEGACY_CHECKIN_PAY] {employee['name']}: raw Employee Checkin wage path is comparison-only and non-production")
                     records = _checkin_records(employee["name"], start_date, end_date)
                     pay = calculate_dated_worker_pay(
                         records,
@@ -345,28 +465,12 @@ def run_payroll_for_month(
                         hour_rate=pay["single_hour_rate"],
                     )
                 else:
-                    # THE ASSIGNMENT IS THE SOURCE OF TRUTH.
-                    #
-                    # This used to read the amount from a JSON file outside the
-                    # repository (sync/data/selevo_employee_compensation.json),
-                    # which existed only on this machine. That gave the same
-                    # number two homes: the assignment we maintain, and a file
-                    # that would silently disappear on a redeploy. They happened
-                    # to agree (67/67 verified 2026-09-18), but two sources of
-                    # truth is a defect regardless of whether they currently
-                    # match.
-                    #
-                    # The file is now used for one purpose only: a deliberate
-                    # seed when an assignment has no base, and only when
-                    # explicitly asked for. Assignment wins, always.
-                    base = Decimal(str(assignment.base or 0))
-                    if base <= 0 and source_record is not None:
-                        base = Decimal(str(source_record["gross"]))
-                        print(f"[INFO] {employee['name']}: no assignment base; "
-                              f"seeded from source file ({base}) — set it on the assignment")
+                    # The submitted Salary Structure Assignment is the only
+                    # source of money. The Selevo JSON remains audit-only.
+                    base = Decimal(str(assignment.get("base") or 0))
                     if base <= 0:
-                        pending += 1
-                        print(f"[WARN] {employee['name']}: salary amount is empty on the assignment")
+                        blocked += 1
+                        print(f"[BLOCKED_MISSING_BASE] {employee['name']}: salary amount is empty on the assignment")
                         continue
 
                     # Earnings come from the structure the assignment points at,
@@ -390,18 +494,20 @@ def run_payroll_for_month(
                 created += 1
                 total_gross += Decimal(str(slip.gross_pay or 0))
                 frappe.db.commit()
+                print(f"[CREATED] {employee['name']}: draft Salary Slip created")
             except Exception as exc:  # noqa: BLE001 - report one employee and continue
                 # A savepoint, NOT a full rollback. frappe.db.rollback() here
                 # discarded every slip created earlier in the loop, so one bad
                 # employee looked like a wholesale failure.
                 frappe.db.rollback(save_point="payroll_row")
-                failures.append({"employee": employee["name"], "error": f"{type(exc).__name__}: {str(exc)[:240]}"})
-                print(f"[ERROR] Payroll failed for {employee['name']}: {failures[-1]['error']}")
+                failures.append({"employee": employee["name"], "status": "FAILED", "error": f"{type(exc).__name__}: {str(exc)[:240]}"})
+                print(f"[FAILED] {employee['name']}: {failures[-1]['error']}")
 
-        print(f"[OK] Payroll complete for {year:04d}-{month:02d}; created={created}, skipped={skipped}, pending={pending}, gross={total_gross:,.2f}, failed={len(failures)}")
+        print(f"[OK] Payroll complete for {year:04d}-{month:02d}; created={created}, skipped={skipped}, blocked={blocked}, gross={total_gross:,.2f}, failed={len(failures)}")
         return not failures
     finally:
-        frappe.destroy()
+        if initialized_here:
+            frappe.destroy()
 
 
 if __name__ == "__main__":
@@ -409,17 +515,19 @@ if __name__ == "__main__":
     parser.add_argument("--year", type=int, default=2026)
     parser.add_argument("--month", type=int, default=8)
     parser.add_argument("--company", default="Tradexcel Ceramics Ltd.")
-    parser.add_argument("--source-compensation-file")
-    parser.add_argument("--allow-manual-staff-payroll", action="store_true")
+    parser.add_argument("--site", default=os.environ.get("FRAPPE_SITE"))
+    parser.add_argument("--sites-path", default=os.environ.get("FRAPPE_SITES_PATH"))
     args = parser.parse_args()
+    if not args.site or not args.sites_path:
+        parser.error("--site and --sites-path are required, or set FRAPPE_SITE and FRAPPE_SITES_PATH")
     raise SystemExit(
         0
         if run_payroll_for_month(
             args.year,
             args.month,
             company=args.company,
-            source_compensation_file=args.source_compensation_file,
-            allow_manual_staff_payroll=args.allow_manual_staff_payroll,
+            site=args.site,
+            sites_path=args.sites_path,
         )
         else 1
     )

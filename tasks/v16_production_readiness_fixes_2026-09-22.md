@@ -81,6 +81,74 @@ changed.
 - Face matching remains biometric evidence, not a mathematically perfect
   liveness or identity guarantee. Enable it per policy only after a small
   approved validation set and reference photos are in place.
-- Offline selfie Blobs remain in browser IndexedDB until successful replay or
-  an HR-visible failed state. Production must document device security,
-  retention, and clearing procedures before enabling offline selfie capture.
+- Offline selfie Blobs remain in browser IndexedDB until successful replay,
+  rejection, expiration processing, or the next application opportunity to
+  run cleanup. Production must document device security, retention, and
+  clearing procedures before enabling offline selfie capture; the browser
+  cannot guarantee wall-clock deletion while the app is never opened.
+
+## Mobile branch freeze
+
+The receipt-time security-policy correction is isolated on
+`fix/mobile-offline-time-integrity` and pushed at commit `a83ae92`. Approval
+loads the exact policy stored on the quarantined check-in for security
+validation; it resolves the event-time policy separately for historical duty,
+zone, shift, and evidence semantics. The focused field-attendance test command
+was:
+
+```text
+cd /home/sanchita/frappe-bench-v16
+env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests/test_field_attendance_service.py -q
+20 passed
+```
+
+Stacked PR: `https://github.com/shamrat05/tradexcel-hr-v16/pull/3`, with base
+`fix/v16-production-readiness` and head `fix/mobile-offline-time-integrity`.
+It is intentionally not merged. Android airplane-mode E2E was not run because
+no ADB device was available; this remains a release gate, not a development
+blocker for the next P0.
+
+## Payroll P0 safety slice
+
+Branch: `fix/payroll-p0-safety`, created from base commit `69461cf`
+(`fix/v16-production-readiness`). No production site was opened, no real
+payroll was run, and no Salary Slip was submitted.
+
+Caller audit found:
+
+| Caller | Finding | Compatibility action |
+| --- | --- | --- |
+| `sync/run_payroll.py` | Untracked compatibility shim to the app runner | Kept as a forwarding shim; CLI now requires explicit site context |
+| `sync/rebuild_tradex.py` | Imports the shim and calls the public runner | Existing-context calls remain valid; an uninitialized call now fails closed instead of selecting the v15 site |
+| `sync/smoke_manual_payroll_drafts.py` | Uses draft helpers only | Unchanged; it remains a rollback-only smoke utility |
+| `sync/audit_salary_coverage.py` | Uses source-salary helpers for comparison | Preserved; source JSON is audit-only and never a payroll input |
+| app tests | Previously covered only `_create_manual_slip` | Added preflight and orchestration regression coverage |
+
+Behavior now enforced:
+
+- `Salary Structure Assignment` is the only source of calculation money.
+- Missing assignment, zero base, overlapping assignments, and mid-period
+  assignment changes produce explicit blockers; no `latest_by_employee`
+  guess remains.
+- Existing draft or submitted slips produce `SKIPPED_EXISTING` and are never
+  overwritten.
+- Rows report `CREATED`, `SKIPPED_EXISTING`, `BLOCKED_*`, `FAILED`, or the
+  legacy comparison warning. Savepoints and per-row commits preserve earlier
+  successful drafts when a later employee fails.
+- The CLI accepts `--site` and `--sites-path` or
+  `FRAPPE_SITE`/`FRAPPE_SITES_PATH`; without an existing Frappe context it
+  refuses to guess a bench or site.
+- The raw `Employee Checkin` daily-wage path is explicitly marked legacy and
+  non-production. It was not redesigned in this safety slice; the next P0
+  replaces that Checkin-to-money boundary with finalized native Attendance.
+
+Verification on this branch:
+
+```text
+cd /home/sanchita/frappe-bench-v16
+env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests/test_payroll_safety.py apps/tradex_hr/tradex_hr/tests/test_payroll_draft.py apps/tradex_hr/tradex_hr/tests/test_payroll_rules.py -q
+19 passed
+
+env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q
+168 passed, 2 skipped
+```
