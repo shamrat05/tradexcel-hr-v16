@@ -22,7 +22,7 @@ def test_persistent_hr_navigation_has_requested_groups():
 
 def test_navigation_uses_native_and_app_owned_routes():
     for route in (
-        "workspace/tradexcel-hr",
+        "tradexcel-hr",
         "List/Employee",
         "List/Attendance",
         "List/Employee Checkin",

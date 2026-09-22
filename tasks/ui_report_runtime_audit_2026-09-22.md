@@ -51,4 +51,5 @@ The repair is deliberately allow-listed. If a report with one of these names is 
 - The three required-filter menu reports now open with safe current-date/current-month and user-default-company parameters; their runtime calls also returned HTTP 200.
 - Live Has Role rows are explicit for all five reports; none has an empty role list and none includes Employee or Employee Self Service.
 - Final minimal-navigation browser sweep: 44/44 routes passed with 9 groups/49 links, no page errors, no non-Socket.IO HTTP errors, no overflow, and no polling/observer repair machinery.
+- The dashboard route is `tradexcel-hr` (`/desk/tradexcel-hr`). The `workspace/tradexcel-hr` builder route is intentionally not used by navigation links.
 - `bench serve` still emits Socket.IO 404 polling noise because it is only the web process. That is not a page failure; a full `bench start`/supervisor deployment supplies the Socket.IO process.

@@ -104,7 +104,7 @@ frappe.provide("frappe.ui.tradex_hr");
 			label: __("Home"),
 			icon: "home",
 			items: [
-				{ label: __("Command Center"), route: "workspace/tradexcel-hr", primary: true },
+				{ label: __("Command Center"), route: "tradexcel-hr", primary: true },
 				{ label: __("My Tasks"), route: "List/ToDo" },
 				{ label: __("Notifications"), route: "List/Notification Log" },
 			],
@@ -185,7 +185,7 @@ frappe.provide("frappe.ui.tradex_hr");
 			label: __("Analytics"),
 			icon: "chart",
 			items: [
-				{ label: __("HR Overview"), route: "workspace/tradexcel-hr", primary: true },
+				{ label: __("HR Overview"), route: "tradexcel-hr", primary: true },
 				{ label: __("Attendance"), route: "query-report/Daily Attendance Summary" },
 				{ label: __("Payroll"), route: "query-report/Tradexcel Payroll Register" },
 				{ label: __("Workforce"), route: "query-report/Tradexcel Salary Coverage Board" },
@@ -196,7 +196,7 @@ frappe.provide("frappe.ui.tradex_hr");
 			label: __("Administration"),
 			icon: "settings",
 			items: [
-				{ label: __("HR Setup"), route: "workspace/tradexcel-hr", primary: true },
+				{ label: __("HR Setup"), route: "tradexcel-hr", primary: true },
 				{ label: __("Roles"), route: "List/Role" },
 				{ label: __("Imports"), route: "List/Data Import" },
 				{ label: __("Workflows"), route: "List/Workflow" },
@@ -249,7 +249,7 @@ frappe.provide("frappe.ui.tradex_hr");
 		}
 		const currentRoute = current.split("?")[0].toLowerCase();
 		const itemRoute = route.split("?")[0].toLowerCase();
-		if (itemRoute.indexOf("workspace/") === 0) {
+		if (itemRoute === "tradexcel-hr" || itemRoute.indexOf("workspace/") === 0) {
 			return currentRoute.indexOf("tradexcel hr") >= 0;
 		}
 		return currentRoute === itemRoute;
@@ -346,7 +346,7 @@ frappe.provide("frappe.ui.tradex_hr");
 		toggle.addEventListener("click", () => applyCollapsed(!document.body.classList.contains("tradex-hr-rail-collapsed")));
 		aside.querySelector(".tradex-hr-rail-brand").addEventListener("click", (event) => {
 			event.preventDefault();
-			navigate("workspace/tradexcel-hr");
+			navigate("tradexcel-hr");
 		});
 		applyCollapsed(collapsed());
 	}
