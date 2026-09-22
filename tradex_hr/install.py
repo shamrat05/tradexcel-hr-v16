@@ -791,6 +791,8 @@ def _ensure_custom_report(values: dict) -> None:
     record is replaced once with the equivalent custom record. A record owned
     by another module is never silently deleted.
     """
+    values = dict(values)
+    roles = values.pop("roles", None)
     report_name = values["report_name"]
     if frappe.db.exists("Report", report_name):
         doc = frappe.get_doc("Report", report_name)
@@ -807,9 +809,9 @@ def _ensure_custom_report(values: dict) -> None:
     else:
         doc = frappe.get_doc({"doctype": "Report", **values})
 
-    if "roles" in values:
+    if roles is not None:
         doc.roles = []
-        for role in values.pop("roles"):
+        for role in roles:
             doc.append("roles", {"role": role})
     if doc.is_new():
         doc.insert(ignore_permissions=True)
