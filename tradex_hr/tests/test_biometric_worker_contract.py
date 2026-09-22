@@ -104,11 +104,14 @@ def site_worker():
     import os
     import sys
 
-    bench = pathlib.Path.home() / "frappe-bench"
+		bench = pathlib.Path(os.environ.get("FRAPPE_TEST_BENCH", pathlib.Path.home() / "frappe-bench"))
     if not (bench / "sites").is_dir():
         pytest.skip("no bench sites directory")
     try:
-        frappe.init(site="hrms.localhost", sites_path=str(bench / "sites"))
+		frappe.init(
+			site=os.environ.get("FRAPPE_TEST_SITE", "hrms.localhost"),
+			sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", str(bench / "sites")),
+		)
         frappe.connect()
     except Exception as exc:  # noqa: BLE001
         pytest.skip(f"cannot reach site: {type(exc).__name__}: {exc}")

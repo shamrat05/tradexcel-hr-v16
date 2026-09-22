@@ -15,7 +15,12 @@ def value(row, label):
 
 @pytest.fixture(scope="module", autouse=True)
 def site():
-    frappe.init(site="hrms.localhost", sites_path=os.path.expanduser("~/frappe-bench/sites"))
+	frappe.init(
+		site=os.environ.get("FRAPPE_TEST_SITE", "hrms.localhost"),
+		sites_path=os.environ.get(
+			"FRAPPE_TEST_SITES_PATH", os.path.expanduser("~/frappe-bench/sites")
+		),
+	)
     frappe.connect()
     yield
     frappe.destroy()

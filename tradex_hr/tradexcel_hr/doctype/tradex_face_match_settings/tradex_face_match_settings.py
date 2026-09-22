@@ -1,6 +1,8 @@
 import frappe
 from frappe.model.document import Document
 
+from tradex_hr.tradexcel_hr.face_match import FaceMatchUnavailable, validate_configuration
+
 
 class TradexFaceMatchSettings(Document):
 	def validate(self):
@@ -14,3 +16,13 @@ class TradexFaceMatchSettings(Document):
 			frappe.throw("Cosine match threshold must be between 0 and 1")
 		if not 0 < float(self.minimum_face_confidence or 0) <= 1:
 			frappe.throw("Minimum face confidence must be between 0 and 1")
+		try:
+			validate_configuration(
+				enabled=bool(self.enabled),
+				provider=self.provider,
+				detector_model_path=self.detector_model_path,
+				recognizer_model_path=self.recognizer_model_path,
+				site_root=frappe.get_site_path(),
+			)
+		except FaceMatchUnavailable as exc:
+			frappe.throw(str(exc))

@@ -14,6 +14,43 @@ class FaceMatchUnavailable(RuntimeError):
 	pass
 
 
+def validate_configuration(
+	*,
+	enabled: bool,
+	provider: str,
+	detector_model_path: str,
+	recognizer_model_path: str,
+	site_root: str | Path,
+) -> None:
+	"""Reject an enabled provider that cannot run on this bench/site.
+
+	Keeping this check at settings-save time prevents an HR administrator from
+	enabling a policy that will only fail when an employee submits attendance.
+	Paths remain site-relative so configuration cannot escape the Frappe site.
+	"""
+	if not enabled:
+		return
+	if provider != "OpenCV YuNet + SFace":
+		raise FaceMatchUnavailable("Only the configured OpenCV YuNet + SFace provider is supported")
+	try:
+		import cv2  # noqa: F401
+	except ImportError as exc:
+		raise FaceMatchUnavailable(
+			"opencv-contrib-python-headless is not installed in the bench environment"
+		) from exc
+
+	root = Path(site_root).resolve()
+	for label, relative_path in (
+		("YuNet detector", detector_model_path),
+		("SFace recognizer", recognizer_model_path),
+	):
+		if not relative_path or Path(str(relative_path)).is_absolute():
+			raise FaceMatchUnavailable(f"{label} path must be relative to the site")
+		candidate = (root / str(relative_path)).resolve()
+		if root not in candidate.parents or not candidate.is_file():
+			raise FaceMatchUnavailable(f"{label} model file is missing: {relative_path}")
+
+
 def _load_image(path: str):
 	try:
 		import cv2
