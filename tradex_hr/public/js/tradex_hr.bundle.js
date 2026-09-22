@@ -238,7 +238,15 @@ frappe.provide("frappe.ui.tradex_hr");
 	}
 
 	function active(route) {
-		const current = (frappe.get_route_str && frappe.get_route_str()) || "";
+		let current = "";
+		try {
+			current = (frappe.get_route_str && frappe.get_route_str()) || "";
+		} catch (error) {
+			// During Desk boot Frappe can expose get_route_str before its route
+			// array exists. The rail can render with no active item and refresh
+			// it on the next page-change event.
+			return false;
+		}
 		if (route.indexOf("workspace/") === 0) {
 			return current.toLowerCase().indexOf("tradexcel hr") >= 0;
 		}
