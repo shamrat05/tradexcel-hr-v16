@@ -143,13 +143,25 @@ Behavior now enforced:
   non-production. It was not redesigned in this safety slice; the next P0
   replaces that Checkin-to-money boundary with finalized native Attendance.
 
+### Payroll preflight review correction
+
+Review follow-up is pushed in behavior commit `b335deb` on the same branch.
+Historical submitted assignments before the period are now harmless: the
+latest assignment effective at period start is selected. Only a newer
+assignment inside the period or same-effective-date corruption blocks the
+legacy runner. The employee universe is based on joining/relieving dates, not
+current `Employee.status`; mid-period joiners and leavers, and unsupported
+employment statuses, receive explicit blockers. A run returns non-success when
+any blocker exists, while `SKIPPED_EXISTING` remains non-blocking. The CLI no
+longer defaults year, month, or company.
+
 Verification on this branch:
 
 ```text
 cd /home/sanchita/frappe-bench-v16
 env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests/test_payroll_safety.py apps/tradex_hr/tradex_hr/tests/test_payroll_draft.py apps/tradex_hr/tradex_hr/tests/test_payroll_rules.py -q
-19 passed
+21 passed
 
 env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q
-168 passed, 2 skipped
+174 passed, 2 skipped
 ```
