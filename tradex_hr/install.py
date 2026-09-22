@@ -744,6 +744,9 @@ WORKSPACE_NAMES = {
     "tradexcel-hr": {"title": "Tradexcel HR", "module": "Tradexcel HR"},
 }
 LEGACY_WORKSPACE_NAMES = (
+    # The prototype also created a title-named copy. Keep only the canonical
+    # slug workspace so Desk has one unambiguous HR entry point.
+    "Tradexcel HR",
     "tradex-hr",
     "TradeX HR Management",
     "tradex-hr-management",

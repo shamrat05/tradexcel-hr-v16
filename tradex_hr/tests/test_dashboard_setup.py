@@ -12,6 +12,7 @@ from tradex_hr.install import (
     REPORTS,
     CANONICAL_WORKSPACE_NAME,
     WORKSPACE_NAMES,
+    LEGACY_WORKSPACE_NAMES,
     WORKSPACE_SHORTCUTS,
     workspace_blocks,
     workspace_is_visible,
@@ -83,3 +84,7 @@ def test_only_canonical_workspace_is_visible_in_desk_navigation():
     assert workspace_is_visible("HR") is False
     assert workspace_is_visible("TradeX HR Management") is False
     assert workspace_is_visible("tradex-hr-management") is False
+
+
+def test_title_named_workspace_is_retired():
+    assert "Tradexcel HR" in LEGACY_WORKSPACE_NAMES
