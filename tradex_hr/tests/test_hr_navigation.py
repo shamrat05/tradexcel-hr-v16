@@ -49,3 +49,4 @@ def test_navigation_repairs_after_frappe_route_shell_replacement():
     assert "function ensureRail()" in javascript
     assert '$(document).on("page-change"' in javascript
     assert "MutationObserver" in javascript
+    assert "observe(document.documentElement" in javascript

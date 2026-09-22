@@ -345,7 +345,10 @@ frappe.provide("frappe.ui.tradex_hr");
 		if (window.MutationObserver) {
 			new MutationObserver(function () {
 				if (!document.querySelector(`.${RAIL_CLASS} .${GROUP_CLASS}`)) ensureRail();
-			}).observe(document.body, { childList: true, subtree: true });
+			// Frappe may replace the body element while switching Desk shells.
+			// Observe the persistent document root so the rail is rebuilt even
+			// when the original body observer would be discarded.
+			}).observe(document.documentElement, { childList: true, subtree: true });
 		}
 	});
 })();
