@@ -76,3 +76,240 @@ html {
 header.navbar .navbar-brand {
 	display: none !important;
 }
+
+/* Persistent Tradexcel HR rail. It belongs to the Desk shell, so it remains
+   available while moving between workspaces, lists, reports and forms. */
+:root {
+	--tradex-hr-rail-expanded: 248px;
+	--tradex-hr-rail-collapsed: 64px;
+	--tradex-hr-rail-current: var(--tradex-hr-rail-expanded);
+}
+
+body.tradex-hr-rail-collapsed {
+	--tradex-hr-rail-current: var(--tradex-hr-rail-collapsed);
+}
+
+body.tradex-hr-rail-enabled .page-container,
+body.tradex-hr-rail-enabled .workspace-page {
+	margin-left: var(--tradex-hr-rail-current) !important;
+	width: calc(100% - var(--tradex-hr-rail-current)) !important;
+	max-width: none !important;
+	transition: margin-left 160ms ease, width 160ms ease;
+}
+
+.tradex-hr-rail {
+	position: fixed;
+	z-index: 1030;
+	top: var(--navbar-height, 60px);
+	left: 0;
+	bottom: 0;
+	width: var(--tradex-hr-rail-current);
+	background: var(--card-bg, #fff);
+	border-right: 1px solid var(--border-color, #e2e6e9);
+	box-shadow: 3px 0 14px rgba(20, 30, 45, 0.06);
+	overflow-x: hidden;
+	overflow-y: auto;
+	transition: width 160ms ease;
+}
+
+.tradex-hr-rail-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 60px;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--border-color, #e2e6e9);
+}
+
+.tradex-hr-rail-brand {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	gap: 10px;
+	color: var(--text-color, #1f272e);
+	font-weight: 700;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.tradex-hr-rail-brand-mark {
+	display: grid;
+	width: 32px;
+	height: 32px;
+	flex: 0 0 32px;
+	place-items: center;
+	border-radius: 9px;
+	background: var(--primary, #2490ef);
+	color: #fff;
+	font-size: 17px;
+}
+
+.tradex-hr-rail-brand-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tradex-hr-rail-toggle {
+	display: grid;
+	width: 28px;
+	height: 28px;
+	flex: 0 0 28px;
+	place-items: center;
+	border: 1px solid var(--border-color, #e2e6e9);
+	border-radius: 7px;
+	background: transparent;
+	color: var(--text-color, #1f272e);
+	font-size: 23px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.tradex-hr-rail-toggle:hover,
+.tradex-hr-rail-group-heading:hover,
+.tradex-hr-rail-item:hover {
+	background: var(--control-bg, #f4f5f6);
+}
+
+.tradex-hr-rail-nav {
+	padding: 9px 8px 24px;
+}
+
+.tradex-hr-rail-group {
+	margin: 0 0 8px;
+}
+
+.tradex-hr-rail-group-heading {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px 6px;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--text-muted, #74808a);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .055em;
+	line-height: 1.2;
+	text-align: left;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.tradex-hr-rail-icon,
+.tradex-hr-rail-item-icon {
+	width: 18px;
+	height: 18px;
+	flex: 0 0 18px;
+}
+
+.tradex-hr-rail-group-heading > span:nth-child(2) {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tradex-hr-rail-chevron {
+	margin-left: auto;
+	font-size: 16px;
+	line-height: 1;
+}
+
+.tradex-hr-rail-items {
+	display: grid;
+	gap: 2px;
+}
+
+.tradex-hr-rail-item {
+	display: flex;
+	min-height: 34px;
+	align-items: center;
+	gap: 11px;
+	padding: 7px 10px 7px 14px;
+	border-left: 3px solid transparent;
+	border-radius: 7px;
+	color: var(--text-color, #1f272e);
+	font-size: 13px;
+	line-height: 1.25;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.tradex-hr-rail-item.is-primary {
+	font-weight: 600;
+}
+
+.tradex-hr-rail-item.is-active {
+	border-left-color: var(--primary, #2490ef);
+	background: var(--subtle-accent, #eaf4fe);
+	color: var(--primary, #2490ef);
+}
+
+.tradex-hr-rail-item > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+body.tradex-hr-rail-collapsed .tradex-hr-rail-header {
+	justify-content: center;
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
+body.tradex-hr-rail-collapsed .tradex-hr-rail-brand-text,
+body.tradex-hr-rail-collapsed .tradex-hr-rail-group-heading > span:nth-child(2),
+body.tradex-hr-rail-collapsed .tradex-hr-rail-chevron,
+body.tradex-hr-rail-collapsed .tradex-hr-rail-item > span {
+	display: none;
+}
+
+body.tradex-hr-rail-collapsed .tradex-hr-rail-nav {
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
+body.tradex-hr-rail-collapsed .tradex-hr-rail-group-heading,
+body.tradex-hr-rail-collapsed .tradex-hr-rail-item {
+	justify-content: center;
+	padding-left: 0;
+	padding-right: 0;
+}
+
+body.tradex-hr-rail-collapsed .tradex-hr-rail-item.is-active {
+	border-left-color: transparent;
+	box-shadow: inset 0 0 0 1px var(--primary, #2490ef);
+}
+
+@media (max-width: 900px) {
+	:root {
+		--tradex-hr-rail-expanded: 228px;
+	}
+
+	.tradex-hr-rail {
+		top: 50px;
+	}
+
+	body.tradex-hr-rail-enabled .page-container,
+	body.tradex-hr-rail-enabled .workspace-page {
+		margin-left: var(--tradex-hr-rail-current) !important;
+		width: calc(100% - var(--tradex-hr-rail-current)) !important;
+	}
+}
+
+@media (max-width: 600px) {
+	body.tradex-hr-rail-enabled .page-container,
+	body.tradex-hr-rail-enabled .workspace-page {
+		margin-left: 0 !important;
+		width: 100% !important;
+	}
+
+	.tradex-hr-rail {
+		transform: translateX(-100%);
+		transition: transform 160ms ease;
+	}
+
+	body.tradex-hr-rail-mobile-open .tradex-hr-rail {
+		transform: translateX(0);
+	}
+}
