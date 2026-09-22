@@ -38,6 +38,20 @@ def test_attendance_hash_changes_when_native_state_changes():
     assert attendance_period_hash(first, []) == attendance_period_hash(first, [])
 
 
+def test_attendance_hash_ignores_metadata_and_overtime_state():
+    first = [{
+        "employee": "EMP-1",
+        "attendance_date": "2026-09-01",
+        "status": "Present",
+        "docstatus": 1,
+        "modified": "2026-09-01 10:00:00",
+        "notes": "before",
+    }]
+    edited = [{**first[0], "modified": "2026-09-20 10:00:00", "notes": "after"}]
+
+    assert attendance_period_hash(first, [{"name": "OT-1", "total": 1}]) == attendance_period_hash(edited, [])
+
+
 def test_boundary_module_is_not_allowed_to_read_raw_checkins():
     import inspect
 
@@ -63,9 +77,9 @@ def test_native_payroll_entry_dictionary_rows_are_normalized(monkeypatch):
     monkeypatch.setattr(attendance_payroll_boundary, "_pending_mobile_events", lambda *_args: [])
     monkeypatch.setattr(attendance_payroll_boundary, "_ambiguous_biometric_mappings", lambda *_args: [])
     monkeypatch.setattr(attendance_payroll_boundary, "_pending_attendance_requests", lambda *_args: [])
-    monkeypatch.setattr(attendance_payroll_boundary, "_leave_contradictions", lambda *_args: [])
     monkeypatch.setattr(attendance_payroll_boundary, "_unapproved_overtime", lambda *_args: [])
     monkeypatch.setattr(attendance_payroll_boundary, "_unsafe_payment_day_structures", lambda *_args: [])
+    monkeypatch.setattr(attendance_payroll_boundary, "_attendance_required_for_payroll", lambda: True)
 
     result = attendance_payroll_boundary.inspect_attendance_payroll_boundary(
         "Tradexcel Ceramics Ltd.", date(2026, 9, 1), date(2026, 9, 30)
@@ -73,3 +87,25 @@ def test_native_payroll_entry_dictionary_rows_are_normalized(monkeypatch):
 
     assert result["status"] == BLOCKED
     assert result["blockers"][0]["employee"] == "EMP-1"
+
+
+def test_attendance_integrity_excludes_payroll_only_findings(monkeypatch):
+    from tradex_hr.tradexcel_hr import attendance_payroll_boundary
+
+    monkeypatch.setattr(
+        attendance_payroll_boundary,
+        "_employees_for_period",
+        lambda *_args: [{"name": "EMP-JOIN", "employee_name": "Joiner", "date_of_joining": date(2026, 9, 10),
+                         "relieving_date": None, "status": "Active"}],
+    )
+    monkeypatch.setattr(attendance_payroll_boundary, "_attendance_required_for_payroll", lambda: False)
+    monkeypatch.setattr(attendance_payroll_boundary, "_pending_mobile_events", lambda *_args: [])
+    monkeypatch.setattr(attendance_payroll_boundary, "_ambiguous_biometric_mappings", lambda *_args: [])
+    monkeypatch.setattr(attendance_payroll_boundary, "_pending_attendance_requests", lambda *_args: [])
+
+    result = attendance_payroll_boundary.inspect_attendance_integrity(
+        "Tradexcel Ceramics Ltd.", date(2026, 9, 1), date(2026, 9, 30)
+    )
+
+    assert result["status"] == READY
+    assert result["blockers"] == []
