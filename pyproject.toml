@@ -2,7 +2,7 @@
 name = "tradex_hr"
 authors = [{name = "Tradexcel"}]
 description = "Tradexcel HRMS integration"
-requires-python = ">=3.10"
+requires-python = ">=3.14,<3.15"
 dynamic = ["version"]
 
 [build-system]
@@ -10,9 +10,9 @@ requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
 [tool.bench.frappe-dependencies]
-frappe = ">=15.0.0,<16.0.0"
-erpnext = ">=15.0.0,<16.0.0"
-hrms = ">=15.0.0,<16.0.0"
+frappe = ">=16.0.0,<17.0.0"
+erpnext = ">=16.0.0,<17.0.0"
+hrms = ">=16.0.0,<17.0.0"
 
 [project.optional-dependencies]
 # PyYAML reads tradex_hr/tradexcel_hr/salary_setup.yaml. It ships with Frappe,
