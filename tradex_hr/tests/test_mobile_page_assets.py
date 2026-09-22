@@ -23,6 +23,15 @@ def test_mobile_attendance_script_registers_with_frappe_page_name():
     assert 'showSuccessState(completedAction, checkin)' in script
 
 
+def test_mobile_attendance_has_durable_offline_queue_contract():
+    script = (ROOT / "tradexcel_mobile_attendance" / "tradexcel_mobile_attendance.js").read_text()
+    assert "indexedDB" in script
+    assert "tradex_mobile_attendance" in script
+    assert "flushOfflineQueue" in script
+    assert "sync_id" in script
+    assert "queueOfflineCheckin" in script
+
+
 def test_live_locations_script_registers_with_frappe_page_name():
     page = json.loads((ROOT / "tradex_live_locations" / "tradex_live_locations.json").read_text())
     script = (ROOT / "tradex_live_locations" / "tradex_live_locations.js").read_text()
