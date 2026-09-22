@@ -62,6 +62,36 @@ def preflight_payroll_assignments(rows, start_date, end_date):
         employee = dict(employee_rows[0])
         employee["name"] = employee_name
 
+        joining_date = _as_date(employee.get("date_of_joining"))
+        relieving_date = _as_date(employee.get("relieving_date"))
+        if joining_date and start < joining_date <= end:
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": None,
+                "status": "BLOCKED_JOIN_MID_PERIOD",
+                "reason": "Employee joins during the period; legacy runner does not prorate joiners.",
+            })
+            continue
+        if relieving_date and start <= relieving_date < end:
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": None,
+                "status": "BLOCKED_RELIEVE_MID_PERIOD",
+                "reason": "Employee leaves during the period; legacy runner does not prorate leavers.",
+            })
+            continue
+        if employee.get("status") not in (None, "Active", "Left"):
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": None,
+                "status": "BLOCKED_EMPLOYMENT_STATUS",
+                "reason": f"Employment status {employee.get('status')!r} has no configured payroll behavior.",
+            })
+            continue
+
         if not assignments:
             results.append({
                 "employee": employee_name,
@@ -97,18 +127,35 @@ def preflight_payroll_assignments(rows, start_date, end_date):
             })
             continue
 
-        if len(assignments) != 1:
-            names = ", ".join(sorted(str(row["assignment_name"]) for row in assignments))
+        period_start_assignments = [
+            row for row, effective_date in zip(assignments, dates) if effective_date <= start
+        ]
+        if not period_start_assignments:
+            results.append({
+                "employee": employee_name,
+                "employee_data": employee,
+                "assignment": None,
+                "status": "BLOCKED_MISSING_ASSIGNMENT",
+                "reason": "No submitted Salary Structure Assignment applies at period start.",
+            })
+            continue
+
+        latest_from_date = max(_as_date(row["from_date"]) for row in period_start_assignments)
+        latest_assignments = [
+            row for row in period_start_assignments if _as_date(row["from_date"]) == latest_from_date
+        ]
+        if len(latest_assignments) != 1:
+            names = ", ".join(sorted(str(row["assignment_name"]) for row in latest_assignments))
             results.append({
                 "employee": employee_name,
                 "employee_data": employee,
                 "assignment": None,
                 "status": "BLOCKED_ASSIGNMENT_OVERLAP",
-                "reason": f"Multiple applicable assignments overlap the period: {names}.",
+                "reason": f"Conflicting assignments share effective date {latest_from_date}: {names}.",
             })
             continue
 
-        assignment = assignments[0]
+        assignment = latest_assignments[0]
         if Decimal(str(assignment.get("base") or 0)) <= 0:
             results.append({
                 "employee": employee_name,
@@ -354,7 +401,7 @@ def _slip_data(
 def run_payroll_for_month(
     year,
     month,
-    company="Tradexcel Ceramics Ltd.",
+    company,
     *,
     site: str | None = None,
     sites_path: str | None = None,
@@ -386,18 +433,18 @@ def run_payroll_for_month(
             """
             SELECT e.name AS employee_name, e.employee_name AS employee_full_name,
                    e.company, e.department, e.branch, e.employment_type, e.employee_number,
-                   e.tradex_source_employee_id, e.date_of_joining,
+                   e.tradex_source_employee_id, e.date_of_joining, e.relieving_date, e.status,
                    a.name AS assignment_name, a.salary_structure, a.base, a.from_date
             FROM `tabEmployee` e
             LEFT JOIN `tabSalary Structure Assignment` a
               ON a.employee = e.name AND a.company = e.company
              AND a.docstatus = 1 AND a.from_date <= %s
             WHERE e.company = %s
+              AND e.date_of_joining <= %s
               AND (e.relieving_date IS NULL OR e.relieving_date >= %s)
-              AND e.status = 'Active'
             ORDER BY e.name ASC, a.from_date DESC, a.creation DESC
             """,
-            (end_date, company, start_date),
+            (end_date, company, end_date, start_date),
             as_dict=True,
         )
         created = 0
@@ -504,23 +551,32 @@ def run_payroll_for_month(
                 print(f"[FAILED] {employee['name']}: {failures[-1]['error']}")
 
         print(f"[OK] Payroll complete for {year:04d}-{month:02d}; created={created}, skipped={skipped}, blocked={blocked}, gross={total_gross:,.2f}, failed={len(failures)}")
-        return not failures
+        return not failures and blocked == 0
     finally:
         if initialized_here:
             frappe.destroy()
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser(description="TradeX policy-driven payroll runner")
-    parser.add_argument("--year", type=int, default=2026)
-    parser.add_argument("--month", type=int, default=8)
-    parser.add_argument("--company", default="Tradexcel Ceramics Ltd.")
+    parser.add_argument("--year", type=int)
+    parser.add_argument("--month", type=int)
+    parser.add_argument("--company", default=os.environ.get("TRADEX_PAYROLL_COMPANY"))
     parser.add_argument("--site", default=os.environ.get("FRAPPE_SITE"))
     parser.add_argument("--sites-path", default=os.environ.get("FRAPPE_SITES_PATH"))
-    args = parser.parse_args()
-    if not args.site or not args.sites_path:
-        parser.error("--site and --sites-path are required, or set FRAPPE_SITE and FRAPPE_SITES_PATH")
-    raise SystemExit(
+    args = parser.parse_args(argv)
+    missing = [
+        option for option, value in (
+            ("--year", args.year),
+            ("--month", args.month),
+            ("--company or TRADEX_PAYROLL_COMPANY", args.company),
+            ("--site or FRAPPE_SITE", args.site),
+            ("--sites-path or FRAPPE_SITES_PATH", args.sites_path),
+        ) if value in (None, "")
+    ]
+    if missing:
+        parser.error("required payroll target missing: " + ", ".join(missing))
+    return (
         0
         if run_payroll_for_month(
             args.year,
@@ -531,3 +587,7 @@ if __name__ == "__main__":
         )
         else 1
     )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
