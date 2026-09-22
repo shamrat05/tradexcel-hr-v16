@@ -26,11 +26,11 @@ def site():
     frappe = pytest.importorskip("frappe")
     import os
 
-		sites = os.environ.get("FRAPPE_TEST_SITES_PATH", os.path.expanduser("~/frappe-bench/sites"))
+    sites = os.environ.get("FRAPPE_TEST_SITES_PATH", os.path.expanduser("~/frappe-bench/sites"))
     if not os.path.isdir(sites):
         pytest.skip("no bench sites directory")
     try:
-		frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "hrms.localhost"), sites_path=sites)
+        frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "hrms.localhost"), sites_path=sites)
         frappe.connect()
         frappe.set_user("Administrator")
     except Exception as exc:  # noqa: BLE001
