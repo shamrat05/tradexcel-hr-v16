@@ -1098,12 +1098,16 @@ def after_migrate():
     from tradex_hr.role_setup import ensure_tradex_roles
     from tradex_hr.approval_setup import ensure_tradex_workflows
     from tradex_hr.field_attendance_setup import ensure_field_attendance_fields, ensure_field_transport_component
+    from tradex_hr.tradexcel_hr.salary_setup import ensure_pay_basis_metadata
 
     ensure_branch_hierarchy()
     ensure_tradex_roles()
     ensure_tradex_workflows()
     ensure_field_attendance_fields()
     ensure_field_transport_component()
+    # Persist explicit financial pay basis on existing native structures. This
+    # does not infer from Employment Type and does not rewrite earnings rows.
+    ensure_pay_basis_metadata(commit=False)
     rename_legacy_dashboard_charts()
     ensure_reports()
     ensure_number_cards()

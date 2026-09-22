@@ -99,6 +99,7 @@ def test_attendance_integrity_excludes_payroll_only_findings(monkeypatch):
                          "relieving_date": None, "status": "Active"}],
     )
     monkeypatch.setattr(attendance_payroll_boundary, "_attendance_required_for_payroll", lambda: False)
+    monkeypatch.setattr(attendance_payroll_boundary, "_attendance_required_employees", lambda *_args: [])
     monkeypatch.setattr(attendance_payroll_boundary, "_pending_mobile_events", lambda *_args: [])
     monkeypatch.setattr(attendance_payroll_boundary, "_ambiguous_biometric_mappings", lambda *_args: [])
     monkeypatch.setattr(attendance_payroll_boundary, "_pending_attendance_requests", lambda *_args: [])

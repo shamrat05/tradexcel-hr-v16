@@ -1,0 +1,145 @@
+"""Explicit financial pay-basis resolution.
+
+Employment Type remains useful for HR grouping, but it is not a monetary
+authority.  Salary Structure Assignment selects the effective structure and
+the structure's explicit Tradexcel pay-basis field selects the financial
+meaning.
+"""
+
+from __future__ import annotations
+
+from datetime import date
+from typing import Any
+
+import frappe
+from frappe.utils import flt, getdate
+
+
+MONTHLY = "Monthly Salary"
+DAILY = "Daily Wage"
+UNRESOLVED = "UNRESOLVED"
+CONFLICT = "CONFLICT"
+MID_PERIOD_CHANGE = "MID_PERIOD_CHANGE"
+
+
+def _assignment_rows(employee: str, as_of: date, period_end: date | None = None) -> list[dict[str, Any]]:
+    filters: dict[str, Any] = {
+        "employee": employee,
+        "docstatus": 1,
+        "from_date": ["<=", as_of],
+    }
+    fields = ["name", "employee", "salary_structure", "base", "from_date", "company"]
+    rows = frappe.get_all(
+        "Salary Structure Assignment",
+        filters=filters,
+        fields=fields,
+        order_by="from_date desc, name desc",
+    )
+    if period_end and period_end > as_of:
+        later_filters = {
+            "employee": employee,
+            "docstatus": 1,
+            "from_date": ["between", [as_of, period_end]],
+        }
+        rows.extend(
+            frappe.get_all(
+                "Salary Structure Assignment",
+                filters=later_filters,
+                fields=fields,
+                order_by="from_date asc, name asc",
+            )
+        )
+    return rows
+
+
+def _structure_basis(structure: str | None) -> str | None:
+    if not structure:
+        return None
+    return frappe.db.get_value("Salary Structure", structure, "custom_tradex_pay_basis")
+
+
+def resolve_pay_basis(
+    employee: str,
+    as_of_date: str | date,
+    period_end: str | date | None = None,
+) -> dict[str, Any]:
+    """Resolve one explicit pay basis without financial inference.
+
+    When ``period_end`` is supplied, a later effective assignment is reported
+    as ``MID_PERIOD_CHANGE`` rather than silently applying one basis to a
+    mixed period.  Same-date submitted assignment conflicts are reported as
+    ``CONFLICT`` even though native HRMS normally prevents them.
+    """
+    as_of = getdate(as_of_date)
+    end = getdate(period_end) if period_end else None
+    if not as_of:
+        return {"status": UNRESOLVED, "employee": employee, "reason": "Missing effective date"}
+
+    rows = _assignment_rows(employee, as_of, end)
+    applicable = [row for row in rows if getdate(row.get("from_date")) <= as_of]
+    if not applicable:
+        return {
+            "status": UNRESOLVED,
+            "employee": employee,
+            "reason": f"No submitted Salary Structure Assignment applies on {as_of}",
+        }
+
+    latest_date = getdate(applicable[0].get("from_date"))
+    same_date = [row for row in applicable if getdate(row.get("from_date")) == latest_date]
+    if len(same_date) != 1:
+        return {
+            "status": CONFLICT,
+            "employee": employee,
+            "from_date": latest_date,
+            "assignments": [row.get("name") for row in same_date],
+            "reason": "Multiple submitted Salary Structure Assignments have the same effective date",
+        }
+
+    later = []
+    if end and end > as_of:
+        later = [row for row in rows if as_of < getdate(row.get("from_date")) <= end]
+    if later:
+        return {
+            "status": MID_PERIOD_CHANGE,
+            "employee": employee,
+            "assignment": same_date[0].get("name"),
+            "from_date": latest_date,
+            "later_assignments": [row.get("name") for row in later],
+            "reason": "Pay basis or rate may change during the period; the mixed legacy adapter will not guess",
+        }
+
+    assignment = same_date[0]
+    basis = _structure_basis(assignment.get("salary_structure"))
+    if basis not in {MONTHLY, DAILY}:
+        return {
+            "status": UNRESOLVED,
+            "employee": employee,
+            "assignment": assignment.get("name"),
+            "salary_structure": assignment.get("salary_structure"),
+            "reason": "The assigned Salary Structure has no explicit Tradexcel pay basis",
+        }
+
+    return {
+        "status": basis,
+        "employee": employee,
+        "assignment": assignment.get("name"),
+        "salary_structure": assignment.get("salary_structure"),
+        "base": flt(assignment.get("base")),
+        "from_date": latest_date,
+        "source": "Salary Structure Assignment + Salary Structure.custom_tradex_pay_basis",
+    }
+
+
+def resolve_daily_rate(result: dict[str, Any]) -> dict[str, Any]:
+    """Return the SSA rate or an explicit blocker; never use policy.daily_wage."""
+    if result.get("status") != DAILY:
+        return {"status": result.get("status", UNRESOLVED), "reason": result.get("reason")}
+    base = flt(result.get("base"))
+    if base <= 0:
+        return {
+            "status": "BLOCKED_MISSING_BASE",
+            "employee": result.get("employee"),
+            "assignment": result.get("assignment"),
+            "reason": "Daily Wage requires a positive Salary Structure Assignment.base",
+        }
+    return {"status": "READY", "employee": result.get("employee"), "rate": base, "assignment": result.get("assignment")}

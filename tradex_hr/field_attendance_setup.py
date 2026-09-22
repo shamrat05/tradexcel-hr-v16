@@ -149,6 +149,15 @@ def _fields() -> dict[str, list[dict[str, object]]]:
         ],
         "Additional Salary": [
             {
+                "fieldname": "custom_tradex_payroll_input_key",
+                "label": "Tradexcel Payroll Input Key",
+                "fieldtype": "Data",
+                "insert_after": "ref_docname",
+                "read_only": 1,
+                "unique": 1,
+                "description": "Stable key for an idempotent derived payroll input.",
+            },
+            {
                 "fieldname": "custom_tradex_field_duty",
                 "label": "Field Duty",
                 "fieldtype": "Link",
@@ -176,6 +185,16 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "fieldtype": "Small Text",
                 "insert_after": "custom_tradex_distance_km",
                 "read_only": 1,
+            },
+        ],
+        "Salary Structure": [
+            {
+                "fieldname": "custom_tradex_pay_basis",
+                "label": "Tradexcel Pay Basis",
+                "fieldtype": "Select",
+                "options": "Monthly Salary\nDaily Wage",
+                "insert_after": "payroll_frequency",
+                "description": "Explicit financial pay basis. Never inferred from Employment Type.",
             },
         ],
     }

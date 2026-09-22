@@ -18,6 +18,8 @@ import frappe
 from frappe import _
 from frappe.utils import getdate
 
+from tradex_hr.tradexcel_hr.pay_basis import DAILY, resolve_pay_basis
+
 
 READY = "READY"
 REVIEW = "REVIEW"
@@ -174,6 +176,19 @@ def _native_unmarked_attendance(company: str, start: date, end: date, employees:
     return payroll_entry.get_employees_with_unmarked_attendance() or []
 
 
+def _attendance_required_employees(employees: list[dict[str, Any]], start: date, end: date):
+    """Use native coverage for global Attendance payroll plus explicit Daily staff."""
+    if _attendance_required_for_payroll():
+        return employees
+
+    required = []
+    for row in employees:
+        basis = resolve_pay_basis(_row_value(row, "name"), start, end)
+        if basis.get("status") == DAILY:
+            required.append(row)
+    return required
+
+
 def _pending_mobile_events(start: date, end: date, employee_ids: list[str]):
     if not employee_ids or not frappe.db.has_column("Employee Checkin", "custom_tradex_review_status"):
         return []
@@ -313,10 +328,10 @@ def inspect_attendance_integrity(
     employee_ids = [_row_value(row, "name") for row in employees]
     blockers: list[dict[str, Any]] = []
 
-    if _attendance_required_for_payroll():
-        for row in _native_unmarked_attendance(company, start, end, employees):
-            blockers.append({"code": "ATTENDANCE_UNMARKED", "employee": _row_value(row, "employee"),
-                             "reason": f"Native Payroll Entry found {_row_value(row, 'unmarked_days')} unmarked day(s)."})
+    attendance_employees = _attendance_required_employees(employees, start, end)
+    for row in _native_unmarked_attendance(company, start, end, attendance_employees):
+        blockers.append({"code": "ATTENDANCE_UNMARKED", "employee": _row_value(row, "employee"),
+                         "reason": f"Native Payroll Entry found {_row_value(row, 'unmarked_days')} unmarked day(s)."})
     for row in _pending_mobile_events(start, end, employee_ids):
         blockers.append({"code": "MOBILE_REVIEW_PENDING", "employee": _row_value(row, "employee"), "record": _row_value(row, "name"),
                          "reason": "Quarantined mobile evidence has not been approved or rejected."})
