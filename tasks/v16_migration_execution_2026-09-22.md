@@ -7,6 +7,8 @@
 - Staging bench: `/home/sanchita/frappe-bench-v16`.
 - Staging site: `hrms-v16.localhost`.
 - Staging MariaDB: separate database on port `3307`.
+- The isolated bench default site is set to `hrms-v16.localhost`, so
+  `http://localhost:8001/app/tradexcel-hr` resolves to this staging site.
 - A fresh source backup was taken before migration and recorded in `BACKUPS.md`.
 
 ## Runtime installed
