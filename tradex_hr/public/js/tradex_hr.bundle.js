@@ -249,10 +249,23 @@ frappe.provide("frappe.ui.tradex_hr");
 		}
 		const currentRoute = current.split("?")[0].toLowerCase();
 		const itemRoute = route.split("?")[0].toLowerCase();
-		if (itemRoute === "tradexcel-hr" || itemRoute.indexOf("workspace/") === 0) {
-			return currentRoute.indexOf("tradexcel hr") >= 0;
+
+		// A Desk workspace reports as "Workspaces/<slug>" in the route string, not
+		// as the workspace title, so match on the slug. Matching the title ("tradexcel hr")
+		// could never be true, so the workspace items never highlighted.
+		const workspaceName =
+			itemRoute.indexOf("workspace/") === 0 ? itemRoute.slice("workspace/".length) : itemRoute;
+		if (workspaceName === "tradexcel-hr") {
+			return currentRoute === `workspaces/${workspaceName}` || currentRoute === workspaceName;
 		}
-		return currentRoute === itemRoute;
+
+		// List routes carry the view type ("List/Employee/List"), so the previous exact
+		// equality could never match and no list item ever highlighted. Compare the first
+		// two segments only -- a prefix test would wrongly light "List/Employee" while on
+		// "List/Employee Checkin".
+		const [currentType, currentName] = currentRoute.split("/");
+		const [itemType, itemName] = itemRoute.split("/");
+		return Boolean(currentType) && currentType === itemType && currentName === itemName;
 	}
 
 	function navigate(route) {
