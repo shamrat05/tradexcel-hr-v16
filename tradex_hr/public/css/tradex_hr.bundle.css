@@ -297,6 +297,16 @@ body.tradex-hr-rail-collapsed .tradex-hr-rail-item.is-active {
 	}
 }
 
+/* v16 creates a native shell sidebar for every Desk page. The public
+   Tradexcel workspace does not activate its workspace items, leaving a blank
+   220px reservation beside the app-owned rail. Hide only that empty shell on
+   desktop; the mobile shell remains available for the compact menu. */
+@media (min-width: 601px) {
+	body.tradex-hr-rail-enabled .body-sidebar-container {
+		display: none !important;
+	}
+}
+
 @media (max-width: 600px) {
 	body.tradex-hr-rail-enabled .page-container,
 	body.tradex-hr-rail-enabled .workspace-page {

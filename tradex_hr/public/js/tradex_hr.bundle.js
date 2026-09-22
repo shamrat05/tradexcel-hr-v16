@@ -141,7 +141,7 @@ frappe.provide("frappe.ui.tradex_hr");
 			icon: "leave",
 			items: [
 				{ label: __("Leave Requests"), route: "List/Leave Application", primary: true },
-				{ label: __("Leave Calendar"), route: "Calendar/Leave Application" },
+				{ label: __("Leave Calendar"), route: "leave-application/view/calendar" },
 				{ label: __("Allocations"), route: "List/Leave Allocation" },
 				{ label: __("Balances"), route: "query-report/Tradexcel Leave Balance Board" },
 				{ label: __("Leave Policies"), route: "List/Leave Policy" },
@@ -250,7 +250,13 @@ frappe.provide("frappe.ui.tradex_hr");
 	}
 
 	function render() {
-		if (!document.body || document.querySelector(`.${RAIL_CLASS}`)) return;
+		if (!document.body) return;
+		const existing = document.querySelector(`.${RAIL_CLASS}`);
+		if (existing && existing.querySelector(`.${GROUP_CLASS}`)) return;
+		// Frappe replaces page shells during route changes. Keep the shell only
+		// when it is complete; rebuild an emptied rail instead of showing a blank
+		// 248px reservation on list/report/form pages.
+		if (existing) existing.remove();
 		document.body.classList.add("tradex-hr-rail-enabled");
 		const aside = document.createElement("aside");
 		aside.className = RAIL_CLASS;
@@ -322,8 +328,24 @@ frappe.provide("frappe.ui.tradex_hr");
 		}));
 	}
 
-	$(function () {
+	function ensureRail() {
 		render();
-		$(document).on("page-change", refreshActive);
+		if (!document.querySelector(`.${RAIL_CLASS} .${GROUP_CLASS}`)) {
+			window.setTimeout(render, 0);
+			window.setTimeout(render, 250);
+		}
+	}
+
+	$(function () {
+		ensureRail();
+		$(document).on("page-change", function () {
+			ensureRail();
+			refreshActive();
+		});
+		if (window.MutationObserver) {
+			new MutationObserver(function () {
+				if (!document.querySelector(`.${RAIL_CLASS} .${GROUP_CLASS}`)) ensureRail();
+			}).observe(document.body, { childList: true, subtree: true });
+		}
 	});
 })();

@@ -70,7 +70,19 @@ def test_app_owned_dashboard_records_are_custom_records():
     """Runtime install must work on Frappe v16 without developer mode."""
     assert all(values.get("is_standard") == 0 for values in NUMBER_CARDS.values())
     assert all(values.get("is_standard", 0) == 0 for values in DASHBOARD_CHARTS.values())
-    assert all(config.get("is_standard", "No") == "No" for config in REPORTS.values())
+    assert all(
+        config.get("is_standard", "No") == ("Yes" if config.get("report_type") == "Script Report" else "No")
+        for config in REPORTS.values()
+    )
+
+
+def test_python_script_reports_are_app_owned_standard_reports():
+    """Bundled execute() reports must not depend on disabled Server Scripts."""
+    script_reports = {
+        name for name, config in REPORTS.items() if config.get("report_type") == "Script Report"
+    }
+    assert script_reports
+    assert all(REPORTS[name].get("is_standard") == "Yes" for name in script_reports)
 
 
 def test_only_canonical_tradexcel_workspace_is_managed():

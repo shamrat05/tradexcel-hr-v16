@@ -343,10 +343,9 @@ frappe.query_reports[\"Tradexcel Payroll Register\"] = {
     "Tradexcel Salary Coverage Board": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
-        # These are app-owned records, not files managed by developer mode.
-        # Frappe v16 rejects runtime insertion of standard Dashboard/Report
-        # records, so keep them as editable custom records in every site.
-        "is_standard": "No",
+        # This report has a bundled Python execute() module. It must remain a
+        # standard app report; custom Script Reports require Server Scripts.
+        "is_standard": "Yes",
         "javascript": """
 frappe.query_reports[\"Tradexcel Salary Coverage Board\"] = {
   filters: [
@@ -384,19 +383,19 @@ frappe.query_reports[\"Tradexcel Leave Balance Board\"] = {
     "Biometric ID Audit": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
-        "is_standard": "No",
+        "is_standard": "Yes",
         "javascript": BIOMETRIC_ID_AUDIT_JAVASCRIPT,
     },
     "Employee Data Gaps": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
-        "is_standard": "No",
+        "is_standard": "Yes",
         "javascript": EMPLOYEE_DATA_GAPS_JAVASCRIPT,
     },
     "Workforce Anomaly Radar": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
-        "is_standard": "No",
+        "is_standard": "Yes",
         "javascript": WORKFORCE_ANOMALY_RADAR_JAVASCRIPT,
     },
 }
@@ -407,6 +406,36 @@ LEGACY_REPORT_NAMES = {
     "TradeX Salary Coverage Board": "Tradexcel Salary Coverage Board",
     "TradeX Leave Balance Board": "Tradexcel Leave Balance Board",
 }
+
+STANDARD_SCRIPT_REPORT_NAMES = (
+    "Daily Attendance Summary",
+    "Tradexcel Salary Coverage Board",
+    "Biometric ID Audit",
+    "Employee Data Gaps",
+    "Workforce Anomaly Radar",
+)
+
+
+def ensure_standard_script_reports() -> None:
+    """Restore app-owned Python reports from their file-backed definitions.
+
+    Frappe executes a standard Script Report through its app module. A custom
+    Script Report instead executes ``report_script`` with safe_exec, which is
+    disabled by default in v16. Older migrations demoted these five records;
+    repair only those known app-owned records, then let the JSON files remain
+    the source of truth on future migrations.
+    """
+    for report_name in STANDARD_SCRIPT_REPORT_NAMES:
+        if frappe.db.exists("Report", report_name):
+            doc = frappe.get_doc("Report", report_name)
+            if doc.is_standard == "Yes":
+                continue
+            if doc.module not in (None, "", "Tradexcel HR"):
+                frappe.throw(
+                    f"Cannot repair standard report {report_name!r} owned by module {doc.module!r}"
+                )
+            frappe.delete_doc("Report", report_name, force=True, ignore_permissions=True)
+        frappe.reload_doc("tradexcel_hr", "report", frappe.scrub(report_name), force=True)
 
 NUMBER_CARDS = {
     "Tradexcel Active Employees": {
@@ -790,9 +819,11 @@ def _ensure_custom_report(values: dict) -> None:
     """Create/update an app-owned report, including v15->v16 conversion.
 
     Older prototype installs marked these records as standard. Frappe v16
-    correctly refuses to edit a standard report, so an app-owned legacy
-    record is replaced once with the equivalent custom record. A record owned
-    by another module is never silently deleted.
+    correctly refuses to edit a standard report through the Desk. Query
+    reports remain custom records, while app-owned Python Script Reports are
+    kept standard so Frappe loads their bundled ``execute`` function without
+    requiring the unsafe Server Scripts feature. A record owned by another
+    module is never silently deleted.
     """
     values = dict(values)
     roles = values.pop("roles", None)
@@ -827,7 +858,7 @@ def ensure_daily_attendance_report() -> None:
         "report_name": "Daily Attendance Summary",
         "ref_doctype": "Attendance",
         "report_type": "Script Report",
-        "is_standard": "No",
+        "is_standard": "Yes",
         "module": "Tradexcel HR",
         "query": None,
         "report_script": None,
@@ -838,8 +869,10 @@ def ensure_daily_attendance_report() -> None:
 
 
 def ensure_reports() -> None:
-    ensure_daily_attendance_report()
+    ensure_standard_script_reports()
     for name, config in REPORTS.items():
+        if config.get("is_standard") == "Yes":
+            continue
         values = {
             "report_name": name, "ref_doctype": config["ref_doctype"],
             "report_type": config.get("report_type", "Query Report"),
