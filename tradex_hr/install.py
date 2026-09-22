@@ -783,6 +783,40 @@ def workspace_blocks(shortcuts=None):
     return blocks
 
 
+def _ensure_custom_report(values: dict) -> None:
+    """Create/update an app-owned report, including v15->v16 conversion.
+
+    Older prototype installs marked these records as standard. Frappe v16
+    correctly refuses to edit a standard report, so an app-owned legacy
+    record is replaced once with the equivalent custom record. A record owned
+    by another module is never silently deleted.
+    """
+    report_name = values["report_name"]
+    if frappe.db.exists("Report", report_name):
+        doc = frappe.get_doc("Report", report_name)
+        if doc.is_standard == "Yes" and values.get("is_standard") == "No":
+            if doc.module not in (None, "", "Tradexcel HR"):
+                frappe.throw(
+                    f"Cannot replace standard report {report_name!r} owned by module {doc.module!r}"
+                )
+            frappe.delete_doc("Report", report_name, force=True, ignore_permissions=True)
+            doc = frappe.get_doc({"doctype": "Report", **values})
+        else:
+            for key, value in values.items():
+                setattr(doc, key, value)
+    else:
+        doc = frappe.get_doc({"doctype": "Report", **values})
+
+    if "roles" in values:
+        doc.roles = []
+        for role in values.pop("roles"):
+            doc.append("roles", {"role": role})
+    if doc.is_new():
+        doc.insert(ignore_permissions=True)
+    else:
+        doc.save(ignore_permissions=True)
+
+
 def ensure_daily_attendance_report() -> None:
     values = {
         "report_name": "Daily Attendance Summary",
@@ -795,13 +829,7 @@ def ensure_daily_attendance_report() -> None:
         "javascript": DAILY_ATTENDANCE_JAVASCRIPT,
         "disabled": 0,
     }
-    if frappe.db.exists("Report", values["report_name"]):
-        doc = frappe.get_doc("Report", values["report_name"])
-        for key, value in values.items():
-            setattr(doc, key, value)
-        doc.save(ignore_permissions=True)
-    else:
-        frappe.get_doc({"doctype": "Report", **values}).insert(ignore_permissions=True)
+    _ensure_custom_report(values)
 
 
 def ensure_reports() -> None:
@@ -814,20 +842,9 @@ def ensure_reports() -> None:
             "query": config.get("query"), "report_script": config.get("report_script"),
             "javascript": config["javascript"], "disabled": 0,
         }
-        if frappe.db.exists("Report", name):
-            doc = frappe.get_doc("Report", name)
-            for key, value in values.items():
-                setattr(doc, key, value)
-        else:
-            doc = frappe.get_doc({"doctype": "Report", **values})
         if "roles" in config:
-            doc.roles = []
-            for role in config["roles"]:
-                doc.append("roles", {"role": role})
-        if doc.is_new():
-            doc.insert(ignore_permissions=True)
-        else:
-            doc.save(ignore_permissions=True)
+            values["roles"] = config["roles"]
+        _ensure_custom_report(values)
 
 
 def ensure_number_cards() -> None:
