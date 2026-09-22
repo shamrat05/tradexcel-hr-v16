@@ -266,7 +266,7 @@ def test_flagged_outcome_does_not_settle_field_duty_allowance(monkeypatch):
     assert service._field_duty_has_unreleased_checkin("DUTY-TEST") is True
 
 
-def test_approval_releases_native_auto_attendance_once(monkeypatch):
+def test_approval_uses_receipt_policy_when_current_policy_is_weaker(monkeypatch):
     doc = SimpleNamespace(
         name="EC-FLAGGED",
         employee="EMP-TEST",
@@ -276,7 +276,7 @@ def test_approval_releases_native_auto_attendance_once(monkeypatch):
         custom_tradex_review_status="Pending",
         log_type="OUT",
         custom_tradex_field_duty=None,
-        custom_tradex_policy=None,
+        custom_tradex_policy="RECEIPT-STRONG",
         custom_tradex_location_status="Time Review Required",
         custom_tradex_assigned_location=None,
         custom_tradex_distance_m=None,
@@ -292,22 +292,32 @@ def test_approval_releases_native_auto_attendance_once(monkeypatch):
     fake_frappe = SimpleNamespace(
         session=SimpleNamespace(user="reviewer@example.com"),
         get_roles=lambda user: ["Tradexcel HR Manager"],
-        get_doc=lambda *args, **kwargs: doc,
+        get_doc=lambda *args, **kwargs: (
+            doc
+            if args[0] == "Employee Checkin"
+            else SimpleNamespace(
+                name="RECEIPT-STRONG",
+                docstatus=1,
+                enabled=1,
+                require_selfie=1,
+                require_gps=0,
+                face_match_enabled=0,
+            )
+        ),
         db=SimpleNamespace(set_value=lambda *args, **kwargs: updates.append((args, kwargs))),
         enqueue=lambda *args, **kwargs: enqueued.append((args, kwargs)),
     )
     monkeypatch.setattr(service, "frappe", fake_frappe)
     monkeypatch.setattr(service, "now_datetime", lambda: datetime(2026, 9, 22, 15, 30))
-    monkeypatch.setattr(service, "today", lambda: "2026-09-22")
-    policy = SimpleNamespace(name="CURRENT", require_gps=0, face_match_enabled=0)
+    event_policy = SimpleNamespace(name="EVENT-WEAKER", require_gps=0, face_match_enabled=0, require_selfie=0)
     employee = SimpleNamespace(name="EMP-TEST")
     validated = []
     monkeypatch.setattr(service, "_employee", lambda value: employee)
-    monkeypatch.setattr(service, "_policy", lambda *args: policy)
+    monkeypatch.setattr(service, "_policy", lambda *args: event_policy)
     monkeypatch.setattr(
         service,
         "validate_mobile_event_business_context",
-        lambda *args, **kwargs: validated.append((args, kwargs)) or {"policy": policy},
+        lambda *args, **kwargs: validated.append((args, kwargs)) or {"policy": event_policy},
     )
 
     result = service.approve_mobile_checkin("EC-FLAGGED")
@@ -317,6 +327,9 @@ def test_approval_releases_native_auto_attendance_once(monkeypatch):
     assert fields["custom_tradex_review_status"] == "Approved"
     assert fields["skip_auto_attendance"] == 0
     assert validated
+    assert validated[0][1]["security_policy"].name == "RECEIPT-STRONG"
+    assert validated[0][1]["security_policy"].require_selfie == 1
+    assert validated[0][0][3] is event_policy
 
 
 def test_scoped_reviewer_without_user_permission_is_denied(monkeypatch):

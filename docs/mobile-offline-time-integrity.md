@@ -48,9 +48,13 @@ event expires, the selfie Blob, name, and MIME type are stripped; only the
 non-sensitive retry/error metadata remains for the employee to contact HR.
 
 IndexedDB is browser-local storage, not encrypted enterprise storage. Devices
-must use the normal Android screen lock and managed-browser controls. The
-server remains the system of record for approved evidence; do not treat a
-failed/expired local queue record as attendance.
+must use the normal Android screen lock and managed-browser controls. Selfie
+evidence is purged on successful replay, server rejection, expiration
+processing, or the next application opportunity to run cleanup. This is
+application-opportunistic cleanup: a browser cannot guarantee wall-clock
+deletion while the app is never opened. The server remains the system of
+record for approved evidence; do not treat a failed/expired local queue record
+as attendance.
 
 Authorized HR/supervisor users use the Employee Checkin form's **Evidence
 Review** actions. Approval records reviewer and note, sets native

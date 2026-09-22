@@ -326,10 +326,18 @@ def approve_mobile_checkin(checkin, review_note=None):
         frappe.throw(_("This check-in is not awaiting review"))
 
     employee = _employee(doc.employee)
-    # Approval uses today's policy for security gates, while the approved
-    # event-time policy supplies historical business semantics (duty, zone,
-    # shift and evidence rules).  The captured timestamp cannot skip either.
-    security_policy = _policy(employee, today())
+    # The policy stored on the quarantined check-in is the receipt-time
+    # security policy. Load that exact document before validation: resolving
+    # today's policy here could let a later policy change weaken evidence
+    # requirements that applied when the event was received.
+    receipt_policy_name = doc.custom_tradex_policy
+    if not receipt_policy_name:
+        frappe.throw(_("This check-in has no stored receipt-time policy"))
+    security_policy = frappe.get_doc("Tradexcel Attendance Policy", receipt_policy_name)
+
+    # The event-time policy supplies historical business semantics (duty,
+    # zone, shift and evidence rules). The captured timestamp cannot skip
+    # either policy's security and business validation.
     event_policy = _policy(employee, doc.time)
     validate_mobile_event_business_context(
         doc,
