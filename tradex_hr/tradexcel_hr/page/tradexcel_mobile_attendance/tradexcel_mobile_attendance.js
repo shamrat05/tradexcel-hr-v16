@@ -105,6 +105,31 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     await withOfflineStore("readwrite", (store) => store.delete(syncId));
   }
 
+  function stripQueuedSelfie(item, reason) {
+    return {
+      ...item,
+      selfie_blob: null,
+      selfie_name: null,
+      selfie_type: null,
+      retryable: false,
+      last_error: reason,
+      evidence_removed_at: new Date().toISOString(),
+    };
+  }
+
+  async function expireQueuedEvidence(maxAgeHours) {
+    const maxAgeMs = Math.max(1, Number(maxAgeHours || 72)) * 60 * 60 * 1000;
+    const cutoff = Date.now() - maxAgeMs;
+    const items = await queuedCheckins();
+    const expired = items.filter((item) => new Date(item.queued_at).getTime() < cutoff);
+    for (const item of expired) {
+      await withOfflineStore("readwrite", (store) =>
+        store.put(stripQueuedSelfie(item, __("Offline event expired before synchronization.")))
+      );
+    }
+    return expired.length;
+  }
+
   function isNetworkError(error) {
     return !navigator.onLine || !error || error.status === 0 || error.readyState === 0 ||
       error.status >= 500 || error.name === "TypeError";
@@ -265,7 +290,9 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
           await replayQueuedCheckin(item);
         } catch (error) {
           if (isNetworkError(error)) break;
-          await withOfflineStore("readwrite", (store) => store.put({...item, retryable: false, last_error: error.message || __("Server rejected event") }));
+          await withOfflineStore("readwrite", (store) =>
+            store.put(stripQueuedSelfie(item, error.message || __("Server rejected event")))
+          );
         }
       }
     } finally {
@@ -323,6 +350,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     context = response.message;
     contextEl.text(context.employee_name + " · " + context.attendance_mode + " · " + context.company);
     lastEl.text(context.last_checkin ? __("Last {0}: {1}", [context.last_checkin.log_type, context.last_checkin.time]) : __("No mobile check-in yet"));
+    await expireQueuedEvidence(context.offline_max_age_hours);
     const queued = await queuedCheckins().catch(() => []);
     const pendingForEmployee = queued
       .filter((item) => item.employee === context.employee && item.retryable !== false)

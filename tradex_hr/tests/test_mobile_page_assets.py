@@ -30,6 +30,9 @@ def test_mobile_attendance_has_durable_offline_queue_contract():
     assert "flushOfflineQueue" in script
     assert "sync_id" in script
     assert "queueOfflineCheckin" in script
+    assert "expireQueuedEvidence" in script
+    assert "stripQueuedSelfie" in script
+    assert "selfie_blob: null" in script
 
 
 def test_live_locations_script_registers_with_frappe_page_name():

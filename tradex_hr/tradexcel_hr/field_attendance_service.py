@@ -870,6 +870,7 @@ def get_mobile_context():
         "attendance_mode": policy.attendance_mode,
         "require_gps": bool(policy.require_gps),
         "require_selfie": bool(policy.require_selfie),
+        "offline_max_age_hours": int(policy.offline_max_age_hours or 72),
         "tracking_mode": policy.tracking_mode,
         "field_duty": duty,
         "tracking_active": bool(duty and duty.tracking_enabled and last and last[0].log_type == "IN"),
