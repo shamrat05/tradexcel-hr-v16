@@ -11,6 +11,52 @@ from tradex_hr.tradexcel_hr.attendance_payroll_boundary import (
 )
 
 
+def _salary_slips_using_input(additional_salary: str) -> list[dict]:
+    return frappe.db.sql(
+        """
+        SELECT ss.name, ss.docstatus
+        FROM `tabSalary Slip` ss
+        INNER JOIN `tabSalary Detail` sd ON sd.parent = ss.name
+        WHERE sd.parenttype = 'Salary Slip'
+          AND sd.additional_salary = %(additional_salary)s
+          AND ss.docstatus IN (0, 1)
+        """,
+        {"additional_salary": additional_salary},
+        as_dict=True,
+    )
+
+
+def _retire_daily_wage_inputs(period_name: str) -> None:
+    """Disable old derived inputs before a period can be revised.
+
+    A submitted Salary Slip may already have consumed the input, and even a
+    draft slip can later be submitted with the old amount. Both cases require
+    payroll reconciliation rather than silently changing financial history.
+    """
+    inputs = frappe.get_all(
+        "Additional Salary",
+        filters={
+            "ref_doctype": "Tradexcel Attendance Period",
+            "ref_docname": period_name,
+            "custom_tradex_payroll_input_key": ["like", f"DAILY-WAGE:{period_name}:r%"],
+            "docstatus": ["<", 2],
+        },
+        fields=["name", "docstatus", "disabled"],
+    )
+    for item in inputs:
+        users = _salary_slips_using_input(item["name"])
+        if users:
+            names = ", ".join(row["name"] for row in users[:5])
+            frappe.throw(
+                _(
+                    "Attendance Period {0} has already been used by Salary Slip(s) {1}. "
+                    "Use payroll correction instead of reopening it."
+                ).format(period_name, names)
+            )
+        if not item["disabled"]:
+            frappe.db.set_value("Additional Salary", item["name"], "disabled", 1)
+
+
 class TradexcelAttendancePeriod(Document):
     def validate(self):
         if self.from_date and self.to_date and self.from_date > self.to_date:
@@ -59,6 +105,7 @@ class TradexcelAttendancePeriod(Document):
         self.check_permission("write")
         if self.status != "Finalized":
             frappe.throw(_("Only a finalized attendance period can be reopened"))
+        _retire_daily_wage_inputs(self.name)
         self.status = "Reopened"
         self._reopen_context = True
         self.save()

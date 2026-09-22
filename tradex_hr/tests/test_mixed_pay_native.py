@@ -6,6 +6,7 @@ import os
 import frappe
 import pytest
 from hrms.payroll.doctype.payroll_entry.payroll_entry import PayrollEntry
+from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
 from hrms.payroll.doctype.salary_structure.salary_structure import make_salary_slip
 
 from tradex_hr.tradexcel_hr import daily_wage_input
@@ -81,8 +82,18 @@ def test_daily_wage_native_chain_is_exact_and_idempotent(monkeypatch):
     frappe.db.savepoint(savepoint)
     try:
         structure = _safe_structure(employee, f"TEST Daily Wage {frappe.generate_hash(6)}")
-        for offset in range(10):
-            _attendance(employee.name, date(2026, 12, 1) + timedelta(days=offset))
+        probe = SalarySlip({"doctype": "Salary Slip"})
+        probe.employee = employee.name
+        probe.start_date = date(2026, 12, 1)
+        probe.end_date = date(2026, 12, 31)
+        holidays = set(probe.get_holidays_for_employee(probe.start_date, probe.end_date))
+        working_days = [
+            probe.start_date + timedelta(days=offset)
+            for offset in range(31)
+            if probe.start_date + timedelta(days=offset) not in holidays
+        ]
+        for index, day in enumerate(working_days):
+            _attendance(employee.name, day, "Present" if index < 10 else "Absent")
 
         period = frappe.get_doc({
             "doctype": "Tradexcel Attendance Period",
@@ -127,3 +138,49 @@ def test_legacy_staging_daily_structure_remains_blocked():
     if not frappe.db.exists("Salary Structure", "TCL Daily Wage"):
         pytest.skip("TCL Daily Wage is not configured on staging")
     assert result["status"] == "BLOCKED_UNSAFE_STRUCTURE"
+
+
+def test_native_attendance_status_and_holiday_semantics(monkeypatch):
+    employee = _employee()
+    if not employee:
+        pytest.skip("No active TCL staging employee")
+    savepoint = "mixed_native_statuses"
+    frappe.db.savepoint(savepoint)
+    try:
+        _safe_structure(employee, f"TEST Daily Wage {frappe.generate_hash(6)}")
+        probe = SalarySlip({"doctype": "Salary Slip"})
+        probe.employee = employee.name
+        probe.start_date = date(2026, 12, 1)
+        probe.end_date = date(2026, 12, 31)
+        holidays = set(probe.get_holidays_for_employee(probe.start_date, probe.end_date))
+        working_days = [
+            probe.start_date + timedelta(days=offset)
+            for offset in range(31)
+            if probe.start_date + timedelta(days=offset) not in holidays
+        ]
+        if len(working_days) < 3 or not holidays:
+            pytest.skip("Staging employee needs three working days and one holiday")
+
+        settings = type("Settings", (), {
+            "consider_marked_attendance_on_holidays": 0,
+            "include_holidays_in_total_working_days": 0,
+        })()
+        monkeypatch.setattr(daily_wage_input, "_half_day_fraction", lambda: 0.5)
+        monkeypatch.setattr(daily_wage_input.frappe, "get_cached_doc", lambda _doctype: settings)
+
+        present_day, absent_day, half_day = working_days[:3]
+        _attendance(employee.name, present_day, "Present")
+        _attendance(employee.name, absent_day, "Absent")
+        _attendance(employee.name, half_day, "Half Day", half_day_status="Absent")
+
+        assert daily_wage_input._native_attendance_units(employee.name, present_day, present_day)["payable_units"] == 1
+        assert daily_wage_input._native_attendance_units(employee.name, absent_day, absent_day)["payable_units"] == 0
+        assert daily_wage_input._native_attendance_units(employee.name, half_day, half_day)["payable_units"] == 0.5
+
+        holiday = next(iter(holidays))
+        _attendance(employee.name, holiday, "Absent")
+        assert daily_wage_input._native_attendance_units(employee.name, holiday, holiday)["payable_units"] == 0
+        settings.include_holidays_in_total_working_days = 1
+        assert daily_wage_input._native_attendance_units(employee.name, holiday, holiday)["payable_units"] == 1
+    finally:
+        frappe.db.rollback(save_point=savepoint)

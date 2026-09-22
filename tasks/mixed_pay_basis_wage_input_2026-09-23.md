@@ -46,6 +46,18 @@ path never uses it to calculate money. SSA `base` is the only daily-rate source.
   correctly prevents canceling a submitted structure with submitted assignments.
   A native effective-dated structure/assignment migration is required before
   real Daily Wage inputs are enabled.
+- Pay-basis metadata now fails closed if a populated value would change on a
+  structure with submitted assignments. Blank metadata may be seeded once;
+  later changes require a new native structure and effective-dated assignment.
+- Reopening a finalized period disables unconsumed derived Daily Wage inputs.
+  If a draft or submitted Salary Slip already references one, ordinary reopen
+  is blocked and payroll correction is required instead.
+- Existing Daily Wage input reuse verifies employee, company, component, amount,
+  payroll date, Attendance Period reference, docstatus and disabled state. A
+  unique-key insert race re-reads the winning row and returns `EXISTING`.
+- Daily Wage unit calculation delegates to native `SalarySlip` attendance
+  methods for holidays, LWP/PPL, half-day fraction and marked-holiday policy;
+  it does not maintain a parallel status calculator.
 
 ## Native evidence
 
@@ -91,8 +103,10 @@ Salary Structures or touch payroll documents.
 Post-migration metadata is present on all three declared structures. Current
 TCL staging still has the old linked `TCL Daily Wage` child formula and is
 therefore intentionally blocked. Current September Attendance inspection finds
-159 `ATTENDANCE_UNMARKED` Daily Wage employees, 0 monthly payroll-only blockers
-in the Attendance decision, and no global Payroll Settings change.
+238 employees in scope, with 159 `ATTENDANCE_UNMARKED` Daily Wage blockers. The
+assignment population is 159 Daily Wage and 65 Monthly Salary employees;
+monthly staff are not forced into Attendance completeness while the site remains
+Leave-based. No global Payroll Settings change was made.
 
 ## Alternatives not chosen
 
@@ -115,8 +129,10 @@ in the Attendance decision, and no global Payroll Settings change.
 
 ## Verification
 
-- Focused tests: **25 passed, 1 warning**.
-- Full app suite: **201 passed, 2 skipped, 1 warning**.
+- Focused Phase A tests: **22 passed, 2 warnings**.
+- Full app suite: **208 passed, 2 skipped, 2 warnings**.
+- Staging has no configured LWP/PPL Leave Types; those cases are delegated to
+  native HRMS semantics and remain a configuration/test-data gate.
 - Compilation: **passed** with `/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q tradex_hr`.
 - `git diff --check`: **passed**.
 - Temporary native records: savepoint-rolled back; no real Salary Slip or

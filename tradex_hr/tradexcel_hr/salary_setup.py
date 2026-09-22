@@ -196,9 +196,18 @@ def ensure_pay_basis_metadata(spec: dict | None = None, *, commit: bool = False)
         if doc.custom_tradex_pay_basis == wanted:
             log.append(f"  ok     pay basis {name} = {wanted}")
             continue
-        # This is metadata only. Salary Structures are linked by submitted
-        # assignments, so cancel/re-submit would be both unnecessary and
-        # rejected by native Frappe link protection.
+        submitted_assignments = frappe.db.count(
+            "Salary Structure Assignment", {"salary_structure": name, "docstatus": 1}
+        )
+        if doc.custom_tradex_pay_basis and submitted_assignments:
+            raise frappe.ValidationError(
+                f"Cannot change pay basis for {name}: it has {submitted_assignments} "
+                "submitted Salary Structure Assignment(s). Create a new Salary "
+                "Structure and effective-dated assignment instead."
+            )
+        # A blank field is a one-time migration seed, even when the existing
+        # structure is historically assigned. Once populated, changing the
+        # financial meaning requires a new native structure/assignment pair.
         frappe.db.set_value(
             "Salary Structure", name, "custom_tradex_pay_basis", wanted, update_modified=False
         )

@@ -3,6 +3,7 @@ import os
 import frappe
 import pytest
 
+from tradex_hr.tradexcel_hr.doctype.tradexcel_attendance_period import tradexcel_attendance_period
 
 @pytest.fixture(scope="module", autouse=True)
 def site():
@@ -50,3 +51,38 @@ def test_direct_status_edit_cannot_bypass_actions():
             period.save(ignore_permissions=True)
     finally:
         frappe.db.rollback(save_point=save_point)
+
+
+def test_reopen_disables_unconsumed_daily_wage_inputs(monkeypatch):
+    retired = []
+    monkeypatch.setattr(
+        tradexcel_attendance_period.frappe,
+        "get_all",
+        lambda *_args, **_kwargs: [{"name": "AS-1", "docstatus": 1, "disabled": 0}],
+    )
+    monkeypatch.setattr(tradexcel_attendance_period, "_salary_slips_using_input", lambda _name: [])
+    monkeypatch.setattr(
+        tradexcel_attendance_period.frappe.db,
+        "set_value",
+        lambda *args, **_kwargs: retired.append(args),
+    )
+
+    tradexcel_attendance_period._retire_daily_wage_inputs("ATT-PER-1")
+
+    assert retired == [("Additional Salary", "AS-1", "disabled", 1)]
+
+
+def test_reopen_blocks_when_daily_wage_input_is_already_used(monkeypatch):
+    monkeypatch.setattr(
+        tradexcel_attendance_period.frappe,
+        "get_all",
+        lambda *_args, **_kwargs: [{"name": "AS-1", "docstatus": 1, "disabled": 0}],
+    )
+    monkeypatch.setattr(
+        tradexcel_attendance_period,
+        "_salary_slips_using_input",
+        lambda _name: [{"name": "SAL-SLIP-1", "docstatus": 1}],
+    )
+
+    with pytest.raises(frappe.ValidationError, match="payroll correction"):
+        tradexcel_attendance_period._retire_daily_wage_inputs("ATT-PER-1")

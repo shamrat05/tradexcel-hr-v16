@@ -13,7 +13,7 @@ from typing import Any
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate
+from frappe.utils import cint, flt, getdate
 
 from tradex_hr.tradexcel_hr.attendance_payroll_boundary import (
     payment_day_component_findings,
@@ -46,49 +46,43 @@ def _half_day_fraction() -> float:
     return value
 
 
-def _leave_type_map(names: set[str]) -> dict[str, dict[str, Any]]:
-    if not names:
-        return {}
-    rows = frappe.get_all(
-        "Leave Type",
-        filters={"name": ["in", sorted(names)]},
-        fields=["name", "is_lwp", "is_ppl", "fraction_of_daily_salary_per_leave", "include_holiday"],
+def _native_attendance_units(
+    employee: str,
+    start: date,
+    end: date,
+) -> dict[str, Any]:
+    """Use HRMS Salary Slip's attendance semantics without creating a slip.
+
+    This deliberately delegates holidays, LWP/PPL, half-day handling and the
+    holiday-attendance setting to native HRMS methods. The caller must still
+    require a finalized Attendance Period before creating payroll input.
+    """
+    from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
+
+    settings = frappe.get_cached_doc("Payroll Settings")
+    fraction = _half_day_fraction()
+    slip = SalarySlip({"doctype": "Salary Slip"})
+    slip.employee = employee
+    slip.start_date = start
+    slip.end_date = end
+
+    holidays = slip.get_holidays_for_employee(start, end)
+    lwp, absent = slip.calculate_lwp_ppl_and_absent_days_based_on_attendance(
+        holidays,
+        fraction,
+        cint(settings.consider_marked_attendance_on_holidays),
     )
-    return {row.name: row for row in rows}
+    payment_days = slip.get_payment_days(cint(settings.include_holidays_in_total_working_days))
+    if payment_days <= lwp:
+        units = 0.0
+    else:
+        units = payment_days - lwp - absent
+        half_absent = slip.get_half_absent_days(
+            cint(settings.consider_marked_attendance_on_holidays), holidays
+        )
+        units -= half_absent * fraction
 
-
-def _attendance_units(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Translate native Attendance statuses using explicit native settings."""
-    if len({str(row.get("attendance_date")) for row in rows}) != len(rows):
-        return {"status": "CONFLICT", "reason": "Multiple submitted Attendance rows exist for one employee/date"}
-
-    half_day_fraction = _half_day_fraction()
-    leave_types = _leave_type_map({row.get("leave_type") for row in rows if row.get("leave_type")})
-    units = 0.0
-    for row in rows:
-        status = row.get("status")
-        if status in {"Present", "Work From Home"}:
-            units += 1
-        elif status == "Absent":
-            continue
-        elif status == "Half Day":
-            # HRMS treats the other half as Absent when explicitly marked;
-            # otherwise the full day remains payable. The configured native
-            # fraction is therefore applied only to the absent half.
-            units += half_day_fraction if row.get("half_day_status") == "Absent" else 1
-        elif status == "On Leave":
-            leave = leave_types.get(row.get("leave_type"))
-            if not leave:
-                return {"status": "UNRESOLVED", "reason": "On Leave Attendance has no valid Leave Type"}
-            if leave.is_lwp:
-                continue
-            if leave.is_ppl:
-                units += flt(leave.fraction_of_daily_salary_per_leave)
-            else:
-                units += 1
-        else:
-            return {"status": "UNRESOLVED", "reason": f"Unsupported Attendance status {status!r}"}
-    return {"status": "READY", "payable_units": flt(units), "attendance_count": len(rows)}
+    return {"status": "READY", "payable_units": flt(max(units, 0)), "native": True}
 
 
 def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: str | date) -> dict[str, Any]:
@@ -122,7 +116,18 @@ def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: 
     actual_start = max(start, getdate(joining)) if joining else start
     actual_end = min(end, getdate(relieving)) if relieving else end
     rows = _attendance_rows(employee, actual_start, actual_end) if actual_start <= actual_end else []
-    units = _attendance_units(rows)
+    if len({str(row.get("attendance_date")) for row in rows}) != len(rows):
+        return {
+            "status": "CONFLICT",
+            "employee": employee,
+            "reason": "Multiple submitted Attendance rows exist for one employee/date",
+        }
+    units = _native_attendance_units(
+        employee,
+        actual_start,
+        actual_end,
+    )
+    units["attendance_count"] = len(rows)
     if units["status"] != "READY":
         return {"status": units["status"], "employee": employee, "reason": units["reason"]}
     amount = flt(rate["rate"] * units["payable_units"])
@@ -162,21 +167,24 @@ def create_daily_wage_input(
         return {**result, "status": "NO_PAYABLE_UNITS"}
 
     key = f"DAILY-WAGE:{period.name}:r{period.revision}:{employee}:{salary_component}"
-    existing = frappe.db.get_value(
-        "Additional Salary",
-        {"custom_tradex_payroll_input_key": key},
-        ["name", "amount", "docstatus"],
-        as_dict=True,
-    )
+    company = frappe.db.get_value("Employee", employee, "company")
+    expected = {
+        "employee": employee,
+        "company": company,
+        "salary_component": salary_component,
+        "amount": result["amount"],
+        "payroll_date": period.to_date,
+        "ref_doctype": "Tradexcel Attendance Period",
+        "ref_docname": period.name,
+    }
+    existing = _get_existing_input(key)
     if existing:
-        if flt(existing.amount) != flt(result["amount"]):
-            frappe.throw(_("Existing Daily Wage input {0} does not match finalized Attendance").format(existing.name))
-        return {**result, "status": "EXISTING", "additional_salary": existing.name}
+        return _reuse_existing_input(existing, expected, submit=submit, result=result)
 
     doc = frappe.get_doc({
         "doctype": "Additional Salary",
         "employee": employee,
-        "company": frappe.db.get_value("Employee", employee, "company"),
+        "company": company,
         "salary_component": salary_component,
         "amount": result["amount"],
         "payroll_date": period.to_date,
@@ -185,7 +193,70 @@ def create_daily_wage_input(
         "ref_docname": period.name,
         "custom_tradex_payroll_input_key": key,
     })
-    doc.insert(ignore_permissions=True)
-    if submit:
-        doc.submit()
+    try:
+        doc.insert(ignore_permissions=True)
+        if submit:
+            doc.submit()
+    except frappe.DuplicateEntryError:
+        # The unique key is the concurrency boundary. A racing request may
+        # lose the insert after both callers observed no existing row; recover
+        # the winner and return the same idempotent result.
+        recovered = _recover_duplicate_input(key, expected, submit=submit, result=result)
+        if recovered is None:
+            raise
+        return recovered
     return {**result, "status": "CREATED", "additional_salary": doc.name}
+
+
+def _get_existing_input(key: str):
+    return frappe.db.get_value(
+        "Additional Salary",
+        {"custom_tradex_payroll_input_key": key},
+        [
+            "name",
+            "employee",
+            "company",
+            "salary_component",
+            "amount",
+            "payroll_date",
+            "ref_doctype",
+            "ref_docname",
+            "docstatus",
+            "disabled",
+        ],
+        as_dict=True,
+    )
+
+
+def _recover_duplicate_input(key: str, expected: dict[str, Any], *, submit: bool, result: dict[str, Any]):
+    existing = _get_existing_input(key)
+    if not existing:
+        return None
+    return _reuse_existing_input(existing, expected, submit=submit, result=result)
+
+
+def _reuse_existing_input(existing, expected: dict[str, Any], *, submit: bool, result: dict[str, Any]):
+    def value(field: str):
+        return existing.get(field) if hasattr(existing, "get") else getattr(existing, field, None)
+
+    mismatches = []
+    for field in ("employee", "company", "salary_component", "payroll_date", "ref_doctype", "ref_docname"):
+        if str(value(field) or "") != str(expected.get(field) or ""):
+            mismatches.append(field)
+    if flt(value("amount")) != flt(expected["amount"]):
+        mismatches.append("amount")
+    if mismatches:
+        frappe.throw(
+            _("Existing Daily Wage input {0} does not match finalized Attendance ({1})").format(
+                value("name"), ", ".join(mismatches)
+            )
+        )
+    if value("docstatus") == 2 or value("disabled"):
+        frappe.throw(
+            _("Daily Wage input key {0} belongs to a cancelled or disabled record; review the period revision").format(
+                value("name")
+            )
+        )
+    if submit and value("docstatus") == 0:
+        frappe.get_doc("Additional Salary", value("name")).submit()
+    return {**result, "status": "EXISTING", "additional_salary": value("name")}

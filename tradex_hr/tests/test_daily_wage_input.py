@@ -1,32 +1,84 @@
+from datetime import date
 from types import SimpleNamespace
 
 from tradex_hr.tradexcel_hr import daily_wage_input
 
 
-def test_attendance_units_use_native_statuses_and_half_day_setting(monkeypatch):
-    monkeypatch.setattr(daily_wage_input, "_half_day_fraction", lambda: 0.5)
-    monkeypatch.setattr(daily_wage_input, "_leave_type_map", lambda _names: {})
+def test_attendance_units_delegate_to_native_salary_slip(monkeypatch):
+    from hrms.payroll.doctype.salary_slip import salary_slip as native_salary_slip
 
-    result = daily_wage_input._attendance_units([
-        {"attendance_date": "2026-09-01", "status": "Present"},
-        {"attendance_date": "2026-09-02", "status": "Work From Home"},
-        {"attendance_date": "2026-09-03", "status": "Half Day", "half_day_status": "Absent"},
-        {"attendance_date": "2026-09-04", "status": "Absent"},
-    ])
+    monkeypatch.setattr(daily_wage_input, "_half_day_fraction", lambda: 0.5)
+    monkeypatch.setattr(
+        daily_wage_input.frappe,
+        "get_cached_doc",
+        lambda _doctype: SimpleNamespace(
+            consider_marked_attendance_on_holidays=0,
+            include_holidays_in_total_working_days=0,
+        ),
+    )
+
+    class FakeSalarySlip:
+        def __init__(self, _data):
+            pass
+
+        def get_holidays_for_employee(self, _start, _end):
+            return []
+
+        def calculate_lwp_ppl_and_absent_days_based_on_attendance(self, *_args):
+            return 0, 0
+
+        def get_payment_days(self, _include_holidays):
+            return 3
+
+        def get_half_absent_days(self, *_args):
+            return 1
+
+    monkeypatch.setattr(native_salary_slip, "SalarySlip", FakeSalarySlip)
+
+    result = daily_wage_input._native_attendance_units("EMP-1", date(2026, 9, 1), date(2026, 9, 3))
 
     assert result["status"] == "READY"
     assert result["payable_units"] == 2.5
 
 
-def test_on_leave_requires_native_leave_type(monkeypatch):
-    monkeypatch.setattr(daily_wage_input, "_half_day_fraction", lambda: 0.5)
-    monkeypatch.setattr(daily_wage_input, "_leave_type_map", lambda _names: {})
+def test_native_attendance_units_never_infer_from_raw_checkins():
+    import inspect
 
-    result = daily_wage_input._attendance_units([
-        {"attendance_date": "2026-09-01", "status": "On Leave", "leave_type": "Missing"},
-    ])
+    assert "_checkin_records" not in inspect.getsource(daily_wage_input)
 
-    assert result["status"] == "UNRESOLVED"
+
+def test_duplicate_insert_recovery_returns_existing(monkeypatch):
+    existing = {
+        "name": "AS-1",
+        "employee": "EMP-1",
+        "company": "TCL",
+        "salary_component": "Daily Wage",
+        "amount": 3500,
+        "payroll_date": "2026-09-30",
+        "ref_doctype": "Tradexcel Attendance Period",
+        "ref_docname": "ATT-PER-1",
+        "docstatus": 1,
+        "disabled": 0,
+    }
+    monkeypatch.setattr(daily_wage_input, "_get_existing_input", lambda _key: existing)
+
+    result = daily_wage_input._recover_duplicate_input(
+        "DAILY-WAGE:ATT-PER-1:r1:EMP-1:Daily Wage",
+        {
+            "employee": "EMP-1",
+            "company": "TCL",
+            "salary_component": "Daily Wage",
+            "amount": 3500,
+            "payroll_date": "2026-09-30",
+            "ref_doctype": "Tradexcel Attendance Period",
+            "ref_docname": "ATT-PER-1",
+        },
+        submit=True,
+        result={"amount": 3500},
+    )
+
+    assert result["status"] == "EXISTING"
+    assert result["additional_salary"] == "AS-1"
 
 
 def test_daily_input_has_no_raw_checkin_dependency():
@@ -49,10 +101,10 @@ def test_daily_rate_comes_from_resolved_assignment_not_policy(monkeypatch):
     monkeypatch.setattr(daily_wage_input, "frappe", SimpleNamespace(
         get_all=lambda *args, **kwargs: [], db=fake_db,
     ))
-    monkeypatch.setattr(daily_wage_input, "_attendance_units", lambda _rows: {
-        "status": "READY", "payable_units": 10, "attendance_count": 10,
-    })
     monkeypatch.setattr(daily_wage_input, "payment_day_component_findings", lambda _rows: [])
+    monkeypatch.setattr(daily_wage_input, "_native_attendance_units", lambda *_args, **_kwargs: {
+        "status": "READY", "payable_units": 10, "native": True,
+    })
 
     result = daily_wage_input.calculate_daily_wage_input("EMP-1", "2026-09-01", "2026-09-30")
 
