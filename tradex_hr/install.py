@@ -343,7 +343,10 @@ frappe.query_reports[\"Tradexcel Payroll Register\"] = {
     "Tradexcel Salary Coverage Board": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
-        "is_standard": "Yes",
+        # These are app-owned records, not files managed by developer mode.
+        # Frappe v16 rejects runtime insertion of standard Dashboard/Report
+        # records, so keep them as editable custom records in every site.
+        "is_standard": "No",
         "javascript": """
 frappe.query_reports[\"Tradexcel Salary Coverage Board\"] = {
   filters: [
@@ -381,19 +384,19 @@ frappe.query_reports[\"Tradexcel Leave Balance Board\"] = {
     "Biometric ID Audit": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
-        "is_standard": "Yes",
+        "is_standard": "No",
         "javascript": BIOMETRIC_ID_AUDIT_JAVASCRIPT,
     },
     "Employee Data Gaps": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
-        "is_standard": "Yes",
+        "is_standard": "No",
         "javascript": EMPLOYEE_DATA_GAPS_JAVASCRIPT,
     },
     "Workforce Anomaly Radar": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
-        "is_standard": "Yes",
+        "is_standard": "No",
         "javascript": WORKFORCE_ANOMALY_RADAR_JAVASCRIPT,
     },
 }
@@ -414,7 +417,7 @@ NUMBER_CARDS = {
         "filters_json": json.dumps([
             ["Employee", "status", "=", "Active", False],
         ]),
-        "is_standard": 1,
+        "is_standard": 0,
         "module": "Tradexcel HR",
         "is_public": 1,
         "color": "Green",
@@ -428,7 +431,7 @@ NUMBER_CARDS = {
             ["Employee", "company", "=", COMPANY, False],
             ["Employee", "status", "=", "Active", False],
         ]),
-        "is_standard": 1,
+        "is_standard": 0,
         "module": "Tradexcel HR",
         "is_public": 1,
         "color": "Blue",
@@ -442,7 +445,7 @@ NUMBER_CARDS = {
             ["Employee", "company", "=", "Elegance Footwear Ltd.", False],
             ["Employee", "status", "=", "Active", False],
         ]),
-        "is_standard": 1,
+        "is_standard": 0,
         "module": "Tradexcel HR",
         "is_public": 1,
         "color": "Purple",
@@ -453,7 +456,7 @@ NUMBER_CARDS = {
         "document_type": "Employee Checkin",
         "function": "Count",
         "filters_json": json.dumps([["Employee Checkin", "docstatus", "<", "2", False]]),
-        "is_standard": 1,
+        "is_standard": 0,
         "module": "Tradexcel HR",
         "is_public": 1,
         "color": "Blue",
@@ -466,7 +469,7 @@ NUMBER_CARDS = {
         "filters_json": json.dumps([
             ["Attendance", "status", "=", "Present", False],
         ]),
-        "is_standard": 1,
+        "is_standard": 0,
         "module": "Tradexcel HR",
         "is_public": 1,
         "color": "Cyan",
@@ -479,7 +482,7 @@ NUMBER_CARDS = {
         "filters_json": json.dumps([
             ["Attendance", "status", "=", "Absent", False],
         ]),
-        "is_standard": 1,
+        "is_standard": 0,
         "module": "Tradexcel HR",
         "is_public": 1,
         "color": "Red",
@@ -785,7 +788,7 @@ def ensure_daily_attendance_report() -> None:
         "report_name": "Daily Attendance Summary",
         "ref_doctype": "Attendance",
         "report_type": "Script Report",
-        "is_standard": "Yes",
+        "is_standard": "No",
         "module": "Tradexcel HR",
         "query": None,
         "report_script": None,
@@ -848,7 +851,7 @@ def ensure_dashboard_charts() -> None:
         payload = {
             "doctype": "Dashboard Chart",
             "chart_name": name,
-            "is_standard": 1,
+            "is_standard": 0,
             "module": "Tradexcel HR",
             "is_public": 1,
             **values,

@@ -65,6 +65,13 @@ def test_dashboard_has_company_specific_headcount_cards():
     assert {"Tradexcel Active Employees", "Tradexcel TCL Active Employees", "Tradexcel EFL Active Employees"} <= set(NUMBER_CARDS)
 
 
+def test_app_owned_dashboard_records_are_custom_records():
+    """Runtime install must work on Frappe v16 without developer mode."""
+    assert all(values.get("is_standard") == 0 for values in NUMBER_CARDS.values())
+    assert all(values.get("is_standard", 0) == 0 for values in DASHBOARD_CHARTS.values())
+    assert all(config.get("is_standard", "No") == "No" for config in REPORTS.values())
+
+
 def test_only_canonical_tradexcel_workspace_is_managed():
     assert set(WORKSPACE_NAMES) == {"tradexcel-hr"}
     assert CANONICAL_WORKSPACE_NAME == "tradexcel-hr"
