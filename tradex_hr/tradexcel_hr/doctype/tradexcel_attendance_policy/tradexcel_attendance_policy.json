@@ -21,7 +21,7 @@
   {"fieldname":"require_gps","fieldtype":"Check","label":"Require GPS","default":"0"},
   {"fieldname":"require_selfie","fieldtype":"Check","label":"Require Selfie","default":"0"},
   {"fieldname":"offline_trust_window_minutes","fieldtype":"Int","label":"Online Clock Trust Window (Minutes)","default":"5","description":"A captured time within this receipt-time window is trusted automatically. Older or future events are quarantined for review."},
-  {"fieldname":"offline_max_age_hours","fieldtype":"Int","label":"Maximum Offline Acceptance Age (Hours)","default":"72","description":"Maximum age for receiving an offline event. Events outside the trust window remain quarantined; events older than this may be blocked by policy."},
+  {"fieldname":"offline_max_age_hours","fieldtype":"Int","label":"Maximum Offline Acceptance Age (Hours)","default":"72","description":"Hard maximum age for receiving an offline event. Older or far-future events are rejected; events inside this age but outside the trust window are quarantined."},
   {"fieldname":"offline_time_action","fieldtype":"Select","label":"Suspicious Offline Time","options":"Flag\u000aBlock","default":"Flag","reqd":1},
   {"fieldname":"face_match_enabled","fieldtype":"Check","label":"Enable Face Match","default":"0"},
   {"fieldname":"tracking_mode","fieldtype":"Select","label":"Location Tracking","options":"Check-in/out Only\u000aActive Duty Pings","default":"Check-in/out Only","reqd":1},

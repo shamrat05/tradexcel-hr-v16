@@ -1,6 +1,8 @@
 from datetime import datetime
+from types import SimpleNamespace
 
 import frappe
+import pytest
 
 from tradex_hr.tradexcel_hr import field_attendance_service as service
 from tradex_hr.tradexcel_hr.field_attendance_service import (
@@ -66,26 +68,37 @@ def test_online_event_inside_trust_window_is_trusted():
     assert result["status"] == "Trusted"
 
 
-def test_old_event_is_flagged_for_review_but_not_trusted():
+def test_event_beyond_maximum_offline_age_is_hard_blocked():
     result = _mobile_event_timing(
         datetime(2026, 9, 22, 15, 12),
         datetime(2026, 9, 18, 10, 3),
         {"offline_max_age_hours": 72, "offline_trust_window_minutes": 5, "offline_time_action": "Flag"},
     )
     assert result["event_time"] == datetime(2026, 9, 18, 10, 3)
-    assert result["status"] == "Flagged"
+    assert result["status"] == "Blocked"
     assert "offline limit" in result["reason"]
 
 
-def test_old_offline_event_is_flagged_by_default_policy():
+def test_old_offline_event_is_hard_blocked_even_when_review_mode_is_flag():
     result = _mobile_event_timing(
         datetime(2026, 9, 22, 15, 12),
         datetime(2026, 9, 18, 10, 3),
         {"offline_max_age_hours": 72, "offline_trust_window_minutes": 5, "offline_time_action": "Flag"},
     )
     assert result["event_time"] == datetime(2026, 9, 18, 10, 3)
-    assert result["status"] == "Flagged"
+    assert result["status"] == "Blocked"
     assert "older" in result["reason"]
+
+
+def test_mobile_timestamp_string_requires_explicit_timezone_offset():
+    from types import SimpleNamespace
+
+    fake_frappe = SimpleNamespace(throw=lambda message: (_ for _ in ()).throw(ValueError(message)))
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(service, "frappe", fake_frappe)
+    with pytest.raises(Exception, match="timezone offset"):
+        _device_datetime("2026-09-22 10:03:00", require_timezone=True)
+    monkeypatch.undo()
 
 
 def test_future_device_clock_is_rejected_when_policy_blocks():
@@ -245,8 +258,6 @@ def test_mobile_checkin_without_captured_time_cannot_fall_back_to_doc_time(monke
 
 
 def test_flagged_outcome_does_not_settle_field_duty_allowance(monkeypatch):
-    from types import SimpleNamespace
-
     monkeypatch.setattr(
         service,
         "frappe",
@@ -256,15 +267,22 @@ def test_flagged_outcome_does_not_settle_field_duty_allowance(monkeypatch):
 
 
 def test_approval_releases_native_auto_attendance_once(monkeypatch):
-    from types import SimpleNamespace
-
     doc = SimpleNamespace(
         name="EC-FLAGGED",
+        employee="EMP-TEST",
+        time=datetime(2026, 9, 22, 10, 3),
         custom_tradex_source="Mobile",
         custom_tradex_time_status="Flagged",
         custom_tradex_review_status="Pending",
         log_type="OUT",
-        custom_tradex_field_duty="DUTY-TEST",
+        custom_tradex_field_duty=None,
+        custom_tradex_policy=None,
+        custom_tradex_location_status="Time Review Required",
+        custom_tradex_assigned_location=None,
+        custom_tradex_distance_m=None,
+        custom_tradex_face_match_status=None,
+        custom_tradex_face_match_score=None,
+        custom_tradex_location_reason="outside trust window",
         check_permission=lambda action: None,
         as_dict=lambda: {"name": "EC-FLAGGED", "skip_auto_attendance": 0},
         add_comment=lambda *args, **kwargs: None,
@@ -280,6 +298,17 @@ def test_approval_releases_native_auto_attendance_once(monkeypatch):
     )
     monkeypatch.setattr(service, "frappe", fake_frappe)
     monkeypatch.setattr(service, "now_datetime", lambda: datetime(2026, 9, 22, 15, 30))
+    monkeypatch.setattr(service, "today", lambda: "2026-09-22")
+    policy = SimpleNamespace(name="CURRENT", require_gps=0, face_match_enabled=0)
+    employee = SimpleNamespace(name="EMP-TEST")
+    validated = []
+    monkeypatch.setattr(service, "_employee", lambda value: employee)
+    monkeypatch.setattr(service, "_policy", lambda *args: policy)
+    monkeypatch.setattr(
+        service,
+        "validate_mobile_event_business_context",
+        lambda *args, **kwargs: validated.append((args, kwargs)) or {"policy": policy},
+    )
 
     result = service.approve_mobile_checkin("EC-FLAGGED")
 
@@ -287,4 +316,34 @@ def test_approval_releases_native_auto_attendance_once(monkeypatch):
     fields = updates[0][0][2]
     assert fields["custom_tradex_review_status"] == "Approved"
     assert fields["skip_auto_attendance"] == 0
-    assert enqueued
+    assert validated
+
+
+def test_scoped_reviewer_without_user_permission_is_denied(monkeypatch):
+    errors = []
+    fake_frappe = SimpleNamespace(
+        session=SimpleNamespace(user="manager@example.com"),
+        get_roles=lambda user: ["Tradexcel Branch Manager"],
+        get_all=lambda *args, **kwargs: [],
+        throw=lambda message, exc: errors.append((message, exc)) or (_ for _ in ()).throw(exc(message)),
+        PermissionError=PermissionError,
+    )
+    monkeypatch.setattr(service, "frappe", fake_frappe)
+
+    with pytest.raises(PermissionError):
+        service._assert_employee_scope("EMP-OTHER")
+    assert errors
+
+
+def test_scoped_reviewer_with_visible_employee_permission_is_allowed(monkeypatch):
+    fake_frappe = SimpleNamespace(
+        session=SimpleNamespace(user="manager@example.com"),
+        get_roles=lambda user: ["Tradexcel Branch Manager"],
+        get_all=lambda *args, **kwargs: [{"allow": "Branch", "for_value": "Factory"}],
+        get_list=lambda *args, **kwargs: [{"name": "EMP-IN-SCOPE"}],
+        throw=lambda message, exc: (_ for _ in ()).throw(exc(message)),
+        PermissionError=PermissionError,
+    )
+    monkeypatch.setattr(service, "frappe", fake_frappe)
+
+    service._assert_employee_scope("EMP-IN-SCOPE")

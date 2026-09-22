@@ -4,7 +4,9 @@
 
 Mobile timestamps arrive as ISO-8601 instants. The service converts an aware
 timestamp to the Frappe system timezone (`Asia/Dhaka` on the Tradexcel site)
-before removing timezone metadata for MariaDB's naive `Datetime` field. A UTC
+before removing timezone metadata for MariaDB's naive `Datetime` field. Mobile
+API timestamps must include `Z` or an explicit `+/-HH:MM` offset; naive mobile
+strings are rejected. A UTC
 event at `18:30` therefore becomes Dhaka `00:30` on the following date.
 
 The server receipt timestamp is retained as evidence. The captured timestamp is
@@ -15,9 +17,10 @@ it is not a trust window.
 
 ## Quarantine boundary
 
-Events outside the trust window, missing captured time, or outside the maximum
-acceptance age are either rejected when the policy says `Block` or created as
-`Flagged` evidence with:
+Events outside the trust window or missing captured time are created as
+`Flagged` evidence. Events beyond the maximum acceptance age are always
+rejected; `Flag` does not create an unlimited backdating queue. Flagged events
+have:
 
 - native HRMS `skip_auto_attendance = 1`;
 - Tradexcel Evidence Review = `Pending`;
@@ -25,8 +28,15 @@ acceptance age are either rejected when the policy says `Block` or created as
 - captured time, receipt time, skew and the integrity reason retained.
 
 Flagged events do not resolve historical business policy, create Attendance, or
-settle field-duty allowances until released. This prevents a browser clock from
-choosing weaker historical GPS, selfie, face-match, shift, or allowance rules.
+settle field-duty allowances until released. Approval re-runs the shared
+business validator using the event-time policy and current security policy,
+including Field Duty ownership/date/status, GPS accuracy, assigned zone,
+shift context, and selfie/face rules. This prevents a browser clock from
+choosing weaker historical controls.
+
+Review actions also require an authorized role and, for branch/department/
+factory/correction approvers, an explicit Company/Branch/Department/Employee
+Frappe User Permission that can see the employee record.
 
 Authorized HR/supervisor users use the Employee Checkin form's **Evidence
 Review** actions. Approval records reviewer and note, sets native
