@@ -39,15 +39,17 @@ def _assignment_rows(employee: str, as_of: date, period_end: date | None = None)
         later_filters = {
             "employee": employee,
             "docstatus": 1,
-            "from_date": ["between", [as_of, period_end]],
+            "from_date": [">", as_of],
         }
         rows.extend(
-            frappe.get_all(
+            row
+            for row in frappe.get_all(
                 "Salary Structure Assignment",
                 filters=later_filters,
                 fields=fields,
                 order_by="from_date asc, name asc",
             )
+            if getdate(row.get("from_date")) <= period_end
         )
     return rows
 

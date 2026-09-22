@@ -106,6 +106,7 @@ def ensure_structures(spec: dict, *, commit: bool) -> list[str]:
             row = {"salary_component": e["component"]}
             comp = frappe.get_doc("Salary Component", e["component"])
             row["abbr"] = comp.salary_component_abbr
+            row["depends_on_payment_days"] = int(comp.depends_on_payment_days or 0)
             if "formula" in e:
                 row["amount_based_on_formula"] = 1
                 row["formula"] = e["formula"]
@@ -120,13 +121,27 @@ def ensure_structures(spec: dict, *, commit: bool) -> list[str]:
                 raise frappe.ValidationError(
                     "Salary Structure is missing custom_tradex_pay_basis; run the Tradexcel HR migration first"
                 )
-            before = [(r.salary_component, r.formula or "", float(r.amount or 0)) for r in doc.earnings]
-            after = [(r["salary_component"], r.get("formula", ""), float(r.get("amount") or 0)) for r in rows]
+            before = [
+                (r.salary_component, r.formula or "", float(r.amount or 0), int(r.depends_on_payment_days or 0))
+                for r in doc.earnings
+            ]
+            after = [
+                (r["salary_component"], r.get("formula", ""), float(r.get("amount") or 0), int(r.get("depends_on_payment_days") or 0))
+                for r in rows
+            ]
             basis_changed = doc.custom_tradex_pay_basis != st["pay_basis"]
             if before == after and not basis_changed:
                 log.append(f"  ok     structure {name} (earnings already match)")
                 continue
             if doc.docstatus == 1:
+                linked = frappe.db.count(
+                    "Salary Structure Assignment", {"salary_structure": name, "docstatus": 1}
+                )
+                if linked:
+                    raise frappe.ValidationError(
+                        f"Cannot rewrite submitted Salary Structure {name}: {linked} submitted assignment(s) link to it. "
+                        "Create a new effective-dated structure/assignment instead."
+                    )
                 doc.flags.ignore_permissions = True
                 doc.cancel()
             doc.earnings = []
@@ -181,15 +196,12 @@ def ensure_pay_basis_metadata(spec: dict | None = None, *, commit: bool = False)
         if doc.custom_tradex_pay_basis == wanted:
             log.append(f"  ok     pay basis {name} = {wanted}")
             continue
-        was_submitted = doc.docstatus == 1
-        if was_submitted:
-            doc.flags.ignore_permissions = True
-            doc.cancel()
-        doc.custom_tradex_pay_basis = wanted
-        doc.flags.ignore_permissions = True
-        doc.save()
-        if was_submitted:
-            doc.submit()
+        # This is metadata only. Salary Structures are linked by submitted
+        # assignments, so cancel/re-submit would be both unnecessary and
+        # rejected by native Frappe link protection.
+        frappe.db.set_value(
+            "Salary Structure", name, "custom_tradex_pay_basis", wanted, update_modified=False
+        )
         log.append(f"  UPDATE pay basis {name}: {wanted}")
     if commit:
         frappe.db.commit()

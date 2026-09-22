@@ -88,6 +88,9 @@ components:
     description: Paid overtime; rate and thresholds come from the Payroll Policy.
     fields:
       remove_if_zero_valued: true
+      # Native Overtime Slip emits an Additional Salary amount; do not prorate
+      # that already-final amount against Salary Slip payment_days.
+      depends_on_payment_days: false
 
 # ---------------------------------------------------------------------------
 # SALARY STRUCTURES — templates, NOT per person.

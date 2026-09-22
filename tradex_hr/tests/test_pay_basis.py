@@ -5,7 +5,7 @@ from tradex_hr.tradexcel_hr import pay_basis
 
 def _resolver(monkeypatch, rows, bases):
     def get_all(_doctype, filters, **_kwargs):
-        if filters.get("from_date") == ["between", [date(2026, 9, 1), date(2026, 9, 30)]]:
+        if filters.get("from_date") == [">", date(2026, 9, 1)]:
             return [row for row in rows if date(2026, 9, 1) <= row["from_date"] <= date(2026, 9, 30)]
         return [row for row in rows if row["from_date"] <= date(2026, 9, 1)]
 

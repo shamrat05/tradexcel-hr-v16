@@ -5,7 +5,6 @@ import frappe
 import pytest
 from hrms.payroll.doctype.payroll_entry.payroll_entry import PayrollEntry
 from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
-from hrms.payroll.doctype.salary_structure.salary_structure import make_salary_slip
 
 from tradex_hr.tradexcel_hr.attendance_payroll_boundary import payment_day_component_findings
 
@@ -62,29 +61,15 @@ def test_daily_wage_formula_and_native_proration_cannot_be_silently_combined():
     assert findings[0]["salary_structure"] == "TCL Daily Wage"
 
 
-def test_native_daily_wage_configuration_gives_350_per_payable_day():
-    """Exercise SalarySlip's real component path without saving a Salary Slip."""
-    employee = frappe.db.get_value(
-        "Salary Structure Assignment",
-        {"salary_structure": "TCL Daily Wage", "docstatus": 1},
-        "employee",
+def test_current_daily_wage_structure_is_explicitly_detected_as_unsafe():
+    """The legacy linked structure must stay blocked until migrated safely."""
+    from tradex_hr.tradexcel_hr.attendance_payroll_boundary import payment_day_component_findings
+
+    rows = frappe.get_all(
+        "Salary Detail",
+        filters={"parent": "TCL Daily Wage", "parenttype": "Salary Structure"},
+        fields=["parent", "salary_component", "formula", "depends_on_payment_days"],
     )
-    if not employee:
-        pytest.skip("TCL Daily Wage is not assigned on this test site")
-
-    for payable_days, expected in ((1, 350), (10, 3500)):
-        slip = make_salary_slip("TCL Daily Wage", employee=employee, posting_date="2026-09-01")
-        slip.payment_days = payable_days
-        slip.total_working_days = 26
-        slip.earnings = []
-        slip.data = {"base": 350, "payment_days": payable_days}
-        slip.default_data = {"base": 350, "payment_days": payable_days}
-        rows = []
-        for row in slip._evaluated_components["earnings"]:
-            if row.salary_component == "Daily Wage":
-                row.depends_on_payment_days = 0
-                rows.append(row)
-        slip._evaluated_components["earnings"] = rows
-        slip.calculate_component_amounts("earnings")
-
-        assert slip.earnings[0].amount == expected
+    if not rows:
+        pytest.skip("TCL Daily Wage is not configured on this test site")
+    assert payment_day_component_findings(rows)
