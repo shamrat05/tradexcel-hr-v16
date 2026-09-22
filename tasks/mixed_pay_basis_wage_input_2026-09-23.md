@@ -75,7 +75,10 @@ Installed HRMS v16 behavior inspected:
   blocked rather than patched with another formula.
 
 The disposable native integration test creates a safe structure, submitted SSA,
-submitted Attendance, and native Additional Salary inside a database savepoint:
+submitted Attendance, a native Additional Salary, a draft Payroll Entry and
+draft Salary Slip. Native Salary Slip creation commits internally, so the test
+records each generated name and explicitly cancels/deletes only those synthetic
+records in cleanup:
 
 ```text
 10 submitted Attendance days × SSA.base Tk350 = Tk3,500
@@ -84,7 +87,8 @@ native Salary Slip Daily Wage earning = Tk3,500
 ```
 
 The test also proves native joiner payroll dates are narrowed by Payroll Entry.
-No Salary Slip or Additional Salary from the experiment remains after rollback.
+No synthetic payroll or Attendance records from the experiment remain after
+cleanup.
 
 ## Staging operation
 
@@ -130,10 +134,66 @@ Leave-based. No global Payroll Settings change was made.
 ## Verification
 
 - Focused Phase A tests: **22 passed, 2 warnings**.
-- Full app suite: **208 passed, 2 skipped, 2 warnings**.
+- Full app suite before Phase B: **208 passed, 2 skipped, 2 warnings**.
 - Staging has no configured LWP/PPL Leave Types; those cases are delegated to
   native HRMS semantics and remain a configuration/test-data gate.
 - Compilation: **passed** with `/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q tradex_hr`.
 - `git diff --check`: **passed**.
-- Temporary native records: savepoint-rolled back; no real Salary Slip or
-  Additional Salary was submitted.
+- Temporary native records: explicitly cleaned by exact generated names; no
+  real Salary Slip or Payroll Entry was submitted.
+
+## Phase B — native Payroll Entry draft orchestration
+
+Branch: `feat/native-payroll-draft-orchestration`
+Base: `feat/mixed-pay-basis-wage-input` at `8434d0230a9aa8bc2e9e49c4cdfc2477594af467`
+
+The new `native_payroll.py` service is a narrow orchestrator. It requires the
+exact finalized/current Attendance Period for Attendance-dependent populations,
+resolves the explicit Salary Structure pay basis, creates/reuses the native
+Daily Wage Additional Salary input, inserts one native Payroll Entry, and calls
+HRMS `PayrollEntry.create_salary_slips()` for draft Salary Slips. It does not
+calculate Salary Slip amounts, submit payroll, post accounting, or read raw
+Employee Checkin. A second call returns the existing exact-period native
+Payroll Entry instead of creating another batch.
+
+The native staging integration proved:
+
+```text
+10 submitted Present Attendance days
+× SSA.base Tk350
+= native Additional Salary Tk3,500
+= native draft Salary Slip Daily Wage earning Tk3,500
+retry = EXISTING; no duplicate batch/input
+```
+
+Global Payroll Settings remains unchanged (`payroll_based_on = Leave`), so
+monthly Leave-based staff are not forced through site-wide Attendance payroll.
+The native Payroll Entry `validate_attendance` flag follows that global setting;
+Daily Wage completeness is separately gated by the finalized Attendance Period.
+
+Current read-only staging inspection for September 2026:
+
+```text
+238 employees in scope
+159 ATTENDANCE_UNMARKED blockers (all are the 159 explicit Daily Wage population)
+0 monthly employees forced into Attendance completeness by the global setting
+```
+
+Phase B verification:
+
+- Focused rerun on 2026-09-23: `FRAPPE_TEST_SITE=hrms-v16.localhost FRAPPE_TEST_SITES_PATH=/home/sanchita/frappe-bench-v16/sites env/bin/pytest apps/tradex_hr/tradex_hr/tests/test_native_payroll.py` from the bench root: **4 passed, 1 warning** (Frappe `txt` deprecation warning).
+- Focused Phase A + Phase B tests: **26 passed, 3 warnings**.
+- Full app suite: **212 passed, 2 skipped, 3 warnings**.
+- Compilation: **passed** with `/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q tradex_hr`.
+- `git diff --check`: **passed**.
+- Staging test records: explicitly cleaned; no synthetic records remain.
+- Production touched: **NO**.
+- Submitted real Payroll Entry: **NO**.
+- Submitted real Salary Slip: **NO**.
+
+Remaining gates are operational/configuration work: resolve the 159 missing
+Daily Wage Attendance records, replace the unsafe submitted legacy `TCL Daily
+Wage` structure through a new effective-dated native structure/assignment, and
+later complete tax/accounting/payment controls. LWP/PPL parity remains
+delegated to native HRMS and needs real configured Leave Types before it can be
+data-exercised on staging.
