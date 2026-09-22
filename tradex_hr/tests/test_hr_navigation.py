@@ -50,3 +50,4 @@ def test_navigation_repairs_after_frappe_route_shell_replacement():
     assert '$(document).on("page-change"' in javascript
     assert "MutationObserver" in javascript
     assert "observe(document.documentElement" in javascript
+    assert "__tradex_hr_rail_repair_timer" in javascript

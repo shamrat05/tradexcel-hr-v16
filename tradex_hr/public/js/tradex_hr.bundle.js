@@ -350,5 +350,11 @@ frappe.provide("frappe.ui.tradex_hr");
 			// when the original body observer would be discarded.
 			}).observe(document.documentElement, { childList: true, subtree: true });
 		}
+		// A few Desk pages replace the shell without emitting a mutation under
+		// the existing document tree. The cheap idempotent check keeps the rail
+		// present on those pages too; it never rebuilds a complete rail.
+		if (!window.__tradex_hr_rail_repair_timer) {
+			window.__tradex_hr_rail_repair_timer = window.setInterval(ensureRail, 500);
+		}
 	});
 })();
