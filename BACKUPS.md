@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-22 16:48 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-22 20:37 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -47,6 +47,7 @@ Several are also mirrored under
 | --- | --- | --- | --- | --- |
 | **2026-09-22 12:17** | `20260922_121725-...-database.sql.gz` | 2,959,372 | `8e62a570fe6a6c43` | **Before v16 staging migration** |
 | **2026-09-22 16:48** | `20260922_164856-hrms-v16_localhost-database.sql.gz` | 3,248,003 | `9d45b229d7caf76f` | **Before v16 staging production-readiness fixes/migrate** |
+| **2026-09-22 20:37** | `20260922_203730-hrms-v16_localhost-database.sql.gz` | 3,272,843 | `f95eae64b85d7c99` | **Before v16 offline-event-time schema migration** |
 | **2026-09-18 20:02** | `20260918_200222-...-database.sql.gz` | 2,879,266 | `00360386d5ae09a5` | **Before payroll/wage purge** (see §1) |
 | 2026-09-18 18:53 | `20260918_185348-...-database.sql.gz` | 2,861,011 | `b461fba3f4ef29f7` | Before biometric mapping import |
 | 2026-09-18 16:14 | `20260918_161454-...-database.sql.gz` | 2,874,880 | `d7c48e9c2bccdcf2` | Before demo-data removal |

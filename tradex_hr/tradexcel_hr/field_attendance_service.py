@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +43,49 @@ def _device_datetime(value):
 		return None
 	parsed = get_datetime(value)
 	return parsed.replace(tzinfo=None) if getattr(parsed, "tzinfo", None) else parsed
+
+
+def _mobile_event_timing(received_at, device_time, policy):
+    """Resolve canonical event time while retaining server receipt evidence.
+
+    Browser time is not cryptographically trusted. It is nevertheless the only
+    available capture time for an offline event, so it is used for attendance
+    date/shift resolution and checked against the server clock. Suspicious
+    clocks are flagged by default; a policy may block them.
+    """
+    received_at = _device_datetime(received_at) or now_datetime()
+    device_time = _device_datetime(device_time)
+    if not device_time:
+        return {
+            "event_time": received_at,
+            "received_at": received_at,
+            "clock_skew_seconds": None,
+            "status": "No Device Time",
+            "reason": "No captured device time was supplied.",
+        }
+
+    clock_skew_seconds = (received_at - device_time).total_seconds()
+    max_age_hours = max(int(policy.get("offline_max_age_hours") or 72), 1)
+    future_tolerance_minutes = max(int(policy.get("offline_future_tolerance_minutes") or 10), 0)
+    reason = ""
+    if clock_skew_seconds > max_age_hours * 3600:
+        reason = f"Captured time is older than the {max_age_hours}-hour offline limit."
+    elif clock_skew_seconds < -(future_tolerance_minutes * 60):
+        reason = f"Captured time is more than {future_tolerance_minutes} minutes in the future."
+
+    if not reason:
+        status = "Trusted"
+    elif policy.get("offline_time_action") == "Block":
+        status = "Blocked"
+    else:
+        status = "Flagged"
+    return {
+        "event_time": device_time,
+        "received_at": received_at,
+        "clock_skew_seconds": clock_skew_seconds,
+        "status": status,
+        "reason": reason or "Captured time is within the configured clock limits.",
+    }
 
 
 def _employee(employee: str | dict[str, Any]) -> frappe._dict:
@@ -100,6 +143,17 @@ def _policy(employee: frappe._dict, as_of: str | datetime | None = None) -> frap
     if len(ties) > 1:
         frappe.throw(_("Conflicting attendance policies apply to {0}").format(employee.name))
     return frappe._dict(winner[3])
+
+
+def _policy_for_mobile_event(employee: frappe._dict, received_at, device_time):
+    """Use historical policy for delayed events, current policy for future clocks."""
+    if not device_time:
+        return _policy(employee, received_at)
+    current_policy = _policy(employee, received_at)
+    tolerance = max(int(current_policy.get("offline_future_tolerance_minutes") or 10), 0)
+    if device_time > received_at + timedelta(minutes=tolerance):
+        return current_policy
+    return _policy(employee, device_time)
 
 
 def _assigned_locations(employee: frappe._dict, day: str, duty=None, shift_type: str | None = None) -> list[frappe._dict]:
@@ -308,10 +362,18 @@ def enrich_mobile_checkin(doc, method=None):
     if source != "Mobile":
         return
     employee = _employee(doc.employee)
-    if doc.time and not doc.get("custom_tradex_device_time"):
-        doc.custom_tradex_device_time = get_datetime(doc.time)
-    doc.time = now_datetime()
-    policy = _policy(employee, doc.time)
+    received_at = _device_datetime(doc.get("custom_tradex_received_at")) or now_datetime()
+    device_time = _device_datetime(doc.get("custom_tradex_device_time")) or _device_datetime(doc.time)
+    policy = _policy_for_mobile_event(employee, received_at, device_time)
+    timing = _mobile_event_timing(received_at, device_time, policy)
+    if timing["status"] == "Blocked":
+        frappe.throw(_("Mobile attendance time rejected: {0}").format(timing["reason"]))
+    doc.custom_tradex_received_at = timing["received_at"]
+    doc.custom_tradex_device_time = device_time
+    doc.custom_tradex_time_status = timing["status"]
+    doc.custom_tradex_clock_skew_seconds = timing["clock_skew_seconds"]
+    doc.time = timing["event_time"]
+    policy = _policy_for_mobile_event(employee, timing["received_at"], timing["event_time"])
     duty = _approved_duty(employee, doc.get("custom_tradex_field_duty"), getdate(doc.time))
     has_gps = doc.latitude not in (None, "") and doc.longitude not in (None, "")
     if policy.require_gps and not has_gps:
@@ -343,7 +405,9 @@ def enrich_mobile_checkin(doc, method=None):
     doc.custom_tradex_location_status = status if quality["valid"] else "GPS Invalid"
     doc.custom_tradex_assigned_location = matched_location["name"] if matched_location else None
     doc.custom_tradex_distance_m = matched_location["distance_m"] if matched_location else None
-    doc.custom_tradex_review_status = "Not Required"
+    doc.custom_tradex_review_status = "Pending" if timing["status"] == "Flagged" else "Not Required"
+    if timing["status"] == "Flagged":
+        doc.custom_tradex_location_reason = timing["reason"]
     if policy.face_match_enabled:
         if not doc.get("custom_tradex_selfie"):
             frappe.throw(_("Face matching requires a selfie"))
@@ -384,15 +448,18 @@ def mobile_checkin(employee, log_type, latitude=None, longitude=None, accuracy_m
         if existing.employee != employee_doc.name:
             frappe.throw(_("This sync ID belongs to another employee"), frappe.PermissionError)
         return frappe.get_doc("Employee Checkin", existing.name).as_dict()
-    policy = _policy(employee_doc, now_datetime())
+    received_at = now_datetime()
     device_time = _device_datetime(time)
+    policy = _policy_for_mobile_event(employee_doc, received_at, device_time)
+    timing = _mobile_event_timing(received_at, device_time, policy)
+    if timing["status"] == "Blocked":
+        frappe.throw(_("Mobile attendance time rejected: {0}").format(timing["reason"]))
     if (policy.require_selfie or policy.face_match_enabled) and not selfie:
         frappe.throw(_("This attendance policy requires a selfie"))
     if selfie:
         owner = frappe.db.get_value("File", {"file_url": selfie}, "owner")
         if owner not in {frappe.session.user, "Administrator"}:
             frappe.throw(_("The selfie file is not owned by the current user"), frappe.PermissionError)
-    received_at = now_datetime()
     claimed = _claim_event(sync_id, "Checkin", employee_doc, received_at, device_time)
     if claimed:
         return claimed
@@ -400,16 +467,18 @@ def mobile_checkin(employee, log_type, latitude=None, longitude=None, accuracy_m
         "doctype": "Employee Checkin",
         "employee": employee_doc.name,
         "log_type": log_type,
-        # Attendance time is server-authoritative. Browser/device time remains
-        # evidence only, preventing client-side backdating or future dating.
-        "time": received_at,
+        # The captured event time is canonical for shift/date resolution. The
+        # server receipt time is separate evidence for audit and clock checks.
+        "time": timing["event_time"],
         "latitude": latitude,
         "longitude": longitude,
         "custom_tradex_source": "Mobile",
         "custom_tradex_gps_accuracy_m": accuracy_m,
         "custom_tradex_gps_source": "Browser Geolocation API",
         "custom_tradex_device_time": device_time,
-        "custom_tradex_clock_skew_seconds": (received_at - device_time).total_seconds() if device_time else None,
+        "custom_tradex_received_at": timing["received_at"],
+        "custom_tradex_time_status": timing["status"],
+        "custom_tradex_clock_skew_seconds": timing["clock_skew_seconds"],
         "custom_tradex_field_duty": field_duty,
         "custom_tradex_selfie": selfie,
         "custom_tradex_sync_id": sync_id,

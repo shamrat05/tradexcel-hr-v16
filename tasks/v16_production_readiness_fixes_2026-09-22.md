@@ -26,6 +26,12 @@ changed.
   as needing HR attention instead of retrying forever. A page reload reflects
   the latest pending local event, preventing a duplicate punch; a queued OUT
   event cannot expose another checkout action.
+- Offline mobile attendance now uses the captured event time as the canonical
+  `Employee Checkin.time` for shift/date resolution and stores server receipt
+  time separately. Attendance policies configure a maximum offline age,
+  future-clock tolerance, and whether suspicious timestamps are flagged or
+  blocked. This prevents delayed replay from silently becoming the receipt
+  time while retaining an auditable clock-skew signal.
 - Staging face matching was configured with the OpenCV YuNet + SFace adapter.
   Models are site-local and not committed to Git:
 
@@ -47,6 +53,11 @@ changed.
   `BACKUPS.md`.
 - Focused tests: `11 passed` before the rail regression extension.
 - Full v16 suite against `hrms-v16.localhost`: `158 passed, 2 skipped`.
+- After offline-time hardening and schema migration: `162 passed, 2 skipped`.
+- Before that staging schema migration, the complete site backup
+  `20260922_203730-hrms-v16_localhost-*` was created and the database dump was
+  gzip-verified. Its database SHA-256 first 16 is `f95eae64b85d7c99`; the full
+  set is indexed in `BACKUPS.md`.
 - Operational-report fixtures default to the v16 site/bench while retaining
   `FRAPPE_TEST_SITE` and `FRAPPE_TEST_SITES_PATH` overrides. The endpoint test
   covers all seven Query Reports, preventing a silent fallback to the old v15
@@ -70,3 +81,6 @@ changed.
 - Face matching remains biometric evidence, not a mathematically perfect
   liveness or identity guarantee. Enable it per policy only after a small
   approved validation set and reference photos are in place.
+- Offline selfie Blobs remain in browser IndexedDB until successful replay or
+  an HR-visible failed state. Production must document device security,
+  retention, and clearing procedures before enabling offline selfie capture.

@@ -118,6 +118,22 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "insert_after": "custom_tradex_location_reason",
             },
             {
+                "fieldname": "custom_tradex_received_at",
+                "label": "Server Received At",
+                "fieldtype": "Datetime",
+                "insert_after": "custom_tradex_device_time",
+                "read_only": 1,
+            },
+            {
+                "fieldname": "custom_tradex_time_status",
+                "label": "Time Integrity",
+                "fieldtype": "Select",
+                "options": "Trusted\u000aFlagged\u000aNo Device Time\u000aBlocked",
+                "insert_after": "custom_tradex_received_at",
+                "read_only": 1,
+                "in_list_view": 1,
+            },
+            {
                 "fieldname": "custom_tradex_clock_skew_seconds",
                 "label": "Device Clock Skew (seconds)",
                 "fieldtype": "Float",
