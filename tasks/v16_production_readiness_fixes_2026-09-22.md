@@ -119,6 +119,7 @@ Caller audit found:
 | Caller | Finding | Compatibility action |
 | --- | --- | --- |
 | `sync/run_payroll.py` | Untracked compatibility shim to the app runner | Kept as a forwarding shim; CLI now requires explicit site context |
+| Desktop `run_payroll.bat` | Still invokes the old untracked shim without site arguments | Deliberately not changed in this app-repo commit; it now fails closed and must be pointed explicitly at the v16 bench before operator use |
 | `sync/rebuild_tradex.py` | Imports the shim and calls the public runner | Existing-context calls remain valid; an uninitialized call now fails closed instead of selecting the v15 site |
 | `sync/smoke_manual_payroll_drafts.py` | Uses draft helpers only | Unchanged; it remains a rollback-only smoke utility |
 | `sync/audit_salary_coverage.py` | Uses source-salary helpers for comparison | Preserved; source JSON is audit-only and never a payroll input |
