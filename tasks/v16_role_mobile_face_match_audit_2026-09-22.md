@@ -25,7 +25,9 @@ environment were not changed.
    `sites/hrms-v16.localhost/private/backups/20260922_153546-hrms-v16_localhost-*`
 2. Ran `bench --site hrms-v16.localhost migrate`.
 3. Disabled the stale test attendance policy and face-match setting.
-4. Cleared the site cache.
+4. Created the staging-only runtime log directory required by the direct
+   pytest Frappe connection (`/home/sanchita/frappe-bench-v16/hrms-v16.localhost/logs`).
+5. Cleared the site cache.
 
 ## Implementation guard
 
@@ -41,7 +43,8 @@ fail-closed and records a clear error.
 
 ## Verification
 
-- Face-match unit tests: `1 passed` for the staging-focused test invocation.
+- App test suite: `152 passed, 2 skipped` against the v16 staging site after
+  making the Frappe test fixtures site/bench configurable.
 - Python compilation: passed.
 - Mobile page and DocTypes: present after migration.
 - Face matching is disabled until verified model files are installed and
