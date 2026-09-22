@@ -110,8 +110,7 @@ blocker for the next P0.
 
 ## Payroll P0 safety slice
 
-Branch: `fix/payroll-p0-safety`, pushed at head commit `5518fb4` (behavior
-commit `090ff37`), created from
+Branch: `fix/payroll-p0-safety`, with behavior commit `090ff37`, created from
 base commit `69461cf` (`fix/v16-production-readiness`). No production site was
 opened, no real payroll was run, and no Salary Slip was submitted.
 
