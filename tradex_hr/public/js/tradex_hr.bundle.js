@@ -247,14 +247,39 @@ frappe.provide("frappe.ui.tradex_hr");
 			// it on the next page-change event.
 			return false;
 		}
-		if (route.indexOf("workspace/") === 0) {
-			return current.toLowerCase().indexOf("tradexcel hr") >= 0;
+		const currentRoute = current.split("?")[0].toLowerCase();
+		const itemRoute = route.split("?")[0].toLowerCase();
+		if (itemRoute.indexOf("workspace/") === 0) {
+			return currentRoute.indexOf("tradexcel hr") >= 0;
 		}
-		return current.toLowerCase() === route.toLowerCase();
+		return currentRoute === itemRoute;
 	}
 
 	function navigate(route) {
-		frappe.set_route(route);
+		frappe.set_route(resolvedRoute(route));
+	}
+
+	function resolvedRoute(route) {
+		const today = frappe.datetime && frappe.datetime.get_today
+			? frappe.datetime.get_today()
+			: "";
+		const company =
+			(frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) ||
+			"Tradexcel Ceramics Ltd.";
+		const params = new URLSearchParams();
+		if (route === "query-report/Tradexcel Daily Attendance Board") {
+			params.set("attendance_date", today);
+			params.set("company", company);
+		} else if (route === "query-report/Tradexcel Leave Balance Board") {
+			params.set("as_of_date", today);
+			params.set("company", company);
+		} else if (route === "query-report/Tradexcel Payroll Register") {
+			params.set("from_date", (frappe.datetime.month_start && frappe.datetime.month_start()) || today);
+			params.set("to_date", today);
+			params.set("company", company);
+		}
+		const query = params.toString();
+		return query ? `${route}?${query}` : route;
 	}
 
 	function render() {
@@ -292,7 +317,7 @@ frappe.provide("frappe.ui.tradex_hr");
 			group.items.forEach((item) => {
 				const link = document.createElement("a");
 				link.className = `tradex-hr-rail-item${item.primary ? " is-primary" : ""}${active(item.route) ? " is-active" : ""}`;
-				link.href = `#${item.route}`;
+				link.href = `#${resolvedRoute(item.route)}`;
 				link.title = item.label;
 				link.innerHTML = `${icon(group.icon, "tradex-hr-rail-item-icon")}<span>${item.label}</span>`;
 				link.addEventListener("click", (event) => {
