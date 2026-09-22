@@ -108,9 +108,11 @@ Post-migration metadata is present on all three declared structures. Current
 TCL staging still has the old linked `TCL Daily Wage` child formula and is
 therefore intentionally blocked. Current September Attendance inspection finds
 238 employees in scope, with 159 `ATTENDANCE_UNMARKED` Daily Wage blockers. The
-assignment population is 159 Daily Wage and 65 Monthly Salary employees;
-monthly staff are not forced into Attendance completeness while the site remains
-Leave-based. No global Payroll Settings change was made.
+assignment population is 159 Daily Wage and 64 Monthly Salary employees; 15
+employees have no currently applicable submitted assignment and therefore
+remain an explicit pay-basis blocker. Monthly staff are not forced into
+Attendance completeness while the site remains Leave-based. No global Payroll
+Settings change was made.
 
 ## Alternatives not chosen
 
