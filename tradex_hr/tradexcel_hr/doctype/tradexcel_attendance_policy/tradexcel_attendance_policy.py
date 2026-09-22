@@ -13,10 +13,10 @@ class TradexcelAttendancePolicy(Document):
             frappe.throw("Employee must belong to the selected company")
         if self.tracking_interval_minutes and not 1 <= int(self.tracking_interval_minutes) <= 1440:
             frappe.throw("Tracking interval must be between 1 and 1,440 minutes")
+        if not 0 <= int(self.offline_trust_window_minutes or 5) <= 1440:
+            frappe.throw("Online clock trust window must be between 0 and 1,440 minutes")
         if not 1 <= int(self.offline_max_age_hours or 72) <= 720:
             frappe.throw("Maximum offline age must be between 1 and 720 hours")
-        if not 0 <= int(self.offline_future_tolerance_minutes or 0) <= 1440:
-            frappe.throw("Future clock tolerance must be between 0 and 1,440 minutes")
         if self.retention_days is not None and not 1 <= int(self.retention_days) <= 3650:
             frappe.throw("Evidence retention must be between 1 and 3,650 days")
         if float(self.allowance_multiplier or 0) < 0:

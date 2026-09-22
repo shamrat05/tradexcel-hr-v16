@@ -24,6 +24,7 @@ doctype_js = {
     "Tradexcel Biometric Device": "public/js/tradexcel_biometric_device.js",
     "Employee": "public/js/employee_calendar.js",
     "Attendance": "public/js/employee_calendar.js",
+    "Employee Checkin": "public/js/employee_checkin_review.js",
 }
 
 doctype_list_js = {

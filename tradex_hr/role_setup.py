@@ -120,6 +120,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": READ_ONLY_PERMS,
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
+        "Tradexcel Attendance Correction Approver": READ_ONLY_PERMS,
         "Tradexcel Employee/Worker": READ_ONLY_PERMS,
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
