@@ -24,7 +24,7 @@ The Playwright sweep also found one invalid navigation route: `Calendar/Leave Ap
 
 Frappe v16 treats an empty Report role table as unrestricted. The five app-owned standard reports now carry explicit role allow-lists in their JSON definitions. Employee and Employee Self Service were removed from Daily Attendance Summary; salary coverage is limited to payroll/finance/HR leadership and audit roles; attendance, data-gap, biometric, and anomaly reports are limited to their corresponding HR, device, compliance, and leadership roles. The migration reloads these standard definitions so role-table drift self-heals without converting them to custom reports.
 
-The navigation repair no longer uses a permanent polling timer. It uses the route-change event, an observer on the persistent document root, and a guarded render that tolerates Frappe's incomplete route state during boot.
+The navigation repair uses the Frappe route-change event and a guarded idempotent render that tolerates Frappe's incomplete route state during boot. No permanent timer or document-wide observer is used.
 
 ## Validation contract
 
@@ -50,5 +50,5 @@ The repair is deliberately allow-listed. If a report with one of these names is 
 - Runtime report calls returned HTTP 200 for Workforce Anomaly Radar, Employee Data Gaps, Biometric ID Audit, Daily Attendance Summary, and Tradexcel Salary Coverage Board.
 - The three required-filter menu reports now open with safe current-date/current-month and user-default-company parameters; their runtime calls also returned HTTP 200.
 - Live Has Role rows are explicit for all five reports; none has an empty role list and none includes Employee or Employee Self Service.
-- Final no-polling browser sweep: 44/44 routes passed with 9 groups/49 links, no page errors, no non-Socket.IO HTTP errors, no overflow, and no rail repair timer.
+- Final minimal-navigation browser sweep: 44/44 routes passed with 9 groups/49 links, no page errors, no non-Socket.IO HTTP errors, no overflow, and no polling/observer repair machinery.
 - `bench serve` still emits Socket.IO 404 polling noise because it is only the web process. That is not a page failure; a full `bench start`/supervisor deployment supplies the Socket.IO process.
