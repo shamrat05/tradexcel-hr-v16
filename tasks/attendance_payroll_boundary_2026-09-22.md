@@ -2,6 +2,7 @@
 
 Branch: `feat/attendance-payroll-boundary`
 Base: `fix/payroll-p0-safety` at `e390688`
+Implementation commit: `bd06c27`
 Site inspected: `hrms-v16.localhost` only. No production site was opened, no
 salary slip was created or submitted, and no payroll data was changed.
 
@@ -70,9 +71,6 @@ env/bin/pytest -q \
   apps/tradex_hr/tradex_hr/tests/test_attendance_payroll_contract.py \
   apps/tradex_hr/tradex_hr/tests/test_payroll_safety.py
 ```
-
-The final result is recorded in the handoff message/commit after the full app
-suite, compilation, and `git diff --check` complete.
 
 Current verification result:
 
