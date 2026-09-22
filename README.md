@@ -1,177 +1,179 @@
-# Tradexcel HR — start here
+# Tradexcel HR v16
 
-**Frappe custom app for Tradexcel Ceramics Ltd. and Elegance Footwear Ltd.**
-Replaced a previous custom system (Selevo). This README is the entry point: it
-says where things are and **exactly what is done and what is not.**
+Custom Frappe/ERPNext/HRMS application for Tradexcel HR operations.
 
-Last updated: **2026-09-18**. State figures below were read from the live site on
-that date — re-read them before trusting them (see *Checking current state*).
+This repository is the **v16 target**. The application is being evolved from a
+working v15-era custom layer into a native-first, error-safe HRMS control layer for
+Bangladesh operations.
 
----
+## Start here
 
-## Read these first
+| Read | Purpose |
+|---|---|
+| **AGENTS.md** | mandatory coding-agent safety and workflow rules |
+| **docs/architecture/README.md** | canonical architecture handbook |
+| **docs/architecture/09_IMPLEMENTATION_CHUNKS.md** | chunk-by-chunk build order |
+| **docs/architecture/08_TEST_ACCEPTANCE_MATRIX.md** | permanent regression/acceptance contract |
+| **docs/architecture/12_REQUIREMENTS_TRACEABILITY.md** | maps the deep research to implementation |
+| **BACKUPS.md** | backup history and destructive-work prerequisite |
+| **tasks/** | dated migration/audit/verification evidence |
 
-| Document | Why |
-| --- | --- |
-| **`README.md`** (this file) | Status, checklist, where everything is |
-| **`BACKUPS.md`** | Every backup with timestamps, sizes and checksums. **Read before deleting anything** |
-| **`AGENTS.md`** | Rules for agents working in this repo, incl. the canonical checkout |
-| `tasks/` | The detailed record of every change, with evidence |
-| `docs/` | Operating model, launch readiness, bridge contract |
+## Verified v16 staging baseline
 
----
+The architecture audit used the staging state recorded on **2026-09-22**:
 
-## The one-screen status
+- repository branch: feature/hrms-v16-hr-only
+- audited commit: c9502d8d2b167d2847e97cf5632e72905ac18d92
+- Frappe 16.34.0
+- ERPNext 16.35.0
+- HRMS 16.19.0
+- app staging suite: **152 passed, 2 skipped**
+- v16 asset build and route/report audits previously passed
+- the migrated staging copy had 242 Employees, 22,302 Checkins, 16,077
+  Attendance rows, 227 Salary Structure Assignments, 237 Shift Assignments and
+  221 device-scoped biometric mappings
+- staging had **0 Salary Slips** at that snapshot; migration did not invent payroll
 
-### ✅ Done and verified
+These are dated staging facts. Re-read the current site before relying on counts.
 
-| Area | Evidence |
-| --- | --- |
-| **Biometric mapping** | **221** employee↔PIN assignments across 2 devices. Verified through the worker's real code: 221 resolved, 0 ambiguous, 0 mis-attributed |
-| **Salary components** | 7 global components, created once and reused |
-| **Salary structures** | 3 templates: `TCL Standard`, `EFL Standard`, `TCL Daily Wage` |
-| **Salary assignments** | **226** assignments, 226 distinct employees, 0 duplicates |
-| **Payroll split** | Verified against the VPS: 60/30/5/5. `structure_earnings()` produces exact figures |
-| **Attendance pipeline** | 16,077 Attendance, 22,293 Checkins. Auto-attendance enabled on both shift types |
-| **Pay property setters** | Now reproducible via `ensure_property_setters()` — proven by delete-and-recreate |
-| **Test suite** | **126 passing**, 2 skipped |
-| **Runtime packaged** | payroll + biometric runtime now in the repo, not only on disk |
+## Architecture in one sentence
 
-### ❌ Not done — these block production
+> Use native HRMS v16 as the system of record; let Tradexcel validate,
+> orchestrate, integrate and simplify it; make normal cases automatic and route
+> ambiguity into accountable exception workflows before it can become money.
 
-| # | Blocker | What is missing |
-| --- | --- | --- |
-| **1** | **Nobody can log in** | 0 enabled non-admin users. Only `Administrator` exists |
-| **2** | **No roles assigned** | 0 role grants. Permissions are unproven — Administrator bypasses everything |
-| **3** | **Payroll has never run** | 0 salary slips, 0 submitted. The money path is untested end-to-end |
-| **4** | **No tax configured** | 0 Income Tax Slabs; no deductions on any structure |
-| **5** | **Restore never rehearsed** | Backup verified readable, never restored. No DB superuser on this machine |
-| **6** | **Leave not in force** | 3 Leave Policies still draft; 0 Leave Periods |
+## Three boundaries
 
-### ⚠️ Open decisions — only the owner can answer
-
-| # | Question | Why it matters |
-| --- | --- | --- |
-| **7** | **The 46 "Workers" on monthly salaries** | `employment_type = Worker` but they hold monthly structures (Foreman 30,000; Shift Incharge 23,000). Payroll would resolve them to the **350/day** policy. Monthly or daily? |
-| **8** | **Tax / PF / gratuity policy** | Nothing configured. Net pay is knowingly incomplete until decided |
-| **9** | **Two employees with no split** | TCL-0026 Tania Akter (15,000), TCL-0038 Rifat Hossain (25,000) — gross known, components unknown |
-| **10** | **Link structures to policies** | All 5 policies have `salary_structure = NULL`, so nothing derives the structure |
-
----
-
-## Checking current state
-
-```bash
-# health and counts
-cd ~/frappe-bench && bench --site hrms.localhost mariadb -e "
-select (select count(*) from tabEmployee) employees,
-       (select count(*) from \`tabSalary Structure Assignment\`) assignments,
-       (select count(*) from \`tabSalary Slip\`) slips,
-       (select count(*) from \`tabTradexcel Employee Biometric\`) biometric;"
-
-# the test suite
-cd ~/frappe-bench && env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests/ -q
-```
-
-Read `BACKUPS.md` before any destructive operation.
-
----
-
-## Where things live
-
-| What | Where |
-| --- | --- |
-| **Canonical checkout** | `/home/sanchita/frappe-bench/apps/tradex_hr` (WSL) — the only tree to edit |
-| Windows mirror (read-only) | `Desktop/tradexcel-hr-audit-app` |
-| Repositories | `github.com/shamrat05/tradexcel-hr`, `github.com/shamrat05/SenseFace-HRMS-Bridge` |
-| Backups | `Desktop/tradex_hr_backup_20260918/`, indexed in `BACKUPS.md` |
-| VPS source data | `Desktop/selevo_vps_backup_20260917/selevo_postgres_all.sql.gz` |
-| Bridge | `Desktop/Projects/SenseFace-HRMS-Bridge` (canonical, on `main`) |
-
-### Code map
-
-| Module | What it does |
-| --- | --- |
-| `tradexcel_hr/salary_setup.yaml` | **Salary config source of truth** — components, structures, formulas |
-| `tradexcel_hr/salary_setup.py` | Idempotent installer; converges, never duplicates |
-| `tradexcel_hr/salary_excel.py` | Xcel export + assignment importer |
-| `tradexcel_hr/run_payroll.py` | Creates draft salary slips from policy + assignment |
-| `tradexcel_hr/payroll_rules.py` | Wage maths (fallback constants only — structure wins) |
-| `tradexcel_hr/payroll_policy.py` | Resolves the policy for an employee |
-| `tradexcel_hr/effective_policy_rules.py` | Deterministic override precedence |
-| `tradexcel_hr/deduction_rules.py` | Deductions + totals (honours `do_not_include_in_total`) |
-| `tradexcel_hr/biometric/worker.py` | Bridge punch → Employee Checkin |
-| `tradexcel_hr/biometric/state_store.py` | Sync cursors and event log |
-| `install.py` | `after_migrate`: roles, workflows, reports, charts, workspace, property setters |
-| `api.py` | Whitelisted device RPCs |
-
----
-
-## The design, in one picture
-
-```
-Salary Component      global master — created once, reused everywhere
+~~~text
+Evidence
+  biometric/mobile/device events
         ↓
-Salary Structure      template (3 of them) — holds the split, no personal amounts
+Approved HR state
+  Checkin -> Attendance, Leave, Shift, OT, Compensation
         ↓
-Payroll Policy        rules by scope: pay_basis, daily_wage, overtime
-        ↓
-Policy Exception      dated override for people/groups, preview-verified
-        ↓
-Assignment            base = the individual figure
-```
+Financial state
+  Payroll Entry -> Salary Slip -> Accounting / Payment
+~~~
 
-**Why it matters:** the VPS held **28 structures named after individuals**
-(`abdullah`, `alim`, `miraz`). Those existed because Selevo had nowhere else to
-store a personal amount. In Frappe that value lives on the assignment's `base`,
-so **one structure serves everyone on that basis**. Anything individual is an
-exception or an Additional Salary — dated, reasoned, and visible.
+Raw Checkin is **not** payroll truth. Submitted financial history is not silently
+rewritten after a later correction.
 
----
+## What already exists
 
-## Known gaps and hazards
+- v16 staging migration and repeatable migration evidence;
+- custom salary setup/policy/exception modules;
+- biometric bridge worker with durable sync state and device-scoped PIN mapping;
+- attendance/anomaly reports;
+- custom roles and approval workflows;
+- mobile checkin with GPS/selfie policy;
+- field-duty/live-location support;
+- optional local face matching;
+- a custom persistent HR rail and route coverage;
+- extensive app tests.
 
-| Gap | Detail |
-| --- | --- |
-| Runtime history | The payroll and biometric runtimes were unversioned until 2026-09-18. `sync/` is **not a git repo**; it now holds thin shims delegating to the app |
-| Bridge launcher | `start_biometric_bridge.bat` runs `Desktop\Projects\SenseFace-HRMS-Bridge`, which is now the canonical hardened copy on `main` |
-| Deadlines leave no trace | `innodb_print_all_deadlocks = 0` — needs root to change |
-| No DB superuser | Blocks site provisioning and any restore rehearsal |
-| 6 unversioned tests | They test one-off **migrators** that will be deleted, so versioning them was pointless. They retire with the migrators |
+The architecture guide deliberately preserves useful work while identifying what
+must be replaced by stronger native-v16 functionality.
 
----
+## Highest-priority remaining architecture work
 
-## Change log of this workstream
+### P0
 
-Each has a full record in `tasks/`:
+1. Contain and retire the custom manual payroll engine after native v16 parity.
+2. Remove hidden/external compensation fallback; missing compensation blocks.
+3. Make pay basis explicit instead of Worker == Daily Wage.
+4. Stop payroll from reading raw Employee Checkin.
+5. Use native v16 overnight shift context.
+6. Correctly resolve joiner/leaver and mid-period compensation intervals.
+7. Add payroll readiness and Attendance finalization gates.
+8. Version/approve applicable Bangladesh statutory/tax configuration.
+9. Prove draft native payroll end-to-end in staging before any production cutover.
 
-| Date | What |
-| --- | --- |
-| 2026-09-18 | Checkout consolidation — one canonical tree, LF pinning, CRLF phantom-diff removed |
-| 2026-09-18 | Demo data removed (31 documents, 74 ledger rows); `Clear Demo Data` retired |
-| 2026-09-18 | Desk layout fixed and **measured** with Playwright, not guessed |
-| 2026-09-18 | Desk theme toggle added |
-| 2026-09-18 | Bridge ingress hardened; two bridge lineages reconciled onto `main` |
-| 2026-09-18 | Payroll runtime + 18 tests packaged |
-| 2026-09-18 | All pre-production salary data purged (owner-confirmed) |
-| 2026-09-18 | Section A biometric checklist — 221 mappings imported and verified |
-| 2026-09-18 | Salary structures rebuilt from the VPS; 226 assignments created |
+### P1
 
----
+- migrate the custom desktop rail to native v16 Workspace Sidebar fixtures;
+- end-to-end mobile idempotency across browser timeouts;
+- device completeness and effective biometric-ID history;
+- server-side manager record scope;
+- field-duty allowance approval/reversal;
+- face/location privacy and retention lifecycle;
+- real user/role/User Permission UAT;
+- accounting/payment readiness and reconciliation;
+- CI and restore rehearsal.
+
+See **docs/architecture/00_CURRENT_STATE_AND_DECISIONS.md** for the detailed audit.
+
+## Native v16 changes the plan
+
+The project must not blindly carry v15 custom behavior forward.
+
+Current HRMS v16 includes capabilities that should be evaluated/reused first,
+including:
+
+- native persistent Workspace Sidebar;
+- cross-midnight shift actual windows;
+- Auto Attendance;
+- Overtime Type / Overtime Slip;
+- Payroll Entry / Salary Slip;
+- Payroll Correction;
+- Arrear.
+
+The custom app should be thinner because v16 is stronger.
+
+## Code map
+
+| Area | Current code |
+|---|---|
+| salary templates/import | tradex_hr/tradexcel_hr/salary_setup.py, salary_setup.yaml, salary_excel.py |
+| legacy/manual payroll | tradex_hr/tradexcel_hr/run_payroll.py, payroll_rules.py |
+| policy resolution | payroll_policy.py, effective_policy_rules.py |
+| deductions/exceptions | deduction_rules.py, component_exceptions.py, tax_exceptions.py |
+| anomaly detection | anomaly_checks.py and reports |
+| device ingest | tradex_hr/tradexcel_hr/biometric/ |
+| mobile/field attendance | field_attendance.py, field_attendance_service.py |
+| face match | face_match.py |
+| permissions/workflows | tradex_hr/role_setup.py, tradex_hr/approval_setup.py |
+| Desk UI | tradex_hr/public/js/, public/css/ |
+| tests | tradex_hr/tests/ |
 
 ## Rules that must not be broken
 
-1. **One source of truth for money.** The Salary Structure defines the split; the
-   assignment defines the amount. Do **not** reintroduce a second home for either.
-2. **Never hardcode a wage.** No percentages or rates in code. The VPS-based
-   60/30/5/5 lives in `salary_setup.yaml` and the structures.
-3. **A wrong assignment must never save.** Frappe validates company match on the
-   server; keep that as the safety net and add filters as the guard rail.
-4. **Dry runs must not commit.** All constructive testing uses `commit=False`.
-   A development test once wrote 214 assignments to the live site believing a
-   later rollback would undo it. It did not.
-5. **Test the app, not the fixture.** A test that fails because data is absent
-   should skip with a reason, never fail.
-6. **Verify, then edit.** Several "defects" in the original audit proved false
-   (double proration, PIN casing) and one real bug was found only by running the
-   code (the worker's `employee["name"]`). Measure before changing.
+1. Native records remain canonical.
+2. One source of truth for employee compensation.
+3. No raw-punch-to-money path.
+4. No financial guessing through ambiguity.
+5. Effective dates are part of the data model.
+6. Submitted payroll is immutable historical truth.
+7. Retries cannot create duplicate evidence or money.
+8. Statutory rules are approved/versioned data, not developer memory.
+9. Sensitive biometric/location/face data is minimized, scoped and retained under
+   an approved policy.
+10. Production is not a coding sandbox.
+
+## Building the system
+
+Do **not** hand an agent the entire roadmap at once.
+
+Assign one chunk from:
+
+**docs/architecture/09_IMPLEMENTATION_CHUNKS.md**
+
+Use:
+
+**docs/architecture/11_AGENT_HANDOFF_TEMPLATE.md**
+
+and require acceptance IDs from:
+
+**docs/architecture/08_TEST_ACCEPTANCE_MATRIX.md**
+
+This keeps every change reviewable, testable and recoverable.
+
+## Production status
+
+The repository is a strong v16 staging foundation, but this README does **not**
+declare production payroll ready.
+
+Production readiness requires the gates in
+**docs/architecture/10_RELEASE_MIGRATION_RECOVERY.md**, including native payroll
+parity, approved statutory/tax rules, real role/scope UAT, privacy/retention
+review, draft payroll reconciliation, backup/restore rehearsal and controlled
+cutover sign-off.
