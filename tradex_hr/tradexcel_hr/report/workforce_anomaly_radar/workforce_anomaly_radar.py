@@ -9,6 +9,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, getdate, today
 
+from tradex_hr.tradexcel_hr.company_context import assert_company_access, resolve_company
+
 from tradex_hr.tradexcel_hr.anomaly_checks import SEVERITY_RANK, pair_punches, run_all
 
 
@@ -23,7 +25,7 @@ SEVERITIES = ("All", "High", "Medium", "Low")
 
 def normalize_filters(filters=None):
     values = frappe._dict(filters or {})
-    values.company = values.get("company") or "Tradexcel Ceramics Ltd."
+    values.company = resolve_company(values)
     values.branch = values.get("branch") or ""
     values.department = values.get("department") or ""
     values.category = values.get("category") or "All"
@@ -79,6 +81,7 @@ def _employee_rows(filters):
 
 def execute(filters=None):
     filters = normalize_filters(filters)
+    assert_company_access(filters.company)
     columns = _columns()
     employees = _employee_rows(filters)
     names = [row.name for row in employees]

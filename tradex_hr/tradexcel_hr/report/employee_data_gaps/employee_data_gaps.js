@@ -1,6 +1,6 @@
 frappe.query_reports["Employee Data Gaps"] = {
 	filters: [
-		{fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
+		{fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
 		{fieldname: "status", label: __("Employee Status"), fieldtype: "Select", options: "Active\nInactive\nLeft\nAll", default: "Active"},
 		{fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
 		{fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},

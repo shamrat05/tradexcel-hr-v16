@@ -7,12 +7,12 @@ from frappe import _
 from frappe.utils import getdate, today
 
 
-COMPANY = "Tradexcel Ceramics Ltd."
+from tradex_hr.tradexcel_hr.company_context import assert_company_access, resolve_company
 
 
 def normalize_filters(filters: dict | None = None) -> frappe._dict:
     values = frappe._dict(filters or {})
-    values.company = values.get("company") or COMPANY
+    values.company = resolve_company(values)
     values.as_of_date = getdate(values.get("as_of_date") or today()).isoformat()
     values.employee_status = values.get("employee_status") or "Active"
     values.assignment_status = values.get("assignment_status") or "All"
@@ -28,6 +28,7 @@ def normalize_filters(filters: dict | None = None) -> frappe._dict:
 
 def execute(filters: dict | None = None) -> tuple[list[dict], list[dict]]:
     filters = normalize_filters(filters)
+    assert_company_access(filters.company)
     columns = [
         {"label": _("Employee"), "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "width": 120},
         {"label": _("Employee ID"), "fieldname": "employee_id", "fieldtype": "Data", "width": 100},

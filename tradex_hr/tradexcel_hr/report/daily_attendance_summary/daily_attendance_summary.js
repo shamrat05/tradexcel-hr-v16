@@ -19,7 +19,7 @@ frappe.query_reports["Daily Attendance Summary"] = {
             label: __("Company"),
             fieldtype: "Link",
             options: "Company",
-            default: "Tradexcel Ceramics Ltd.",
+            default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "",
             reqd: 1,
         },
         {

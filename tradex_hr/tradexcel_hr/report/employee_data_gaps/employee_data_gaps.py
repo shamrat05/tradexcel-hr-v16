@@ -6,6 +6,8 @@ import frappe
 from frappe import _
 from frappe.utils import getdate, today
 
+from tradex_hr.tradexcel_hr.company_context import assert_company_access, resolve_company
+
 
 GAP_DEFINITIONS = (
     ("no_department", "Missing Department", "High", "Set the employee's Department"),
@@ -27,7 +29,7 @@ PRIORITY_RANK = {"High": 0, "Medium": 1, "Low": 2}
 
 def normalize_filters(filters=None):
     values = frappe._dict(filters or {})
-    values.company = values.get("company") or "Tradexcel Ceramics Ltd."
+    values.company = resolve_company(values)
     values.status = values.get("status") or "Active"
     values.branch = values.get("branch") or ""
     values.department = values.get("department") or ""
@@ -101,6 +103,7 @@ def _columns():
 
 def execute(filters=None):
     filters = normalize_filters(filters)
+    assert_company_access(filters.company)
     conditions = ["e.company = %(company)s"]
     if filters.status != "All":
         conditions.append("e.status = %(status)s")

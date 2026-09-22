@@ -53,3 +53,9 @@ def test_navigation_repairs_after_frappe_route_shell_replacement():
     assert "function resolvedRoute(route)" in javascript
     assert 'params.set("attendance_date", today)' in javascript
     assert 'params.set("from_date"' in javascript
+
+
+def test_tradexcel_desktop_tile_stays_in_same_tab():
+    assert 'getAttribute("data-id") === "Tradexcel HR"' in NAVIGATION
+    assert "desk/tradexcel-hr" in NAVIGATION
+    assert "removeAttribute(\"target\")" in NAVIGATION

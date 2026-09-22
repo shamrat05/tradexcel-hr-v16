@@ -6,6 +6,8 @@ import frappe
 from frappe import _
 from frappe.utils import getdate
 
+from tradex_hr.tradexcel_hr.company_context import assert_company_access, resolve_company
+
 OPTIONAL_FILTERS = ("department", "branch", "status")
 REQUIRED_FILTERS = ("company",)
 
@@ -13,9 +15,7 @@ REQUIRED_FILTERS = ("company",)
 def normalize_filters(filters: dict | None = None) -> frappe._dict:
     """Normalize legacy single-day and new date-range report requests."""
     values = frappe._dict(filters or {})
-    missing = [fieldname for fieldname in REQUIRED_FILTERS if not values.get(fieldname)]
-    if missing:
-        raise ValueError(_("Missing required filter(s): {0}").format(", ".join(missing)))
+    values.company = resolve_company(values)
 
     from_date = values.get("from_date") or values.get("attendance_date")
     to_date = values.get("to_date") or values.get("attendance_date")
@@ -45,6 +45,7 @@ def normalize_filters(filters: dict | None = None) -> frappe._dict:
 
 def execute(filters: dict | None = None) -> tuple[list[dict], list[dict]]:
     filters = normalize_filters(filters)
+    assert_company_access(filters.company)
     columns = [
         {"label": _("Attendance Date"), "fieldname": "attendance_date", "fieldtype": "Date", "width": 105},
         {"label": _("Employee"), "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "width": 120},

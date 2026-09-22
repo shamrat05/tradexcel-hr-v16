@@ -92,6 +92,30 @@ frappe.provide("frappe.ui.tradex_hr");
 })();
 
 (function () {
+	// Frappe v16 treats add_to_apps_screen links as External and opens them in
+	// a new tab. Keep this app tile inside the current Desk session without
+	// changing Frappe core or affecting other external links.
+	function keepTradexcelTileInDesk(attempt) {
+		const tile = Array.from(document.querySelectorAll(".desktop-icon")).find(
+			(element) => element.getAttribute("data-id") === "Tradexcel HR"
+		);
+		if (!tile) {
+			if ((attempt || 0) < 20) window.setTimeout(() => keepTradexcelTileInDesk((attempt || 0) + 1), 250);
+			return;
+		}
+		tile.removeAttribute("target");
+		tile.setAttribute("href", "/desk/tradexcel-hr");
+	}
+
+	$(function () {
+		keepTradexcelTileInDesk(0);
+	});
+	$(document).on("page-change", function () {
+		if ((frappe.get_route_str && frappe.get_route_str()) === "apps") keepTradexcelTileInDesk(0);
+	});
+})();
+
+(function () {
 	const STORAGE_KEY = "tradexcel_hr_sidebar_collapsed";
 	const RAIL_CLASS = "tradex-hr-rail";
 	const GROUP_CLASS = "tradex-hr-rail-group";
@@ -278,7 +302,7 @@ frappe.provide("frappe.ui.tradex_hr");
 			: "";
 		const company =
 			(frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) ||
-			"Tradexcel Ceramics Ltd.";
+			"";
 		const params = new URLSearchParams();
 		if (route === "query-report/Tradexcel Daily Attendance Board") {
 			params.set("attendance_date", today);

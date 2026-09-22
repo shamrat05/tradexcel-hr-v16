@@ -8,6 +8,7 @@ import frappe
 
 
 COMPANY = "Tradexcel Ceramics Ltd."
+USER_COMPANY_DEFAULT_JS = '(frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || ""'
 # Query Reports execute raw SQL and do not apply Employee/Company user-permission
 # filters. Keep these cross-company reports global-admin-only until replaced by
 # explicitly scoped Script Reports.
@@ -18,7 +19,7 @@ frappe.query_reports["Daily Attendance Summary"] = {
   filters: [
     {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
     {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
+    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
     {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
     {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},
     {fieldname: "status", label: __("Status"), fieldtype: "Select", options: "\\nPresent\\nAbsent\\nOn Leave\\nHalf Day\\nHoliday\\nNot Started", default: ""}
@@ -73,7 +74,7 @@ frappe.query_reports["Biometric ID Audit"] = {
 EMPLOYEE_DATA_GAPS_JAVASCRIPT = """
 frappe.query_reports["Employee Data Gaps"] = {
   filters: [
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
+    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
     {fieldname: "status", label: __("Employee Status"), fieldtype: "Select", options: "Active\\nInactive\\nLeft\\nAll", default: "Active"},
     {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
     {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},
@@ -107,7 +108,7 @@ frappe.query_reports["Employee Data Gaps"] = {
 WORKFORCE_ANOMALY_RADAR_JAVASCRIPT = """
 frappe.query_reports["Workforce Anomaly Radar"] = {
   filters: [
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
+    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
     {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
     {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
     {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
@@ -165,7 +166,7 @@ ORDER BY CASE WHEN a.assignment_count>1 THEN 0
 """,
         "javascript": """
 frappe.query_reports["Tradexcel Shift Coverage"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
+  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
   {fieldname: "as_of_date", label: __("As Of Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
   {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
   {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: ""},
@@ -204,7 +205,7 @@ ORDER BY s.start_date, e.branch, e.department, s.employee, d.parentfield, d.idx
 """,
         "javascript": """
 frappe.query_reports["Tradexcel Pay Component Register"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
+  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
   {fieldname: "from_date", label: __("Period From"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
   {fieldname: "to_date", label: __("Period To"), fieldtype: "Date", default: frappe.datetime.month_end(), reqd: 1},
   {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
@@ -257,7 +258,7 @@ ORDER BY e.branch, e.department, c.employee
 """,
         "javascript": """
 frappe.query_reports["Tradexcel Payroll Variance"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
+  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
   {fieldname: "from_date", label: __("Period From"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
   {fieldname: "to_date", label: __("Period To"), fieldtype: "Date", default: frappe.datetime.month_end(), reqd: 1},
   {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
@@ -288,7 +289,7 @@ ORDER BY 7, 6, 1
 """,
         "javascript": """
 frappe.query_reports["Tradexcel Joiners and Leavers"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
+  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
   {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
   {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
   {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""}
@@ -349,7 +350,7 @@ frappe.query_reports[\"Tradexcel Payroll Register\"] = {
         "javascript": """
 frappe.query_reports[\"Tradexcel Salary Coverage Board\"] = {
   filters: [
-    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", default: \"Tradexcel Ceramics Ltd.\", reqd: 1},
+    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default(\"Company\")) || \"\", reqd: 1},
     {fieldname: \"as_of_date\", label: __(\"As Of Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1},
     {fieldname: \"employee_status\", label: __(\"Employee Status\"), fieldtype: \"Select\", options: \"All\\nActive\\nInactive\\nLeft\", default: \"Active\"},
     {fieldname: "assignment_status", label: __("Assignment Status"), fieldtype: "Select", options: "All\\nAssigned\\nMissing\\nCompany Mismatch", default: "All"},
@@ -437,6 +438,14 @@ def ensure_standard_script_reports() -> None:
         # Always reload the app-owned JSON so role-table changes self-heal on
         # existing standard reports without converting them to custom reports.
         frappe.reload_doc("tradexcel_hr", "report", frappe.scrub(report_name), force=True)
+        doc = frappe.get_doc("Report", report_name)
+        javascript = doc.javascript or ""
+        company_aware_javascript = javascript.replace(
+            'default: "Tradexcel Ceramics Ltd."',
+            f"default: {USER_COMPANY_DEFAULT_JS}",
+        )
+        if company_aware_javascript != javascript:
+            doc.db_set("javascript", company_aware_javascript, update_modified=False)
 
 NUMBER_CARDS = {
     "Tradexcel Active Employees": {
