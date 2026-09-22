@@ -332,6 +332,7 @@ frappe.provide("frappe.ui.tradex_hr");
 				link.className = `tradex-hr-rail-item${item.primary ? " is-primary" : ""}${active(item.route) ? " is-active" : ""}`;
 				link.href = `#${resolvedRoute(item.route)}`;
 				link.title = item.label;
+				link.dataset.route = item.route;
 				link.innerHTML = `${icon(group.icon, "tradex-hr-rail-item-icon")}<span>${item.label}</span>`;
 				link.addEventListener("click", (event) => {
 					event.preventDefault();
@@ -367,11 +368,14 @@ frappe.provide("frappe.ui.tradex_hr");
 	function refreshActive() {
 		const rail = document.querySelector(`.${RAIL_CLASS}`);
 		if (!rail) return;
-		GROUPS.forEach((group) => group.items.forEach((item, index) => {
-			const links = rail.querySelectorAll(".tradex-hr-rail-item");
-			const link = Array.from(links).find((candidate) => candidate.title === item.label);
-			if (link) link.classList.toggle("is-active", active(item.route));
-		}));
+		// Key each link off its own route. Matching by label broke as soon as two
+		// items shared one: "Attendance" exists in Time & Attendance (List/Attendance)
+		// and in Analytics (query-report/Daily Attendance Summary), so the later item
+		// toggled the class on the earlier item's link and cleared it again.
+		rail.querySelectorAll(".tradex-hr-rail-item").forEach((link) => {
+			const route = link.dataset.route;
+			link.classList.toggle("is-active", Boolean(route) && active(route));
+		});
 	}
 
 	function ensureRail() {
