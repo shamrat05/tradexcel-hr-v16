@@ -29,8 +29,15 @@ add_to_apps_screen = [{
     "route": "/app/tradexcel-hr",
 }]
 
+extend_doctype_class = {
+    "Payroll Entry": [
+        "tradex_hr.tradexcel_hr.payroll_finalization.PayrollEntryFinalizationMixin",
+    ],
+}
+
 doctype_js = {
     "Tradexcel Biometric Device": "public/js/tradexcel_biometric_device.js",
+    "Payroll Entry": "public/js/payroll_entry.js",
     "Employee": "public/js/employee_calendar.js",
     "Attendance": "public/js/employee_calendar.js",
     "Income Tax Slab": "public/js/income_tax_slab.js",

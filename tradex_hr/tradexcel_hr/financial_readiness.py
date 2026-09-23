@@ -182,7 +182,7 @@ def _component_exception_provenance(employee, day, actual_earnings, structure_co
     return traces
 
 
-def inspect_payroll_financial_readiness(payroll_entry):
+def inspect_payroll_financial_readiness(payroll_entry, *, allow_partial_submission=False):
     """Inspect a managed Payroll Entry and real draft Salary Slips without writes."""
     entry = frappe.get_doc("Payroll Entry", payroll_entry) if isinstance(payroll_entry, str) else payroll_entry
     from tradex_hr.tradexcel_hr.company_context import assert_company_access
@@ -202,12 +202,22 @@ def inspect_payroll_financial_readiness(payroll_entry):
         add("UNMANAGED_PAYROLL_ENTRY", _("This Payroll Entry was not prepared through Payroll Readiness."))
     if int(entry.docstatus or 0) != 1:
         add("PAYROLL_ENTRY_NOT_SUBMITTED", _("Submit the prepared Payroll Entry for review before financial checks."))
-    if entry.status == "Failed":
+    native_submission_worker = bool(getattr(frappe.flags, "via_payroll_entry", False))
+    if entry.status == "Failed" and not entry.salary_slips_created:
         add("SALARY_SLIP_CREATION_FAILED", _("Native Salary Slip creation failed. Open Payroll Entry for its error details."))
-    elif entry.status == "Queued" or not entry.salary_slips_created:
+    elif (entry.status == "Queued" and not native_submission_worker) or not entry.salary_slips_created:
         add("SALARY_SLIP_CREATION_INCOMPLETE", _("Native Salary Slip creation has not completed."))
 
     expected = {row.employee for row in entry.get("employees", []) if row.get("employee")}
+    expected_drafts = expected
+    if allow_partial_submission:
+        submitted_employees = set(frappe.get_all(
+            "Salary Slip",
+            filters={"payroll_entry": entry.name, "docstatus": 1},
+            fields=["employee"],
+            pluck="employee",
+        ))
+        expected_drafts = expected - submitted_employees
     slips = frappe.get_all(
         "Salary Slip", filters={"payroll_entry": entry.name, "docstatus": 0},
         fields=["name", "employee", "company", "start_date", "end_date", "salary_structure",
@@ -217,7 +227,7 @@ def inspect_payroll_financial_readiness(payroll_entry):
     by_employee = defaultdict(list)
     for slip in slips:
         by_employee[slip.employee].append(slip)
-    if set(by_employee) != expected or any(len(items) != 1 for items in by_employee.values()):
+    if set(by_employee) != expected_drafts or any(len(items) != 1 for items in by_employee.values()):
         add("DRAFT_SLIP_UNIVERSE_MISMATCH", _("Draft Salary Slips do not match the Payroll Entry employee list."))
     if not slips:
         add("DRAFT_SLIP_MISSING", _("No native draft Salary Slips are available for review."))
@@ -285,6 +295,29 @@ def inspect_payroll_financial_readiness(payroll_entry):
         or int(info.is_group or 0) or int(info.disabled or 0)
     ):
         add("PAYROLL_PAYABLE_INVALID", _("Payroll payable must be a company account with Account Type Payable."), reference=payable)
+
+    # Native accrual accounting assigns Payroll Entry.cost_center to the
+    # Payroll Payable credit line. Employee/component cost-center validation
+    # below does not cover that company-level balance-sheet line.
+    payable_cost_center = entry.get("cost_center")
+    payable_center_info = (
+        frappe.db.get_value(
+            "Cost Center", payable_cost_center,
+            ["company", "is_group", "disabled"], as_dict=True,
+        )
+        if payable_cost_center else None
+    )
+    if (
+        not payable_center_info
+        or payable_center_info.company != entry.company
+        or int(payable_center_info.is_group or 0)
+        or int(payable_center_info.disabled or 0)
+    ):
+        add(
+            "ACCOUNTING_DIMENSION_MISSING",
+            _("A valid company payroll cost center is required for the payable accounting line."),
+            reference="Cost Center",
+        )
 
     # Match HRMS Payroll Entry.get_salary_components(): only components included
     # in accounting are required to have mappings.

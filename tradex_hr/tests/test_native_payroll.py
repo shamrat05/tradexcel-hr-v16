@@ -108,7 +108,7 @@ def test_prepare_blocks_missing_payroll_account_before_daily_input(monkeypatch):
     monkeypatch.setattr(native_payroll, "_existing_payroll_entry", lambda *_args: [])
     monkeypatch.setattr(native_payroll, "_assert_preparation_authorized", lambda *_args: None)
     monkeypatch.setattr(native_payroll, "_daily_inputs_for_readiness", lambda *_args: ([{"employee": "EMP-DAILY", "period": "PERIOD", "amount": 100}], []))
-    monkeypatch.setattr(native_payroll.frappe, "get_cached_value", lambda *_args: (None, None))
+    monkeypatch.setattr(native_payroll.frappe, "get_cached_value", lambda *_args: (None, None, None))
     monkeypatch.setattr(
         native_payroll,
         "create_daily_wage_input",
@@ -130,7 +130,7 @@ def test_prepare_checks_payroll_entry_permission_before_insert(monkeypatch):
     }
     monkeypatch.setattr(native_payroll, "inspect_native_payroll_readiness", lambda *_args, **_kwargs: readiness)
     monkeypatch.setattr(native_payroll, "_existing_payroll_entry", lambda *_args: [])
-    monkeypatch.setattr(native_payroll.frappe, "get_cached_value", lambda *_args: ("BDT", "ACC-PAYABLE"))
+    monkeypatch.setattr(native_payroll.frappe, "get_cached_value", lambda *_args: ("BDT", "ACC-PAYABLE", "CC-TCL"))
     monkeypatch.setattr(
         native_payroll.frappe,
         "has_permission",
@@ -267,7 +267,7 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
             frappe,
             "get_cached_value",
             lambda doctype, name, fields, *args, **kwargs: (
-                ("BDT", "Creditors - TCL")
+                ("BDT", "Creditors - TCL", frappe.db.get_value("Company", employee.company, "cost_center"))
                 if doctype == "Company" and name == employee.company
                 else original_get_cached_value(doctype, name, fields, *args, **kwargs)
             ),

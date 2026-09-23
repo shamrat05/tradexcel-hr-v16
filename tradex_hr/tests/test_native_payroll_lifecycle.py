@@ -127,7 +127,10 @@ def test_real_payroll_manager_permissions_are_narrow_and_company_scoped(monkeypa
         assert frappe.has_permission("Payroll Entry", "submit")
         assert frappe.has_permission("Additional Salary", "create")
         assert not frappe.has_permission("Additional Salary", "submit")
-        assert not frappe.has_permission("Salary Slip", "submit")
+        # Native Payroll Entry submission invokes SalarySlip.submit() for each
+        # slip. The dedicated before_submit guard blocks individual managed
+        # submissions even though this role needs the underlying native right.
+        assert frappe.has_permission("Salary Slip", "submit")
         if employees:
             assert frappe.has_permission("Employee", "read", employees[0])
         if other_employees:
@@ -212,15 +215,17 @@ def test_unauthorized_payroll_caller_writes_no_financial_records(monkeypatch):
 
 
 def test_approved_managed_payroll_allows_salary_slip_submission_eligibility(monkeypatch):
+    from tradex_hr.tradexcel_hr import payroll_finalization
+
     approved = frappe._dict({
         "docstatus": 1,
         "workflow_state": "Tradexcel Payroll Approved",
         "salary_slips_created": 1,
-        "status": "Submitted",
+        "status": "Queued",
     })
     monkeypatch.setattr(native_payroll.frappe.db, "get_value", lambda *_args, **_kwargs: "MANAGED-KEY")
     monkeypatch.setattr(native_payroll.frappe, "get_doc", lambda *_args, **_kwargs: approved)
-    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {"status": "READY", "blockers": []})
+    monkeypatch.setattr(payroll_finalization, "readiness_for_batch_submission", lambda *_args, **_kwargs: {"status": "READY", "blockers": []})
     monkeypatch.setattr(native_payroll.frappe.flags, "via_payroll_entry", True, raising=False)
     slip = frappe._dict({"payroll_entry": "PAY-APPROVED"})
     assert native_payroll.validate_salary_slip_before_submit(slip) is None

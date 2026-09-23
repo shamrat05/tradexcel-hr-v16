@@ -221,7 +221,7 @@ def _daily_inputs_for_readiness(company: str, start: date, end: date, readiness:
             or existing.employee != employee or existing.company != company_for_employee
             or existing.salary_component != DEFAULT_COMPONENT
             or existing.ref_doctype != "Tradexcel Attendance Period"
-            or existing.ref_docname != period.name or existing.payroll_date != period.to_date
+            or existing.ref_docname != period.name or getdate(existing.payroll_date) != getdate(period.to_date)
             or flt(existing.amount) != flt(result["amount"])
         ):
             blockers.append({
@@ -350,7 +350,6 @@ def validate_salary_slip_before_submit(doc, method=None) -> None:
         entry.docstatus != 1
         or entry.workflow_state != "Tradexcel Payroll Approved"
         or not entry.salary_slips_created
-        or entry.status in {"Queued", "Failed"}
     ):
         frappe.throw(_("Salary Slips are locked until Director approval of the managed Payroll Entry."))
 
@@ -358,9 +357,9 @@ def validate_salary_slip_before_submit(doc, method=None) -> None:
     if cache is None:
         cache = frappe.local.tradex_financial_readiness = {}
     if entry.name not in cache:
-        from tradex_hr.tradexcel_hr.financial_readiness import inspect_payroll_financial_readiness
+        from tradex_hr.tradexcel_hr.payroll_finalization import readiness_for_batch_submission
 
-        cache[entry.name] = inspect_payroll_financial_readiness(entry)
+        cache[entry.name] = readiness_for_batch_submission(entry)
     result = cache[entry.name]
     if result["status"] != "READY":
         reason = result["blockers"][0]["reason"] if result["blockers"] else _("Financial checks need review.")
@@ -425,8 +424,9 @@ def prepare_native_payroll(
             return {**readiness, "status": "NATIVE_SLIPS_QUEUED", "payroll_entry": doc.name}
         return {**readiness, "status": "PREPARED", "payroll_entry": doc.name}
 
-    currency, payable_account = frappe.get_cached_value(
-        "Company", company, ["default_currency", "default_payroll_payable_account"]
+    currency, payable_account, cost_center = frappe.get_cached_value(
+        "Company", company,
+        ["default_currency", "default_payroll_payable_account", "cost_center"],
     )
     if not currency or not payable_account:
         return {
@@ -452,6 +452,10 @@ def prepare_native_payroll(
             "currency": currency,
             "exchange_rate": 1,
             "payroll_payable_account": payable_account,
+            # HRMS Desk normally fetches this field from Company. Preparation
+            # runs server-side, so set the same native default explicitly; the
+            # accrual payable line uses Payroll Entry.cost_center.
+            "cost_center": cost_center,
             "salary_slip_based_on_timesheet": 0,
             "validate_attendance": 1 if _attendance_required_for_payroll() else 0,
             "workflow_state": "Tradexcel Payroll Draft",

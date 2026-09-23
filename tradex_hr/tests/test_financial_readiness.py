@@ -35,7 +35,7 @@ def _tax_check(
     from hrms.payroll.doctype.salary_structure_assignment import salary_structure_assignment
 
     period_doc = frappe._dict(name="PP-1", start_date="2026-01-01", end_date="2026-12-31")
-    monkeypatch.setattr(payroll_period, "get_payroll_period", lambda *_: period_doc if period else None)
+    monkeypatch.setattr(payroll_period, "get_payroll_period", lambda *_args, **_kwargs: period_doc if period else None)
     slab = frappe._dict(
         company="TCL", effective_from=effective, disabled=0, docstatus=1,
         custom_tradex_review_status=review,
@@ -77,7 +77,7 @@ def test_only_taxable_structure_requires_period_and_assignment_slab(monkeypatch)
 
     monkeypatch.setattr(
         payroll_period, "get_payroll_period",
-        lambda *_: frappe._dict(name="PP-1", start_date="2026-01-01", end_date="2026-12-31"),
+        lambda *_args, **_kwargs: frappe._dict(name="PP-1", start_date="2026-01-01", end_date="2026-12-31"),
     )
     monkeypatch.setattr(
         salary_structure_assignment, "get_tax_component",
@@ -146,7 +146,7 @@ def test_zero_tax_without_salary_detail_row_uses_native_tax_setup(monkeypatch):
 
     monkeypatch.setattr(
         payroll_period, "get_payroll_period",
-        lambda *_: frappe._dict(name="PP-1", start_date="2026-01-01", end_date="2026-12-31"),
+        lambda *_args, **_kwargs: frappe._dict(name="PP-1", start_date="2026-01-01", end_date="2026-12-31"),
     )
     slab = frappe._dict(company="TCL", effective_from="2026-01-01", disabled=0, docstatus=1,
                         custom_tradex_review_status="Approved")
@@ -177,9 +177,10 @@ def _ready_entry():
     return frappe._dict(
         name="PE-TEST", company="TCL", docstatus=1, status="Submitted",
         salary_slips_created=1, start_date="2026-09-01", end_date="2026-09-30",
-        payroll_payable_account="Payable - TCL", custom_tradex_run_key="RUN-1",
+        payroll_payable_account="Payable - TCL", cost_center="Company Cost Center - TCL",
+        custom_tradex_run_key="RUN-1",
         employees=[frappe._dict(employee="EMP-1")],
-        get_payroll_cost_centers_for_employee=lambda *_: {"Cost Center - TCL": 100},
+        get_payroll_cost_centers_for_employee=lambda *_args, **_kwargs: {"Cost Center - TCL": 100},
     )
 
 
@@ -237,9 +238,10 @@ def _install_financial_fixture(
         get_all=get_all,
         get_doc=lambda *_args, **_kwargs: SimpleNamespace(get_tax_components=lambda: []),
         db=SimpleNamespace(get_value=get_value, sql=lambda *_args, **_kwargs: []),
+        flags=SimpleNamespace(via_payroll_entry=False),
     ))
-    monkeypatch.setattr(financial_readiness, "_previous_slips", lambda *_: {})
-    monkeypatch.setattr(component_exceptions, "load_component_rules", lambda *_: [])
+    monkeypatch.setattr(financial_readiness, "_previous_slips", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(component_exceptions, "load_component_rules", lambda *_args, **_kwargs: [])
     monkeypatch.setattr(
         "tradex_hr.tradexcel_hr.company_context.assert_company_access", lambda *_, **__: None
     )
@@ -285,9 +287,32 @@ def test_salary_slip_employee_universe_mismatch_blocks(monkeypatch):
 
 def test_invalid_cost_center_distribution_blocks(monkeypatch):
     entry, _ = _install_financial_fixture(monkeypatch)
-    entry.get_payroll_cost_centers_for_employee = lambda *_: {"Cost Center - TCL": 80}
+    entry.get_payroll_cost_centers_for_employee = lambda *_args, **_kwargs: {"Cost Center - TCL": 80}
     result = financial_readiness.inspect_payroll_financial_readiness(entry)
     assert "ACCOUNTING_DIMENSION_MISSING" in {row["code"] for row in result["blockers"]}
+
+
+def test_missing_payroll_entry_cost_center_blocks_payable_line(monkeypatch):
+    entry, _ = _install_financial_fixture(monkeypatch)
+    entry.cost_center = None
+
+    result = financial_readiness.inspect_payroll_financial_readiness(entry)
+
+    assert any(
+        row["code"] == "ACCOUNTING_DIMENSION_MISSING"
+        and row.get("reference") == "Cost Center"
+        for row in result["blockers"]
+    )
+
+
+def test_queued_native_submission_worker_is_not_blocked_by_financial_readiness(monkeypatch):
+    entry, _ = _install_financial_fixture(monkeypatch)
+    entry.status = "Queued"
+    financial_readiness.frappe.flags.via_payroll_entry = True
+
+    result = financial_readiness.inspect_payroll_financial_readiness(entry)
+
+    assert result["status"] == "READY"
 
 
 def test_missing_mandatory_accounting_dimension_blocks(monkeypatch):
@@ -347,11 +372,15 @@ def frappe_site():
 
 def test_native_payroll_batch_sets_authorized_submission_flag(frappe_site, monkeypatch):
     from hrms.payroll.doctype.payroll_entry import payroll_entry as hrms_payroll_entry
+    from tradex_hr.tradexcel_hr import payroll_finalization
 
     monkeypatch.setattr(frappe, "in_test", True)
     monkeypatch.setattr(frappe, "publish_realtime", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(frappe.db, "get_value", lambda *_args, **_kwargs: "RUN-1")
-    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {
+    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_args, **_kwargs: {
+        "status": "READY", "blockers": []
+    })
+    monkeypatch.setattr(payroll_finalization, "readiness_for_batch_submission", lambda *_args, **_kwargs: {
         "status": "READY", "blockers": []
     })
     calls = []
@@ -365,7 +394,7 @@ def test_native_payroll_batch_sets_authorized_submission_flag(frappe_site, monke
     slip.submit = submit
     entry = frappe._dict(
         name="PE-APPROVED", docstatus=1, workflow_state="Tradexcel Payroll Approved",
-        salary_slips_created=1, status="Submitted",
+        salary_slips_created=1, status="Queued",
         make_accrual_jv_entry=lambda submitted: calls.append(("accrual", len(submitted))),
         email_salary_slip=lambda _submitted: None,
         db_set=lambda _values: None,
@@ -383,6 +412,8 @@ def test_native_payroll_batch_sets_authorized_submission_flag(frappe_site, monke
 
 
 def test_direct_salary_slip_submit_obeys_financial_readiness(monkeypatch):
+    from tradex_hr.tradexcel_hr import payroll_finalization
+
     entry = frappe._dict(name="PE-APPROVED", docstatus=1, workflow_state="Tradexcel Payroll Approved",
                          salary_slips_created=1, status="Submitted")
     monkeypatch.setattr(native_payroll, "frappe", SimpleNamespace(
@@ -392,7 +423,10 @@ def test_direct_salary_slip_submit_obeys_financial_readiness(monkeypatch):
         flags=SimpleNamespace(via_payroll_entry=True),
         throw=lambda message, **kwargs: (_ for _ in ()).throw(frappe.ValidationError(str(message))),
     ))
-    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {
+    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_args, **_kwargs: {
+        "status": "BLOCKED", "blockers": [{"reason": "missing mapping"}]
+    })
+    monkeypatch.setattr(payroll_finalization, "readiness_for_batch_submission", lambda *_args, **_kwargs: {
         "status": "BLOCKED", "blockers": [{"reason": "missing mapping"}]
     })
     with pytest.raises(frappe.ValidationError, match="financial readiness is blocked"):
@@ -474,7 +508,7 @@ def test_tax_review_company_scope_role_matrix(monkeypatch, user, roles, has_scop
 
 def test_direct_director_approval_rechecks_financial_readiness(monkeypatch):
     doc = frappe._dict(custom_tradex_run_key="RUN-1", workflow_state="Tradexcel Payroll Pending Director Approval")
-    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {
+    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_args, **_kwargs: {
         "status": "BLOCKED", "blockers": [{"reason": "payable account missing"}]
     })
     monkeypatch.setattr(financial_readiness, "frappe", SimpleNamespace(
@@ -489,7 +523,7 @@ def test_tax_review_approval_requires_system_manager_and_submitted_native_slab(m
     doc.flags.tradex_tax_review_action = True
     monkeypatch.setattr(tax_review, "frappe", SimpleNamespace(
         db=SimpleNamespace(get_value=lambda *_args, **_kwargs: frappe._dict(custom_tradex_review_status="Review Required")),
-        get_roles=lambda *_: ["System Manager"], session=SimpleNamespace(user="reviewer@example.com"),
+        get_roles=lambda *_args, **_kwargs: ["System Manager"], session=SimpleNamespace(user="reviewer@example.com"),
         throw=lambda message, *args, **kwargs: (_ for _ in ()).throw(frappe.ValidationError(str(message))),
         PermissionError=frappe.PermissionError,
     ))
@@ -518,7 +552,7 @@ def test_tax_review_provenance_cannot_be_edited_outside_controlled_action(monkey
     )
     monkeypatch.setattr(tax_review, "frappe", SimpleNamespace(
         db=SimpleNamespace(get_value=lambda *_args, **_kwargs: previous),
-        get_roles=lambda *_: ["System Manager"],
+        get_roles=lambda *_args, **_kwargs: ["System Manager"],
         session=SimpleNamespace(user="reviewer@example.com"),
         throw=lambda message, *args, **kwargs: (_ for _ in ()).throw(frappe.ValidationError(str(message))),
         PermissionError=frappe.PermissionError,
@@ -536,7 +570,7 @@ def test_tax_review_endpoint_checks_company_scope_before_writing(monkeypatch):
         flags=SimpleNamespace(), save=lambda **_kwargs: writes.append("save"),
     )
     monkeypatch.setattr(tax_review, "frappe", SimpleNamespace(
-        get_roles=lambda *_: ["System Manager"],
+        get_roles=lambda *_args, **_kwargs: ["System Manager"],
         session=SimpleNamespace(user="reviewer@example.com"),
         get_doc=lambda *_args: slab,
     ))

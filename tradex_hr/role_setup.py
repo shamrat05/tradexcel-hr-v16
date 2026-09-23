@@ -198,7 +198,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     "Salary Slip": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS | {"delete"},
         "Tradexcel HR Manager": READ_ONLY_PERMS,
-        "Tradexcel Payroll Manager": EDIT_PERMS,
+        "Tradexcel Payroll Manager": EDIT_PERMS | {"submit"},
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
         "Tradexcel Payroll Approver": APPROVE_PERMS | {"delete"},
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
