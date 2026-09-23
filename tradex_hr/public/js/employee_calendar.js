@@ -95,6 +95,12 @@ function show_employee_calendar(employee, employee_name) {
 frappe.ui.form.on("Employee", {
 	refresh(frm) {
 		if (frm.is_new() || !frm.doc.name) return;
+		frm.add_custom_button(__("Check Joiner Readiness"), () => {
+			frappe.call({
+				method: "tradex_hr.tradexcel_hr.joiner_readiness.inspect_joiner_readiness",
+				args: { employee_name: frm.doc.name },
+			}).then(({ message }) => show_joiner_readiness(message));
+		}, __("Onboarding"));
 		frm.add_custom_button(__("Check Exit Readiness"), () => {
 			frappe.call({
 				method: "tradex_hr.tradexcel_hr.employee_separation.inspect_employee_exit_readiness",
@@ -119,6 +125,21 @@ frappe.ui.form.on("Employee", {
 		}, __("Separation"));
 	},
 });
+
+function show_joiner_readiness(result) {
+	if (!result) return;
+	const sections = Object.entries(result.sections || {}).map(([name, section]) => {
+		const findings = (section.findings || []).map((item) =>
+			`<li>${frappe.utils.escape_html(item.message || item.code)}</li>`
+		).join("");
+		const detail = section.message ? `<div>${frappe.utils.escape_html(section.message)}</div>` : "";
+		return `<section class="mb-3"><b>${frappe.utils.escape_html(__(name))}: ${frappe.utils.escape_html(section.status)}</b>${detail}${findings ? `<ul>${findings}</ul>` : ""}</section>`;
+	}).join("");
+	frappe.msgprint({
+		title: __("Joiner Readiness — {0}", [result.status]),
+		message: `<div>${frappe.utils.escape_html(result.hire_source || "")}</div>${sections}`,
+	});
+}
 
 function show_exit_readiness(result) {
 	if (!result) return;

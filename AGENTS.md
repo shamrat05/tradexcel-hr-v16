@@ -59,3 +59,11 @@ rehearsed on this machine — see the limitation recorded there.
 - Statutory Rule Sets are source-linked, effective-dated, approved by a separate reviewer, and immutable after approval. An Employee Separation retains the exact approved version and reviewed applicability date.
 - Unapproved or unresolved statutory rules never produce money. Native Gratuity, Leave Encashment, Additional Salary, and Full and Final documents remain the financial records.
 - A `Not Applicable` decision requires an explicit reviewed classification and notes. Later rule versions never silently change a historical separation or settlement.
+
+## Recruitment and onboarding
+
+- Employee is the canonical worker identity. Recruited hires use native Job Opening, Job Applicant, accepted Job Offer, and Employee Onboarding; legitimate direct hires may begin at Employee and never need a fake applicant/email.
+- Company scope for Job Applicant, Interview, and Interview Feedback derives from the linked Job Opening; recruiter APIs and writes must not cross explicit Company User Permissions.
+- A submitted Salary Structure Assignment and its explicit Salary Structure pay basis authorize payroll. Employment Type is not pay basis or legal classification.
+- Employee and User remain separate; account access is optional. Bank details are required only for Bank salary mode. Shift and biometric needs follow the actual attendance setup, not a universal default-shift rule.
+- A new Employee is payroll-ready only when the existing company-wide native payroll readiness passes; onboarding never creates payroll or submits financial records.

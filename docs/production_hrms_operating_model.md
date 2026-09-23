@@ -107,6 +107,14 @@ Target operating model:
 - Import and reconciliation exceptions require review before changes.
 - Device administration does not grant salary access.
 
+## Recruitment and onboarding
+
+- Employee is the canonical worker identity. Native Job Opening, Job Applicant, Job Offer, and Employee Onboarding support recruited hires; approved direct hires may begin at Employee without a fabricated applicant or email.
+- A submitted Salary Structure Assignment and its explicit Salary Structure pay basis are the payroll authority. Employment Type is not pay basis or statutory classification.
+- Employee and User are separate identities. Application access is optional; Bank account details are required only for Bank salary mode.
+- Shift and biometric setup follows the employee's actual attendance arrangement. Empty `default_shift` or missing biometric mapping is not a universal blocker when applicability is not configured.
+- Employee Onboarding does not create salary authority or payroll. Joiner Readiness summarizes the existing company-wide payroll readiness and never creates or submits financial documents.
+
 ## Go-live evidence required
 
 - Device serials entered and devices connected.

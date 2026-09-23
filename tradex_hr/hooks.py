@@ -124,6 +124,27 @@ doc_events = {
         "before_update_after_submit": "tradex_hr.tradexcel_hr.statutory_exit.before_update_after_submit_statutory_ruleset",
         "before_cancel": "tradex_hr.tradexcel_hr.statutory_exit.before_cancel_statutory_ruleset",
     },
+    "Employee Onboarding": {
+        "validate": "tradex_hr.tradexcel_hr.joiner_readiness.validate_employee_onboarding",
+    },
+    "Job Opening": {
+        "validate": "tradex_hr.tradexcel_hr.joiner_readiness.validate_recruitment_company_scope",
+    },
+    "Job Applicant": {
+        "validate": "tradex_hr.tradexcel_hr.joiner_readiness.validate_recruitment_company_scope",
+    },
+    "Job Offer": {
+        "validate": "tradex_hr.tradexcel_hr.joiner_readiness.validate_recruitment_company_scope",
+    },
+    "Interview": {
+        "validate": "tradex_hr.tradexcel_hr.joiner_readiness.validate_recruitment_company_scope",
+    },
+    "Interview Feedback": {
+        "validate": "tradex_hr.tradexcel_hr.joiner_readiness.validate_recruitment_company_scope",
+    },
+    "Employee": {
+        "before_insert": "tradex_hr.tradexcel_hr.joiner_readiness.validate_unique_employee_job_applicant",
+    },
     "Employee Checkin": {
         "before_validate": "tradex_hr.tradexcel_hr.field_attendance_service.enrich_mobile_checkin",
     },
@@ -135,10 +156,22 @@ after_migrate = "tradex_hr.install.after_migrate"
 
 permission_query_conditions = {
     "Tradexcel Statutory Rule Set": "tradex_hr.tradexcel_hr.statutory_exit.statutory_ruleset_query_conditions",
+    "Job Opening": "tradex_hr.tradexcel_hr.joiner_readiness.job_opening_query_conditions",
+    "Job Applicant": "tradex_hr.tradexcel_hr.joiner_readiness.job_applicant_query_conditions",
+    "Job Offer": "tradex_hr.tradexcel_hr.joiner_readiness.job_offer_query_conditions",
+    "Interview": "tradex_hr.tradexcel_hr.joiner_readiness.interview_query_conditions",
+    "Interview Feedback": "tradex_hr.tradexcel_hr.joiner_readiness.interview_feedback_query_conditions",
+    "Employee Onboarding": "tradex_hr.tradexcel_hr.joiner_readiness.employee_onboarding_query_conditions",
 }
 
 has_permission = {
     "Salary Slip": "tradex_hr.tradexcel_hr.native_payroll.restrict_salary_slip_delete",
+    "Job Opening": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
+    "Job Applicant": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
+    "Job Offer": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
+    "Interview": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
+    "Interview Feedback": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
+    "Employee Onboarding": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
     "Payroll Correction": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
     "Arrear": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
 }
