@@ -248,7 +248,8 @@ Hardening changes in progress: native submit/cancel Workflow states, review elig
 
 ### Phase B — Payroll Readiness operator flow
 
-- Branch: `feat/payroll-readiness-operator-flow`, based on hardened PR #6 head `a2edf9f`.
+- Branch: `feat/payroll-readiness-operator-flow`, based on hardened PR #6 head `a2edf9f`. Final head: `e513a9ee86a278d912bb6ea0694c2adc6a4e37a1`.
+- Stacked PR: [#7](https://github.com/shamrat05/tradexcel-hr-v16/pull/7), base `feat/native-payroll-draft-orchestration`; open and unmerged.
 - Surface: standard app-owned Script Report `Tradexcel Payroll Readiness`, with Company and Payroll Month filters, one row per in-scope employee, human-readable blockers, and links to canonical Attendance, Attendance Request, and Salary Structure Assignment records.
 - Readiness actions recalculate on the server and enforce named-user, role, company, employee, and native permission scope. The report client never supplies a trusted READY flag.
 - The migration preview is read-only. It shows current SSA/structure/rate, Attendance and assignment conflicts, and a proposed zero/non-prorated Daily Wage and Overtime shape. No effective date is chosen automatically; absent an approved date it returns `DECISION_REQUIRED`.
@@ -278,6 +279,6 @@ Synthetic tests explicitly clean their named records. Staging remained at zero P
 - Final full app suite: 233 passed, 2 skipped, 8 warnings (all existing Frappe v17 deprecation warnings).
 - Final compilation, report JavaScript `node --check`, and `git diff --check`: passed.
 - Index refreshed with codebase-memory MCP; it still discovers only project/folder nodes for this app, so implementation review used the repository diff and focused source reads.
-- No PR was merged. PR #6 remains open; Phase B is intended as a stacked PR targeting PR #6.
+- PR #6 remains open and unmerged; PR #7 is open and stacked on PR #6. Neither PR was merged.
 
 Remaining operator gates: resolve Attendance, create a safe effective-dated Daily Wage structure only after business approval of its effective date, and test the native queued behavior in a clean synthetic environment. Tax, accounting, Salary Slip submission, and payment remain out of scope.
