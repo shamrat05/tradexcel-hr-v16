@@ -238,7 +238,7 @@ def inspect_payroll_financial_readiness(payroll_entry):
         )}
 
     payable = entry.get("payroll_payable_account")
-    info = frappe.db.get_value("Account", payable, ["account_type", "company", "is_group"], as_dict=True) if payable else None
+    info = frappe.db.get_value("Account", payable, ["account_type", "company", "is_group", "disabled"], as_dict=True) if payable else None
     if (
         not info or info.company != entry.company or info.account_type != "Payable"
         or int(info.is_group or 0) or int(info.disabled or 0)

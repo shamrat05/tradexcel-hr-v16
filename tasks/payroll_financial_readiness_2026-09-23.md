@@ -40,8 +40,10 @@ blocks it when a managed Payroll Entry is not approved or has financial blockers
   company, checks only salary components represented in rows HRMS includes in
   accounting, validates native cost-center distributions and required
   accounting dimensions, checks gross/deduction/net arithmetic and negative
-  net, and summarizes native slip amounts. The service does not build an
-  accrual Journal Entry.
+  net, and summarizes native slip amounts. It explicitly reads the payable
+  Account's disabled field; a regression test models Frappe's selected-field
+  response so a disabled payable cannot pass as READY. The service does not
+  build an accrual Journal Entry.
 - Component Policy Exception effects include component, action and source in
   the operator report. Financial findings link to the matching native repair
   surface: tax slab, Payroll Period, Salary Assignment, Salary Component,

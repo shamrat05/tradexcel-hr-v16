@@ -163,10 +163,12 @@ def _install_financial_fixture(
     def get_value(doctype, name, field, **kwargs):
         if doctype == "Cost Center": return frappe._dict(company="TCL", is_group=0, disabled=0)
         if doctype == "Account":
-            if field == "root_type": return "Expense"
             disabled = payable_disabled if name == "Payable - TCL" else component_account_disabled
-            return frappe._dict(account_type="Payable", company="TCL", is_group=0,
-                                root_type="Expense", disabled=int(disabled))
+            account = frappe._dict(account_type="Payable", company="TCL", is_group=0,
+                                   root_type="Expense", disabled=int(disabled))
+            if isinstance(field, list):
+                return frappe._dict({key: account.get(key) for key in field})
+            return account.get(field)
         if doctype == "Salary Component Account": return "Expense - TCL" if mapping else None
         raise AssertionError((doctype, name, field))
     from erpnext.accounts.doctype.accounting_dimension import accounting_dimension
