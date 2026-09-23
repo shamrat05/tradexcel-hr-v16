@@ -293,9 +293,43 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
             user.insert(ignore_permissions=True)
             created["users"].append(user.name)
             workflow_users[role] = user.name
+        frappe.clear_cache()
+        frappe.set_user(workflow_users["Tradexcel Payroll Manager"])
+        payroll_entries_before = frappe.db.count(
+            "Payroll Entry",
+            {"company": employee.company, "start_date": start, "end_date": end},
+        )
+        daily_inputs_before = frappe.db.count(
+            "Additional Salary",
+            {
+                "employee": employee.name,
+                "ref_doctype": "Tradexcel Attendance Period",
+                "ref_docname": period.name,
+            },
+        )
+        with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
+            payroll_readiness.execute({"company": employee.company, "payroll_month": start.isoformat()})
+        with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
+            payroll_readiness.prepare_payroll(employee.company, start.isoformat())
+        with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
+            payroll_readiness.get_daily_wage_migration_preview(employee.company, start.isoformat())
+        assert frappe.db.count(
+            "Payroll Entry",
+            {"company": employee.company, "start_date": start, "end_date": end},
+        ) == payroll_entries_before
+        assert frappe.db.count(
+            "Additional Salary",
+            {
+                "employee": employee.name,
+                "ref_doctype": "Tradexcel Attendance Period",
+                "ref_docname": period.name,
+            },
+        ) == daily_inputs_before
+
+        for user_name in workflow_users.values():
             user_permission = frappe.get_doc({
                 "doctype": "User Permission",
-                "user": user.name,
+                "user": user_name,
                 "allow": "Company",
                 "for_value": employee.company,
                 "apply_to_all_doctypes": 1,
@@ -420,3 +454,24 @@ def _delete_test_doc(doctype, name):
     if doc.docstatus == 1:
         doc.cancel()
     frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+
+
+def test_unauthorized_prepare_is_denied_before_readiness_query(monkeypatch):
+    import pytest
+    import frappe
+    from tradex_hr.tradexcel_hr import native_payroll
+
+    def deny(*_args, **_kwargs):
+        raise frappe.PermissionError("no company scope")
+
+    monkeypatch.setattr(native_payroll, "_assert_preparation_authorized", deny)
+    monkeypatch.setattr(
+        native_payroll,
+        "inspect_native_payroll_readiness",
+        lambda *_args, **_kwargs: pytest.fail("readiness data was queried before authorization"),
+    )
+
+    with pytest.raises(frappe.PermissionError, match="no company scope"):
+        native_payroll.prepare_native_payroll(
+            "Tradexcel Ceramics Ltd.", "2026-09-01", "2026-09-30"
+        )

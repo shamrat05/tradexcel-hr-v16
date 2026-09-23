@@ -26,10 +26,27 @@ def resolve_company(filters: dict | None = None) -> str:
     return company
 
 
-def assert_company_access(company: str) -> str:
+def assert_company_access(company: str, *, require_explicit_scope: bool = False) -> str:
     """Reject unknown or unauthorized companies before report SQL runs."""
     if not frappe.db.exists("Company", company):
         frappe.throw(_("Company {0} does not exist").format(company))
+    user = frappe.session.user
+    roles = set(frappe.get_roles(user))
+    privileged = user == "Administrator" or "System Manager" in roles
+    scoped_manager = require_explicit_scope and not privileged and (
+        "Tradexcel Payroll Manager" in roles
+        and frappe.db.exists(
+            "User Permission",
+            {"user": user, "allow": "Company", "for_value": company},
+        )
+    )
+    if require_explicit_scope and not privileged and not scoped_manager:
+        frappe.throw(
+            _("You need an explicit Company User Permission for {0}.").format(company),
+            frappe.PermissionError,
+        )
+    if scoped_manager:
+        return company
     if not frappe.has_permission("Company", "read"):
         frappe.throw(
             _("You do not have permission to view company {0}").format(company),

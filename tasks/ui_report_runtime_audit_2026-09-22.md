@@ -53,3 +53,29 @@ The repair is deliberately allow-listed. If a report with one of these names is 
 - Final minimal-navigation browser sweep: 44/44 routes passed with 9 groups/49 links, no page errors, no non-Socket.IO HTTP errors, no overflow, and no polling/observer repair machinery.
 - The dashboard route is `tradexcel-hr` (`/desk/tradexcel-hr`). The `workspace/tradexcel-hr` builder route is intentionally not used by navigation links.
 - `bench serve` still emits Socket.IO 404 polling noise because it is only the web process. That is not a page failure; a full `bench start`/supervisor deployment supplies the Socket.IO process.
+
+## Addendum — report filter incident, 2026-09-23
+
+### Root cause
+
+The two failing reports were still database-backed Query Reports, but their definitions were versioned in tradex_hr/install.py. The problem was not missing JSON alone. Query Report SQL interpolates the request filter mapping directly; a missing SQL placeholder raises a driver error before the query reaches MariaDB. The original direct-open probe with empty filters reproduced this for all seven Tradexcel Query Reports.
+
+The navigation rail already assigns frappe.route_options to the destination options or null. The source and currently served bundle agree, so the rail was not changed. A real browser route transition was not exercised in this follow-up because Chrome DevTools was unavailable and browser launch was blocked by the environment.
+
+### Fix
+
+- Payroll Register, Leave Balance Board, and Daily Attendance Board are now file-backed standard Script Reports. Their Python execute() functions normalize date/company filters, require a real Company default or selection, and check company access before raw SQL.
+- Their old Query Report definitions were removed from the install-time custom report registry. Otherwise ensure_reports() would recreate them after the standard report reload and undo the promotion.
+- The other four reports remain Query Reports. A narrow supported override_whitelisted_methods wrapper supplies only unambiguous current-user Company/date defaults and raises a clean ValidationError if a placeholder is absent and cannot be chosen safely.
+- Explicit empty optional filter values (for example an empty Branch) remain valid. Only absent or null placeholder keys are rejected.
+- No payroll calculation, attendance, leave, or company data was changed.
+
+### Staging verification
+
+- bench --site hrms-v16.localhost migrate: exit 0; after_migrate ran normally.
+- bench build --app tradex_hr: passed with the bench-required Node 24.15.0; rebuilt JS hash tradex_hr.bundle.TAYVRSUG.js.
+- All seven DB records have the intended report type and Tradexcel HR module ownership; the promoted three are Script Report / Standard.
+- On a disposable restore copy over HTTP, direct empty-filter calls to the three Script Reports returned HTTP 200. Empty filters to the four Query Reports returned HTTP 417 ValidationError for ambiguous required placeholders, with no KeyError. Requests using each report's complete filter set, including explicitly empty optional filters, returned HTTP 200.
+- Browser route sequence and observed browser request payloads remain unverified. The server-side endpoint behavior and filter contracts were verified directly.
+
+\r\n

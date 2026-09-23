@@ -296,51 +296,6 @@ frappe.query_reports["Tradexcel Joiners and Leavers"] = {filters: [
 ]};
 """,
     },
-    "Tradexcel Daily Attendance Board": {
-        "ref_doctype": "Attendance",
-        "query": """
-SELECT e.name AS \"Employee:Link/Employee:120\", e.employee_number AS \"Employee ID:Data:100\",
-e.employee_name AS \"Employee Name:Data:180\", e.company AS \"Company:Link/Company:160\",
-e.branch AS \"Branch:Link/Branch:130\", e.department AS \"Department:Link/Department:160\",
-COALESCE(a.status, 'Absent') AS \"Status:Data:90\", a.in_time AS \"In Time:Datetime:140\",
-a.out_time AS \"Out Time:Datetime:140\", COALESCE(a.late_entry, 0) AS \"Late:Check:60\",
-COALESCE(a.early_exit, 0) AS \"Early Exit:Check:80\", COUNT(c.name) AS \"Punches:Int:70\"
-FROM `tabEmployee` e
-LEFT JOIN `tabAttendance` a ON a.employee=e.name AND a.attendance_date=%(attendance_date)s AND a.docstatus<2
-LEFT JOIN `tabEmployee Checkin` c ON c.employee=e.name AND DATE(c.time)=%(attendance_date)s
-WHERE e.company=%(company)s AND (e.status='Active' OR e.relieving_date >= %(attendance_date)s)
-GROUP BY e.name, a.name ORDER BY e.branch, e.department, e.name
-""",
-        "javascript": """
-frappe.query_reports[\"Tradexcel Daily Attendance Board\"] = {
-  filters: [
-    {fieldname: \"attendance_date\", label: __(\"Attendance Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1},
-    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", reqd: 1}
-  ]
-};
-""",
-    },
-    "Tradexcel Payroll Register": {
-        "ref_doctype": "Salary Slip",
-        "query": """
-SELECT s.name AS \"Salary Slip:Link/Salary Slip:140\", s.employee AS \"Employee:Link/Employee:120\",
-s.employee_name AS \"Employee Name:Data:180\", s.company AS \"Company:Link/Company:160\",
-s.start_date AS \"From Date:Date:90\", s.end_date AS \"To Date:Date:90\",
-s.gross_pay AS \"Gross Pay:Currency:110\", s.total_deduction AS \"Deductions:Currency:110\",
-s.net_pay AS \"Net Pay:Currency:110\", s.docstatus AS \"Status:Int:60\"
-FROM `tabSalary Slip` s WHERE s.company=%(company)s AND s.start_date >= %(from_date)s
-AND s.end_date <= %(to_date)s ORDER BY s.start_date, s.employee
-""",
-        "javascript": """
-frappe.query_reports[\"Tradexcel Payroll Register\"] = {
-  filters: [
-    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", reqd: 1},
-    {fieldname: \"from_date\", label: __(\"From Date\"), fieldtype: \"Date\", reqd: 1},
-    {fieldname: \"to_date\", label: __(\"To Date\"), fieldtype: \"Date\", reqd: 1}
-  ]
-};
-""",
-    },
     "Tradexcel Salary Coverage Board": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
@@ -356,27 +311,6 @@ frappe.query_reports[\"Tradexcel Salary Coverage Board\"] = {
     {fieldname: "assignment_status", label: __("Assignment Status"), fieldtype: "Select", options: "All\\nAssigned\\nMissing\\nCompany Mismatch", default: "All"},
     {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
     {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }}
-  ]
-};
-""",
-    },
-    "Tradexcel Leave Balance Board": {
-        "ref_doctype": "Leave Allocation",
-        "query": """
-SELECT e.name AS \"Employee:Link/Employee:120\", e.employee_number AS \"Employee ID:Data:100\",
-e.employee_name AS \"Employee Name:Data:180\", e.company AS \"Company:Link/Company:160\",
-la.leave_type AS \"Leave Type:Link/Leave Type:150\", la.from_date AS \"From Date:Date:90\",
-la.to_date AS \"To Date:Date:90\", la.new_leaves_allocated AS \"Allocated:Float:90\",
-la.total_leaves_allocated AS \"Total Allocated:Float:100\"
-FROM `tabLeave Allocation` la JOIN `tabEmployee` e ON e.name=la.employee
-WHERE e.company=%(company)s AND la.from_date <= %(as_of_date)s AND la.to_date >= %(as_of_date)s
-ORDER BY e.department, e.employee_name, la.leave_type
-""",
-        "javascript": """
-frappe.query_reports[\"Tradexcel Leave Balance Board\"] = {
-  filters: [
-    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", reqd: 1},
-    {fieldname: \"as_of_date\", label: __(\"As Of Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1}
   ]
 };
 """,
@@ -415,6 +349,14 @@ STANDARD_SCRIPT_REPORT_NAMES = (
     "Employee Data Gaps",
     "Workforce Anomaly Radar",
     "Tradexcel Payroll Readiness",
+    # Promoted from DB-backed Query Reports on 2026-09-23. A Query Report runs
+    # frappe.db.sql(query, filters) directly, so a missing placeholder raises
+    # from the DB driver (KeyError / "format requires a mapping") before MariaDB
+    # sees the query. As Script Reports these normalise and validate filters in
+    # Python, so a direct API call with {} resolves defaults instead of crashing.
+    "Tradexcel Payroll Register",
+    "Tradexcel Leave Balance Board",
+    "Tradexcel Daily Attendance Board",
 )
 
 

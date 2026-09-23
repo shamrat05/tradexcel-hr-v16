@@ -161,6 +161,15 @@ def test_desk_report_endpoint_renders_both_reports():
     from frappe.desk.query_report import run
 
     frappe.set_user("Administrator")
+    for report_name in (
+        "Tradexcel Daily Attendance Board",
+        "Tradexcel Leave Balance Board",
+        "Tradexcel Payroll Register",
+    ):
+        result = run(report_name, filters={})
+        assert result["columns"]
+        assert isinstance(result["result"], list)
+
     for report_name, filters in (
         (
             "Tradexcel Daily Attendance Board",
@@ -252,4 +261,40 @@ def test_guest_cannot_run_payroll_variance():
                 "branch": "",
                 "department": "",
             },
+        )
+
+
+def test_query_report_filter_guard_handles_empty_optional_values():
+    from tradex_hr.report_filters import normalise_query_report_filters
+
+    frappe.set_user("Administrator")
+    filters = normalise_query_report_filters(
+        "Tradexcel Payroll Variance",
+        {
+            "company": "Tradexcel Ceramics Ltd.",
+            "from_date": "2026-09-01",
+            "to_date": "2026-09-30",
+            "branch": "",
+            "department": "",
+        },
+    )
+    assert filters["branch"] == ""
+    assert filters["department"] == ""
+
+    filters_json = normalise_query_report_filters(
+        "Tradexcel Payroll Variance",
+        json.dumps({
+            "company": "Tradexcel Ceramics Ltd.",
+            "from_date": "2026-09-01",
+            "to_date": "2026-09-30",
+            "branch": "",
+            "department": "",
+        }),
+    )
+    assert filters_json["branch"] == ""
+
+    with pytest.raises(frappe.ValidationError):
+        normalise_query_report_filters(
+            "Tradexcel Payroll Variance",
+            {"company": "Tradexcel Ceramics Ltd.", "from_date": "2026-09-01", "to_date": "2026-09-30"},
         )

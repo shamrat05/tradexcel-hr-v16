@@ -32,19 +32,9 @@ PAYROLL_MANAGER_ROLE = "Tradexcel Payroll Manager"
 
 
 def _assert_company_access(company: str) -> None:
-    if not frappe.db.exists("Company", company):
-        frappe.throw(_("Company {0} does not exist").format(company))
-    if frappe.has_permission("Company", "read", company):
-        return
-    scoped_manager = (
-        PAYROLL_MANAGER_ROLE in frappe.get_roles()
-        and frappe.db.exists(
-            "User Permission",
-            {"user": frappe.session.user, "allow": "Company", "for_value": company},
-        )
-    )
-    if not scoped_manager:
-        frappe.throw(_("You do not have permission to view company {0}").format(company), frappe.PermissionError)
+    from tradex_hr.tradexcel_hr.company_context import assert_company_access
+
+    assert_company_access(company, require_explicit_scope=True)
 
 
 def _assert_employee_scope(rows: list[dict]) -> None:
@@ -89,7 +79,11 @@ def _friendly_problem(findings: list[dict], outcome: dict) -> str:
             message = reason or code.replace("_", " ").capitalize()
         if message not in messages:
             messages.append(message)
-    return "; ".join(messages)
+    if not messages:
+        return ""
+    if len(messages) == 1:
+        return messages[0]
+    return f"{messages[0]} (+ {len(messages) - 1} more issue)"
 
 
 def _action_kinds(findings: list[dict]) -> str:

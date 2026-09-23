@@ -74,7 +74,8 @@ def test_unsafe_daily_wage_structure_offers_migration_review(monkeypatch):
     monkeypatch.setattr(report, "_existing_payroll_entry", lambda *_args: [])
     _columns, rows, _message, _chart, summary = report.execute({"company": "Company A"})
 
-    assert "new effective-dated structure is required" in rows[0]["problem"]
+    assert rows[0]["problem"].startswith("2 attendance day(s) need review")
+    assert "(+ 1 more issue)" in rows[0]["problem"]
     assert "migration" in rows[0]["action_kinds"]
     assert summary[1]["value"] == 0
 

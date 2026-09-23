@@ -279,22 +279,27 @@ def _block_existing_mismatch(readiness: dict, reason: str, entry_name: str | Non
     }
 
 
-def _assert_preparation_authorized(company: str, employees: list[dict]) -> None:
+def _assert_preparation_authorized(company: str, employees: list[dict] | None = None) -> None:
     user = frappe.session.user
     roles = set(frappe.get_roles(user))
-    if user != "Administrator" and (user == "Guest" or PAYROLL_MANAGER_ROLE not in roles):
-        frappe.throw(_("Tradexcel Payroll Manager role is required to prepare payroll."), frappe.PermissionError)
+    privileged = user == "Administrator" or "System Manager" in roles
+    if user == "Guest" or (not privileged and PAYROLL_MANAGER_ROLE not in roles):
+        frappe.throw(
+            _("Tradexcel Payroll Manager role is required to prepare payroll."),
+            frappe.PermissionError,
+        )
+
     frappe.has_permission("Payroll Entry", "create", throw=True)
-    has_company_permission = frappe.has_permission("Company", "read", company)
-    has_company_scope = frappe.db.exists(
-        "User Permission",
-        {"user": user, "allow": "Company", "for_value": company},
-    )
-    if not has_company_permission and not has_company_scope:
-        frappe.throw(_("You do not have an explicit User Permission for this payroll company."), frappe.PermissionError)
-    for row in employees:
+    from tradex_hr.tradexcel_hr.company_context import assert_company_access
+
+    assert_company_access(company, require_explicit_scope=True)
+
+    for row in employees or []:
         if not frappe.has_permission("Employee", "read", _row_value(row, "name")):
-            frappe.throw(_("You do not have access to every employee in this payroll company."), frappe.PermissionError)
+            frappe.throw(
+                _("You do not have access to every employee in this payroll company."),
+                frappe.PermissionError,
+            )
 
 
 def _verify_managed_entry(doc) -> tuple[dict[str, Any], list[dict]]:
@@ -357,10 +362,11 @@ def prepare_native_payroll(
 ) -> dict[str, Any]:
     """Prepare a managed native Payroll Entry draft; native submit creates Salary Slips."""
     start, end = _dates(start_date, end_date)
+    _assert_preparation_authorized(company)
     readiness = inspect_native_payroll_readiness(company, start, end, employee_ids)
+    _assert_preparation_authorized(company, readiness["outcomes"])
     if readiness["status"] != "READY":
         return readiness
-    _assert_preparation_authorized(company, readiness["outcomes"])
 
     run_key = _managed_run_key(company, start, end)
     existing = _existing_payroll_entry(company, start, end)
