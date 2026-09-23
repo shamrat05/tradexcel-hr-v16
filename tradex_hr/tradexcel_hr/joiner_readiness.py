@@ -102,12 +102,12 @@ def _interview_company(interview: str | None) -> str | None:
 
 
 def recruitment_has_permission(doc, ptype: str, user: str | None = None, **_kwargs):
-    """Deny cross-company direct document reads while leaving DocPerm grants intact."""
+    """Deny cross-company access while leaving DocPerm grants authoritative."""
     user = user or frappe.session.user
-    if not doc or ptype not in {"read", "select", "report", "export", "print", "email"}:
-        return None
+    if not doc:
+        return True
     if _privileged(user):
-        return None
+        return True
 
     if doc.doctype == "Job Applicant":
         opening = doc.get("job_title")
@@ -134,7 +134,7 @@ def recruitment_has_permission(doc, ptype: str, user: str | None = None, **_kwar
     if set(frappe.get_roles(user)) & READ_ROLES:
         if not company or company not in _company_scope(user):
             return False
-    return None
+    return True
 
 
 def _authorize_company(company: str) -> None:
@@ -203,9 +203,10 @@ def validate_employee_onboarding(doc, _method=None) -> None:
 
 
 def validate_unique_employee_job_applicant(doc, _method=None) -> None:
-    """Keep one Employee identity per recruited applicant, including API inserts."""
+    """Require recruited Employees to pass native, completed onboarding."""
     if not doc.job_applicant:
         return
+
     existing = frappe.db.get_value("Employee", {"job_applicant": doc.job_applicant}, "name")
     if existing and existing != doc.name:
         frappe.throw(
@@ -213,6 +214,21 @@ def validate_unique_employee_job_applicant(doc, _method=None) -> None:
                 frappe.bold(doc.job_applicant), frappe.bold(existing)
             )
         )
+
+    onboarding_names = frappe.get_all(
+        "Employee Onboarding",
+        filters={"job_applicant": doc.job_applicant, "docstatus": 1},
+        pluck="name",
+        limit=2,
+    )
+    if len(onboarding_names) != 1:
+        frappe.throw(_("A recruited Employee must be created through a submitted Employee Onboarding."))
+
+    onboarding = frappe.get_doc("Employee Onboarding", onboarding_names[0])
+    validate_employee_onboarding(onboarding)
+    if onboarding.company != doc.company:
+        frappe.throw(_("The Employee company must match the approved Employee Onboarding."))
+    onboarding.validate_employee_creation()
 
 
 def _finding(code: str, message: str, severity: str = "blocker") -> dict:
@@ -275,13 +291,6 @@ def inspect_joiner_readiness(employee_name: str) -> dict:
             add("payroll", "FIRST_PAYROLL_REVIEW_REQUIRED", "The Employee is not in the native first-payroll population.")
         elif outcome.get("status") != "READY":
             add("payroll", outcome.get("status", "FIRST_PAYROLL_REVIEW_REQUIRED"), outcome.get("reason") or "First-period payroll readiness needs attention.")
-        elif native.get("status") != "READY":
-            add(
-                "payroll",
-                "FIRST_PAYROLL_COMPANY_POPULATION_REVIEW",
-                "Managed payroll is blocked by other company-wide readiness items.",
-            )
-
         from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
         holiday_list = get_holiday_list_for_employee(employee.name, raise_exception=False)
         if not holiday_list:

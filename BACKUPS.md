@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-23 22:28 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-24 07:36 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -49,6 +49,8 @@ Several are also mirrored under
 | **2026-09-22 16:48** | `20260922_164856-hrms-v16_localhost-database.sql.gz` | 3,248,003 | `9d45b229d7caf76f` | **Before v16 staging production-readiness fixes/migrate** |
 | **2026-09-22 20:37** | `20260922_203730-hrms-v16_localhost-database.sql.gz` | 3,272,843 | `f95eae64b85d7c99` | **Before v16 offline-event-time schema migration** |
 | **2026-09-23 22:28** | `20260923_222857-hrms-v16_localhost-database.sql.gz` | 8,270,802 | `bcd9b6f39b9b1618` | Before legal review workflow self-approval transition update |
+| **2026-09-24 07:16** | `20260924_011653-hrms-v16_localhost-database.sql.gz` | 10,487,917 | `4ace73be405404b0` | **Before recruitment DocPerm provisioning / standard migrate** |
+| **2026-09-24 07:36** | `20260924_013604-hrms-v16_localhost-database.sql.gz` | 10,873,778 | `e62bfae0000c6b0d` | **Before final recruitment DocPerm provisioning / standard migrate** |
 | **2026-09-23 22:26** | `20260923_222608-hrms-v16_localhost-database.sql.gz` | 8,231,514 | `ca0f6f4bb9f22a50` | Before statutory review-date field migration |
 | **2026-09-23 22:10** | `20260923_221017-hrms-v16_localhost-database.sql.gz` | 8,206,959 | `85cbbef2dff81a5c` | Before statutory exit rule-set schema/workflow migration |
 | **2026-09-23 18:46** | `20260923_184653-hrms-v16_localhost-database.sql.gz` | 5,800,185 | `1e7797d321840954` | Before normal migrate removing Payroll Approver Salary Slip mutation rights |
@@ -71,6 +73,8 @@ Several are also mirrored under
 
 For the 18:39 and 18:46 backups, config SHA-256 is `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, and private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`.
 The 22:28 backup before updating the legal review routing transition was made with `--with-files`; `gzip -t` and both `tar -tf` checks passed. SHA-256: database `bcd9b6f39b9b16181ca7593aede49b9454aa66c6107feff1ed7844fb6d971728`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
+The 2026-09-24 07:16 recruitment-permission backup was taken with `--with-files`; `gzip -t` and both `tar -tf` checks passed. SHA-256: database `4ace73be405404b0d945a53c3a73fbf3cd785b89dcfbf809a620a52fec5c6864`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
+The 2026-09-24 07:36 final recruitment-permission backup was taken with `--with-files`; `gzip -t` and both `tar -tf` checks passed. SHA-256: database `e62bfae0000c6b0d92a6cfbd6c1b3e7ad9cd7522b8e1630ed90e42fbf4262715`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
 The 22:26 backup before adding the reviewed statutory applicability-date field was made with `--with-files`; `gzip -t` and both `tar -tf` checks passed. SHA-256: database `ca0f6f4bb9f22a50dbdcfe204ad4e22d1fb29de99f26e5ff9cdd2c133bff1cfc`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
 The 22:10 pre-statutory-migration backup was also made with `--with-files`; `gzip -t` and both `tar -tf` checks passed. SHA-256: database `85cbbef2dff81a5c430b9dd4ecc1eed2f0f830ff1331e5cc23ed30b9310d89e9`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
 

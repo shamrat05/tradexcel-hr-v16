@@ -39,10 +39,18 @@ def test_managed_payroll_supports_only_complete_calendar_months(monkeypatch):
             "Company A", date(2026, 9, 2), date(2026, 9, 30), employee_ids=None
         )
     monkeypatch.setattr(frappe.session, "user", "payroll.operator@example.com", raising=False)
-    with pytest.raises(Exception, match="Partial employee"):
-        native_payroll._validate_supported_scope(
-            "Company A", date(2026, 9, 1), date(2026, 9, 30), employee_ids=["EMP-1"]
-        )
+    old_in_test = frappe.in_test
+    old_local_in_test = getattr(frappe.local.flags, "in_test", False)
+    frappe.in_test = False
+    frappe.local.flags.in_test = False
+    try:
+        with pytest.raises(Exception, match="Partial employee"):
+            native_payroll._validate_supported_scope(
+                "Company A", date(2026, 9, 1), date(2026, 9, 30), employee_ids=["EMP-1"]
+            )
+    finally:
+        frappe.in_test = old_in_test
+        frappe.local.flags.in_test = old_local_in_test
 
 
 def test_managed_run_key_is_deterministic_for_company_and_month():

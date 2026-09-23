@@ -34,7 +34,7 @@ def _opening(company, designation, token, label):
         "company": company,
         "designation": designation,
         "status": "Open",
-    }).insert(ignore_permissions=True)
+    }).insert()
 
 
 def _applicant(opening, designation, token, label):
@@ -45,7 +45,7 @@ def _applicant(opening, designation, token, label):
         "status": "Shortlisted",
         "designation": designation,
         "job_title": opening.name if opening else None,
-    }).insert(ignore_permissions=True)
+    }).insert()
 
 
 def _offer(applicant, company, designation, status="Accepted", submit=True):
@@ -56,7 +56,7 @@ def _offer(applicant, company, designation, status="Accepted", submit=True):
         "designation": designation,
         "company": company,
         "status": status,
-    }).insert(ignore_permissions=True)
+    }).insert()
     if submit:
         offer.submit()
     return offer
@@ -97,7 +97,7 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
     token = frappe.generate_hash(8).upper()[:8]
     other_token = frappe.generate_hash(8).upper()[:8]
     company = other_company = None
-    openings, applicants, offers, onboardings, employees, designations, users = ([] for _ in range(7))
+    openings, applicants, offers, onboardings, employees, designations, users, tasks = ([] for _ in range(8))
     old_user = frappe.session.user
     old_in_test = frappe.in_test
     old_local_in_test = getattr(frappe.local.flags, "in_test", False)
@@ -105,21 +105,46 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
         frappe.set_user("Administrator")
         company, _abbr, _payable, _expense, _cost, holiday_list = _create_synthetic_company(token, monkeypatch)
         other_company, _abbr2, _payable2, _expense2, _cost2, other_holiday_list = _create_synthetic_company(other_token, monkeypatch)
+        from tradex_hr.role_setup import ensure_tradex_roles
+        ensure_tradex_roles()
         role_user = _create_scoped_user("Tradexcel HR Manager", company, token)
         users.append(role_user)
-        role_doc = frappe.get_doc("User", role_user)
-        role_doc.append("roles", {"role": "HR User"})
-        role_doc.save(ignore_permissions=True)
+        assert "HR User" not in frappe.get_roles(role_user)
+        assert frappe.has_permission("Job Opening", "create", user=role_user)
+        assert frappe.has_permission("Job Applicant", "create", user=role_user)
+        assert frappe.has_permission("Interview", "create", user=role_user)
+        assert frappe.has_permission("Job Offer", "submit", user=role_user)
+        assert frappe.has_permission("Employee Onboarding", "submit", user=role_user)
+        assert not frappe.has_permission("Job Offer", "cancel", user=role_user)
+        assert not frappe.has_permission("Job Offer", "delete", user=role_user)
+        assert not frappe.has_permission("Employee Onboarding", "cancel", user=role_user)
+        assert not frappe.has_permission("Employee Onboarding", "delete", user=role_user)
+        assert frappe.has_permission("Task", "read", user=role_user)
+        assert frappe.has_permission("Task", "write", user=role_user)
+        assert not frappe.has_permission("Task", "create", user=role_user)
+        assert not frappe.has_permission("Task", "delete", user=role_user)
+        assert not frappe.has_permission("Journal Entry", "submit", user=role_user)
+        assert not frappe.has_permission("Salary Slip", "submit", user=role_user)
+        assert not frappe.has_permission("Salary Structure Assignment", "submit", user=role_user)
 
         designation = _designation(token, "Operator")
         other_designation = _designation(token, "Clerk")
         designations.extend((designation, other_designation))
-        opening = _opening(company, designation, token, "TCL")
         foreign_opening = _opening(other_company, designation, other_token, "EFL")
-        openings.extend((opening.name, foreign_opening.name))
+        openings.append(foreign_opening.name)
+        frappe.set_user(role_user)
+        opening = _opening(company, designation, token, "TCL")
+        openings.append(opening.name)
 
         accepted_applicant = _applicant(opening, designation, token, "Accepted")
         applicants.append(accepted_applicant.name)
+        assert frappe.permissions.has_controller_permissions(
+            accepted_applicant, "write", user=role_user
+        ), "Applicant controller rejected the custom HR role"
+        assert frappe.permissions.has_user_permission(
+            accepted_applicant, user=role_user, ptype="write"
+        ), "Company User Permission rejected the same-company applicant"
+        assert frappe.has_permission("Job Applicant", "write", doc=accepted_applicant, user=role_user)
         accepted_offer = _offer(accepted_applicant, company, designation)
         offers.append(accepted_offer.name)
         accepted_onboarding = _onboarding(
@@ -128,17 +153,35 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
         accepted_onboarding.holiday_list = holiday_list
         accepted_onboarding.append("activities", {
             "activity_name": f"Synthetic onboarding activity {token}",
-            "role": "HR User",
+            "role": "Tradexcel HR Manager",
             "begin_on": 0,
             "duration": 1,
-            "required_for_employee_creation": 0,
+            "required_for_employee_creation": 1,
         })
-        accepted_onboarding.insert(ignore_permissions=True)
+        accepted_onboarding.insert()
         onboardings.append(accepted_onboarding.name)
         accepted_onboarding.submit()
         assert accepted_onboarding.job_offer == accepted_offer.name
         assert accepted_onboarding.project
         assert frappe.db.count("Task", {"project": accepted_onboarding.project}) == 1
+        task_name = accepted_onboarding.activities[0].task
+        assert frappe.db.get_value("Task", task_name, "status") != "Completed"
+        from hrms.hr.doctype.job_applicant.job_applicant import make_employee as employee_from_applicant
+        incomplete_mapper = employee_from_applicant(accepted_applicant.name)
+        incomplete_mapper.first_name = incomplete_mapper.first_name or "Synthetic Incomplete"
+        incomplete_mapper.company = company
+        incomplete_mapper.date_of_birth = "1990-05-08"
+        incomplete_mapper.date_of_joining = "2026-08-15"
+        incomplete_mapper.gender = "Female"
+        incomplete_mapper.employment_type = "Intern"
+        with pytest.raises(frappe.ValidationError, match="mandatory tasks"):
+            try:
+                incomplete_mapper.insert(ignore_permissions=True)
+            finally:
+                if incomplete_mapper.name and frappe.db.exists("Employee", incomplete_mapper.name):
+                    employees.append(incomplete_mapper.name)
+        accepted_onboarding.reload()
+        accepted_onboarding.mark_onboarding_as_completed()
         from hrms.hr.doctype.employee_onboarding.employee_onboarding import make_employee
         recruited_employee = make_employee(accepted_onboarding.name)
         recruited_employee.first_name = recruited_employee.employee_name
@@ -148,7 +191,7 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
         recruited_employee.employment_type = "Intern"
         recruited_employee.holiday_list = holiday_list
         recruited_employee.salary_mode = "Cash"
-        recruited_employee.insert(ignore_permissions=True)
+        recruited_employee.insert()
         employees.append(recruited_employee.name)
         assert recruited_employee.job_applicant == accepted_applicant.name
 
@@ -295,6 +338,12 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
             status="Awaiting Response", submit=False,
         )
         offers.append(foreign_draft_offer.name)
+        foreign_task = frappe.get_doc({
+            "doctype": "Task",
+            "subject": f"Synthetic foreign task {token}",
+            "company": other_company,
+        }).insert(ignore_permissions=True)
+        tasks.append(foreign_task.name)
         company_condition = job_applicant_query_conditions(role_user)
         assert company in company_condition
         assert other_company not in company_condition
@@ -305,6 +354,8 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
         assert frappe.has_permission("Job Opening", "read", doc=foreign_opening, user=role_user) is False
         assert frappe.has_permission("Job Offer", "read", doc=foreign_offer, user=role_user) is False
         assert frappe.has_permission("Employee Onboarding", "read", doc=foreign_onboarding, user=role_user) is False
+        assert frappe.has_permission("Task", "read", doc=foreign_task, user=role_user) is False
+        assert frappe.has_permission("Task", "write", doc=foreign_task, user=role_user) is False
         foreign_interview = frappe._dict({
             "doctype": "Interview", "job_opening": foreign_opening.name,
             "job_applicant": foreign_applicant.name,
@@ -406,9 +457,11 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
         assert "SALARY_ASSIGNMENT_REQUIRED" in {
             f["code"] for f in cash_result["sections"]["payroll"]["findings"]
         }
-        assert "FIRST_PAYROLL_COMPANY_POPULATION_REVIEW" in {
+        assert population_result["sections"]["payroll"]["status"] == "READY"
+        assert "FIRST_PAYROLL_COMPANY_POPULATION_REVIEW" not in {
             f["code"] for f in population_result["sections"]["payroll"]["findings"]
         }
+        assert cash_result["sections"]["payroll"]["status"] == "NEEDS_ATTENTION"
         assert bank_secret not in repr(bank_result)
         assert bank_employee.personal_email in {None, ""}
         assert not bank_employee.job_applicant
@@ -423,6 +476,9 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
                 if doc.docstatus == 1:
                     doc.cancel()
                 frappe.delete_doc("Employee Onboarding", name, force=True, ignore_permissions=True)
+        for name in reversed(tasks):
+            if frappe.db.exists("Task", name):
+                frappe.delete_doc("Task", name, force=True, ignore_permissions=True)
         for name in reversed(offers):
             if frappe.db.exists("Job Offer", name):
                 doc = frappe.get_doc("Job Offer", name)
@@ -451,4 +507,80 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
                 cleanup_synthetic_finalization_company(test_company)
         frappe.in_test = old_in_test
         frappe.local.flags.in_test = old_local_in_test
+        frappe.set_user(old_user)
+
+
+def test_native_recruitment_mappers_cannot_bypass_employee_onboarding(monkeypatch):
+    from tradex_hr.tests.test_payroll_finalization_integration import (
+        _create_synthetic_company,
+        cleanup_synthetic_finalization_company,
+    )
+    token = frappe.generate_hash(8).upper()[:8]
+    company = None
+    openings, applicants, offers, employees, designations = [], [], [], [], []
+    old_user = frappe.session.user
+    try:
+        frappe.set_user("Administrator")
+        company, _abbr, *_ = _create_synthetic_company(token, monkeypatch)
+        designation = _designation(token, "Mapper Bypass")
+        designations.append(designation)
+        opening = _opening(company, designation, token, "Mapper")
+        openings.append(opening.name)
+
+        applicant_only = _applicant(opening, designation, token, "ApplicantOnly")
+        applicants.append(applicant_only.name)
+        from hrms.hr.doctype.job_applicant.job_applicant import make_employee as employee_from_applicant
+        from hrms.hr.doctype.job_offer.job_offer import make_employee as employee_from_offer
+
+        def fill_employee(employee):
+            employee.first_name = employee.first_name or employee.employee_name or "Synthetic Mapper"
+            employee.company = company
+            employee.date_of_birth = "1990-05-08"
+            employee.date_of_joining = "2026-09-01"
+            employee.gender = "Female"
+            employee.employment_type = "Intern"
+            employee.status = "Active"
+            return employee
+
+        mapped_applicant = fill_employee(employee_from_applicant(applicant_only.name))
+        with pytest.raises(frappe.ValidationError, match="Employee Onboarding"):
+            try:
+                mapped_applicant.insert(ignore_permissions=True)
+            finally:
+                if mapped_applicant.name and frappe.db.exists("Employee", mapped_applicant.name):
+                    employees.append(mapped_applicant.name)
+
+        offer_applicant = _applicant(opening, designation, token, "OfferOnly")
+        applicants.append(offer_applicant.name)
+        accepted_offer = _offer(offer_applicant, company, designation)
+        offers.append(accepted_offer.name)
+        mapped_offer = fill_employee(employee_from_offer(accepted_offer.name))
+        with pytest.raises(frappe.ValidationError, match="Employee Onboarding"):
+            try:
+                mapped_offer.insert(ignore_permissions=True)
+            finally:
+                if mapped_offer.name and frappe.db.exists("Employee", mapped_offer.name):
+                    employees.append(mapped_offer.name)
+    finally:
+        frappe.set_user("Administrator")
+        for name in reversed(employees):
+            if frappe.db.exists("Employee", name):
+                frappe.delete_doc("Employee", name, force=True, ignore_permissions=True)
+        for name in reversed(offers):
+            if frappe.db.exists("Job Offer", name):
+                doc = frappe.get_doc("Job Offer", name)
+                if doc.docstatus == 1:
+                    doc.cancel()
+                frappe.delete_doc("Job Offer", name, force=True, ignore_permissions=True)
+        for name in reversed(applicants):
+            if frappe.db.exists("Job Applicant", name):
+                frappe.delete_doc("Job Applicant", name, force=True, ignore_permissions=True)
+        for name in reversed(openings):
+            if frappe.db.exists("Job Opening", name):
+                frappe.delete_doc("Job Opening", name, force=True, ignore_permissions=True)
+        for name in reversed(designations):
+            if frappe.db.exists("Designation", name):
+                frappe.delete_doc("Designation", name, force=True, ignore_permissions=True)
+        if company:
+            cleanup_synthetic_finalization_company(company)
         frappe.set_user(old_user)

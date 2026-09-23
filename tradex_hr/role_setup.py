@@ -102,6 +102,37 @@ CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
 # separately with Frappe User Permissions (company, branch, or department), so
 # this matrix describes what a role may do, not which records it may see.
 STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
+    "Job Opening": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Job Applicant": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Interview": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Interview Feedback": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    },
+    "Job Offer": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Employee Onboarding": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Employee Onboarding Template": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    },
+    # Native Job Opening validation checks Staffing Plan read permission when
+    # enforcing vacancy limits; HR does not receive Staffing Plan write access.
+    "Staffing Plan": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    },
+    # Native Employee BoardingController checks Task write permission before
+    # assigning generated onboarding tasks. Company User Permission scopes them.
+    "Task": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS | {"write"},
+    },
     "Employee Separation": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS | {"submit", "cancel"},

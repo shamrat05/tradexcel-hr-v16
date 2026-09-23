@@ -66,4 +66,4 @@ rehearsed on this machine — see the limitation recorded there.
 - Company scope for Job Applicant, Interview, and Interview Feedback derives from the linked Job Opening; recruiter APIs and writes must not cross explicit Company User Permissions.
 - A submitted Salary Structure Assignment and its explicit Salary Structure pay basis authorize payroll. Employment Type is not pay basis or legal classification.
 - Employee and User remain separate; account access is optional. Bank details are required only for Bank salary mode. Shift and biometric needs follow the actual attendance setup, not a universal default-shift rule.
-- A new Employee is payroll-ready only when the existing company-wide native payroll readiness passes; onboarding never creates payroll or submits financial records.
+- Joiner Readiness reflects that Employee's own canonical payroll outcome; the company-wide Payroll Readiness screen owns blockers from other employees. Onboarding never creates payroll or submits financial records.
