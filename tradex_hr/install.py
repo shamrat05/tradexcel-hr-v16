@@ -1044,11 +1044,15 @@ def after_migrate():
     from tradex_hr.role_setup import ensure_tradex_roles
     from tradex_hr.approval_setup import ensure_tradex_workflows
     from tradex_hr.field_attendance_setup import ensure_field_attendance_fields, ensure_field_transport_component
-    from tradex_hr.field_financial_setup import ensure_income_tax_review_fields
+    from tradex_hr.field_financial_setup import (
+        ensure_income_tax_review_fields,
+        ensure_payroll_adjustment_workflow_fields,
+    )
     from tradex_hr.tradexcel_hr.salary_setup import ensure_pay_basis_metadata
 
     ensure_branch_hierarchy()
     ensure_tradex_roles()
+    ensure_payroll_adjustment_workflow_fields()
     ensure_tradex_workflows()
     ensure_field_attendance_fields()
     ensure_field_transport_component()

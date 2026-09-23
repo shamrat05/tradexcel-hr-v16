@@ -33,11 +33,18 @@ extend_doctype_class = {
     "Payroll Entry": [
         "tradex_hr.tradexcel_hr.payroll_finalization.PayrollEntryFinalizationMixin",
     ],
+    "Payroll Correction": [
+        "tradex_hr.tradexcel_hr.payroll_adjustments.PayrollCorrectionMixin",
+    ],
+    "Arrear": [
+        "tradex_hr.tradexcel_hr.payroll_adjustments.TradexcelArrearMixin",
+    ],
 }
 
 doctype_js = {
     "Tradexcel Biometric Device": "public/js/tradexcel_biometric_device.js",
     "Payroll Entry": "public/js/payroll_entry.js",
+    "Salary Slip": "public/js/salary_slip_adjustments.js",
     "Employee": "public/js/employee_calendar.js",
     "Attendance": "public/js/employee_calendar.js",
     "Income Tax Slab": "public/js/income_tax_slab.js",
@@ -58,6 +65,23 @@ doctype_list_js = {
 doc_events = {
     "Income Tax Slab": {
         "validate": "tradex_hr.tradexcel_hr.tax_review.validate_income_tax_slab_review",
+    },
+    "Payroll Correction": {
+        "before_insert": "tradex_hr.tradexcel_hr.payroll_adjustments.initialize_adjustment_state",
+        "validate": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_payroll_correction",
+        "before_save": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_adjustment_before_save",
+        "before_submit": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_adjustment_before_submit",
+        "before_cancel": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_adjustment_before_cancel",
+    },
+    "Arrear": {
+        "before_insert": "tradex_hr.tradexcel_hr.payroll_adjustments.initialize_adjustment_state",
+        "validate": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_arrear",
+        "before_save": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_adjustment_before_save",
+        "before_submit": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_adjustment_before_submit",
+        "before_cancel": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_adjustment_before_cancel",
+    },
+    "Additional Salary": {
+        "before_cancel": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_additional_salary_before_cancel",
     },
     "Payroll Entry": {
         "before_submit": "tradex_hr.tradexcel_hr.native_payroll.validate_payroll_entry_before_submit",
@@ -85,4 +109,6 @@ after_migrate = "tradex_hr.install.after_migrate"
 
 has_permission = {
     "Salary Slip": "tradex_hr.tradexcel_hr.native_payroll.restrict_salary_slip_delete",
+    "Payroll Correction": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
+    "Arrear": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
 }

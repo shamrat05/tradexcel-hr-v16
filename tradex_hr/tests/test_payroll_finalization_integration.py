@@ -254,6 +254,8 @@ def cleanup_synthetic_finalization_company(company_name):
             return
         doc = frappe.get_doc(doctype, name)
         if doc.docstatus == 1:
+            if doctype in ("Payroll Correction", "Arrear"):
+                doc.workflow_state = "Tradexcel Adjustment Cancelled"
             doc.cancel()
         frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
 
@@ -270,11 +272,39 @@ def cleanup_synthetic_finalization_company(company_name):
         ):
             delete_doc("Bank Transaction", name)
 
+    # A correction/arrear links historical source slips while its Additional
+    # Salary may be consumed by later slips. Cancel those later slips first,
+    # then the adjustments, then their historical source slips.
+    adjustment_sources = set()
+    for doctype in ("Payroll Correction", "Arrear"):
+        if not frappe.db.exists("DocType", doctype):
+            continue
+        for name in frappe.get_all(doctype, filters={"company": company_name}, pluck="name"):
+            doc = frappe.get_doc(doctype, name)
+            for field in doc.meta.fields:
+                if field.fieldtype == "Link" and field.options == "Salary Slip" and doc.get(field.fieldname):
+                    adjustment_sources.add(doc.get(field.fieldname))
+                elif field.fieldtype == "Table" and doc.get(field.fieldname):
+                    child_meta = frappe.get_meta(field.options)
+                    for row in doc.get(field.fieldname):
+                        for child_field in child_meta.fields:
+                            if (
+                                child_field.fieldtype == "Link"
+                                and child_field.options == "Salary Slip"
+                                and row.get(child_field.fieldname)
+                            ):
+                                adjustment_sources.add(row.get(child_field.fieldname))
+
+    for name in frappe.get_all("Salary Slip", filters={"company": company_name}, pluck="name"):
+        if name not in adjustment_sources:
+            delete_doc("Salary Slip", name)
+
     # Transactions and employee data must go before their account/tree masters.
     company_linked = (
-        "Payroll Entry", "Salary Slip", "Journal Entry", "Bank Account", "Additional Salary",
+        "Payroll Entry", "Journal Entry", "Bank Account",
+        "Payroll Correction", "Arrear", "Additional Salary", "Payroll Period", "Salary Slip",
         "Salary Structure Assignment", "Salary Structure", "Salary Component",
-        "Attendance", "Employee Checkin", "Tradexcel Attendance Period", "Employee",
+        "Attendance", "Leave Application", "Employee Checkin", "Tradexcel Attendance Period", "Employee",
         "Payment Ledger Entry",
     )
     for doctype in company_linked:
@@ -317,7 +347,12 @@ def cleanup_synthetic_finalization_company(company_name):
     ):
         delete_doc("Holiday List", name)
     for name in frappe.get_all(
-        "Fiscal Year", filters={"year": f"Finalization Test FY {token}"}, pluck="name"
+        "Leave Type", filters={"name": f"Codex Adjustment Test LWP {token}"}, pluck="name"
+    ):
+        delete_doc("Leave Type", name)
+
+    for name in frappe.get_all(
+        "Fiscal Year", filters={"year": ["like", f"Finalization Test FY {token}%"]}, pluck="name"
     ):
         delete_doc("Fiscal Year", name)
 

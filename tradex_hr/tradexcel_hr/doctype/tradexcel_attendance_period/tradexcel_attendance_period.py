@@ -50,7 +50,7 @@ def _retire_daily_wage_inputs(period_name: str) -> None:
             frappe.throw(
                 _(
                     "Attendance Period {0} has already been used by Salary Slip(s) {1}. "
-                    "Use payroll correction instead of reopening it."
+                    "Use the post-payroll adjustment review instead of reopening it."
                 ).format(period_name, names)
             )
         if not item["disabled"]:

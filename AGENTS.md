@@ -38,3 +38,9 @@ rehearsed on this machine — see the limitation recorded there.
 - Run site-backed tests from `/home/sanchita/frappe-bench-v16` so Frappe resolves `sites/` correctly. Keep real payroll unsubmitted and production untouched; document each implementation in the existing relevant task note.
 - After code is pushed, review pasted code-reviewer findings as proposals: validate them against project rules, concrete boundary cases, and current Frappe/HRMS behavior in Context7; implement justified fixes or additions, and explain any finding that is invalid or conflicts with project invariants.
 - `README.md` status figures are a 2026-09-18 snapshot. Use the latest dated task note and fresh read-only staging checks for current counts or settings.
+## Historical payroll corrections
+
+- Never "fix" historical payroll by editing submitted Salary Slips or consumed Daily Wage inputs.
+- Use native Payroll Correction for approved LWP reversals and native Arrear for approved positive retroactive salary differences.
+- Retroactive reductions and Daily Wage history changes require explicit HR/Finance adjustment review; do not create automatic recovery money.
+- Preserve native Additional Salary provenance and route every approved adjustment into a later payroll.

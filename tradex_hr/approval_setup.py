@@ -62,6 +62,44 @@ WORKFLOWS = {
             ("Tradexcel Payroll Approved", "Cancel", "Tradexcel Payroll Cancelled", "Tradexcel Owner/Director"),
         ),
     },
+    "Tradexcel Payroll Correction Approval": {
+        "document_type": "Payroll Correction",
+        "states": (
+            ("Tradexcel Adjustment Draft", "0", "All"),
+            ("Tradexcel Adjustment Pending Approval", "0", "All"),
+            ("Tradexcel Adjustment Approved", "1", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Rejected", "0", "All"),
+            ("Tradexcel Adjustment Cancelled", "2", "Tradexcel Owner/Director"),
+        ),
+        "transitions": (
+            ("Tradexcel Adjustment Draft", "Submit for Approval", "Tradexcel Adjustment Pending Approval", "Tradexcel Payroll Manager", None, 1),
+            ("Tradexcel Adjustment Draft", "Submit for Approval", "Tradexcel Adjustment Pending Approval", "Tradexcel HR Manager", None, 1),
+            ("Tradexcel Adjustment Pending Approval", "Approve", "Tradexcel Adjustment Approved", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Pending Approval", "Reject", "Tradexcel Adjustment Rejected", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Rejected", "Return to Draft", "Tradexcel Adjustment Draft", "Tradexcel Payroll Manager"),
+            ("Tradexcel Adjustment Rejected", "Return to Draft", "Tradexcel Adjustment Draft", "Tradexcel HR Manager"),
+            ("Tradexcel Adjustment Approved", "Cancel", "Tradexcel Adjustment Cancelled", "Tradexcel Owner/Director"),
+        ),
+    },
+    "Tradexcel Arrear Approval": {
+        "document_type": "Arrear",
+        "states": (
+            ("Tradexcel Adjustment Draft", "0", "All"),
+            ("Tradexcel Adjustment Pending Approval", "0", "All"),
+            ("Tradexcel Adjustment Approved", "1", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Rejected", "0", "All"),
+            ("Tradexcel Adjustment Cancelled", "2", "Tradexcel Owner/Director"),
+        ),
+        "transitions": (
+            ("Tradexcel Adjustment Draft", "Submit for Approval", "Tradexcel Adjustment Pending Approval", "Tradexcel Payroll Manager", None, 1),
+            ("Tradexcel Adjustment Draft", "Submit for Approval", "Tradexcel Adjustment Pending Approval", "Tradexcel HR Manager", None, 1),
+            ("Tradexcel Adjustment Pending Approval", "Approve", "Tradexcel Adjustment Approved", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Pending Approval", "Reject", "Tradexcel Adjustment Rejected", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Rejected", "Return to Draft", "Tradexcel Adjustment Draft", "Tradexcel Payroll Manager"),
+            ("Tradexcel Adjustment Rejected", "Return to Draft", "Tradexcel Adjustment Draft", "Tradexcel HR Manager"),
+            ("Tradexcel Adjustment Approved", "Cancel", "Tradexcel Adjustment Cancelled", "Tradexcel Owner/Director"),
+        ),
+    },
 }
 
 

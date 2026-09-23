@@ -84,5 +84,5 @@ def test_reopen_blocks_when_daily_wage_input_is_already_used(monkeypatch):
         lambda _name: [{"name": "SAL-SLIP-1", "docstatus": 1}],
     )
 
-    with pytest.raises(frappe.ValidationError, match="payroll correction"):
+    with pytest.raises(frappe.ValidationError, match="post-payroll adjustment review"):
         tradexcel_attendance_period._retire_daily_wage_inputs("ATT-PER-1")

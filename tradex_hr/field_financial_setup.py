@@ -54,3 +54,27 @@ def ensure_income_tax_review_fields():
             },
         ]
     }, update=True)
+
+
+def ensure_payroll_adjustment_workflow_fields():
+    """Provide Frappe Workflow's state field on native adjustment DocTypes."""
+    create_custom_fields({
+        "Payroll Correction": [{
+            "fieldname": "workflow_state",
+            "label": "Workflow State",
+            "fieldtype": "Link",
+            "options": "Workflow State",
+            "read_only": 1,
+            "no_copy": 1,
+            "insert_after": "company",
+        }],
+        "Arrear": [{
+            "fieldname": "workflow_state",
+            "label": "Workflow State",
+            "fieldtype": "Link",
+            "options": "Workflow State",
+            "read_only": 1,
+            "no_copy": 1,
+            "insert_after": "company",
+        }],
+    }, update=True)
