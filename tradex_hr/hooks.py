@@ -118,6 +118,12 @@ doc_events = {
     "Full and Final Statement": {
         "before_submit": "tradex_hr.tradexcel_hr.employee_separation.validate_full_and_final_before_submit",
     },
+    "Tradexcel Statutory Rule Set": {
+        "validate": "tradex_hr.tradexcel_hr.statutory_exit.validate_statutory_ruleset",
+        "before_submit": "tradex_hr.tradexcel_hr.statutory_exit.before_submit_statutory_ruleset",
+        "before_update_after_submit": "tradex_hr.tradexcel_hr.statutory_exit.before_update_after_submit_statutory_ruleset",
+        "before_cancel": "tradex_hr.tradexcel_hr.statutory_exit.before_cancel_statutory_ruleset",
+    },
     "Employee Checkin": {
         "before_validate": "tradex_hr.tradexcel_hr.field_attendance_service.enrich_mobile_checkin",
     },
@@ -126,6 +132,10 @@ doc_events = {
 after_install = "tradex_hr.install.after_install"
 after_migrate = "tradex_hr.install.after_migrate"
 
+
+permission_query_conditions = {
+    "Tradexcel Statutory Rule Set": "tradex_hr.tradexcel_hr.statutory_exit.statutory_ruleset_query_conditions",
+}
 
 has_permission = {
     "Salary Slip": "tradex_hr.tradexcel_hr.native_payroll.restrict_salary_slip_delete",

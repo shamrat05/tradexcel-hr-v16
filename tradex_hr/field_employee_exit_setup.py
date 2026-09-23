@@ -64,6 +64,36 @@ def ensure_employee_exit_fields():
             "insert_after": "status",
         }],
     }, update=True)
+    create_custom_fields({
+        "Employee Separation": [
+            {
+                "fieldname": "custom_tradex_legal_classification",
+                "label": "Legal Classification",
+                "fieldtype": "Select",
+                "options": "Worker under selected regime\nOutside worker scope\nOther approved service-rule category\nReview Required",
+                "read_only": 1,
+                "allow_on_submit": 1,
+                "insert_after": "custom_tradex_separation_type",
+            },
+            {
+                "fieldname": "custom_tradex_statutory_rule_set",
+                "label": "Approved Statutory Rule Set",
+                "fieldtype": "Link",
+                "options": "Tradexcel Statutory Rule Set",
+                "read_only": 1,
+                "allow_on_submit": 1,
+                "insert_after": "custom_tradex_legal_classification",
+            },
+            {
+                "fieldname": "custom_tradex_statutory_applicability_date",
+                "label": "Reviewed Applicability Date",
+                "fieldtype": "Date",
+                "read_only": 1,
+                "allow_on_submit": 1,
+                "insert_after": "custom_tradex_statutory_rule_set",
+            },
+        ],
+    }, update=True)
 
 
 def ensure_default_exit_template():

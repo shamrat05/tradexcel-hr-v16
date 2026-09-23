@@ -8,6 +8,21 @@ import frappe
 
 
 WORKFLOWS = {
+    "Tradexcel Statutory Rule Set Approval": {
+        "document_type": "Tradexcel Statutory Rule Set",
+        "states": (
+            ("Tradexcel Statutory Draft", "0", "Tradexcel HR Manager"),
+            ("Tradexcel Statutory Pending Approval", "0", "Tradexcel Owner/Director"),
+            ("Tradexcel Statutory Approved", "1", "Tradexcel Compliance Auditor"),
+            ("Tradexcel Statutory Rejected", "0", "Tradexcel HR Manager"),
+        ),
+        "transitions": (
+            ("Tradexcel Statutory Draft", "Submit for Legal Review", "Tradexcel Statutory Pending Approval", "Tradexcel HR Manager", None, 1),
+            ("Tradexcel Statutory Pending Approval", "Approve Rule Set", "Tradexcel Statutory Approved", "Tradexcel Owner/Director"),
+            ("Tradexcel Statutory Pending Approval", "Reject Rule Set", "Tradexcel Statutory Rejected", "Tradexcel Owner/Director"),
+            ("Tradexcel Statutory Rejected", "Return to Draft", "Tradexcel Statutory Draft", "Tradexcel HR Manager"),
+        ),
+    },
     "Tradexcel Attendance Correction": {
         "document_type": "Attendance Request",
         "states": (

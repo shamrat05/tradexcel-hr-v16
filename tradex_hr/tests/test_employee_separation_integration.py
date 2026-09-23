@@ -70,7 +70,7 @@ def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatc
         assert separation.docstatus == 1
 
         frappe.set_user(director)
-        review_separation_statutory_status(separation.name, "Not Applicable", "Synthetic test review; not a legal decision.")
+        review_separation_statutory_status(separation.name, "Not Applicable", "Synthetic test review; not a legal decision.", classification="Outside worker scope")
 
         frappe.set_user(maker)
         from tradex_hr.tradexcel_hr.employee_separation import inspect_full_and_final_readiness
@@ -82,14 +82,46 @@ def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatc
         finding_codes = {row["code"] for row in readiness["findings"]}
         assert "GRATUITY_RULE_DECISION_REQUIRED" not in finding_codes
         assert "LEAVE_ENCASHMENT_CONFIGURATION_REQUIRED" not in finding_codes
+        assert readiness["statutory_review"]["status"] == "NOT_APPLICABLE"
         assert readiness["status"] == "REVIEW_REQUIRED"
+        # Model a genuinely unreviewed legacy separation for the missing-rule
+        # guard. Completed statutory decisions are immutable, so do not try to
+        # overwrite the Not Applicable decision above.
+        frappe.set_user("Administrator")
+        separation.db_set({
+            "custom_tradex_statutory_review_status": "Pending",
+            "custom_tradex_legal_classification": None,
+            "custom_tradex_statutory_rule_set": None,
+            "custom_tradex_statutory_applicability_date": None,
+            "custom_tradex_statutory_reviewed_by": None,
+            "custom_tradex_statutory_reviewed_at": None,
+            "custom_tradex_statutory_review_notes": None,
+        })
         frappe.set_user(director)
-        review_separation_statutory_status(separation.name, "Approved", "Synthetic missing-ruleset check; not a legal decision.")
+        with pytest.raises(frappe.ValidationError, match="Select the exact approved Rule Set"):
+            review_separation_statutory_status(
+                separation.name, "Approved", "Synthetic missing-ruleset check; not a legal decision.",
+                classification="Worker under selected regime",
+            )
+        # Restore the explicit synthetic Not Applicable decision before testing
+        # the compatibility guard for a legacy Approved row.
+        review_separation_statutory_status(
+            separation.name, "Not Applicable", "Synthetic test review; not a legal decision.",
+            classification="Outside worker scope",
+        )
+        # Simulate a legacy row written before versioned statutory rules existed;
+        # current API and F&F submission reject this state.
+        frappe.set_user("Administrator")
+        separation.db_set({
+            "custom_tradex_statutory_review_status": "Approved",
+            "custom_tradex_legal_classification": "Worker under selected regime",
+            "custom_tradex_statutory_rule_set": None,
+        })
         frappe.set_user(maker)
         approved_readiness = inspect_full_and_final_readiness(employee.name)
         assert "STATUTORY_ENTITLEMENT_RULESET_REQUIRED" in {row["code"] for row in approved_readiness["findings"]}
         frappe.set_user(director)
-        review_separation_statutory_status(separation.name, "Not Applicable", "Synthetic test review; not a legal decision.")
+        review_separation_statutory_status(separation.name, "Not Applicable", "Synthetic test review; not a legal decision.", classification="Outside worker scope")
         frappe.set_user(maker)
         assert "amount" not in repr(readiness)
 

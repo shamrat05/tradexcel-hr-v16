@@ -52,3 +52,10 @@ rehearsed on this machine — see the limitation recorded there.
 - Access shutdown is separate from unpaid settlement. Disable only a dedicated employee User and application biometric mapping; never delete identity or attendance history.
 - Never infer statutory classification or calculate exit entitlements without an approved effective rule.
 - Reject payable Attendance or overtime dated after relieving date; classify offline evidence by its captured event time.
+
+## Statutory exit rules
+
+- Legal regime and legal classification are explicit; never infer them from Employment Type, designation, or payroll pay basis.
+- Statutory Rule Sets are source-linked, effective-dated, approved by a separate reviewer, and immutable after approval. An Employee Separation retains the exact approved version and reviewed applicability date.
+- Unapproved or unresolved statutory rules never produce money. Native Gratuity, Leave Encashment, Additional Salary, and Full and Final documents remain the financial records.
+- A `Not Applicable` decision requires an explicit reviewed classification and notes. Later rule versions never silently change a historical separation or settlement.

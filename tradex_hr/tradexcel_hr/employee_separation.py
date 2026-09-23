@@ -207,21 +207,10 @@ def finalize_employee_exit_access(employee_name: str) -> dict:
 
 
 @frappe.whitelist()
-def review_separation_statutory_status(separation_name: str, status: str, notes: str):
-    """Record explicit Owner/Director review; no legal amount is calculated."""
-    if status not in {"Approved", "Not Applicable"} or not notes:
-        frappe.throw(_("Choose Approved or Not Applicable and record review notes."))
-    if "Tradexcel Owner/Director" not in frappe.get_roles() and frappe.session.user != "Administrator":
-        frappe.throw(_("Owner/Director review is required."), frappe.PermissionError)
-    doc = frappe.get_doc("Employee Separation", separation_name)
-    if doc.docstatus != 1:
-        frappe.throw(_("Submit the Employee Separation before recording legal review."))
-    from tradex_hr.tradexcel_hr.company_context import assert_company_access
-    assert_company_access(doc.company, require_explicit_scope=True)
-    doc.db_set({STATUTORY_STATUS_FIELD: status, STATUTORY_REVIEWER_FIELD: frappe.session.user,
-        STATUTORY_REVIEWED_AT_FIELD: frappe.utils.now_datetime(), STATUTORY_NOTES_FIELD: notes})
-    return {"status": status, "reviewed_by": frappe.session.user}
-
+def review_separation_statutory_status(separation_name, status, notes, rule_set=None, classification=None):
+    """Compatibility endpoint delegates to the versioned legal review service."""
+    from tradex_hr.tradexcel_hr.statutory_exit import review_separation_statutory_status as review
+    return review(separation_name, status, notes, rule_set, classification)
 
 def validate_full_and_final_before_submit(doc, method=None):
     from tradex_hr.tradexcel_hr.company_context import assert_company_access
@@ -237,14 +226,12 @@ def validate_full_and_final_before_submit(doc, method=None):
     separation = _latest_separation(doc.employee)
     if not separation or int(separation.docstatus or 0) != 1:
         frappe.throw(_("Submit the native Employee Separation before Full & Final."))
-    statutory_status = separation.get(STATUTORY_STATUS_FIELD)
-    if statutory_status == "Approved" and not separation.get("custom_tradex_statutory_rule_set"):
-        frappe.throw(
-            _("An approved statutory review must reference an explicit entitlement ruleset before settlement."),
-            title=_("STATUTORY_ENTITLEMENT_RULESET_REQUIRED"),
-        )
-    if statutory_status not in {"Approved", "Not Applicable"}:
-        frappe.throw(_("Complete legal/statutory review before submitting Full & Final."), title=_("Legal review required"))
+    from tradex_hr.tradexcel_hr.statutory_exit import inspect_statutory_exit_readiness
+    statutory = inspect_statutory_exit_readiness(separation.name)
+    if statutory.get("status") not in {"READY_FOR_STATUTORY_REVIEW", "NOT_APPLICABLE"}:
+        code = next((row.get("code") for row in statutory.get("findings", [])),
+                    "LEGAL_CLASSIFICATION_REVIEW_REQUIRED")
+        frappe.throw(_("Complete statutory review before settlement: {0}").format(code), title=_(code))
     _validate_asset_recovery_inputs(doc)
 
 
@@ -290,11 +277,13 @@ def inspect_full_and_final_readiness(employee_name: str) -> dict:
     if not employee.relieving_date:
         return {"status": "BLOCKED", "employee": employee.name, "findings": [{"code": "RELIEVING_DATE_MISSING"}]}
     separation = _latest_separation(employee.name)
-    statutory = separation.get(STATUTORY_STATUS_FIELD) if separation else None
     findings = []
-    if statutory == "Approved" and not separation.get("custom_tradex_statutory_rule_set"):
-        findings.append({"code": "STATUTORY_ENTITLEMENT_RULESET_REQUIRED"})
-    elif statutory != "Not Applicable" and statutory != "Approved":
+    statutory = None
+    if separation:
+        from tradex_hr.tradexcel_hr.statutory_exit import inspect_statutory_exit_readiness
+        statutory = inspect_statutory_exit_readiness(separation.name)
+        findings.extend(statutory.get("findings", []))
+    else:
         findings.append({"code": "LEGAL_CLASSIFICATION_REVIEW_REQUIRED"})
     slips = frappe.get_all("Salary Slip", filters={"employee": employee.name,
         "end_date": ["<=", employee.relieving_date], "docstatus": ["!=", 2]},
@@ -348,6 +337,7 @@ def inspect_full_and_final_readiness(employee_name: str) -> dict:
         "final_salary_slips": final_slips, "full_and_final_statements": fnf,
         "native_outstanding_sources": native_sources,
         "pending_adjustments": len(adjustments), "findings": findings,
+        "statutory_review": statutory,
         "payment_status": payment_status["status"],
         "payment_journal_entries": payment_status["journal_entries"],
         "native_settlement_hub": "Full and Final Statement"}

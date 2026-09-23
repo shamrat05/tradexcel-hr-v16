@@ -6,6 +6,8 @@ frappe.ui.form.on("Employee Separation", {
 				title: __("Legal / Statutory Review"),
 				fields: [
 					{ fieldname: "status", label: __("Decision"), fieldtype: "Select", options: "Approved\nNot Applicable", reqd: 1 },
+					{ fieldname: "rule_set", label: __("Approved Rule Set"), fieldtype: "Link", options: "Tradexcel Statutory Rule Set" },
+					{ fieldname: "classification", label: __("Legal Classification"), fieldtype: "Select", options: "Worker under selected regime\nOutside worker scope\nOther approved service-rule category\nReview Required", reqd: 1 },
 					{ fieldname: "notes", label: __("Review Notes"), fieldtype: "Small Text", reqd: 1 },
 				],
 				primary_action_label: __("Record Review"),
