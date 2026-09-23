@@ -47,18 +47,18 @@ WORKFLOWS = {
         "document_type": "Payroll Entry",
         "states": (
             ("Tradexcel Payroll Draft", "0", "Tradexcel Payroll Manager"),
-            ("Tradexcel Payroll Pending Review", "0", "Tradexcel Payroll Approver"),
-            ("Tradexcel Payroll Pending Director Approval", "0", "Tradexcel Owner/Director"),
+            ("Tradexcel Payroll Pending Review", "1", "Tradexcel Payroll Approver"),
+            ("Tradexcel Payroll Pending Director Approval", "1", "Tradexcel Owner/Director"),
             ("Tradexcel Payroll Approved", "1", "Tradexcel Owner/Director"),
-            ("Tradexcel Payroll Rejected", "0", "Tradexcel Payroll Approver"),
+            ("Tradexcel Payroll Rejected", "2", "Tradexcel Payroll Approver"),
             ("Tradexcel Payroll Cancelled", "2", "Tradexcel Owner/Director"),
         ),
         "transitions": (
-            ("Tradexcel Payroll Draft", "Submit for Review", "Tradexcel Payroll Pending Review", "Tradexcel Payroll Manager"),
-            ("Tradexcel Payroll Pending Review", "Review Complete", "Tradexcel Payroll Pending Director Approval", "Tradexcel Payroll Approver"),
-            ("Tradexcel Payroll Pending Review", "Reject", "Tradexcel Payroll Rejected", "Tradexcel Payroll Approver"),
-            ("Tradexcel Payroll Pending Director Approval", "Approve", "Tradexcel Payroll Approved", "Tradexcel Owner/Director"),
-            ("Tradexcel Payroll Pending Director Approval", "Reject", "Tradexcel Payroll Rejected", "Tradexcel Owner/Director"),
+            ("Tradexcel Payroll Draft", "Submit for Review", "Tradexcel Payroll Pending Review", "Tradexcel Payroll Manager", None, 1),
+            ("Tradexcel Payroll Pending Review", "Review Complete", "Tradexcel Payroll Pending Director Approval", "Tradexcel Payroll Approver", 'doc.salary_slips_created and doc.status not in ("Queued", "Failed")'),
+            ("Tradexcel Payroll Pending Review", "Reject", "Tradexcel Payroll Rejected", "Tradexcel Payroll Approver", 'doc.status != "Queued"'),
+            ("Tradexcel Payroll Pending Director Approval", "Approve", "Tradexcel Payroll Approved", "Tradexcel Owner/Director", 'doc.salary_slips_created and doc.status not in ("Queued", "Failed")'),
+            ("Tradexcel Payroll Pending Director Approval", "Reject", "Tradexcel Payroll Rejected", "Tradexcel Owner/Director", 'doc.status != "Queued"'),
             ("Tradexcel Payroll Approved", "Cancel", "Tradexcel Payroll Cancelled", "Tradexcel Owner/Director"),
         ),
     },
@@ -90,6 +90,22 @@ def _replace_rows(doc, fieldname: str, rows: Iterable[dict]) -> None:
         doc.append(fieldname, row)
 
 
+def _transition_row(transition: tuple) -> dict:
+    state, action, next_state, allowed, *options = transition
+    condition = options[0] if options else None
+    allow_self_approval = options[1] if len(options) > 1 else 0
+    row = {
+        "state": state,
+        "action": action,
+        "next_state": next_state,
+        "allowed": allowed,
+        "allow_self_approval": allow_self_approval,
+    }
+    if condition:
+        row["condition"] = condition
+    return row
+
+
 def ensure_tradex_workflows() -> dict[str, int]:
     """Create or converge the four-eyes approval workflows idempotently."""
     created_or_updated = 0
@@ -98,8 +114,8 @@ def ensure_tradex_workflows() -> dict[str, int]:
             continue
         for state_name, _doc_status, _allow_edit in definition["states"]:
             _ensure_state(state_name)
-        for _state, action_name, _next_state, _allowed in definition["transitions"]:
-            _ensure_action(action_name)
+        for transition in definition["transitions"]:
+            _ensure_action(transition[1])
 
         if frappe.db.exists("Workflow", workflow_name):
             workflow = frappe.get_doc("Workflow", workflow_name)
@@ -128,16 +144,7 @@ def ensure_tradex_workflows() -> dict[str, int]:
         _replace_rows(
             workflow,
             "transitions",
-            (
-                {
-                    "state": state,
-                    "action": action,
-                    "next_state": next_state,
-                    "allowed": allowed,
-                    "allow_self_approval": 0,
-                }
-                for state, action, next_state, allowed in definition["transitions"]
-            ),
+            (_transition_row(transition) for transition in definition["transitions"]),
         )
         workflow.save(ignore_permissions=True)
         created_or_updated += 1

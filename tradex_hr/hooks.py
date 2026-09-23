@@ -39,7 +39,11 @@ doctype_list_js = {
 }
 
 doc_events = {
+    "Payroll Entry": {
+        "before_submit": "tradex_hr.tradexcel_hr.native_payroll.validate_payroll_entry_before_submit",
+    },
     "Salary Slip": {
+        "before_submit": "tradex_hr.tradexcel_hr.native_payroll.validate_salary_slip_before_submit",
         "before_validate": [
             "tradex_hr.tradexcel_hr.component_exceptions.apply_to_salary_slip",
             "tradex_hr.tradexcel_hr.tax_exceptions.apply_tax_exemption",
@@ -56,3 +60,8 @@ doc_events = {
 
 after_install = "tradex_hr.install.after_install"
 after_migrate = "tradex_hr.install.after_migrate"
+
+
+has_permission = {
+    "Salary Slip": "tradex_hr.tradexcel_hr.native_payroll.restrict_salary_slip_delete",
+}

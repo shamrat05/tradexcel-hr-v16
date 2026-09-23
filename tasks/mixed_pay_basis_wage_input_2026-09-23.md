@@ -203,3 +203,30 @@ Wage` structure through a new effective-dated native structure/assignment, and
 later complete tax/accounting/payment controls. LWP/PPL parity remains
 delegated to native HRMS and needs real configured Leave Types before it can be
 data-exercised on staging.
+
+
+## Phase A hardening — staging change record
+
+Target: hrms-v16.localhost only. Production remains untouched.
+
+Verified pre-migration backup with files:
+ /home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/20260923_052342-hrms-v16_localhost-*
+
+- Database gzip test and both file tar listings passed.
+- Database SHA-256: c14b67ae1d0a0b8a5b2db488d6e6a1b80911f95376ae66b064d9acccf4f25dc9
+- Public files SHA-256: 407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532
+- Private files SHA-256: 7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe
+- Site config SHA-256: 904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73
+
+Read-only staging preflight found the current Tradexcel Payroll Approval Workflow active with draft review states; no custom_tradex_run_key exists. Payroll Entry and Salary Slip counts are both zero. An attempted grouped aggregate through the Frappe query API was rejected as unsupported; it made no writes and was not used as evidence.
+
+Hardening changes in progress: native submit/cancel Workflow states, review eligibility gated on native slip-job completion, managed monthly company identity, Payroll Entry and Salary Slip server guards, permission ordering, Daily Wage preflight/atomic materialization. No real payroll or Salary Slip is being submitted.
+
+- First staging migration stopped safely in the app after-migrate Workflow setup because the action pre-pass still expected four-field transition tuples. Read-only checks show the managed fields were not yet installed and Payroll Entry/Salary Slip remain at zero. The valid Tradexcel HR Workspace still exists; the sync only removed a lowercase orphan slug. Corrected the tuple iteration before retrying migration.
+
+- The second staging migration correctly rejected blank Workflow State allow_edit values as mandatory. Assigning the reviewer, director, and approver roles for those states; no records were created.
+
+- The later migration attempt synchronized app metadata but stopped during Frappe's orphan Workspace deletion: the staging default queue already held over 550 delete_dynamic_links jobs and no workers were online. No payroll records were touched. Completed app-owned role/workflow/field convergence directly on staging after the pre-migration backup. The interrupted sync left the HR Workspace under its old title-based name; renamed it with Frappe to the app's canonical tradexcel-hr name and reran ensure_workspace().
+- That convergence exposed a v16-required Workspace.type field missing from the existing installer; set it to Workspace before saving. The canonical workspace and report/workspace test set now pass.
+- Focused Phase A suite: 17 passed. Full app suite: 225 passed, 2 skipped. Compile and final diff checks are run after review.
+- Staging payroll population was unchanged. The synthetic lifecycle test cleaned its Payroll Entry, draft Salary Slip, derived Additional Salary, Attendance, Attendance Period, Salary Structure/Assignment, and three role-specific users with Company User Permissions. No real Salary Slip or accounting entry was submitted/created.

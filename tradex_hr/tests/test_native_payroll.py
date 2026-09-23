@@ -4,6 +4,7 @@ import os
 import frappe
 import pytest
 from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
+from frappe.model.workflow import apply_workflow, get_transitions
 
 from tradex_hr.tradexcel_hr import daily_wage_input, native_payroll
 
@@ -68,7 +69,20 @@ def test_native_readiness_blocks_stale_attendance(monkeypatch):
 
 
 def test_prepare_reuses_existing_native_payroll_entry(monkeypatch):
-    existing = {"name": "PAY-1", "docstatus": 0, "status": "Draft", "salary_slips_created": 0}
+    existing = [{"name": "PAY-1", "custom_tradex_run_key": "KEY"}]
+    doc = frappe._dict({
+        "name": "PAY-1", "company": "TCL", "start_date": date(2026, 9, 1),
+        "end_date": date(2026, 9, 30), "payroll_frequency": "Monthly",
+        "custom_tradex_run_key": "KEY", "custom_tradex_population_hash": "FINGERPRINT",
+        "custom_tradex_attendance_revision": "", "employees": [],
+        "branch": None, "department": None, "designation": None, "status": "Draft",
+    })
+    monkeypatch.setattr(native_payroll, "_assert_preparation_authorized", lambda *_args: None)
+    monkeypatch.setattr(native_payroll, "_managed_run_key", lambda *_args: "KEY")
+    monkeypatch.setattr(native_payroll, "_daily_inputs_for_readiness", lambda *_args: ([], []))
+    monkeypatch.setattr(native_payroll, "_population_fingerprint", lambda *_args: "FINGERPRINT")
+    monkeypatch.setattr(native_payroll, "_attendance_revision", lambda *_args: "")
+    monkeypatch.setattr(native_payroll.frappe, "get_doc", lambda *_args: doc)
     monkeypatch.setattr(native_payroll, "inspect_native_payroll_readiness", lambda *_args, **_kwargs: {
         "status": "READY", "outcomes": [], "employee_count": 0, "ready_count": 0, "blocked_count": 0,
     })
@@ -76,7 +90,7 @@ def test_prepare_reuses_existing_native_payroll_entry(monkeypatch):
 
     result = native_payroll.prepare_native_payroll("TCL", date(2026, 9, 1), date(2026, 9, 30))
 
-    assert result["status"] == "EXISTING"
+    assert result["status"] == "PREPARED"
     assert result["payroll_entry"] == "PAY-1"
 
 
@@ -89,7 +103,9 @@ def test_prepare_blocks_missing_payroll_account_before_daily_input(monkeypatch):
         "blocked_count": 0,
     }
     monkeypatch.setattr(native_payroll, "inspect_native_payroll_readiness", lambda *_args, **_kwargs: readiness)
-    monkeypatch.setattr(native_payroll, "_existing_payroll_entry", lambda *_args: None)
+    monkeypatch.setattr(native_payroll, "_existing_payroll_entry", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "_assert_preparation_authorized", lambda *_args: None)
+    monkeypatch.setattr(native_payroll, "_daily_inputs_for_readiness", lambda *_args: ([{"employee": "EMP-DAILY", "period": "PERIOD", "amount": 100}], []))
     monkeypatch.setattr(native_payroll.frappe, "get_cached_value", lambda *_args: (None, None))
     monkeypatch.setattr(
         native_payroll,
@@ -111,7 +127,7 @@ def test_prepare_checks_payroll_entry_permission_before_insert(monkeypatch):
         "blocked_count": 0,
     }
     monkeypatch.setattr(native_payroll, "inspect_native_payroll_readiness", lambda *_args, **_kwargs: readiness)
-    monkeypatch.setattr(native_payroll, "_existing_payroll_entry", lambda *_args: None)
+    monkeypatch.setattr(native_payroll, "_existing_payroll_entry", lambda *_args: [])
     monkeypatch.setattr(native_payroll.frappe, "get_cached_value", lambda *_args: ("BDT", "ACC-PAYABLE"))
     monkeypatch.setattr(
         native_payroll.frappe,
@@ -146,13 +162,17 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
         "additional_salary": [],
         "payroll_entry": None,
         "salary_slips": [],
+        "users": [],
+        "user_permissions": [],
     }
 
     def cleanup():
-        for name in created["salary_slips"]:
-            _delete_test_doc("Salary Slip", name)
+        frappe.set_user("Administrator")
+        frappe.enqueue = lambda *_args, **_kwargs: None
         if created["payroll_entry"]:
             _delete_test_doc("Payroll Entry", created["payroll_entry"])
+        for name in created["salary_slips"]:
+            _delete_test_doc("Salary Slip", name)
         for name in created["additional_salary"]:
             _delete_test_doc("Additional Salary", name)
         if created["assignment"]:
@@ -161,6 +181,14 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
             _delete_test_doc("Salary Structure", created["structure"])
         if created["period"]:
             _delete_test_doc("Tradexcel Attendance Period", created["period"])
+        for permission_name in created["user_permissions"]:
+            if frappe.db.exists("User Permission", permission_name):
+                frappe.delete_doc("User Permission", permission_name, ignore_permissions=True, force=True)
+        for user_name in created["users"]:
+            if frappe.db.exists("User", user_name):
+                frappe.delete_doc("User", user_name, ignore_permissions=True, force=True)
+        frappe.clear_cache()
+        frappe.set_user("Administrator")
         for name in created["attendance"]:
             _delete_test_doc("Attendance", name)
         frappe.db.commit()
@@ -227,23 +255,152 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
         period.insert(ignore_permissions=True)
         created["period"] = period.name
         monkeypatch.setattr(daily_wage_input, "require_finalized_attendance", lambda *_args: period)
+        monkeypatch.setattr(
+            native_payroll,
+            "_employees_for_period",
+            lambda _company, _start, _end, _employee_ids=None: [{**dict(employee), "status": "Active", "date_of_joining": date(2020, 1, 1), "relieving_date": None}],
+        )
+        original_get_cached_value = frappe.get_cached_value
+        monkeypatch.setattr(
+            frappe,
+            "get_cached_value",
+            lambda doctype, name, fields, *args, **kwargs: (
+                ("BDT", "Creditors - TCL")
+                if doctype == "Company" and name == employee.company
+                else original_get_cached_value(doctype, name, fields, *args, **kwargs)
+            ),
+        )
 
-        result = native_payroll.prepare_native_payroll(employee.company, start, end, employee_ids=[employee.name])
+        original_enqueue = frappe.enqueue
+        frappe.enqueue = lambda *_args, **_kwargs: None
+        workflow_users = {}
+        for role, name in (
+            ("Tradexcel Payroll Manager", "Payroll Manager"),
+            ("Tradexcel Payroll Approver", "Payroll Approver"),
+            ("Tradexcel Owner/Director", "Payroll Director"),
+        ):
+            user = frappe.get_doc({
+                "doctype": "User",
+                "email": f"codex-native-payroll-{frappe.generate_hash(8)}@example.test",
+                "first_name": f"Synthetic {name}",
+                "enabled": 1,
+                "user_type": "System User",
+                "send_welcome_email": 0,
+                "roles": [{"role": role}],
+            })
+            user.insert(ignore_permissions=True)
+            created["users"].append(user.name)
+            workflow_users[role] = user.name
+            user_permission = frappe.get_doc({
+                "doctype": "User Permission",
+                "user": user.name,
+                "allow": "Company",
+                "for_value": employee.company,
+                "apply_to_all_doctypes": 1,
+            })
+            user_permission.insert(ignore_permissions=True)
+            created["user_permissions"].append(user_permission.name)
+        frappe.clear_cache()
+        frappe.enqueue = original_enqueue
+        frappe.set_user(workflow_users["Tradexcel Payroll Manager"])
+        assert not frappe.has_permission("Additional Salary", "submit")
+        result = native_payroll.prepare_native_payroll(employee.company, start, end)
+        frappe.set_user("Administrator")
 
-        assert result["status"] == "DRAFTS_CREATED"
+        assert result["status"] == "PREPARED", result
+        assert result["salary_slips"] == []
         created["payroll_entry"] = result["payroll_entry"]
-        created["salary_slips"] = list(result["salary_slips"])
+        frappe.db.commit()  # Simulate the prepare request boundary; native jobs commit independently.
         created["additional_salary"] = [item["additional_salary"] for item in result["daily_inputs"]]
         entry = frappe.get_doc("Payroll Entry", result["payroll_entry"])
         assert entry.docstatus == 0
+        assert frappe.db.count("Salary Slip", {"payroll_entry": entry.name}) == 0
+
+        queued_jobs = []
+        monkeypatch.setattr(frappe, "enqueue", lambda method, *args, **kwargs: queued_jobs.append((method, args, kwargs)))
+        frappe.flags.enqueue_payroll_entry = True
+        try:
+            frappe.set_user(workflow_users["Tradexcel Payroll Manager"])
+            apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Submit for Review")
+        finally:
+            frappe.flags.enqueue_payroll_entry = False
+            frappe.set_user("Administrator")
+        entry.reload()
+        assert entry.docstatus == 1
+        assert entry.workflow_state == "Tradexcel Payroll Pending Review"
+        assert entry.status == "Queued"
+        assert entry.salary_slips_created == 0
+        actions = {item.action for item in get_transitions(entry)}
+        assert "Review Complete" not in actions
+        assert "Reject" not in actions
+        assert len(queued_jobs) == 1
+        frappe.db.commit()  # Persist submitted entry before simulating the native worker request.
+
+        method, _args, job_kwargs = queued_jobs[0]
+        frappe.message_log.clear()  # A background worker starts with a fresh request message log.
+        def fail_slip_insert(*_args, **_kwargs):
+            raise RuntimeError("synthetic native salary-slip failure")
+        with monkeypatch.context() as failing_job:
+            failing_job.setattr(SalarySlip, "insert", fail_slip_insert)
+            method(
+                employees=job_kwargs["employees"],
+                args=job_kwargs["args"],
+                publish_progress=job_kwargs["publish_progress"],
+            )
+        entry.reload()
+        assert entry.status == "Failed"
+        assert "synthetic native salary-slip failure" in entry.error_message
+        actions = {item.action for item in get_transitions(entry)}
+        assert "Review Complete" not in actions
+        assert "Reject" in actions
+
+        # HRMS's native retry action calls create_salary_slips() on the same entry.
+        entry.create_salary_slips()
+        entry.reload()
+        assert entry.docstatus == 1
+        assert entry.status == "Submitted"
+        assert entry.salary_slips_created == 1
         slips = frappe.get_all("Salary Slip", filters={"payroll_entry": entry.name, "docstatus": 0}, fields=["name"])
         assert len(slips) == 1
+        created["salary_slips"] = [row.name for row in slips]
         slip = frappe.get_doc("Salary Slip", slips[0].name)
         wage_rows = [row for row in slip.earnings if row.salary_component == "Daily Wage"]
         assert sum(row.amount for row in wage_rows) == 3500
+        with pytest.raises(frappe.ValidationError, match="locked until Director approval"):
+            slip.submit()
+        slip.reload()
 
-        retry = native_payroll.prepare_native_payroll(employee.company, start, end, employee_ids=[employee.name])
-        assert retry["status"] == "EXISTING"
+        frappe.set_user(workflow_users["Tradexcel Payroll Approver"])
+        apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Review Complete")
+        frappe.set_user("Administrator")
+        entry.reload()
+        assert entry.docstatus == 1
+        assert entry.workflow_state == "Tradexcel Payroll Pending Director Approval"
+        with pytest.raises(frappe.ValidationError, match="locked until Director approval"):
+            slip.reload()
+            slip.submit()
+        slip.reload()
+        frappe.set_user(workflow_users["Tradexcel Owner/Director"])
+        apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Approve")
+        frappe.set_user("Administrator")
+        entry.reload()
+        assert entry.workflow_state == "Tradexcel Payroll Approved"
+        native_payroll.validate_salary_slip_before_submit(slip)
+
+        retry = native_payroll.prepare_native_payroll(employee.company, start, end)
+        assert retry["status"] == "PREPARED"
+        assert retry["payroll_entry"] == entry.name
+
+        # Cleanup exercises native Payroll Entry cancellation of linked draft slips.
+        frappe.set_user(workflow_users["Tradexcel Owner/Director"])
+        with pytest.raises(frappe.PermissionError):
+            slip.delete()
+        apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Cancel")
+        frappe.set_user("Administrator")
+        entry.reload()
+        assert entry.docstatus == 2
+        assert entry.workflow_state == "Tradexcel Payroll Cancelled"
+        assert not frappe.db.exists("Salary Slip", slip.name)
     finally:
         cleanup()
 

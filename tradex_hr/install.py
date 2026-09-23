@@ -1021,6 +1021,7 @@ def ensure_workspace() -> None:
             doc.indicator_color = "blue"
 
         doc.content = content
+        doc.type = "Workspace"
         doc.title = workspace_values["title"]
         doc.public = 1 if workspace_is_visible(name) else 0
         doc.is_hidden = 0 if workspace_is_visible(name) else 1

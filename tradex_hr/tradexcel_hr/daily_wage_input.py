@@ -144,6 +144,43 @@ def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: 
     }
 
 
+def _submit_derived_daily_wage(doc, period, expected: dict[str, Any]) -> None:
+    """Submit only an exact finalized, system-derived Daily Wage input."""
+    if frappe.session.user != "Administrator":
+        roles = set(frappe.get_roles())
+        if "Tradexcel Payroll Manager" not in roles:
+            frappe.throw(_("Tradexcel Payroll Manager role is required for derived Daily Wage payroll input."), frappe.PermissionError)
+        frappe.has_permission("Payroll Entry", "create", throw=True)
+        if not frappe.has_permission("Employee", "read", doc.employee):
+            frappe.throw(_("You do not have access to this employee."), frappe.PermissionError)
+
+    current = require_finalized_attendance(period.company, period.from_date, period.to_date)
+    if current.name != period.name or current.revision != period.revision:
+        frappe.throw(_("Finalized Attendance changed before Daily Wage input submission."))
+    recalculated = calculate_daily_wage_input(doc.employee, period.from_date, period.to_date)
+    expected_key = f"DAILY-WAGE:{period.name}:r{period.revision}:{doc.employee}:{expected['salary_component']}"
+    if (
+        recalculated.get("status") != "READY"
+        or recalculated.get("amount") != expected["amount"]
+        or doc.company != expected["company"]
+        or doc.salary_component != expected["salary_component"]
+        or doc.amount != expected["amount"]
+        or doc.payroll_date != expected["payroll_date"]
+        or doc.ref_doctype != expected["ref_doctype"]
+        or doc.ref_docname != expected["ref_docname"]
+        or doc.custom_tradex_payroll_input_key != expected_key
+    ):
+        frappe.throw(_("Daily Wage input no longer matches its finalized Attendance and pay assignment."))
+
+    if frappe.session.user == "Administrator" or doc.has_permission("submit"):
+        doc.submit()
+    else:
+        # The manager cannot submit arbitrary Additional Salary; only this
+        # provenance- and amount-checked server action may submit this record.
+        doc.flags.ignore_permissions = True
+        doc.submit()
+
+
 def create_daily_wage_input(
     employee: str,
     attendance_period: str,
@@ -179,7 +216,10 @@ def create_daily_wage_input(
     }
     existing = _get_existing_input(key)
     if existing:
-        return _reuse_existing_input(existing, expected, submit=submit, result=result)
+        reused = _reuse_existing_input(existing, expected, submit=False, result=result)
+        if submit and existing.docstatus == 0:
+            _submit_derived_daily_wage(frappe.get_doc("Additional Salary", existing.name), period, expected)
+        return reused
 
     doc = frappe.get_doc({
         "doctype": "Additional Salary",
@@ -196,14 +236,18 @@ def create_daily_wage_input(
     try:
         doc.insert()
         if submit:
-            doc.submit()
+            _submit_derived_daily_wage(doc, period, expected)
     except frappe.DuplicateEntryError:
         # The unique key is the concurrency boundary. A racing request may
         # lose the insert after both callers observed no existing row; recover
         # the winner and return the same idempotent result.
-        recovered = _recover_duplicate_input(key, expected, submit=submit, result=result)
+        recovered = _recover_duplicate_input(key, expected, submit=False, result=result)
         if recovered is None:
             raise
+        if submit:
+            existing = _get_existing_input(key)
+            if existing and existing.docstatus == 0:
+                _submit_derived_daily_wage(frappe.get_doc("Additional Salary", existing.name), period, expected)
         return recovered
     return {**result, "status": "CREATED", "additional_salary": doc.name}
 

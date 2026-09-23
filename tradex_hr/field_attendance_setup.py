@@ -187,6 +187,33 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "read_only": 1,
             },
         ],
+        "Payroll Entry": [
+            {
+                "fieldname": "custom_tradex_run_key",
+                "label": "Tradexcel Managed Run Key",
+                "fieldtype": "Data",
+                "insert_after": "payroll_frequency",
+                "read_only": 1,
+                "permlevel": 1,
+                "unique": 1,
+            },
+            {
+                "fieldname": "custom_tradex_population_hash",
+                "label": "Tradexcel Payroll Population Fingerprint",
+                "fieldtype": "Data",
+                "insert_after": "custom_tradex_run_key",
+                "read_only": 1,
+                "permlevel": 1,
+            },
+            {
+                "fieldname": "custom_tradex_attendance_revision",
+                "label": "Tradexcel Attendance Revision",
+                "fieldtype": "Data",
+                "insert_after": "custom_tradex_population_hash",
+                "read_only": 1,
+                "permlevel": 1,
+            },
+        ],
         "Salary Structure": [
             {
                 "fieldname": "custom_tradex_pay_basis",
