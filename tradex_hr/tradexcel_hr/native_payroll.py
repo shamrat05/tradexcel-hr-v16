@@ -336,12 +336,15 @@ def validate_payroll_entry_before_submit(doc, method=None) -> None:
 
 
 def validate_salary_slip_before_submit(doc, method=None) -> None:
-    """Block native Salary Slip submit until a managed Payroll Entry is approved."""
+    """Allow managed Salary Slips only through the approved Payroll Entry batch."""
     if not doc.get("payroll_entry"):
         return
     run_key = frappe.db.get_value("Payroll Entry", doc.payroll_entry, MANAGED_RUN_FIELD)
     if not run_key:
         return
+    if not getattr(frappe.flags, "via_payroll_entry", False):
+        frappe.throw(_("Submit managed Salary Slips from the approved Payroll Entry."))
+
     entry = frappe.get_doc("Payroll Entry", doc.payroll_entry)
     if (
         entry.docstatus != 1

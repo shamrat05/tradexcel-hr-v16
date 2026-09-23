@@ -24,7 +24,7 @@ def approve_income_tax_slab(name: str, source_reference: str, notes: str = ""):
     slab = frappe.get_doc("Income Tax Slab", name)
     from tradex_hr.tradexcel_hr.company_context import assert_company_access
 
-    assert_company_access(slab.company)
+    assert_company_access(slab.company, require_explicit_scope=True)
     if slab.docstatus != 1:
         frappe.throw(_("Submit the native Income Tax Slab before reviewing it."))
     slab.flags.tradex_tax_review_action = True
@@ -51,7 +51,7 @@ def validate_income_tax_slab_review(doc, method=None):
         _require_reviewer()
         from tradex_hr.tradexcel_hr.company_context import assert_company_access
 
-        assert_company_access(doc.company)
+        assert_company_access(doc.company, require_explicit_scope=True)
     if changed and not doc.flags.get("tradex_tax_review_action"):
         frappe.throw(_("Use the Approve Tax Configuration action to change tax review provenance."))
     if approved:

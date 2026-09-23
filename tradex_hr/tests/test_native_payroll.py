@@ -408,7 +408,7 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
         slip = frappe.get_doc("Salary Slip", slips[0].name)
         wage_rows = [row for row in slip.earnings if row.salary_component == "Daily Wage"]
         assert sum(row.amount for row in wage_rows) == 3500
-        with pytest.raises(frappe.ValidationError, match="locked until Director approval"):
+        with pytest.raises(frappe.ValidationError, match="Submit managed Salary Slips from the approved Payroll Entry"):
             slip.submit()
         slip.reload()
 
@@ -444,7 +444,8 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
         frappe.set_user("Administrator")
         entry.reload()
         assert entry.workflow_state == "Tradexcel Payroll Approved"
-        native_payroll.validate_salary_slip_before_submit(slip)
+        with pytest.raises(frappe.ValidationError, match="Submit managed Salary Slips from the approved Payroll Entry"):
+            native_payroll.validate_salary_slip_before_submit(slip)
 
         retry = native_payroll.prepare_native_payroll(employee.company, start, end)
         assert retry["status"] == "PREPARED"

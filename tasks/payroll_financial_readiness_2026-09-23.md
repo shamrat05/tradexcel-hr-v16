@@ -7,15 +7,12 @@ This stacked change is on `feat/payroll-financial-readiness`, based on
 approved native payroll drafts. It does not submit Salary Slips, create Journal
 Entries, pay employees, change live tax/account mappings, or touch production.
 
-The sequence stays:
-
-```text
-Payroll Readiness → Prepare Payroll → Submit for Review → review draft slips
-→ financial checks → Director approval
-```
-
-Salary Slip submission remains a later authorized action; the new service only
-blocks it when a managed Payroll Entry is not approved or has financial blockers.
+Phase A stops at Director approval. The following phase will use native Payroll
+Entry finalization and reconcile HRMS accruals. Managed Salary Slips cannot be
+submitted individually. Only the native Payroll Entry bulk path may set HRMS's
+request-local via_payroll_entry flag; the Salary Slip server hook requires that
+flag, Director approval, completed native slip creation and current financial
+readiness. Unmanaged Salary Slips keep native HRMS behavior.
 
 ## Implementation
 
@@ -26,15 +23,21 @@ blocks it when a managed Payroll Entry is not approved or has financial blockers
   Exceptions are shown as review findings; submitted records block the
   financial gate until reviewed against native configuration.
 - Uses native HRMS Income Tax Slab, Payroll Period, Salary Structure Assignment,
-  Salary Component and Salary Slip data. The service calls HRMS's own
-  `Salary Slip.get_tax_components()` selection, checks each assignment's
-  effective submitted slab and Tradexcel review status, and verifies that each
-  draft slip carries the native `current_payroll_period`. A valid zero tax
-  amount is accepted; a positive deduction is never required.
+  Salary Component and Salary Slip data. Company-level tax-component absence
+  remains a blocker when taxable earnings exist. Employee slab requirements now
+  follow HRMS's own `get_tax_component(salary_structure)`: only slips whose
+  actual Salary Structure has a variable tax component require that employee's
+  SSA slab. The same company may therefore contain taxable and untaxed
+  structures without false slab blockers. For taxable slips the service checks
+  the effective submitted slab, Tradexcel review status and native
+  `current_payroll_period`. A valid zero tax amount is accepted.
 - Native tax slab provenance is stored in five app-owned Custom Fields. Only a
   named System Manager or Tradexcel Owner/Director can approve a submitted slab
-  with a source reference. The controlled action checks company access before
-  writing; ordinary saves cannot alter review provenance.
+  with a source reference. System Manager and Administrator remain intentionally
+  organization-wide; Owner/Director approval requires an explicit Company User
+  Permission. Payroll Managers cannot approve tax configuration. The controlled
+  action checks company access before writing; ordinary saves cannot alter
+  review provenance.
 - The read-only financial service inspects the actual draft Salary Slips,
   compares the employee population, validates payroll payable account type and
   company, checks only salary components represented in rows HRMS includes in
@@ -53,9 +56,9 @@ blocks it when a managed Payroll Entry is not approved or has financial blockers
   `before_update_after_submit`: installed Frappe v16 uses this event for
   submitted Workflow transitions and does not run `validate()` on that path.
   An integration test exercises blocked Review Complete and Director Approve
-  transitions. Direct API Salary Slip submission rechecks the service; a
-  request-local cache avoids recalculating it once per slip in native bulk
-  submission. Payroll Managers, Approvers and Directors need an explicit
+  transitions. Individual Salary Slip submit is blocked, including direct API
+  calls. Native Payroll Entry bulk submission rechecks readiness; a request-local
+  cache avoids recalculating it once per slip in a synchronous batch. Payroll Managers, Approvers and Directors need an explicit
   Company User Permission before the service returns financial data.
 - Net variance against each employee's immediately previous submitted Salary
   Slip is shown as review information without an automatic variance blocker.
@@ -125,17 +128,30 @@ installed Node 24.15.0 runtime (the default WSL shell selects Node 20, which is
 below Frappe v16's engine requirement). The served app bundle is
 `tradex_hr.bundle.TAYVRSUG.js`. JavaScript syntax checks passed.
 
-Final focused tests: 58 passed. Full suite: 272 passed, 2 skipped. Compile,
-JavaScript syntax and `git diff --check` passed. Tests use synthetic or mocked
-payroll data. No synthetic tax configuration could be exercised through a
-complete native Salary Slip calculation because staging has no Payroll Period,
-Income Tax Slab, tax calculation component, Payroll Entry or Salary Slip. This
-is an explicit test limitation, not a claim of native tax integration proof.
+Final focused tests: 61 passed. Full suite: 286 passed, 2 skipped. Compile,
+JavaScript syntax and git diff --check passed. A disposable synthetic company
+with native Payroll Period, reviewed Income Tax Slab, tax Salary Component,
+Salary Structure, SSA and employees was exercised through HRMS make_salary_slip.
+The native draft slips resolved their current Payroll Period and SSA slab; one
+produced positive tax and one valid zero tax. Financial readiness accepted both.
+The slips were not submitted; test cleanup removed the synthetic company and its
+payroll/tax records. No staging tax/account configuration was changed.
 
 Browser routes were not opened in this turn because no Chrome DevTools/browser
 tool is configured in this environment. The real report `execute()` path was
 run read-only against staging, and the built assets and Frappe migration were
 verified.
+
+## Restore rehearsal evidence
+
+The repo's 2026-09-18 restore rehearsal record contains a 2026-09-23 addendum
+for disposable site payroll-migration-check-20260923.localhost: normal bench
+restore, normal bench migrate, a running worker, after_migrate completion and
+smoke checks. The v16 migration execution record contains the corresponding
+migration evidence. These are repository records, not a currently running
+restore site: the disposable site has since been removed. The current PR #8
+staging migration is separately recorded above. No manual ensure_* convergence
+was used.
 
 ## Remaining configuration gates
 

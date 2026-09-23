@@ -221,6 +221,7 @@ def test_approved_managed_payroll_allows_salary_slip_submission_eligibility(monk
     monkeypatch.setattr(native_payroll.frappe.db, "get_value", lambda *_args, **_kwargs: "MANAGED-KEY")
     monkeypatch.setattr(native_payroll.frappe, "get_doc", lambda *_args, **_kwargs: approved)
     monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {"status": "READY", "blockers": []})
+    monkeypatch.setattr(native_payroll.frappe.flags, "via_payroll_entry", True, raising=False)
     slip = frappe._dict({"payroll_entry": "PAY-APPROVED"})
     assert native_payroll.validate_salary_slip_before_submit(slip) is None
 

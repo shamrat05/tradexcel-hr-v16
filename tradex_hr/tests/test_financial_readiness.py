@@ -1,3 +1,4 @@
+import os
 from types import SimpleNamespace
 
 import frappe
@@ -28,9 +29,10 @@ def test_historical_tax_exception_is_reported_not_deleted(monkeypatch):
 
 def _tax_check(
     monkeypatch, *, period=True, review="Approved", effective="2026-01-01",
-    current_period="PP-1", assigned_slab="SLAB-1",
+    current_period="PP-1", assigned_slab="SLAB-1", tax_component="Tax",
 ):
     from hrms.payroll.doctype.payroll_period import payroll_period
+    from hrms.payroll.doctype.salary_structure_assignment import salary_structure_assignment
 
     period_doc = frappe._dict(name="PP-1", start_date="2026-01-01", end_date="2026-12-31")
     monkeypatch.setattr(payroll_period, "get_payroll_period", lambda *_: period_doc if period else None)
@@ -38,18 +40,75 @@ def _tax_check(
         company="TCL", effective_from=effective, disabled=0, docstatus=1,
         custom_tradex_review_status=review,
     )
+
     def get_value(doctype, name, field, **kwargs):
         if doctype == "Income Tax Slab":
             return slab
         raise AssertionError((doctype, name, field))
-    monkeypatch.setattr(financial_readiness, "frappe", SimpleNamespace(db=SimpleNamespace(get_value=get_value)))
+
+    monkeypatch.setattr(
+        financial_readiness, "frappe", SimpleNamespace(db=SimpleNamespace(get_value=get_value))
+    )
     entry = frappe._dict(company="TCL", start_date="2026-09-01", end_date="2026-09-30")
-    slips = [frappe._dict(name="SS-1", employee="EMP-1", current_payroll_period=current_period)]
+    slips = [frappe._dict(
+        name="SS-1", employee="EMP-1", salary_structure="STRUCT-TAX",
+        current_payroll_period=current_period,
+    )]
     details = [frappe._dict(salary_component="Tax")]
     components = {"Tax": frappe._dict(variable_based_on_taxable_salary=1, is_income_tax_component=0)}
+    monkeypatch.setattr(
+        salary_structure_assignment, "get_tax_component", lambda _structure: tax_component
+    )
     return financial_readiness._tax_configuration_findings(
         entry, slips, details, components, {"SS-1": frappe._dict(income_tax_slab=assigned_slab)}
     )
+
+
+def test_non_tax_structure_does_not_require_company_tax_component_slab(monkeypatch):
+    from hrms.payroll.doctype.salary_structure_assignment import salary_structure_assignment
+
+    monkeypatch.setattr(salary_structure_assignment, "get_tax_component", lambda _structure: None)
+    assert _tax_check(monkeypatch, assigned_slab=None, tax_component=None) == []
+
+
+def test_only_taxable_structure_requires_period_and_assignment_slab(monkeypatch):
+    from hrms.payroll.doctype.payroll_period import payroll_period
+    from hrms.payroll.doctype.salary_structure_assignment import salary_structure_assignment
+
+    monkeypatch.setattr(
+        payroll_period, "get_payroll_period",
+        lambda *_: frappe._dict(name="PP-1", start_date="2026-01-01", end_date="2026-12-31"),
+    )
+    monkeypatch.setattr(
+        salary_structure_assignment, "get_tax_component",
+        lambda structure: "TDS" if structure == "STRUCT-TAX" else None,
+    )
+    slab = frappe._dict(company="TCL", effective_from="2026-01-01", disabled=0, docstatus=1,
+                        custom_tradex_review_status="Approved")
+    monkeypatch.setattr(
+        financial_readiness, "frappe",
+        SimpleNamespace(db=SimpleNamespace(get_value=lambda *_args, **_kwargs: slab)),
+    )
+    entry = frappe._dict(company="TCL", start_date="2026-09-01", end_date="2026-09-30")
+    slips = [
+        frappe._dict(name="SS-TAX", employee="EMP-TAX", salary_structure="STRUCT-TAX",
+                     current_payroll_period="PP-1"),
+        frappe._dict(name="SS-UNTAXED", employee="EMP-UNTAXED", salary_structure="STRUCT-UNTAXED",
+                     current_payroll_period=None),
+    ]
+    details = [frappe._dict(parentfield="deductions", salary_component="TDS")]
+    components = {"TDS": frappe._dict(variable_based_on_taxable_salary=1, is_income_tax_component=1)}
+    assignments = {
+        "SS-TAX": frappe._dict(income_tax_slab="SLAB-1"),
+        "SS-UNTAXED": frappe._dict(income_tax_slab=None),
+    }
+
+    assert financial_readiness._tax_configuration_findings(entry, slips, details, components, assignments) == []
+    assignments["SS-TAX"].income_tax_slab = None
+    findings = financial_readiness._tax_configuration_findings(entry, slips, details, components, assignments)
+    assert [(row["code"], row["employee"]) for row in findings] == [
+        ("TAX_ASSIGNMENT_MISSING", "EMP-TAX")
+    ]
 
 
 def test_taxable_salary_without_native_tax_component_blocks(monkeypatch):
@@ -246,13 +305,92 @@ def test_missing_mandatory_accounting_dimension_blocks(monkeypatch):
     assert any(row.get("reference") == "project" for row in result["blockers"])
 
 
+def test_direct_individual_managed_salary_slip_submit_is_blocked(monkeypatch):
+    entry = frappe._dict(name="PE-APPROVED", docstatus=1, workflow_state="Tradexcel Payroll Approved",
+                         salary_slips_created=1, status="Submitted")
+    monkeypatch.setattr(native_payroll, "frappe", SimpleNamespace(
+        db=SimpleNamespace(get_value=lambda *_args, **_kwargs: "RUN-1"),
+        get_doc=lambda *_args, **_kwargs: entry,
+        local=SimpleNamespace(),
+        flags=SimpleNamespace(via_payroll_entry=False),
+        throw=lambda message, **kwargs: (_ for _ in ()).throw(frappe.ValidationError(str(message))),
+    ))
+    monkeypatch.setattr(
+        "tradex_hr.tradexcel_hr.financial_readiness.inspect_payroll_financial_readiness",
+        lambda *_args: pytest.fail("direct Salary Slip submit must be blocked before financial inspection"),
+    )
+    with pytest.raises(frappe.ValidationError, match="Submit managed Salary Slips from the approved Payroll Entry"):
+        native_payroll.validate_salary_slip_before_submit(frappe._dict(payroll_entry=entry.name))
+
+
+def test_unmanaged_salary_slip_keeps_native_submission_path(monkeypatch):
+    monkeypatch.setattr(native_payroll, "frappe", SimpleNamespace(
+        db=SimpleNamespace(get_value=lambda *_args, **_kwargs: None),
+        flags=SimpleNamespace(via_payroll_entry=False),
+    ))
+    assert native_payroll.validate_salary_slip_before_submit(
+        frappe._dict(payroll_entry="UNMANAGED-PE")
+    ) is None
+
+
+@pytest.fixture
+def frappe_site():
+    frappe.init(
+        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        force=True,
+    )
+    frappe.connect()
+    yield
+    frappe.destroy()
+
+
+def test_native_payroll_batch_sets_authorized_submission_flag(frappe_site, monkeypatch):
+    from hrms.payroll.doctype.payroll_entry import payroll_entry as hrms_payroll_entry
+
+    monkeypatch.setattr(frappe, "in_test", True)
+    monkeypatch.setattr(frappe, "publish_realtime", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(frappe.db, "get_value", lambda *_args, **_kwargs: "RUN-1")
+    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {
+        "status": "READY", "blockers": []
+    })
+    calls = []
+    slip = frappe._dict(payroll_entry="PE-APPROVED", net_pay=900)
+
+    def submit():
+        assert frappe.flags.via_payroll_entry is True
+        native_payroll.validate_salary_slip_before_submit(slip)
+        calls.append("slip")
+
+    slip.submit = submit
+    entry = frappe._dict(
+        name="PE-APPROVED", docstatus=1, workflow_state="Tradexcel Payroll Approved",
+        salary_slips_created=1, status="Submitted",
+        make_accrual_jv_entry=lambda submitted: calls.append(("accrual", len(submitted))),
+        email_salary_slip=lambda _submitted: None,
+        db_set=lambda _values: None,
+    )
+
+    def get_doc(doctype, _name):
+        return slip if doctype == "Salary Slip" else entry
+
+    monkeypatch.setattr(frappe, "get_doc", get_doc)
+    monkeypatch.setattr(hrms_payroll_entry, "show_payroll_submission_status", lambda *_args: None)
+    hrms_payroll_entry.submit_salary_slips_for_employees(entry, [("SS-1",)], publish_progress=False)
+
+    assert calls == ["slip", ("accrual", 1)]
+    assert frappe.flags.via_payroll_entry is False
+
+
 def test_direct_salary_slip_submit_obeys_financial_readiness(monkeypatch):
     entry = frappe._dict(name="PE-APPROVED", docstatus=1, workflow_state="Tradexcel Payroll Approved",
                          salary_slips_created=1, status="Submitted")
     monkeypatch.setattr(native_payroll, "frappe", SimpleNamespace(
         db=SimpleNamespace(get_value=lambda *_args, **_kwargs: "RUN-1"),
         get_doc=lambda *_args, **_kwargs: entry,
-        local=SimpleNamespace(tradex_financial_readiness={}), throw=lambda message, **kwargs: (_ for _ in ()).throw(frappe.ValidationError(str(message))),
+        local=SimpleNamespace(tradex_financial_readiness={}),
+        flags=SimpleNamespace(via_payroll_entry=True),
+        throw=lambda message, **kwargs: (_ for _ in ()).throw(frappe.ValidationError(str(message))),
     ))
     monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {
         "status": "BLOCKED", "blockers": [{"reason": "missing mapping"}]
@@ -302,6 +440,36 @@ def test_scoped_payroll_roles_need_an_explicit_company_permission(monkeypatch, r
         get_list=lambda *_args, **_kwargs: [],
     ))
     assert company_context.assert_company_access("TCL", require_explicit_scope=True) == "TCL"
+
+
+@pytest.mark.parametrize(
+    ("user", "roles", "has_scope", "allowed"),
+    [
+        ("Administrator", ["Administrator"], False, True),
+        ("system@example.com", ["System Manager"], False, True),
+        ("director@example.com", ["Tradexcel Owner/Director"], True, True),
+        ("director@example.com", ["Tradexcel Owner/Director"], False, False),
+    ],
+)
+def test_tax_review_company_scope_role_matrix(monkeypatch, user, roles, has_scope, allowed):
+    monkeypatch.setattr(company_context, "frappe", SimpleNamespace(
+        db=SimpleNamespace(exists=lambda doctype, filters: (
+            True if doctype == "Company" else has_scope
+        )),
+        session=SimpleNamespace(user=user),
+        get_roles=lambda _user: roles,
+        has_permission=lambda *_args, **_kwargs: True,
+        get_list=lambda *_args, **_kwargs: [{"name": "TCL"}],
+        PermissionError=frappe.PermissionError,
+        throw=lambda message, exc=None: (_ for _ in ()).throw(
+            (exc or frappe.ValidationError)(str(message))
+        ),
+    ))
+    if allowed:
+        assert company_context.assert_company_access("TCL", require_explicit_scope=True) == "TCL"
+    else:
+        with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
+            company_context.assert_company_access("TCL", require_explicit_scope=True)
 
 
 def test_direct_director_approval_rechecks_financial_readiness(monkeypatch):
@@ -362,6 +530,7 @@ def test_tax_review_provenance_cannot_be_edited_outside_controlled_action(monkey
 
 def test_tax_review_endpoint_checks_company_scope_before_writing(monkeypatch):
     writes = []
+    scope_checks = []
     slab = SimpleNamespace(
         name="ITS-EFL", company="Elegance Footwear Ltd.", docstatus=1,
         flags=SimpleNamespace(), save=lambda **_kwargs: writes.append("save"),
@@ -371,10 +540,257 @@ def test_tax_review_endpoint_checks_company_scope_before_writing(monkeypatch):
         session=SimpleNamespace(user="reviewer@example.com"),
         get_doc=lambda *_args: slab,
     ))
+
+    def deny_scope(company, **kwargs):
+        scope_checks.append((company, kwargs.get("require_explicit_scope")))
+        raise frappe.PermissionError("company scope denied")
+
     monkeypatch.setattr(
-        "tradex_hr.tradexcel_hr.company_context.assert_company_access",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(frappe.PermissionError("company scope denied")),
+        "tradex_hr.tradexcel_hr.company_context.assert_company_access", deny_scope
     )
     with pytest.raises(frappe.PermissionError, match="company scope denied"):
         tax_review.approve_income_tax_slab("ITS-EFL", "NBR publication")
+    assert scope_checks == [("Elegance Footwear Ltd.", True)]
     assert writes == []
+
+
+@pytest.mark.parametrize(
+    ("user", "roles", "allowed"),
+    [
+        ("Administrator", ["Administrator"], True),
+        ("system@example.com", ["System Manager"], True),
+        ("director@example.com", ["Tradexcel Owner/Director"], True),
+        ("payroll@example.com", ["Tradexcel Payroll Manager"], False),
+    ],
+)
+def test_tax_review_reviewer_role_matrix(monkeypatch, user, roles, allowed):
+    def throw(message, exc=None):
+        raise (exc or RuntimeError)(message)
+
+    monkeypatch.setattr(tax_review, "frappe", SimpleNamespace(
+        session=SimpleNamespace(user=user),
+        get_roles=lambda _user: roles,
+        PermissionError=frappe.PermissionError,
+        throw=throw,
+    ))
+    if allowed:
+        assert tax_review._require_reviewer() is None
+    else:
+        with pytest.raises(frappe.PermissionError, match="System Manager or Tradexcel Owner/Director"):
+            tax_review._require_reviewer()
+
+
+def test_native_tax_calculation_and_financial_tax_readiness_use_same_synthetic_setup(frappe_site, monkeypatch):
+    from erpnext.setup.doctype.company.company import Company
+    from hrms.payroll.doctype.salary_structure.salary_structure import make_salary_slip
+
+    # Avoid touching staging's global Mode of Payment rows and its incomplete
+    # country-specific tax fixtures while the disposable chart is created.
+    import erpnext.setup.doctype.company.company as company_module
+    import hrms.overrides.company as hrms_company
+    monkeypatch.setattr(Company, "set_mode_of_payment_account", lambda _self: None)
+    monkeypatch.setattr(company_module, "install_country_fixtures", lambda *_args: None)
+    monkeypatch.setattr(hrms_company, "set_expense_claim_type_accounts", lambda *_args: None)
+    monkeypatch.setattr(hrms_company, "set_default_hr_accounts", lambda *_args: None)
+
+    token = frappe.generate_hash(6).upper()
+    company_name = f"Tradexcel Tax Test {token}"
+    company_abbr = f"TT{token[:3]}"
+    created = {"company": None, "fiscal_year": None, "period": None, "slab": None, "components": [],
+               "structure": None, "assignments": [], "employees": [], "slips": [], "holiday_list": None, "holiday_assignment": None}
+
+    def cleanup_doc(doctype, name):
+        if not name or not frappe.db.exists(doctype, name):
+            return
+        doc = frappe.get_doc(doctype, name)
+        if doc.docstatus == 1:
+            doc.cancel()
+        frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+
+    try:
+        company = frappe.new_doc("Company")
+        company.company_name = company_name
+        company.abbr = company_abbr
+        company.default_currency = "BDT"
+        company.country = "Bangladesh"
+        company.create_chart_of_accounts_based_on = "Existing Company"
+        company.existing_company = "Tradexcel Ceramics Ltd."
+        company.set_mode_of_payment_account = lambda: None
+        # Save the intended identity before on_update; if setup fails after the
+        # row is inserted, finally can still remove this partial test company.
+        created["company"] = company_name
+        company.save()
+        created["company"] = company.name
+
+        payable = frappe.db.get_value(
+            "Account", {"company": company.name, "is_group": 0, "root_type": "Liability"}, "name"
+        )
+        expense = frappe.db.get_value(
+            "Account", {"company": company.name, "is_group": 0, "root_type": "Expense"}, "name"
+        )
+        payment_account = frappe.db.get_value(
+            "Account", {"company": company.name, "is_group": 0, "root_type": "Asset",
+                        "account_currency": "BDT"}, "name"
+        )
+        assert payable and expense and payment_account
+        frappe.db.set_value("Account", payable, "account_type", "Payable")
+        frappe.db.set_value("Company", company.name, "default_payroll_payable_account", payable)
+
+        fiscal_year = frappe.get_doc({
+            "doctype": "Fiscal Year", "year": f"Tax Test FY {token}",
+            "year_start_date": "2026-01-01", "year_end_date": "2026-12-31",
+            "companies": [{"company": company.name}],
+        }).insert()
+        created["fiscal_year"] = fiscal_year.name
+
+        holiday_list = frappe.get_doc({
+            "doctype": "Holiday List", "holiday_list_name": f"Tax Test Holidays {token}",
+            "from_date": "2026-01-01", "to_date": "2026-12-31", "holidays": [],
+        }).insert()
+        created["holiday_list"] = holiday_list.name
+        frappe.db.set_value("Company", company.name, "default_holiday_list", holiday_list.name)
+        holiday_assignment = frappe.get_doc({
+            "doctype": "Holiday List Assignment", "applicable_for": "Company",
+            "assigned_to": company.name, "employee_company": company.name,
+            "holiday_list": holiday_list.name, "from_date": "2026-01-01",
+        }).insert()
+        holiday_assignment.submit()
+        created["holiday_assignment"] = holiday_assignment.name
+
+        period = frappe.get_doc({
+            "doctype": "Payroll Period", "name": f"Tax Test Period {token}",
+            "company": company.name, "start_date": "2026-01-01", "end_date": "2026-12-31",
+        }).insert()
+        created["period"] = period.name
+        from hrms.payroll.doctype.payroll_period.payroll_period import get_payroll_period
+        get_payroll_period.clear_cache()
+
+        slab = frappe.get_doc({
+            "doctype": "Income Tax Slab", "name": f"Tax Test Slab {token}",
+            "company": company.name, "currency": "BDT", "effective_from": "2026-01-01",
+            "slabs": [
+                {"from_amount": 250000, "to_amount": 500000, "percent_deduction": 5,
+                 "condition": "annual_taxable_earning > 500000"},
+                {"from_amount": 500001, "to_amount": 1000000, "percent_deduction": 20},
+                {"from_amount": 1000001, "percent_deduction": 30},
+            ],
+        }).insert()
+        created["slab"] = slab.name
+        slab.submit()
+        tax_review.approve_income_tax_slab(
+            slab.name, "Synthetic HRMS integration fixture; not statutory guidance"
+        )
+        slab.reload()
+
+        base_component = f"Tax Test Base {token}"
+        tax_component = f"Tax Test TDS {token}"
+        for name, abbr, component_type, account, variable in (
+            (base_component, f"B{token[:3]}", "Earning", expense, 0),
+            (tax_component, f"T{token[:3]}", "Deduction", payable, 1),
+        ):
+            component = frappe.get_doc({
+                "doctype": "Salary Component", "salary_component": name,
+                "salary_component_abbr": abbr, "type": component_type,
+                "depends_on_payment_days": 0, "variable_based_on_taxable_salary": variable,
+                "is_tax_applicable": 1 if component_type == "Earning" else 0,
+                "accounts": [{"company": company.name, "account": account}],
+            }).insert()
+            created["components"].append(component.name)
+
+        structure_name = f"Tax Test Structure {token}"
+        structure = frappe.get_doc({
+            "doctype": "Salary Structure", "name": structure_name, "company": company.name,
+            "currency": "BDT", "payroll_frequency": "Monthly", "is_active": "Yes",
+            "payment_account": payment_account,
+            "earnings": [{"salary_component": base_component, "abbr": f"B{token[:3]}",
+                          "amount": 0, "amount_based_on_formula": 1, "formula": "base",
+                          "depends_on_payment_days": 1}],
+            "deductions": [{"salary_component": tax_component, "abbr": f"T{token[:3]}",
+                            "amount": 0, "depends_on_payment_days": 0}],
+        }).insert()
+        created["structure"] = structure.name
+        structure.submit()
+        from hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment import get_tax_component
+        assert get_tax_component(structure.name) == tax_component
+
+        results = []
+        for label, base in (("positive", 150000), ("zero", 1000)):
+            employee_doc = frappe.get_doc({
+                "doctype": "Employee",
+                "first_name": f"Tax {label} {token}",
+                "company": company.name,
+                "date_of_birth": "1990-05-08",
+                "date_of_joining": "2020-01-01",
+                "gender": "Female",
+                "employment_type": "Intern",
+                "status": "Active",
+            }).insert()
+            employee = employee_doc.name
+            created["employees"].append(employee)
+            assignment = frappe.get_doc({
+                "doctype": "Salary Structure Assignment", "employee": employee,
+                "company": company.name, "currency": "BDT", "salary_structure": structure.name,
+                "from_date": "2026-01-01", "base": base,
+                "payroll_payable_account": payable, "income_tax_slab": slab.name,
+            }).insert()
+            assignment.submit()
+            created["assignments"].append(assignment.name)
+
+            slip = make_salary_slip(
+                structure.name, employee=employee, posting_date="2026-09-30"
+            )
+            slip.insert()
+            created["slips"].append(slip.name)
+            assert slip.current_payroll_period == period.name
+            assert slip._salary_structure_assignment.income_tax_slab == slab.name
+            tax_amount = sum(
+                row.amount for row in slip.deductions if row.salary_component == tax_component
+            )
+            results.append((slip, assignment, tax_amount))
+
+        assert results[0][2] > 0
+        assert results[1][2] == 0
+
+        from hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment import (
+            get_tax_component,
+        )
+        assert get_tax_component(structure.name) == tax_component
+
+        details = [row for slip, _assignment, _amount in results
+                   for row in [*slip.earnings, *slip.deductions]]
+        component_docs = {
+            name: frappe.get_doc("Salary Component", name)
+            for name in {row.salary_component for row in details}
+        }
+        assignments_by_slip = {
+            slip.name or f"PREVIEW-{index}": assignment
+            for index, (slip, assignment, _amount) in enumerate(results)
+        }
+        # Tax readiness inspects the native-calculated draft slips and their
+        # matching submitted assignments; this test never submits a Salary Slip.
+        test_slips = [slip for slip, _assignment, _amount in results]
+        entry = frappe._dict(company=company.name, start_date="2026-09-01", end_date="2026-09-30")
+        findings = financial_readiness._tax_configuration_findings(
+            entry, test_slips, details, component_docs, assignments_by_slip
+        )
+        assert findings == []
+    finally:
+        frappe.set_user("Administrator")
+        for doctype, key in (
+            ("Salary Slip", "slips"),
+            ("Salary Structure Assignment", "assignments"),
+            ("Salary Structure", "structure"),
+            ("Salary Component", "components"),
+            ("Income Tax Slab", "slab"),
+            ("Payroll Period", "period"),
+            ("Fiscal Year", "fiscal_year"),
+            ("Employee", "employees"),
+            ("Holiday List Assignment", "holiday_assignment"),
+            ("Holiday List", "holiday_list"),
+        ):
+            values = created[key] if isinstance(created[key], list) else [created[key]]
+            for value in values:
+                cleanup_doc(doctype, value)
+        if created["company"] and frappe.db.exists("Company", created["company"]):
+            frappe.delete_doc("Company", created["company"], force=True, ignore_permissions=True)
+        frappe.db.commit()

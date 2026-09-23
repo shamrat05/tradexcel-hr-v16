@@ -51,17 +51,41 @@ def _tax_configuration_findings(entry, slips, details, components, assignments_b
     )
     if not tax_components:
         if taxable_earnings:
-            return [{"code": "TAX_COMPONENT_MISSING", "reason": _("Taxable salary exists, but no native tax calculation Salary Component is configured."), "severity": "BLOCKER"}]
+            return [{
+                "code": "TAX_COMPONENT_MISSING",
+                "reason": _("Taxable salary exists, but no native tax calculation Salary Component is configured."),
+                "severity": "BLOCKER",
+            }]
+        return []
+
+    # Match the native SSA validator: an assignment needs a slab when its
+    # Salary Structure has a variable tax deduction component. HRMS also has a
+    # company-level fallback while constructing a new Salary Slip; that does
+    # not change the per-structure SSA requirement checked here.
+    from hrms.payroll.doctype.salary_structure_assignment.salary_structure_assignment import (
+        get_tax_component,
+    )
+
+    structures = {slip.salary_structure for slip in slips if slip.salary_structure}
+    taxable_structures = {
+        structure for structure in structures if get_tax_component(structure)
+    }
+    taxable_slips = [slip for slip in slips if slip.salary_structure in taxable_structures]
+    if not taxable_slips:
         return []
 
     from hrms.payroll.doctype.payroll_period.payroll_period import get_payroll_period
 
     period = get_payroll_period(entry.start_date, entry.end_date, entry.company)
     if not period:
-        return [{"code": "TAX_PERIOD_MISSING", "reason": _("No native Payroll Period covers this payroll."), "severity": "BLOCKER"}]
+        return [{
+            "code": "TAX_PERIOD_MISSING",
+            "reason": _("No native Payroll Period covers this payroll."),
+            "severity": "BLOCKER",
+        }]
 
     findings = []
-    for slip in slips:
+    for slip in taxable_slips:
         if slip.current_payroll_period != period.name:
             findings.append({
                 "code": "TAX_PERIOD_MISSING",
@@ -73,11 +97,23 @@ def _tax_configuration_findings(entry, slips, details, components, assignments_b
             })
         assignment = assignments_by_slip.get(slip.name)
         if not assignment:
-            findings.append({"code": "TAX_ASSIGNMENT_MISSING", "employee": slip.employee, "reason": _("Salary Structure Assignment is missing for {0}.").format(slip.employee), "severity": "BLOCKER"})
+            findings.append({
+                "code": "TAX_ASSIGNMENT_MISSING",
+                "employee": slip.employee,
+                "reason": _("Salary Structure Assignment is missing for {0}.").format(slip.employee),
+                "severity": "BLOCKER",
+            })
             continue
         slab_name = assignment.income_tax_slab
         if not slab_name:
-            findings.append({"code": "TAX_ASSIGNMENT_MISSING", "employee": slip.employee, "reason": _("No Income Tax Slab is selected on the Salary Structure Assignment for {0}.").format(slip.employee), "severity": "BLOCKER"})
+            findings.append({
+                "code": "TAX_ASSIGNMENT_MISSING",
+                "employee": slip.employee,
+                "reason": _("No Income Tax Slab is selected on the Salary Structure Assignment for {0}.").format(
+                    slip.employee
+                ),
+                "severity": "BLOCKER",
+            })
             continue
         slab = frappe.db.get_value(
             "Income Tax Slab", slab_name,
@@ -96,7 +132,12 @@ def _tax_configuration_findings(entry, slips, details, components, assignments_b
             code = "TAX_SLAB_UNAPPROVED"
             reason = _("Income Tax Slab {0} needs an authorized source review.").format(slab_name)
         if reason:
-            findings.append({"code": code, "employee": slip.employee, "reason": reason, "severity": "BLOCKER"})
+            findings.append({
+                "code": code,
+                "employee": slip.employee,
+                "reason": reason,
+                "severity": "BLOCKER",
+            })
     return findings
 
 
