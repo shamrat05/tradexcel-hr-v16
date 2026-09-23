@@ -168,6 +168,62 @@ def test_report_exposes_native_queue_and_failure_state(monkeypatch):
     assert "native retry" in message
 
 
+def test_financial_blockers_route_to_native_fix_records():
+    assert report._financial_action_kinds([
+        {"code": "TAX_SLAB_MISSING"},
+        {"code": "COMPONENT_ACCOUNT_MISSING"},
+        {"code": "NEGATIVE_NET_PAY"},
+    ]) == "tax_slabs|salary_components|salary_slip"
+    assert report._financial_action_kinds([{"code": "TAX_PERIOD_MISSING"}]) == "payroll_periods"
+    assert report._financial_action_kinds([{"code": "TAX_ASSIGNMENT_MISSING"}]) == "salary_assignments"
+    assert report._financial_action_kinds([
+        {"code": "TAX_EXCEPTION_REVIEW_REQUIRED"},
+    ]) == "policy_exceptions"
+    assert report._financial_action_kinds([
+        {"code": "PAYROLL_PAYABLE_INVALID"},
+        {"code": "ACCOUNTING_DIMENSION_MISSING", "reference": "Cost Center"},
+        {"code": "ACCOUNTING_DIMENSION_MISSING", "reference": "project"},
+    ]) == "payroll_payable|cost_centers|accounting_dimensions"
+
+
+def test_financial_report_shows_component_override_source_and_fix_action(monkeypatch):
+    from tradex_hr.tradexcel_hr import financial_readiness
+
+    start, end = date(2026, 9, 1), date(2026, 9, 30)
+    monkeypatch.setattr(report, "_report_period", lambda *_args: ("Company A", start, end))
+    monkeypatch.setattr(report, "_assert_employee_scope", lambda *_args: None)
+    monkeypatch.setattr(report, "inspect_native_payroll_readiness", lambda *_args: {
+        "employee_count": 1, "ready_count": 1, "blocked_count": 0,
+        "outcomes": [{"employee": "EMP-1", "employee_data": {"employee_name": "One"},
+                      "status": "READY", "pay_basis": {"status": "Monthly Salary"}, "findings": []}],
+    })
+    run_key = report._managed_run_key("Company A", start, end)
+    monkeypatch.setattr(report, "_existing_payroll_entry", lambda *_args: [{
+        "name": "PE-1", "docstatus": 1, "status": "Submitted", "salary_slips_created": 1,
+        report.MANAGED_RUN_FIELD: run_key,
+    }])
+    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_args: {
+        "status": "BLOCKED",
+        "blockers": [{"code": "COMPONENT_ACCOUNT_MISSING", "employee": "EMP-1",
+                       "reference": "Housing", "reason": "Housing has no company account mapping."}],
+        "warnings": [], "salary_slip_count": 1,
+        "totals": {key: 0 for key in ("gross", "deductions", "net", "daily_wage", "overtime", "income_tax")},
+        "slips": [{"employee": "EMP-1", "salary_slip": "SS-1", "status": "BLOCKED",
+                    "gross": 1000, "deductions": 100, "net": 900, "income_tax": 0,
+                    "component_exceptions": [{"component": "Housing", "action": "Override Amount",
+                                              "source": "TPE-12", "amount": 250}]}],
+    })
+
+    _columns, rows, _message, _chart, _summary = report.execute({"company": "Company A"})
+
+    assert rows[0]["component_adjustments"] == "Housing: Override Amount (TPE-12) = 250.00"
+    assert rows[0]["financial_status"] == "BLOCKED"
+    assert rows[0]["financial_result"] == "Gross 1000 · deductions 100 · net 900 · tax 0"
+    assert rows[0]["financial_action_kinds"] == "salary_components"
+    assert rows[0]["financial_salary_slip"] == "SS-1"
+    assert rows[0]["financial_component"] == "Housing"
+
+
 def test_effective_dated_migration_preview_reports_assignment_conflicts(monkeypatch):
     monkeypatch.setattr(report, "_require_payroll_manager", lambda _company: None)
     monkeypatch.setattr(report, "_report_period", lambda _filters: (

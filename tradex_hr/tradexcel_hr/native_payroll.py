@@ -351,6 +351,21 @@ def validate_salary_slip_before_submit(doc, method=None) -> None:
     ):
         frappe.throw(_("Salary Slips are locked until Director approval of the managed Payroll Entry."))
 
+    cache = getattr(frappe.local, "tradex_financial_readiness", None)
+    if cache is None:
+        cache = frappe.local.tradex_financial_readiness = {}
+    if entry.name not in cache:
+        from tradex_hr.tradexcel_hr.financial_readiness import inspect_payroll_financial_readiness
+
+        cache[entry.name] = inspect_payroll_financial_readiness(entry)
+    result = cache[entry.name]
+    if result["status"] != "READY":
+        reason = result["blockers"][0]["reason"] if result["blockers"] else _("Financial checks need review.")
+        frappe.throw(
+            _("Salary Slips cannot be submitted because payroll financial readiness is blocked: {0}").format(reason),
+            title=_("Payroll Financial Review Required"),
+        )
+
 
 def prepare_native_payroll(
     company: str,

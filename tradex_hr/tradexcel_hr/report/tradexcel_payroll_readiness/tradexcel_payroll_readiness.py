@@ -103,6 +103,30 @@ def _action_kinds(findings: list[dict]) -> str:
     return "|".join(actions)
 
 
+def _financial_action_kinds(findings: list[dict]) -> str:
+    codes = {row.get("code") for row in findings}
+    actions = []
+    if codes & {"TAX_SLAB_MISSING", "TAX_SLAB_UNAPPROVED"}:
+        actions.append("tax_slabs")
+    if "TAX_EXCEPTION_REVIEW_REQUIRED" in codes:
+        actions.append("policy_exceptions")
+    if "TAX_PERIOD_MISSING" in codes:
+        actions.append("payroll_periods")
+    if "TAX_ASSIGNMENT_MISSING" in codes:
+        actions.append("salary_assignments")
+    if codes & {"TAX_COMPONENT_MISSING", "COMPONENT_ACCOUNT_MISSING"}:
+        actions.append("salary_components")
+    if "PAYROLL_PAYABLE_INVALID" in codes:
+        actions.append("payroll_payable")
+    if any(row.get("code") == "ACCOUNTING_DIMENSION_MISSING" and row.get("reference") == "Cost Center" for row in findings):
+        actions.append("cost_centers")
+    if any(row.get("code") == "ACCOUNTING_DIMENSION_MISSING" and row.get("reference") != "Cost Center" for row in findings):
+        actions.append("accounting_dimensions")
+    if codes & {"NEGATIVE_NET_PAY", "SLIP_TOTAL_MISMATCH", "DRAFT_SLIP_UNIVERSE_MISMATCH", "DRAFT_SLIP_MISSING"}:
+        actions.append("salary_slip")
+    return "|".join(actions)
+
+
 def execute(filters: dict | None = None):
     """Return exactly one human-readable row per in-scope employee."""
     company, start, end = _report_period(filters)
@@ -115,6 +139,17 @@ def execute(filters: dict | None = None):
         {"label": _("Status"), "fieldname": "status_label", "fieldtype": "Data", "width": 130},
         {"label": _("Problem"), "fieldname": "problem", "fieldtype": "Data", "width": 360},
         {"label": _("Actions"), "fieldname": "actions", "fieldtype": "Data", "width": 245},
+        {"label": _("Financial Status"), "fieldname": "financial_status", "fieldtype": "Data", "width": 125},
+        {"label": _("Financial Review"), "fieldname": "financial_review", "fieldtype": "Data", "width": 300},
+        {"label": _("Financial Result"), "fieldname": "financial_result", "fieldtype": "Data", "width": 340},
+        {"label": _("Component Adjustments"), "fieldname": "component_adjustments", "fieldtype": "Data", "width": 260},
+        {"label": _("Financial Actions"), "fieldname": "financial_action_kinds", "fieldtype": "Data", "width": 240},
+        {"label": _("Salary Slip"), "fieldname": "financial_salary_slip", "fieldtype": "Data", "hidden": 1},
+        {"label": _("Salary Component"), "fieldname": "financial_component", "fieldtype": "Data", "hidden": 1},
+        {"label": _("Payroll Account"), "fieldname": "financial_account", "fieldtype": "Data", "hidden": 1},
+        {"label": _("Previous Net"), "fieldname": "previous_net", "fieldtype": "Currency", "width": 125},
+        {"label": _("Net Change"), "fieldname": "net_variance", "fieldtype": "Currency", "width": 125},
+        {"label": _("Change %"), "fieldname": "net_variance_percent", "fieldtype": "Percent", "width": 95},
         {"label": _("Action Types"), "fieldname": "action_kinds", "fieldtype": "Data", "hidden": 1},
         {"label": _("Period Start"), "fieldname": "period_start", "fieldtype": "Date", "hidden": 1},
         {"label": _("Period End"), "fieldname": "period_end", "fieldtype": "Date", "hidden": 1},
@@ -130,11 +165,23 @@ def execute(filters: dict | None = None):
             DAILY: _("Daily Wage"),
         }.get(basis.get("status"), _("Needs review"))
         rows.append({
+            "company": company,
             "employee": outcome["employee"],
             "employee_name": _row_value(outcome["employee_data"], "employee_name"),
             "pay_basis": basis_label,
             "status_label": _("READY") if outcome["status"] == "READY" else _("NEEDS ATTENTION"),
             "problem": _friendly_problem(findings, {"period_start": start}),
+            "financial_status": "-",
+            "financial_review": "",
+            "financial_result": "",
+            "component_adjustments": "",
+            "financial_action_kinds": "",
+            "financial_salary_slip": "",
+            "financial_component": "",
+            "financial_account": "",
+            "previous_net": None,
+            "net_variance": None,
+            "net_variance_percent": None,
             "action_kinds": _action_kinds(findings),
             "period_start": start,
             "period_end": end,
@@ -170,7 +217,80 @@ def execute(filters: dict | None = None):
         {"label": _("Salary Slip creation"), "value": slip_status, "indicator": "orange" if slip_status in {"Queued", "Failed"} else "green"},
         {"label": _("Managed Payroll Entry"), "value": entry_name or entry_status, "indicator": "blue"},
     ]
+    if managed and int(_row_value(managed, "docstatus") or 0) == 1 and _row_value(managed, "salary_slips_created"):
+        from tradex_hr.tradexcel_hr.financial_readiness import inspect_payroll_financial_readiness
+
+        financial = inspect_payroll_financial_readiness(_row_value(managed, "name"))
+        financial_by_employee = {row["employee"]: row for row in financial["slips"]}
+        employee_blockers = {}
+        global_blocker = next((row for row in financial["blockers"] if not row.get("employee")), None)
+        for blocker in financial["blockers"]:
+            if blocker.get("employee"):
+                employee_blockers.setdefault(blocker["employee"], []).append(blocker["reason"])
+        for row in rows:
+            outcome = financial_by_employee.get(row["employee"])
+            applicable_findings = [item for item in financial["blockers"]
+                                   if not item.get("employee") or item.get("employee") == row["employee"]]
+            applicable_findings.extend(financial["warnings"])
+            if not outcome:
+                row["financial_status"] = _("Missing slip")
+                row["financial_review"] = _("No draft Salary Slip was found for this employee.")
+                applicable_findings.append({"code": "DRAFT_SLIP_MISSING"})
+            elif employee_blockers.get(row["employee"]):
+                row["financial_status"] = _("BLOCKED")
+                row["financial_review"] = employee_blockers[row["employee"]][0]
+            elif global_blocker:
+                row["financial_status"] = _("BLOCKED")
+                row["financial_review"] = global_blocker["reason"]
+            elif financial["warnings"]:
+                row["financial_status"] = _("REVIEW")
+                row["financial_review"] = financial["warnings"][0]["reason"]
+            else:
+                row["financial_status"] = _(outcome["status"])
+                row["financial_review"] = ""
+            if outcome:
+                row["financial_salary_slip"] = outcome["salary_slip"]
+                row["financial_result"] = _("Gross {0} · deductions {1} · net {2} · tax {3}").format(
+                    outcome["gross"], outcome["deductions"], outcome["net"], outcome["income_tax"]
+                )
+                row["previous_net"] = outcome.get("previous_net")
+                row["net_variance"] = outcome.get("net_variance")
+                row["net_variance_percent"] = outcome.get("net_variance_percent")
+                row["component_adjustments"] = "; ".join(
+                    "{0}: {1} ({2}){3}".format(
+                        item["component"], item["action"], item["source"],
+                        " = {0:.2f}".format(item["amount"]) if item.get("amount") is not None else "",
+                    )
+                    for item in outcome.get("component_exceptions", [])
+                )
+            row["financial_action_kinds"] = _financial_action_kinds(applicable_findings)
+            row["financial_component"] = next(
+                (item.get("reference") for item in applicable_findings
+                 if item.get("code") == "COMPONENT_ACCOUNT_MISSING" and item.get("reference")),
+                "",
+            )
+            row["financial_account"] = next(
+                (item.get("reference") for item in applicable_findings
+                 if item.get("code") == "PAYROLL_PAYABLE_INVALID" and item.get("reference")),
+                "",
+            )
+        summary.extend([
+            {"label": _("Financial review"),
+             "value": _("READY WITH WARNINGS") if financial["status"] == "READY" and financial["warnings"]
+             else (_("READY") if financial["status"] == "READY" else _("NEEDS REVIEW")),
+             "indicator": "orange" if financial["warnings"] or financial["status"] != "READY" else "green"},
+            {"label": _("Draft Salary Slips"), "value": financial["salary_slip_count"], "indicator": "blue"},
+            {"label": _("Gross / Deductions / Net"),
+             "value": "{0} / {1} / {2}".format(financial["totals"]["gross"], financial["totals"]["deductions"], financial["totals"]["net"]),
+             "indicator": "blue"},
+            {"label": _("Daily Wage / Overtime / Tax"),
+             "value": "{0} / {1} / {2}".format(financial["totals"]["daily_wage"], financial["totals"]["overtime"], financial["totals"]["income_tax"]),
+             "indicator": "blue"},
+        ])
+
     message = _("{0} Payroll").format(start.strftime("%B %Y"))
+    if managed and "financial" in locals() and financial["blockers"]:
+        message += " · " + financial["blockers"][0]["reason"]
     if slip_status == "Failed":
         message += " · " + _("Salary Slip creation failed. Open the Payroll Entry for native retry.")
     return columns, rows, message, None, summary

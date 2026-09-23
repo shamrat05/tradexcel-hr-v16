@@ -33,6 +33,7 @@ doctype_js = {
     "Tradexcel Biometric Device": "public/js/tradexcel_biometric_device.js",
     "Employee": "public/js/employee_calendar.js",
     "Attendance": "public/js/employee_calendar.js",
+    "Income Tax Slab": "public/js/income_tax_slab.js",
 }
 
 doctype_list_js = {
@@ -48,15 +49,19 @@ doctype_list_js = {
 }
 
 doc_events = {
+    "Income Tax Slab": {
+        "validate": "tradex_hr.tradexcel_hr.tax_review.validate_income_tax_slab_review",
+    },
     "Payroll Entry": {
         "before_submit": "tradex_hr.tradexcel_hr.native_payroll.validate_payroll_entry_before_submit",
+        # A submitted Payroll Entry workflow transition uses save()'s
+        # before_update_after_submit event; validate() is not run by Frappe in
+        # that lifecycle, so enforce the gate at the native transition hook.
+        "before_update_after_submit": "tradex_hr.tradexcel_hr.financial_readiness.validate_payroll_financial_readiness_before_approval",
     },
     "Salary Slip": {
         "before_submit": "tradex_hr.tradexcel_hr.native_payroll.validate_salary_slip_before_submit",
-        "before_validate": [
-            "tradex_hr.tradexcel_hr.component_exceptions.apply_to_salary_slip",
-            "tradex_hr.tradexcel_hr.tax_exceptions.apply_tax_exemption",
-        ],
+        "before_validate": "tradex_hr.tradexcel_hr.component_exceptions.apply_to_salary_slip",
     },
     "Attendance": {
         "before_save": "tradex_hr.tradexcel_hr.attendance_exceptions.apply_to_attendance",

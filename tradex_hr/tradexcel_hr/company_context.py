@@ -33,19 +33,24 @@ def assert_company_access(company: str, *, require_explicit_scope: bool = False)
     user = frappe.session.user
     roles = set(frappe.get_roles(user))
     privileged = user == "Administrator" or "System Manager" in roles
-    scoped_manager = require_explicit_scope and not privileged and (
-        "Tradexcel Payroll Manager" in roles
-        and frappe.db.exists(
-            "User Permission",
-            {"user": user, "allow": "Company", "for_value": company},
+    scoped_payroll_user = require_explicit_scope and not privileged and bool(
+        roles.intersection(
+            {
+                "Tradexcel Payroll Manager",
+                "Tradexcel Payroll Approver",
+                "Tradexcel Owner/Director",
+            }
         )
+    ) and frappe.db.exists(
+        "User Permission",
+        {"user": user, "allow": "Company", "for_value": company},
     )
-    if require_explicit_scope and not privileged and not scoped_manager:
+    if require_explicit_scope and not privileged and not scoped_payroll_user:
         frappe.throw(
             _("You need an explicit Company User Permission for {0}.").format(company),
             frappe.PermissionError,
         )
-    if scoped_manager:
+    if scoped_payroll_user:
         return company
     if not frappe.has_permission("Company", "read"):
         frappe.throw(

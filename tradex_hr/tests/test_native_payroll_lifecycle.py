@@ -5,7 +5,7 @@ import frappe
 import pytest
 
 from tradex_hr import approval_setup
-from tradex_hr.tradexcel_hr import native_payroll
+from tradex_hr.tradexcel_hr import financial_readiness, native_payroll
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -220,6 +220,7 @@ def test_approved_managed_payroll_allows_salary_slip_submission_eligibility(monk
     })
     monkeypatch.setattr(native_payroll.frappe.db, "get_value", lambda *_args, **_kwargs: "MANAGED-KEY")
     monkeypatch.setattr(native_payroll.frappe, "get_doc", lambda *_args, **_kwargs: approved)
+    monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {"status": "READY", "blockers": []})
     slip = frappe._dict({"payroll_entry": "PAY-APPROVED"})
     assert native_payroll.validate_salary_slip_before_submit(slip) is None
 

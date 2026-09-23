@@ -18,6 +18,28 @@ function readiness_route(report, action, employee, start, end) {
     }
 }
 
+function financial_readiness_route(action, company, employee, slip, component, account) {
+    const routes = {
+        tax_slabs: ["List", "Income Tax Slab", {company}],
+        payroll_periods: ["List", "Payroll Period", {company}],
+        salary_assignments: ["List", "Salary Structure Assignment", {company}],
+        salary_components: ["List", "Salary Component", component ? {name: component} : {}],
+        policy_exceptions: ["List", "Tradexcel Policy Exception", {company}],
+        accounting_dimensions: ["List", "Accounting Dimension", {}],
+        cost_centers: ["List", "Cost Center", {company}],
+        payroll_payable: account
+            ? ["Form", "Account", account]
+            : ["Form", "Company", company],
+        salary_slip: slip
+            ? ["Form", "Salary Slip", slip]
+            : ["List", "Salary Slip", {employee}],
+    };
+    const route = routes[action];
+    if (!route) return;
+    frappe.route_options = typeof route[2] === "object" ? {...route[2]} : null;
+    frappe.set_route(...route);
+}
+
 function show_daily_wage_migration_preview(report) {
     const dialog = new frappe.ui.Dialog({
         title: __("Review Daily Wage Structure Migration"),
@@ -147,6 +169,17 @@ frappe.query_reports["Tradexcel Payroll Readiness"] = {
                     button.attr("data-end")
                 );
             });
+        report.$report
+            .off("click.tradexcelFinancialReadiness")
+            .on("click.tradexcelFinancialReadiness", ".financial-readiness-action", (event) => {
+                event.preventDefault();
+                const button = $(event.currentTarget);
+                financial_readiness_route(
+                    button.attr("data-action"), button.attr("data-company"),
+                    button.attr("data-employee"), button.attr("data-slip"),
+                    button.attr("data-component"), button.attr("data-account")
+                );
+            });
     },
     after_datatable_render() {
         const report = frappe.query_report;
@@ -182,6 +215,29 @@ frappe.query_reports["Tradexcel Payroll Readiness"] = {
         }
     },
     formatter(value, row, column, data, default_formatter) {
+        if (column.fieldname === "financial_action_kinds" && data?.financial_action_kinds) {
+            const escape = frappe.utils.escape_html;
+            const labels = {
+                tax_slabs: __("Income Tax Slabs"),
+                payroll_periods: __("Payroll Periods"),
+                salary_assignments: __("Salary Assignments"),
+                salary_components: __("Salary Components"),
+                policy_exceptions: __("Tax Exceptions"),
+                accounting_dimensions: __("Accounting Dimensions"),
+                cost_centers: __("Cost Centers"),
+                payroll_payable: __("Payroll Payable Account"),
+                salary_slip: __("Salary Slip"),
+            };
+            return "<div class=\"text-nowrap\">" + data.financial_action_kinds.split("|").map((action) =>
+                "<button type=\"button\" class=\"btn btn-link btn-xs financial-readiness-action\" " +
+                "data-action=\"" + escape(action) + "\" data-company=\"" + escape(data.company || "") + "\" " +
+                "data-employee=\"" + escape(data.employee || "") + "\" " +
+                "data-slip=\"" + escape(data.financial_salary_slip || "") + "\" " +
+                "data-component=\"" + escape(data.financial_component || "") + "\" " +
+                "data-account=\"" + escape(data.financial_account || "") + "\">" +
+                escape(labels[action] || action) + "</button>"
+            ).join("") + "</div>";
+        }
         if (column.fieldname !== "actions" || !data?.action_kinds) {
             return default_formatter(value, row, column, data);
         }

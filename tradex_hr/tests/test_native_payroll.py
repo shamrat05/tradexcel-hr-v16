@@ -6,7 +6,7 @@ import pytest
 from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
 from frappe.model.workflow import apply_workflow, get_transitions
 
-from tradex_hr.tradexcel_hr import daily_wage_input, native_payroll
+from tradex_hr.tradexcel_hr import daily_wage_input, financial_readiness, native_payroll
 from tradex_hr.tradexcel_hr.report.tradexcel_payroll_readiness import tradexcel_payroll_readiness as payroll_readiness
 
 
@@ -412,17 +412,34 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
             slip.submit()
         slip.reload()
 
+        financial = financial_readiness.inspect_payroll_financial_readiness(entry)
+        assert "COMPONENT_ACCOUNT_MISSING" in {row["code"] for row in financial["blockers"]}
+        original_inspector = financial_readiness.inspect_payroll_financial_readiness
         frappe.set_user(workflow_users["Tradexcel Payroll Approver"])
-        apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Review Complete")
-        frappe.set_user("Administrator")
+        with pytest.raises(frappe.ValidationError, match="Payroll financial readiness is blocked"):
+            apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Review Complete")
         entry.reload()
-        assert entry.docstatus == 1
+        assert entry.workflow_state == "Tradexcel Payroll Pending Review"
+
+        # Prove both native workflow transitions enforce the server boundary.
+        # Use a READY result only to reach the second transition; do not mutate
+        # company Salary Component account configuration for this fixture.
+        monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {"status": "READY", "blockers": []})
+        apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Review Complete")
+        entry.reload()
         assert entry.workflow_state == "Tradexcel Payroll Pending Director Approval"
-        with pytest.raises(frappe.ValidationError, match="locked until Director approval"):
-            slip.reload()
-            slip.submit()
-        slip.reload()
+        monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", original_inspector)
+        frappe.local.tradex_financial_readiness = {}
+
         frappe.set_user(workflow_users["Tradexcel Owner/Director"])
+        with pytest.raises(frappe.ValidationError, match="Payroll financial readiness is blocked"):
+            apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Approve")
+        entry.reload()
+        assert entry.workflow_state == "Tradexcel Payroll Pending Director Approval"
+
+        # Financial READY behavior is exercised by dedicated service tests.
+        monkeypatch.setattr(financial_readiness, "inspect_payroll_financial_readiness", lambda *_: {"status": "READY", "blockers": []})
+        frappe.local.tradex_financial_readiness = {}
         apply_workflow({"doctype": "Payroll Entry", "name": entry.name}, "Approve")
         frappe.set_user("Administrator")
         entry.reload()
