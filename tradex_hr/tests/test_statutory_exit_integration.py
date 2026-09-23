@@ -26,7 +26,7 @@ def _rule(company, token, title, start, end, holiday_list):
         "title": title,
         "company": company,
         "jurisdiction": "Bangladesh",
-        "legal_regime": "Bangladesh Labour Act",
+        "legal_regime": "Approved Company Service Rules",
         "effective_from": start,
         "effective_to": end,
         "applicability_date_basis": "Employee Relieving Date (Legal Review)",
@@ -58,6 +58,13 @@ def _rule(company, token, title, start, end, holiday_list):
                 "handling": "Manual Legal Calculation",
                 "source_section": "TEST-EXIT-1",
             },
+            {
+                "separation_type": "Resignation",
+                "classification": "Other approved service-rule category",
+                "entitlement_type": "Final dues deadline",
+                "handling": "Deadline Only",
+                "source_section": "TEST-EXIT-1",
+            },
         ],
     })
     return doc
@@ -71,6 +78,19 @@ def _submit_for_review(doc, tracked_rules):
     assert pending.workflow_state == "Tradexcel Statutory Pending Approval"
     assert pending.docstatus == 0
     return pending
+
+
+def _reset_synthetic_review(separation):
+    """Clear only a disposable fixture between distinct applicability scenarios."""
+    separation.db_set({
+        "custom_tradex_statutory_review_status": None,
+        "custom_tradex_statutory_rule_set": None,
+        "custom_tradex_legal_classification": None,
+        "custom_tradex_statutory_applicability_date": None,
+        "custom_tradex_statutory_reviewed_by": None,
+        "custom_tradex_statutory_reviewed_at": None,
+        "custom_tradex_statutory_review_notes": None,
+    })
 
 
 def test_statutory_rules_are_versioned_scoped_and_non_calculating(monkeypatch):
@@ -131,11 +151,13 @@ def test_statutory_rules_are_versioned_scoped_and_non_calculating(monkeypatch):
 
         first = _rule(company, token, f"Synthetic rules {token} v1", "2026-01-01", "2026-12-31", holiday_list)
         pending = _submit_for_review(first, rules)
+        frappe.set_user(director)
         with pytest.raises(frappe.ValidationError, match="not approved"):
             review_separation_statutory_status(
                 separation.name, "Approved", "Draft rules cannot be used.",
                 rule_set=first.name, classification="Worker under selected regime",
             )
+        frappe.set_user(maker)
         with pytest.raises((frappe.ValidationError, frappe.PermissionError)):
             apply_workflow(pending.as_dict(), "Approve Rule Set")
 
@@ -154,6 +176,49 @@ def test_statutory_rules_are_versioned_scoped_and_non_calculating(monkeypatch):
         assert approved_v1.reviewed_by == director
         assert approved_v1.reviewed_at
         assert approved_v1.sources[0].official_reference.startswith("https://example.test/")
+
+        # The preparer also has Owner/Director, but must not review their own
+        # separation's legal applicability.
+        frappe.set_user(maker)
+        with pytest.raises(frappe.PermissionError):
+            review_separation_statutory_status(
+                separation.name, "Approved", "Maker cannot self-review.",
+                rule_set=approved_v1.name, classification="Worker under selected regime",
+            )
+        with pytest.raises(frappe.PermissionError):
+            review_separation_statutory_status(
+                separation.name, "Not Applicable", "Maker cannot self-review.",
+                classification="Outside worker scope",
+            )
+
+        frappe.set_user(director)
+        with pytest.raises(frappe.ValidationError):
+            review_separation_statutory_status(
+                separation.name, "Not Applicable", "Other category is not not-applicable.",
+                classification="Other approved service-rule category",
+            )
+        result = review_separation_statutory_status(
+            separation.name, "Not Applicable", "Synthetic outside-scope review.",
+            classification="Outside worker scope",
+        )
+        assert result["status"] == "Not Applicable"
+        assert result["reviewed_by"] == director
+
+        # Reset only this disposable fixture to exercise the distinct approved
+        # service-rule route; this cannot be done to a real decision.
+        frappe.set_user("Administrator")
+        _reset_synthetic_review(separation)
+        frappe.set_user(director)
+        result = review_separation_statutory_status(
+            separation.name, "Approved", "Synthetic service-rule mapping.",
+            rule_set=approved_v1.name,
+            classification="Other approved service-rule category",
+        )
+        assert result["status"] == "Approved"
+        assert result["rule_set"] == approved_v1.name
+
+        frappe.set_user("Administrator")
+        _reset_synthetic_review(separation)
 
         approved_v1.legal_regime = "Bangladesh EPZ Labour Act"
         with pytest.raises(frappe.ValidationError):
@@ -210,7 +275,7 @@ def test_statutory_rules_are_versioned_scoped_and_non_calculating(monkeypatch):
         assert any(row["code"] == "MANUAL_STATUTORY_CALCULATION_REQUIRED"
                    for row in readiness["findings"])
         assert readiness["rule_set"] == approved_v1.name
-        assert readiness["legal_regime"] == "Bangladesh Labour Act"
+        assert readiness["legal_regime"] == "Approved Company Service Rules"
         assert readiness["settlement_deadline"]["working_days"] == 5
         assert readiness["settlement_deadline"]["holiday_list"] == holiday_list
         assert str(readiness["settlement_deadline"]["due_date"]) == "2026-09-26"

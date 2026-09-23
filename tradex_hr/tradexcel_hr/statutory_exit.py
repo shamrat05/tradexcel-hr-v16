@@ -181,6 +181,11 @@ def review_separation_statutory_status(separation_name, status, notes, rule_set=
     if "Tradexcel Owner/Director" not in frappe.get_roles() and frappe.session.user != "Administrator":
         frappe.throw(_("Owner/Director review is required."), frappe.PermissionError)
     separation = _separation(separation_name)
+    if frappe.session.user != "Administrator" and separation.owner == frappe.session.user:
+        frappe.throw(
+            _("The Employee Separation maker cannot review its statutory applicability."),
+            frappe.PermissionError,
+        )
     if separation.docstatus != 1:
         frappe.throw(_("Submit the Employee Separation before recording legal review."))
 
@@ -195,9 +200,7 @@ def review_separation_statutory_status(separation_name, status, notes, rule_set=
         existing_status in {"Approved", "Not Applicable"}
         and existing_notes and reviewed_by and reviewed_at and reviewed_date
         and (existing_status != "Approved" or existing_rule)
-        and (existing_status != "Not Applicable" or existing_classification in {
-            "Outside worker scope", "Other approved service-rule category"
-        })
+        and (existing_status != "Not Applicable" or existing_classification == "Outside worker scope")
     )
     requested_rule = rule_set if status == "Approved" else None
     if complete_existing:
@@ -222,8 +225,11 @@ def review_separation_statutory_status(separation_name, status, notes, rule_set=
     if status == "Approved":
         _rule, _mappings, reviewed_date = _resolve(separation, rule_set, classification)
     else:
-        if classification not in {"Outside worker scope", "Other approved service-rule category"}:
-            frappe.throw(_("Not Applicable requires a reviewed classification and reason."))
+        if classification != "Outside worker scope":
+            frappe.throw(
+                _("Not Applicable is valid only for a reviewed finding that the employee is outside worker scope."),
+                title=_("LEGAL_CLASSIFICATION_REVIEW_REQUIRED"),
+            )
         if rule_set:
             frappe.throw(_("Do not attach an applicable Rule Set to a Not Applicable decision."))
         reviewed_date = getdate(employee_relief)
@@ -280,7 +286,7 @@ def inspect_statutory_exit_readiness(separation_name):
                 "applicability_date": reviewed_date, "entitlements": []}
 
     if status == "Not Applicable":
-        if name or classification not in {"Outside worker scope", "Other approved service-rule category"}:
+        if name or classification != "Outside worker scope":
             return {"status": "REVIEW_REQUIRED",
                     "findings": [{"code": "LEGAL_CLASSIFICATION_REVIEW_REQUIRED"}], "entitlements": []}
         return {"status": "NOT_APPLICABLE", "findings": [],
