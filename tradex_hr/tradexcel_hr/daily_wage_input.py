@@ -167,6 +167,7 @@ def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: 
         "payable_units": units["payable_units"],
         "attendance_count": units["attendance_count"],
         "amount": amount,
+        "payroll_date": actual_end,
         "source": "submitted Attendance + Salary Structure Assignment.base",
     }
 
@@ -237,7 +238,7 @@ def create_daily_wage_input(
         "company": company,
         "salary_component": salary_component,
         "amount": result["amount"],
-        "payroll_date": period.to_date,
+        "payroll_date": result["payroll_date"],
         "ref_doctype": "Tradexcel Attendance Period",
         "ref_docname": period.name,
     }
@@ -254,7 +255,7 @@ def create_daily_wage_input(
         "company": company,
         "salary_component": salary_component,
         "amount": result["amount"],
-        "payroll_date": period.to_date,
+        "payroll_date": result["payroll_date"],
         "overwrite_salary_structure_amount": 0,
         "ref_doctype": "Tradexcel Attendance Period",
         "ref_docname": period.name,

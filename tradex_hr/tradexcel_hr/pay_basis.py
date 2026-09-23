@@ -74,6 +74,13 @@ def resolve_pay_basis(
     """
     as_of = getdate(as_of_date)
     end = getdate(period_end) if period_end else None
+    if end and as_of and as_of < end:
+        employee_joining_date = frappe.db.get_value(
+            "Employee", employee, "date_of_joining"
+        )
+        joining_date = getdate(employee_joining_date) if employee_joining_date else None
+        if joining_date and as_of < joining_date <= end:
+            as_of = joining_date
     if not as_of:
         return {"status": UNRESOLVED, "employee": employee, "reason": "Missing effective date"}
 

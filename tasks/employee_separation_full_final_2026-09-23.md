@@ -59,15 +59,18 @@ Site: `hrms-v16.localhost` on the disposable/local v16 staging bench. Counts wer
 - `git diff --check` passed.
 - Browser/Desk visual E2E has not been performed; no browser DevTools tool is available, so it remains a release gate.
 
-## Remaining release proof
+## PR #12 Phase A follow-up
 
-- Actual native monthly leaver/joiner Salary Slip amounts/payment-days through a full managed Payroll Entry run.
-- Daily Wage leaver end-to-end native Additional Salary proof.
-- Native Leave Encashment and synthetic Gratuity Rule mechanics.
-- Full & Final Journal Entry submit plus native Bank Transaction reconciliation; this slice currently proves maker-checker, draft creation, retry reuse, and the unpaid operational exit boundary only.
-- Desk visual workflow review.
-- The standard migration followed backup `20260923_195210` after field/workflow setup changes. Later readiness/test changes are Python-only; the final asset build and cache clear ran after the JavaScript changes.
-
+- The synthetic managed Payroll Entry integration now proves monthly joiner/leaver monetary results through native Salary Slip creation. For the configured synthetic base of BDT 30,000 and native `depends_on_payment_days` component: joiner (2026-08-15 through 2026-08-31) had 17/31 payment days, gross/net BDT 16,451.61; leaver (2026-08-01 through 2026-08-20, Employee status `Left`) had 20/31 payment days, gross/net BDT 19,354.84. Both native component rows retain default amount BDT 30,000 and native-calculated prorated amounts; deductions were zero. The manager-prepared full company Payroll Entry included both employees. No Tradexcel proration formula was added.
+- The synthetic Daily Wage leaver (relieving date 2026-08-20, status `Left`) had a BDT 400 SSA daily base, 20 payable finalized Attendance days, and native Additional Salary of BDT 8,000 dated on the relieving date. Native Salary Slip gross/net were BDT 8,000. Submitting payable Attendance dated 2026-08-21 was rejected. Raw Checkin was not used.
+- Synthetic Leave Encashment worked for an employee already marked `Left`: the test-only Leave Type allowed two encashable days, native per-day SSA amount was BDT 100, and native Leave Encashment produced BDT 200 plus a submitted Additional Salary with Leave Encashment provenance. Native `validate_active_employee()` rejects `Inactive`, not `Left`.
+- Synthetic Gratuity used a deliberately arbitrary TEST ONLY rule (10% slab; not Bangladesh law). Native Gratuity calculated a positive amount from the submitted native Salary Slip and the native F&F source rows linked to both Gratuity and Leave Encashment.
+- `Not Applicable` statutory review no longer receives global Gratuity/Leave Encashment configuration findings. `Approved` without an explicit entitlement ruleset returns `STATUTORY_ENTITLEMENT_RULESET_REQUIRED` and blocks F&F submission.
+- F&F JE identity now checks the exact F&F reference, same company, enabled/non-group same-company accounts, native non-balancing rows against the F&F rows, and submitted debit/credit balance. Foreign F&F references and a linked JE using an Expense balancing account are rejected. Cash/Bank interpretation comes from the selected balancing Account type, not the initial native voucher type. Native Cash Entry submission reports `CASH_SETTLEMENT_ACCOUNTING_POSTED`; a native Bank Entry remains `AWAITING_BANK_RECONCILIATION` until its Bank Transaction is reconciled and the native clearance date is set.
+- Access finalization is exercised while the submitted F&F is still `Unpaid`; settlement then continues through Cash and Bank native accounting. Access disablement remains independent of settlement status.
+- Focused exit/payroll tests: **28 passed**. Full Tradexcel pytest suite: **405 passed, 2 skipped**. Python compileall and Node syntax checks passed. Build passed with Node v24.15.0; the bench's default Node v20.20.2 failed the engine requirement (`>=24`) before rerunning with the installed v24 binary. Latest built assets: JS `tradex_hr.bundle.TAYVRSUG.js`, CSS `tradex_hr.bundle.MDQITTNZ.css`, RTL CSS `tradex_hr.bundle.UTBWMS7H.css`. Cache clear passed.
+- These follow-up changes add no DocTypes or fields, so no migration was run. Staging was read only except disposable synthetic integration fixtures. Post-test query found zero synthetic finalization companies, zero synthetic exit employees/shared-link employees, and zero synthetic leave types/Gratuity Rules after cleanup. No production or real employee/F&F records were changed.
+- Desk visual E2E remains a release gate; no browser DevTools tool was available.
 ## Synthetic integration cleanup
 
 - The native separation/F&F integration test initially left its dedicated synthetic Employee User because the fixture-company cleanup commits before that User is deleted. The test cleanup now commits the User deletion explicitly.
@@ -76,10 +79,12 @@ Site: `hrms-v16.localhost` on the disposable/local v16 staging bench. Counts wer
 
 ## Final validation
 
-- `env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q`: **403 passed, 2 skipped**.
+- `env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q`: **405 passed, 2 skipped**.
+- Focused exit/payroll tests: **28 passed**.
 - `env/bin/python -m compileall -q apps/tradex_hr/tradex_hr`: passed.
-- Node v24 `--check` for `employee_calendar.js` and `employee_separation.js`: passed.
-- `bench build --app tradex_hr`: passed.
+- Node v24.15.0 `--check` for `employee_calendar.js` and `employee_separation.js`: passed.
+- `bench build --app tradex_hr`: passed with Node v24.15.0; the bench default Node v20.20.2 is below the required `>=24` engine.
 - `bench --site hrms-v16.localhost clear-cache`: passed.
 - `git diff --check`: passed.
-- Standard migration proof: passed from fresh backup, workers healthy, `after_migrate` normal, no manual metadata convergence.
+- Standard migration proof is the earlier migration from backup `20260923_195210`; the follow-up changed Python/tests only and added no schema, so migration was not rerun.
+- Browser/Desk visual E2E remains unverified and is a release gate.

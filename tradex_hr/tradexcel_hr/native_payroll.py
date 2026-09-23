@@ -222,7 +222,7 @@ def _daily_inputs_for_readiness(company: str, start: date, end: date, readiness:
             or existing.employee != employee or existing.company != company_for_employee
             or existing.salary_component != DEFAULT_COMPONENT
             or existing.ref_doctype != "Tradexcel Attendance Period"
-            or existing.ref_docname != period.name or getdate(existing.payroll_date) != getdate(period.to_date)
+            or existing.ref_docname != period.name or getdate(existing.payroll_date) != getdate(result["payroll_date"])
             or flt(existing.amount) != flt(result["amount"])
         ):
             blockers.append({

@@ -5,7 +5,6 @@ import os
 import frappe
 import pytest
 
-
 @pytest.fixture(scope="module", autouse=True)
 def frappe_site():
     frappe.init(
@@ -16,7 +15,6 @@ def frappe_site():
     frappe.connect()
     yield
     frappe.destroy()
-
 
 def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatch):
     from frappe.model.workflow import apply_workflow
@@ -33,7 +31,9 @@ def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatc
     company = None
     separation = None
     fnf = None
+    foreign_fnf = None
     journal_entry = None
+    bank_transaction = None
     employee_user = None
     biometric = None
     device = None
@@ -79,7 +79,18 @@ def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatc
         assert set(readiness["native_outstanding_sources"]) == {"payables", "receivables", "assets"}
         assert all("status" in row for row in readiness["native_outstanding_sources"]["payables"])
         assert any(row["code"] == "NATIVE_SETTLEMENT_ITEMS_PENDING" for row in readiness["findings"])
+        finding_codes = {row["code"] for row in readiness["findings"]}
+        assert "GRATUITY_RULE_DECISION_REQUIRED" not in finding_codes
+        assert "LEAVE_ENCASHMENT_CONFIGURATION_REQUIRED" not in finding_codes
         assert readiness["status"] == "REVIEW_REQUIRED"
+        frappe.set_user(director)
+        review_separation_statutory_status(separation.name, "Approved", "Synthetic missing-ruleset check; not a legal decision.")
+        frappe.set_user(maker)
+        approved_readiness = inspect_full_and_final_readiness(employee.name)
+        assert "STATUTORY_ENTITLEMENT_RULESET_REQUIRED" in {row["code"] for row in approved_readiness["findings"]}
+        frappe.set_user(director)
+        review_separation_statutory_status(separation.name, "Not Applicable", "Synthetic test review; not a legal decision.")
+        frappe.set_user(maker)
         assert "amount" not in repr(readiness)
 
         fnf = frappe.get_doc({
@@ -101,10 +112,12 @@ def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatc
             "component": "Synthetic test payable",
             "account": expense,
             "amount": 100,
+            "reference_document_type": "Employee Advance",
             "status": "Settled",
         })
         for row in fnf.payables + fnf.receivables:
             row.status = "Settled"
+            row.reference_document_type = "Employee Advance"
         fnf.save()
         apply_workflow(fnf, "Submit for Finance Review")
         fnf.reload()
@@ -123,18 +136,48 @@ def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatc
         assert fnf.docstatus == 1
         assert fnf.workflow_state == "Tradexcel F&F Approved"
 
-        draft = fnf.create_journal_entry()
-        assert draft.doctype == "Journal Entry"
-        assert draft.docstatus == 0
-        # The native form lets Finance choose the balancing account before save.
-        draft.accounts[-1].account = expense
-        draft.insert()
-        journal_entry = draft.name
-        reused = frappe.get_doc("Full and Final Statement", fnf.name).create_journal_entry()
-        assert reused.name == journal_entry
-        assert reused.docstatus == 0
-        from tradex_hr.tradexcel_hr.employee_separation import _full_and_final_payment_status
-        assert _full_and_final_payment_status([fnf])["status"] == "PAYMENT_ENTRY_DRAFT"
+        foreign_fnf = frappe.get_doc({
+            "doctype": "Full and Final Statement",
+            "employee": employee.name,
+            "company": company,
+            "transaction_date": "2026-09-20",
+        }).insert(ignore_permissions=True)
+        foreign_entry = frappe.get_doc({
+            "doctype": "Journal Entry", "company": company, "voucher_type": "Bank Entry",
+            "posting_date": "2026-09-20",
+            "accounts": [
+                {"account": expense, "debit_in_account_currency": 100},
+                {"account": expense, "credit_in_account_currency": 50,
+                 "reference_type": "Full and Final Statement", "reference_name": fnf.name},
+                {"account": expense, "credit_in_account_currency": 50,
+                 "reference_type": "Full and Final Statement", "reference_name": foreign_fnf.name},
+            ],
+        }).insert(ignore_permissions=True)
+        with pytest.raises(frappe.ValidationError, match="FNF_PAYMENT_ENTRY_INVALID"):
+            frappe.get_doc("Full and Final Statement", fnf.name).create_journal_entry()
+        frappe.delete_doc("Journal Entry", foreign_entry.name, force=True, ignore_permissions=True)
+        frappe.delete_doc("Full and Final Statement", foreign_fnf.name, force=True, ignore_permissions=True)
+        foreign_fnf = None
+        # A balanced but manually linked Journal Entry with an Expense account
+        # in the payment row is not native settlement accounting.
+        bad_entry = frappe.get_doc({
+            "doctype": "Journal Entry",
+            "company": company,
+            "voucher_type": "Bank Entry",
+            "posting_date": "2026-09-20",
+            "accounts": [
+                {"account": expense, "debit_in_account_currency": 100},
+                {
+                    "account": expense,
+                    "credit_in_account_currency": 100,
+                    "reference_type": "Full and Final Statement",
+                    "reference_name": fnf.name,
+                },
+            ],
+        }).insert(ignore_permissions=True)
+        with pytest.raises(frappe.ValidationError, match="FNF_PAYMENT_ENTRY_INVALID"):
+            frappe.get_doc("Full and Final Statement", fnf.name).create_journal_entry()
+        bad_entry.delete(ignore_permissions=True)
 
         # Shared linked users fail closed; removing the second active link allows
         # the dedicated employee account and biometric mapping to be disabled.
@@ -178,6 +221,64 @@ def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatc
         assert frappe.db.get_value("User", employee_user, "enabled") == 0
         assert frappe.db.get_value("Tradexcel Employee Biometric", biometric, "enabled") == 0
         assert frappe.db.get_value("Full and Final Statement", fnf.name, "status") == "Unpaid"
+        frappe.set_user(finance)
+
+        from tradex_hr.tests.test_payroll_finalization_integration import (
+            _create_synthetic_cash_account,
+            _create_synthetic_company_bank_account,
+        )
+        from tradex_hr.tradexcel_hr.employee_separation import _full_and_final_payment_status
+        cash_account = _create_synthetic_cash_account(company, token)
+        draft = fnf.create_journal_entry()
+        assert draft.doctype == "Journal Entry"
+        assert draft.docstatus == 0
+        draft.voucher_type = "Cash Entry"
+        draft.accounts[-1].account = cash_account
+        draft.insert()
+        journal_entry = draft.name
+        reused = frappe.get_doc("Full and Final Statement", fnf.name).create_journal_entry()
+        assert reused.name == journal_entry
+        assert reused.docstatus == 0
+        assert _full_and_final_payment_status([fnf])["status"] == "PAYMENT_ENTRY_DRAFT"
+        assert _full_and_final_payment_status([fnf])["settlement_mode"] == "Cash"
+        draft.submit()
+        assert _full_and_final_payment_status([fnf])["status"] == "CASH_SETTLEMENT_ACCOUNTING_POSTED"
+        fnf.reload()
+        assert fnf.status == "Paid"
+        draft.cancel()
+        frappe.delete_doc("Journal Entry", draft.name, force=True, ignore_permissions=True)
+        journal_entry = None
+
+        _bank, bank_gl, bank_account = _create_synthetic_company_bank_account(company, token[:8], token)
+        bank_draft = frappe.get_doc("Full and Final Statement", fnf.name).create_journal_entry()
+        bank_draft.accounts[-1].account = bank_gl
+        bank_draft.cheque_no = f"FNF-{token}"
+        bank_draft.cheque_date = "2026-09-20"
+        bank_draft.insert()
+        journal_entry = bank_draft.name
+        bank_draft.submit()
+        assert _full_and_final_payment_status([fnf])["status"] == "AWAITING_BANK_RECONCILIATION"
+        bank_transaction = frappe.get_doc({
+            "doctype": "Bank Transaction",
+            "date": "2026-09-20",
+            "bank_account": bank_account,
+            "currency": "BDT",
+            "description": f"Synthetic F&F settlement {token}",
+            "withdrawal": bank_draft.total_credit,
+        }).insert(ignore_permissions=True)
+        bank_transaction.submit()
+        from erpnext.accounts.doctype.bank_reconciliation_tool.bank_reconciliation_tool import reconcile_vouchers
+        import json
+        reconcile_vouchers(bank_transaction.name, json.dumps([{
+            "payment_doctype": "Journal Entry",
+            "payment_name": bank_draft.name,
+            "amount": bank_transaction.unallocated_amount,
+        }]))
+        final_payment = _full_and_final_payment_status([fnf])
+        assert final_payment["status"] == "BANK_RECONCILED", final_payment
+        assert frappe.utils.getdate(final_payment["clearance_date"]) == frappe.utils.getdate("2026-09-20")
+        fnf.reload()
+        assert fnf.status == "Paid"
     finally:
         frappe.set_user("Administrator")
         for doctype, name in (("Tradexcel Employee Biometric", biometric), ("Tradexcel Biometric Device", device)):
@@ -185,7 +286,12 @@ def test_native_separation_and_fnf_four_eyes_flow_and_native_je_retry(monkeypatc
                 frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
         if shared_employee and frappe.db.exists("Employee", shared_employee.name):
             frappe.delete_doc("Employee", shared_employee.name, force=True, ignore_permissions=True)
-        for doctype, name in (("Journal Entry", journal_entry), ("Full and Final Statement", getattr(fnf, "name", None)),
+        if bank_transaction and frappe.db.exists("Bank Transaction", bank_transaction.name):
+            bank_doc = frappe.get_doc("Bank Transaction", bank_transaction.name)
+            if bank_doc.docstatus == 1:
+                bank_doc.cancel()
+            frappe.delete_doc("Bank Transaction", bank_doc.name, force=True, ignore_permissions=True)
+        for doctype, name in (("Journal Entry", journal_entry), ("Full and Final Statement", getattr(foreign_fnf, "name", None)), ("Full and Final Statement", getattr(fnf, "name", None)),
                               ("Employee Separation", getattr(separation, "name", None))):
             if name and frappe.db.exists(doctype, name):
                 doc = frappe.get_doc(doctype, name)

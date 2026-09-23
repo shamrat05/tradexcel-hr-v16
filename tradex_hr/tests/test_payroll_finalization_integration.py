@@ -96,13 +96,13 @@ def _create_synthetic_company(token, monkeypatch):
     return company.name, abbreviation, payable, expense, cost_center.name, holiday_list.name
 
 
-def _component(name, abbreviation, company, account):
+def _component(name, abbreviation, company, account, *, depends_on_payment_days=0):
     return frappe.get_doc({
         "doctype": "Salary Component",
         "salary_component": name,
         "salary_component_abbr": abbreviation,
         "type": "Earning",
-        "depends_on_payment_days": 0,
+        "depends_on_payment_days": depends_on_payment_days,
         "is_tax_applicable": 0,
         "accounts": [{"company": company, "account": account}],
     }).insert(ignore_permissions=True)
@@ -183,7 +183,7 @@ def _create_synthetic_cash_account(company, token):
     }).insert(ignore_permissions=True).name
 
 
-def _create_structure(name, company, currency, pay_basis, component, amount):
+def _create_structure(name, company, currency, pay_basis, component, amount, *, depends_on_payment_days=0):
     structure = frappe.get_doc({
         "doctype": "Salary Structure",
         "name": name,
@@ -195,22 +195,23 @@ def _create_structure(name, company, currency, pay_basis, component, amount):
         "earnings": [{
             "salary_component": component,
             "amount": amount,
-            "depends_on_payment_days": 0,
+            "depends_on_payment_days": depends_on_payment_days,
         }],
     }).insert(ignore_permissions=True)
     structure.submit()
     return structure
 
 
-def _create_assignment(employee, company, currency, payable, structure, base, cost_center):
+def _create_assignment(employee, company, currency, payable, structure, base, cost_center, *, from_date="2026-08-01", leave_encashment_amount_per_day=0):
     assignment = frappe.get_doc({
         "doctype": "Salary Structure Assignment",
         "employee": employee,
         "company": company,
         "currency": currency,
         "salary_structure": structure,
-        "from_date": "2026-08-01",
+        "from_date": from_date,
         "base": base,
+        "leave_encashment_amount_per_day": leave_encashment_amount_per_day,
         "payroll_payable_account": payable,
         "payroll_cost_centers": [{"cost_center": cost_center, "percentage": 100}],
     }).insert(ignore_permissions=True)
@@ -301,7 +302,7 @@ def cleanup_synthetic_finalization_company(company_name):
 
     # Transactions and employee data must go before their account/tree masters.
     company_linked = (
-        "Payroll Entry", "Journal Entry", "Bank Account",
+        "Payroll Entry", "Journal Entry", "Bank Account", "Gratuity",
         "Payroll Correction", "Arrear", "Additional Salary", "Payroll Period", "Salary Slip",
         "Salary Structure Assignment", "Salary Structure", "Salary Component",
         "Attendance", "Leave Application", "Employee Checkin", "Tradexcel Attendance Period", "Employee",
@@ -432,7 +433,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         )
 
         basic_component = _component(
-            component_names[0], f"B{token[:3]}", company, expense
+            component_names[0], f"B{token[:3]}", company, expense, depends_on_payment_days=1
         )
         daily_component = _component(
             component_names[1], f"D{token[:3]}", company, expense
@@ -440,7 +441,8 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         tracked["components"] = [basic_component.name, daily_component.name]
 
         monthly_structure = _create_structure(
-            f"Test Monthly {token}", company, "BDT", "Monthly Salary", basic_component.name, 30000
+            f"Test Monthly {token}", company, "BDT", "Monthly Salary", basic_component.name, 30000,
+            depends_on_payment_days=1,
         )
         daily_structure = _create_structure(
             f"Test Daily {token}", company, "BDT", "Daily Wage", daily_component.name, 0
@@ -453,11 +455,20 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
             _create_employee(f"Payroll C {token}", company, holiday_list, salary_mode="Bank"),
         ]
         tracked["employees"] = [employee.name for employee in employees]
+        employees[0].date_of_joining = date(2026, 8, 15)
+        employees[0].save(ignore_permissions=True)
+        employees[1].relieving_date = date(2026, 8, 20)
+        employees[1].status = "Left"
+        employees[1].save(ignore_permissions=True)
+        employees[2].relieving_date = date(2026, 8, 20)
+        employees[2].status = "Left"
+        employees[2].save(ignore_permissions=True)
         for index, employee in enumerate(employees):
             structure = daily_structure if index == 1 else monthly_structure
             _create_assignment(
                 employee.name, company, "BDT", payable, structure.name,
                 400 if index == 1 else 30000, cost_center,
+                from_date=employee.date_of_joining if index == 0 else "2026-08-01",
             )
             tracked["assignments"].append(frappe.db.get_value(
                 "Salary Structure Assignment",
@@ -468,8 +479,10 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         start, end = date(2026, 8, 1), date(2026, 8, 31)
         attendance_hash = None
         for employee in employees:
-            for offset in range(31):
-                day = start + timedelta(days=offset)
+            employee_start = max(start, frappe.utils.getdate(employee.date_of_joining))
+            employee_end = min(end, frappe.utils.getdate(employee.relieving_date)) if employee.relieving_date else end
+            for offset in range((employee_end - employee_start).days + 1):
+                day = employee_start + timedelta(days=offset)
                 attendance = frappe.get_doc({
                     "doctype": "Attendance",
                     "employee": employee.name,
@@ -596,13 +609,62 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         slips = frappe.get_all(
             "Salary Slip",
             filters={"payroll_entry": entry.name, "docstatus": 0},
-            fields=["name", "employee", "gross_pay", "net_pay"],
+            fields=["name", "employee", "gross_pay", "net_pay", "payment_days", "total_working_days", "docstatus"],
             order_by="employee",
         )
         assert len(slips) == 3
         tracked["salary_slips"] = [row.name for row in slips]
         assert {row.employee for row in slips} == set(tracked["employees"])
         assert any(row.gross_pay > 0 for row in slips)
+
+        slips_by_employee = {row.employee: frappe.get_doc("Salary Slip", row.name) for row in slips}
+        joiner_slip = slips_by_employee[employees[0].name]
+        assert frappe.utils.getdate(joiner_slip.actual_start_date) == date(2026, 8, 15)
+        assert frappe.utils.getdate(joiner_slip.actual_end_date) == end
+        assert 0 < joiner_slip.payment_days < joiner_slip.total_working_days
+        assert frappe.db.get_value("Salary Structure Assignment", tracked["assignments"][0], "base") == 30000
+        assert joiner_slip.earnings[0].depends_on_payment_days
+        assert joiner_slip.earnings[0].amount < joiner_slip.earnings[0].default_amount
+        assert joiner_slip.gross_pay == joiner_slip.get_component_totals("earnings", depends_on_payment_days=1)
+        assert 0 < joiner_slip.gross_pay < 30000
+        assert joiner_slip.net_pay == joiner_slip.gross_pay
+
+        monthly_leaver_slip = slips_by_employee[employees[2].name]
+        assert employees[2].status == "Left"
+        assert frappe.utils.getdate(monthly_leaver_slip.actual_start_date) == start
+        assert frappe.utils.getdate(monthly_leaver_slip.actual_end_date) == date(2026, 8, 20)
+        assert 0 < monthly_leaver_slip.payment_days < monthly_leaver_slip.total_working_days
+        assert frappe.db.get_value("Salary Structure Assignment", tracked["assignments"][2], "base") == 30000
+        assert monthly_leaver_slip.earnings[0].depends_on_payment_days
+        assert monthly_leaver_slip.earnings[0].amount < monthly_leaver_slip.earnings[0].default_amount
+        assert monthly_leaver_slip.gross_pay == monthly_leaver_slip.get_component_totals("earnings", depends_on_payment_days=1)
+        assert 0 < monthly_leaver_slip.gross_pay < 30000
+        assert monthly_leaver_slip.net_pay == monthly_leaver_slip.gross_pay
+
+        daily_leaver_slip = slips_by_employee[employees[1].name]
+        daily_input = frappe.get_all(
+            "Additional Salary",
+            filters={"employee": employees[1].name, "ref_doctype": "Tradexcel Attendance Period",
+                     "ref_docname": period.name, "docstatus": 1},
+            fields=["name", "amount"],
+            limit=1,
+        )[0]
+        assert employees[1].status == "Left"
+        assert frappe.utils.getdate(daily_leaver_slip.actual_end_date) == date(2026, 8, 20)
+        assert daily_input.amount == 400 * 20
+        assert daily_leaver_slip.gross_pay == daily_input.amount
+        assert daily_leaver_slip.net_pay == daily_leaver_slip.gross_pay
+
+        post_exit_attendance = frappe.get_doc({
+            "doctype": "Attendance",
+            "employee": employees[1].name,
+            "attendance_date": "2026-08-21",
+            "status": "Present",
+            "company": company,
+        }).insert(ignore_permissions=True)
+        with pytest.raises(frappe.ValidationError, match="relieving date"):
+            post_exit_attendance.submit()
+        post_exit_attendance.delete(ignore_permissions=True)
 
         from tradex_hr.tradexcel_hr.financial_readiness import inspect_payroll_financial_readiness
         readiness = inspect_payroll_financial_readiness(entry)

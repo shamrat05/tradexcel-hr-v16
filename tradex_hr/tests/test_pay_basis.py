@@ -9,7 +9,14 @@ def _resolver(monkeypatch, rows, bases):
             return [row for row in rows if date(2026, 9, 1) <= row["from_date"] <= date(2026, 9, 30)]
         return [row for row in rows if row["from_date"] <= date(2026, 9, 1)]
 
-    monkeypatch.setattr(pay_basis.frappe, "get_all", get_all)
+    class FakeFrappe:
+        class db:
+            @staticmethod
+            def get_value(*_args, **_kwargs):
+                return None
+
+    FakeFrappe.get_all = staticmethod(get_all)
+    monkeypatch.setattr(pay_basis, "frappe", FakeFrappe)
     monkeypatch.setattr(pay_basis, "_structure_basis", lambda name: bases.get(name))
 
 
@@ -76,3 +83,37 @@ def test_daily_rate_requires_positive_assignment_base(monkeypatch):
     result = pay_basis.resolve_pay_basis("EMP-6", date(2026, 9, 1), date(2026, 9, 30))
 
     assert pay_basis.resolve_daily_rate(result)["status"] == "BLOCKED_MISSING_BASE"
+
+def test_first_assignment_on_joining_date_is_applicable_to_partial_month(monkeypatch):
+    rows = [{
+        "name": "SSA-JOIN",
+        "from_date": date(2026, 9, 15),
+        "salary_structure": "Monthly",
+        "base": 30000,
+    }]
+
+    def get_all(_doctype, filters, **_kwargs):
+        operator, boundary = filters["from_date"]
+        if operator == "<=":
+            return [row for row in rows if row["from_date"] <= boundary]
+        return [row for row in rows if row["from_date"] > boundary]
+
+    class FakeFrappe:
+
+        class db:
+            @staticmethod
+            def get_value(doctype, employee, field):
+                return date(2026, 9, 15) if (
+                    doctype, employee, field
+                ) == ("Employee", "EMP-JOIN", "date_of_joining") else None
+
+    FakeFrappe.get_all = staticmethod(get_all)
+    monkeypatch.setattr(pay_basis, "frappe", FakeFrappe)
+    monkeypatch.setattr(pay_basis, "_structure_basis", lambda name: "Monthly Salary")
+
+    result = pay_basis.resolve_pay_basis(
+        "EMP-JOIN", date(2026, 9, 1), date(2026, 9, 30)
+    )
+
+    assert result["status"] == pay_basis.MONTHLY
+    assert result["from_date"] == date(2026, 9, 15)

@@ -237,7 +237,13 @@ def validate_full_and_final_before_submit(doc, method=None):
     separation = _latest_separation(doc.employee)
     if not separation or int(separation.docstatus or 0) != 1:
         frappe.throw(_("Submit the native Employee Separation before Full & Final."))
-    if separation.get(STATUTORY_STATUS_FIELD) not in {"Approved", "Not Applicable"}:
+    statutory_status = separation.get(STATUTORY_STATUS_FIELD)
+    if statutory_status == "Approved" and not separation.get("custom_tradex_statutory_rule_set"):
+        frappe.throw(
+            _("An approved statutory review must reference an explicit entitlement ruleset before settlement."),
+            title=_("STATUTORY_ENTITLEMENT_RULESET_REQUIRED"),
+        )
+    if statutory_status not in {"Approved", "Not Applicable"}:
         frappe.throw(_("Complete legal/statutory review before submitting Full & Final."), title=_("Legal review required"))
     _validate_asset_recovery_inputs(doc)
 
@@ -286,12 +292,10 @@ def inspect_full_and_final_readiness(employee_name: str) -> dict:
     separation = _latest_separation(employee.name)
     statutory = separation.get(STATUTORY_STATUS_FIELD) if separation else None
     findings = []
-    if statutory not in {"Approved", "Not Applicable"}:
+    if statutory == "Approved" and not separation.get("custom_tradex_statutory_rule_set"):
+        findings.append({"code": "STATUTORY_ENTITLEMENT_RULESET_REQUIRED"})
+    elif statutory != "Not Applicable" and statutory != "Approved":
         findings.append({"code": "LEGAL_CLASSIFICATION_REVIEW_REQUIRED"})
-    if not frappe.db.count("Gratuity Rule"):
-        findings.append({"code": "GRATUITY_RULE_DECISION_REQUIRED"})
-    if not frappe.db.count("Leave Type", {"allow_encashment": 1}):
-        findings.append({"code": "LEAVE_ENCASHMENT_CONFIGURATION_REQUIRED"})
     slips = frappe.get_all("Salary Slip", filters={"employee": employee.name,
         "end_date": ["<=", employee.relieving_date], "docstatus": ["!=", 2]},
         fields=["name", "docstatus", "status", "end_date"], order_by="end_date desc", limit=10)
@@ -349,16 +353,91 @@ def inspect_full_and_final_readiness(employee_name: str) -> dict:
         "native_settlement_hub": "Full and Final Statement"}
 
 
+def _account_is_valid_for_company(account_name, company):
+    if not account_name or not frappe.db.exists("Account", account_name):
+        return False
+    account = frappe.get_cached_doc("Account", account_name)
+    return account.company == company and not account.disabled and not account.is_group
+
+
+def _native_fnf_settlement_rows(statement):
+    """Describe non-balancing rows native HRMS derives from this F&F."""
+    from collections import Counter
+    precision = int(frappe.get_precision("Journal Entry Account", "debit_in_account_currency") or 2)
+    expected = Counter()
+
+    def add(account, side, amount):
+        amount = frappe.utils.flt(amount, precision)
+        if amount > 0:
+            expected[(account, side, amount)] += 1
+
+    for row in statement.payables:
+        if frappe.utils.flt(row.amount) > 0 and not row.paid_via_salary_slip:
+            add(row.account, "debit", row.amount)
+    for row in statement.receivables:
+        if frappe.utils.flt(row.amount) > 0:
+            add(row.account, "credit", row.amount)
+    for row in statement.assets_allocated:
+        if row.action == "Recover Cost":
+            add(row.account, "credit", row.cost)
+    return expected
+
+
+def _validate_native_fnf_journal_entry(statement, journal):
+    """Validate a linked JE against native F&F rows; do not recompute settlement amounts."""
+    from collections import Counter
+    if (journal.company != statement.company or journal.docstatus == 2
+            or journal.voucher_type not in ("Bank Entry", "Cash Entry")):
+        frappe.throw(_("FNF_PAYMENT_ENTRY_INVALID: company, state, or voucher type is invalid."))
+    refs = [row for row in journal.accounts if row.reference_type == "Full and Final Statement"]
+    if len(refs) != 1 or refs[0].reference_name != statement.name:
+        frappe.throw(_("FNF_PAYMENT_ENTRY_INVALID: settlement reference is missing or ambiguous."))
+    ref_row = refs[0]
+    if not _account_is_valid_for_company(ref_row.account, statement.company):
+        if journal.docstatus == 0 and not ref_row.account:
+            mode = None  # Native HRMS creates an unselected draft before Finance chooses the account.
+        else:
+            frappe.throw(_("FNF_PAYMENT_ENTRY_INVALID: balancing account is missing or invalid."))
+    else:
+        mode = frappe.db.get_value("Account", ref_row.account, "account_type")
+        if mode not in ("Bank", "Cash"):
+            frappe.throw(_("FNF_PAYMENT_ENTRY_INVALID: balancing account must be Bank or Cash."))
+
+    precision = int(frappe.get_precision("Journal Entry Account", "debit_in_account_currency") or 2)
+    actual = Counter()
+    for row in journal.accounts:
+        if not _account_is_valid_for_company(row.account, statement.company):
+            frappe.throw(_("FNF_PAYMENT_ENTRY_INVALID: an account is invalid for this company."))
+        if row is ref_row:
+            continue
+        debit = frappe.utils.flt(row.debit_in_account_currency, precision)
+        credit = frappe.utils.flt(row.credit_in_account_currency, precision)
+        if debit > 0 and credit == 0:
+            actual[(row.account, "debit", debit)] += 1
+        elif credit > 0 and debit == 0:
+            actual[(row.account, "credit", credit)] += 1
+        else:
+            frappe.throw(_("FNF_PAYMENT_ENTRY_INVALID: settlement row debit/credit shape is invalid."))
+    if actual != _native_fnf_settlement_rows(statement):
+        frappe.throw(_("FNF_PAYMENT_ENTRY_INVALID: Journal Entry rows do not match native Full & Final rows."))
+    if journal.docstatus == 1:
+        precision = int(frappe.get_precision("Journal Entry", "total_debit") or 2)
+        if abs(frappe.utils.flt(journal.total_debit) - frappe.utils.flt(journal.total_credit)) >= 10 ** (-precision):
+            frappe.throw(_("FNF_PAYMENT_ENTRY_INVALID: submitted Journal Entry is not balanced."))
+    return mode
+
+
 def _full_and_final_payment_status(statements):
-    """Classify native F&F Journal Entries and Bank Transaction matches."""
+    """Classify validated native F&F JEs and Bank Transaction matches."""
     if not statements:
         return {"status": "FULL_AND_FINAL_NOT_PREPARED", "journal_entries": []}
-    references = []
+    statement_by_name = {statement.name: statement for statement in statements}
+    parents = []
     for statement in statements:
-        references.extend(frappe.get_all("Journal Entry Account", filters={
+        parents.extend(frappe.get_all("Journal Entry Account", filters={
             "reference_type": "Full and Final Statement", "reference_name": statement.name,
         }, pluck="parent"))
-    names = sorted(set(references))
+    names = sorted(set(parents))
     entries = frappe.get_all("Journal Entry", filters={"name": ["in", names], "docstatus": ["!=", 2]},
         fields=["name", "docstatus", "voucher_type", "clearance_date"], order_by="creation desc") if names else []
     if len(entries) > 1:
@@ -366,27 +445,29 @@ def _full_and_final_payment_status(statements):
     if not entries:
         return {"status": "FULL_AND_FINAL_NOT_PREPARED", "journal_entries": []}
     entry = entries[0]
-    statement = frappe.get_doc("Full and Final Statement", statements[0].name)
     journal = frappe.get_doc("Journal Entry", entry.name)
-    references = [row for row in journal.accounts if row.reference_type == "Full and Final Statement"]
-    if (journal.company != statement.company or journal.voucher_type != "Bank Entry"
-            or not any(row.reference_name == statement.name for row in references)
-            or any(row.reference_name != statement.name for row in references)):
+    target = next((row.reference_name for row in journal.accounts
+                   if row.reference_type == "Full and Final Statement"), None)
+    statement = statement_by_name.get(target)
+    if not statement:
+        return {"status": "PAYMENT_ENTRY_INVALID", "journal_entries": entries}
+    try:
+        mode = _validate_native_fnf_journal_entry(statement, journal)
+    except frappe.ValidationError:
         return {"status": "PAYMENT_ENTRY_INVALID", "journal_entries": entries}
     if entry.docstatus == 0:
-        return {"status": "PAYMENT_ENTRY_DRAFT", "journal_entries": entries}
+        return {"status": "PAYMENT_ENTRY_DRAFT", "journal_entries": entries, "settlement_mode": mode}
     if entry.docstatus != 1:
         return {"status": "PAYMENT_ENTRY_INVALID", "journal_entries": entries}
-    precision = frappe.get_precision("Journal Entry", "total_debit") or 2
-    tolerance = 10 ** (-int(precision))
-    if abs(frappe.utils.flt(journal.total_debit) - frappe.utils.flt(journal.total_credit)) >= tolerance:
-        return {"status": "PAYMENT_ENTRY_INVALID", "journal_entries": entries}
+    if mode == "Cash":
+        return {"status": "CASH_SETTLEMENT_ACCOUNTING_POSTED", "journal_entries": entries, "settlement_mode": mode}
+    if mode != "Bank":
+        return {"status": "FNF_PAYMENT_ACCOUNT_REVIEW_REQUIRED", "journal_entries": entries}
     from tradex_hr.tradexcel_hr.payment_readiness import _bank_reconciled
     reconciled, transactions = _bank_reconciled(journal)
     return {"status": "BANK_RECONCILED" if reconciled else "AWAITING_BANK_RECONCILIATION",
         "journal_entries": entries, "bank_transactions": transactions,
-        "clearance_date": entry.clearance_date}
-
+        "clearance_date": entry.clearance_date, "settlement_mode": mode}
 
 class FullAndFinalTradexcelMixin:
     """Add scope and retry safety around native Full & Final Journal Entry creation."""
@@ -406,5 +487,7 @@ class FullAndFinalTradexcelMixin:
         if len(active) > 1:
             frappe.throw(_("More than one active settlement Journal Entry exists. Finance review is required."))
         if active:
-            return frappe.get_doc("Journal Entry", active[0].name)
+            journal = frappe.get_doc("Journal Entry", active[0].name)
+            _validate_native_fnf_journal_entry(self, journal)
+            return journal
         return super().create_journal_entry()
