@@ -205,13 +205,23 @@ def test_native_payroll_entry_extension_preflights_and_queues_over_30(frappe_sit
     assert len(queued[0][2]["salary_slips"]) == 31
 
 
-def test_managed_bank_entry_is_blocked_until_payment_phase(frappe_site, monkeypatch):
+def test_managed_bank_entry_requires_ready_payment_phase(frappe_site, monkeypatch):
     from frappe.model.base_document import get_controller
-    controller = get_controller("Payroll Entry")
-    entry = controller({"doctype": "Payroll Entry"})
-    entry.custom_tradex_run_key = "TRAD-MANAGED-TEST"
+    from tradex_hr.tradexcel_hr import payment_readiness
 
-    with pytest.raises(frappe.ValidationError, match="payment readiness is implemented"):
+    entry = get_controller("Payroll Entry")({"doctype": "Payroll Entry"})
+    entry.company = "Tradexcel Ceramics Ltd."
+    entry.docstatus = 1
+    entry.workflow_state = "Tradexcel Payroll Approved"
+    entry.custom_tradex_run_key = "TRAD-MANAGED-TEST"
+    entry.check_permission = lambda *_args, **_kwargs: None
+    monkeypatch.setattr(company_context, "assert_company_access", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(payment_readiness, "inspect_payroll_payment_readiness", lambda *_args, **_kwargs: {
+        "status": "ACCRUAL_NOT_READY",
+        "blockers": [{"reason": "accrual is not ready"}],
+    })
+
+    with pytest.raises(frappe.ValidationError, match="Payroll payment is blocked: accrual is not ready"):
         entry.make_bank_entry()
 
 

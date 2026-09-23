@@ -188,7 +188,7 @@ def _raise_if_blocked(result):
 
 
 class PayrollEntryFinalizationMixin:
-    """Add a preflight while delegating all finalization work to native HRMS."""
+    """Add preflights while delegating payroll accounting work to native HRMS."""
 
     @frappe.whitelist(methods=["POST"])
     def submit_salary_slips(self):
@@ -221,12 +221,40 @@ class PayrollEntryFinalizationMixin:
         return super().submit_salary_slips()
 
     @frappe.whitelist(methods=["POST"])
-    def make_bank_entry(self, *args, **kwargs):
-        if self.get(MANAGED_RUN_FIELD):
-            frappe.throw(
-                _("Employee payment is not available until payroll payment readiness is implemented.")
+    def make_bank_entry(self, for_withheld_salaries=False, *args, **kwargs):
+        if not self.get(MANAGED_RUN_FIELD):
+            return super().make_bank_entry(
+                for_withheld_salaries=for_withheld_salaries, *args, **kwargs
             )
-        return super().make_bank_entry(*args, **kwargs)
+
+        self.check_permission("write")
+        from tradex_hr.tradexcel_hr.company_context import assert_company_access
+        from tradex_hr.tradexcel_hr.payment_readiness import inspect_payroll_payment_readiness
+
+        assert_company_access(self.company, require_explicit_scope=True)
+        if self.docstatus != 1 or self.workflow_state != APPROVED_STATE:
+            frappe.throw(_("Only Director-approved payroll can prepare a payment entry."))
+
+        readiness = inspect_payroll_payment_readiness(
+            self, for_withheld_salaries=bool(for_withheld_salaries)
+        )
+        if readiness["blockers"]:
+            reason = readiness["blockers"][0]["reason"]
+            frappe.throw(
+                _("Payroll payment is blocked: {0}").format(reason),
+                title=_("Payroll Payment Review Required"),
+            )
+
+        if readiness["status"] == "READY_TO_PREPARE_PAYMENT":
+            return super().make_bank_entry(
+                for_withheld_salaries=for_withheld_salaries, *args, **kwargs
+            )
+
+        if readiness.get("payment_journal_entry"):
+            return frappe.get_doc("Journal Entry", readiness["payment_journal_entry"])
+
+        reason = readiness["blockers"][0]["reason"] if readiness["blockers"] else readiness["status"]
+        frappe.throw(_("Payroll payment cannot proceed: {0}").format(reason))
 
 
 @frappe.whitelist()

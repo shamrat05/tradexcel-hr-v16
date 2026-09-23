@@ -108,8 +108,8 @@ def _component(name, abbreviation, company, account):
     }).insert(ignore_permissions=True)
 
 
-def _create_employee(label, company, holiday_list):
-    return frappe.get_doc({
+def _create_employee(label, company, holiday_list, salary_mode=None):
+    fields = {
         "doctype": "Employee",
         "first_name": label,
         "company": company,
@@ -119,7 +119,68 @@ def _create_employee(label, company, holiday_list):
         "employment_type": "Intern",
         "holiday_list": holiday_list,
         "status": "Active",
+    }
+    if salary_mode == "Bank":
+        fields.update({
+            "salary_mode": "Bank",
+            "bank_name": "Synthetic Test Bank",
+            "bank_ac_no": f"EMP-{frappe.generate_hash(8)[:8]}",
+        })
+    return frappe.get_doc(fields).insert(ignore_permissions=True)
+
+
+def _create_synthetic_company_bank_account(company, abbreviation, token):
+    bank = frappe.get_doc({
+        "doctype": "Bank",
+        "bank_name": f"Codex Test Bank {token}",
     }).insert(ignore_permissions=True)
+    parent = frappe.db.get_value(
+        "Account",
+        {"company": company, "root_type": "Asset", "is_group": 1},
+        "name",
+        order_by="lft asc",
+    )
+    account = frappe.get_doc({
+        "doctype": "Account",
+        "account_name": f"Payroll Test Bank {token}",
+        "company": company,
+        "parent_account": parent,
+        "root_type": "Asset",
+        "account_type": "Bank",
+        "account_currency": "BDT",
+        "is_group": 0,
+    }).insert(ignore_permissions=True)
+    bank_account = frappe.get_doc({
+        "doctype": "Bank Account",
+        "account_name": f"Payroll Test Bank Account {token}",
+        "bank": bank.name,
+        "account": account.name,
+        "is_company_account": 1,
+        "company": company,
+        "bank_account_no": f"COMPANY-{token[:8]}",
+    }).insert(ignore_permissions=True)
+    frappe.db.set_value("Company", company, "default_bank_account", bank_account.name)
+    frappe.clear_cache(doctype="Company")
+    return bank.name, account.name, bank_account.name
+
+
+def _create_synthetic_cash_account(company, token):
+    parent = frappe.db.get_value(
+        "Account",
+        {"company": company, "root_type": "Asset", "is_group": 1},
+        "name",
+        order_by="lft asc",
+    )
+    return frappe.get_doc({
+        "doctype": "Account",
+        "account_name": f"Payroll Test Cash {token}",
+        "company": company,
+        "parent_account": parent,
+        "root_type": "Asset",
+        "account_type": "Cash",
+        "account_currency": "BDT",
+        "is_group": 0,
+    }).insert(ignore_permissions=True).name
 
 
 def _create_structure(name, company, currency, pay_basis, component, amount):
@@ -196,9 +257,22 @@ def cleanup_synthetic_finalization_company(company_name):
             doc.cancel()
         frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
 
+    # Bank Transaction has no Company link; remove it through the disposable
+    # company's Bank Account before deleting its payment Journal Entry.
+    bank_account_names = frappe.get_all(
+        "Bank Account", filters={"company": company_name}, pluck="name"
+    )
+    if bank_account_names:
+        for name in frappe.get_all(
+            "Bank Transaction",
+            filters={"bank_account": ["in", bank_account_names]},
+            pluck="name",
+        ):
+            delete_doc("Bank Transaction", name)
+
     # Transactions and employee data must go before their account/tree masters.
     company_linked = (
-        "Payroll Entry", "Salary Slip", "Journal Entry", "Additional Salary",
+        "Payroll Entry", "Salary Slip", "Journal Entry", "Bank Account", "Additional Salary",
         "Salary Structure Assignment", "Salary Structure", "Salary Component",
         "Attendance", "Employee Checkin", "Tradexcel Attendance Period", "Employee",
         "Payment Ledger Entry",
@@ -247,6 +321,11 @@ def cleanup_synthetic_finalization_company(company_name):
     ):
         delete_doc("Fiscal Year", name)
 
+    for name in frappe.get_all(
+        "Bank", filters={"bank_name": f"Codex Test Bank {token}"}, pluck="name"
+    ):
+        delete_doc("Bank", name)
+
     # Company setup clones nested-set masters; remove deepest nodes first so a
     # failed/early test run cannot leave cloned account trees after Company deletion.
     for doctype in ("Warehouse", "Account", "Cost Center"):
@@ -280,7 +359,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
     from tradex_hr import role_setup
     from tradex_hr.tradexcel_hr import daily_wage_input, native_payroll, payroll_finalization
 
-    token = frappe.generate_hash(7).upper()
+    token = frappe.generate_hash(7).upper()[:8]
     company_name = f"Tradexcel Finalization Test {token}"
     tracked = {
         "company": company_name,
@@ -313,6 +392,9 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
             "Holiday List Assignment", {"assigned_to": company, "holiday_list": holiday_list}, "name"
         )
         tracked["fiscal_year"] = frappe.db.get_value("Fiscal Year Company", {"company": company}, "parent")
+        test_bank, payment_account, company_bank_account = _create_synthetic_company_bank_account(
+            company, abbreviation, token
+        )
 
         basic_component = _component(
             component_names[0], f"B{token[:3]}", company, expense
@@ -331,9 +413,9 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         tracked["structures"] = [monthly_structure.name, daily_structure.name]
 
         employees = [
-            _create_employee(f"Payroll A {token}", company, holiday_list),
-            _create_employee(f"Payroll B {token}", company, holiday_list),
-            _create_employee(f"Payroll C {token}", company, holiday_list),
+            _create_employee(f"Payroll A {token}", company, holiday_list, salary_mode="Bank"),
+            _create_employee(f"Payroll B {token}", company, holiday_list, salary_mode="Bank"),
+            _create_employee(f"Payroll C {token}", company, holiday_list, salary_mode="Bank"),
         ]
         tracked["employees"] = [employee.name for employee in employees]
         for index, employee in enumerate(employees):
@@ -407,6 +489,9 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         frappe.set_user(manager)
         with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
             out_of_scope_entry.submit_salary_slips()
+        from tradex_hr.tradexcel_hr.payment_readiness import inspect_payroll_payment_readiness
+        with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
+            inspect_payroll_payment_readiness(out_of_scope_entry)
 
         # Inject only the synthetic component for the daily input adapter.
         original_create_daily_input = daily_wage_input.create_daily_wage_input
@@ -429,6 +514,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         ]
         tracked["payroll_entry"] = prepared["payroll_entry"]
         entry = frappe.get_doc("Payroll Entry", tracked["payroll_entry"])
+        entry.db_set({"bank_account": company_bank_account, "payment_account": payment_account})
         assert entry.get_payroll_cost_centers_for_employee(
             employees[0].name, monthly_structure.name
         ) == {cost_center: 100}
@@ -568,6 +654,101 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         for name in tracked["journal_entries"]:
             assert frappe.db.get_value("Journal Entry", name, "docstatus") == 1
         assert final["journal_entry_count"] == 2
+
+        # Payment readiness uses the submitted Salary Slip snapshots and native
+        # Bank Account. HRMS creates the only payment Journal Entry.
+        from tradex_hr.tradexcel_hr.payment_readiness import inspect_payroll_payment_readiness
+        frappe.set_user(manager)
+        payment_readiness = inspect_payroll_payment_readiness(entry)
+        assert payment_readiness["status"] == "READY_TO_PREPARE_PAYMENT", payment_readiness
+        payment_entry = entry.make_bank_entry()
+        assert payment_entry and payment_entry.docstatus == 0
+        assert payment_entry.voucher_type == "Bank Entry"
+        tracked["payment_entry"] = payment_entry.name
+        retry_entry = entry.make_bank_entry()
+        assert retry_entry.name == payment_entry.name
+        assert frappe.db.count(
+            "Journal Entry Account",
+            {"reference_type": "Payroll Entry", "reference_name": entry.name},
+        ) >= 3
+
+        frappe.set_user("Administrator")
+        payment_entry.cheque_no = f"PAY-{token}"
+        payment_entry.cheque_date = end
+        payment_entry.save(ignore_permissions=True)
+        payment_entry.submit()
+        assert payment_entry.docstatus == 1
+        assert payment_entry.total_debit == payment_entry.total_credit
+        # A retry after submission returns the native entry instead of creating
+        # another payment JE while the bank transaction is still unmatched.
+        frappe.set_user(manager)
+        posted_retry = entry.make_bank_entry()
+        assert posted_retry.name == payment_entry.name
+        frappe.set_user("Administrator")
+        bank_transaction = frappe.get_doc({
+            "doctype": "Bank Transaction",
+            "date": end,
+            "bank_account": company_bank_account,
+            "currency": "BDT",
+            "description": f"Synthetic payroll transfer {token}",
+            "withdrawal": payment_entry.total_credit,
+        }).insert(ignore_permissions=True)
+        bank_transaction.submit()
+        tracked["bank_transaction"] = bank_transaction.name
+
+        import json
+        from erpnext.accounts.doctype.bank_reconciliation_tool.bank_reconciliation_tool import reconcile_vouchers
+        reconcile_vouchers(
+            bank_transaction.name,
+            json.dumps([{
+                "payment_doctype": "Journal Entry",
+                "payment_name": payment_entry.name,
+                "amount": bank_transaction.unallocated_amount,
+            }]),
+        )
+        frappe.set_user(manager)
+        reconciled_payment = inspect_payroll_payment_readiness(entry)
+        assert reconciled_payment["status"] == "BANK_RECONCILED", reconciled_payment
+        assert reconciled_payment["clearance_date"] == end
+        assert reconciled_payment["bank_transactions"][0]["status"] == "Reconciled"
+        assert frappe.db.get_value("Bank Account", company_bank_account, "bank_account_no") == f"COMPANY-{token[:8]}"
+
+        # Exercise the native Cash path with the same disposable payroll after
+        # removing its synthetic Bank settlement. No bank match is supplied.
+        frappe.set_user("Administrator")
+        frappe.get_doc("Bank Transaction", bank_transaction.name).cancel()
+        frappe.delete_doc("Bank Transaction", bank_transaction.name, force=True, ignore_permissions=True)
+        frappe.get_doc("Journal Entry", payment_entry.name).cancel()
+        frappe.delete_doc("Journal Entry", payment_entry.name, force=True, ignore_permissions=True)
+        for slip in slips_after_retry:
+            frappe.db.set_value(
+                "Salary Slip",
+                slip.name,
+                {"mode_of_payment": "Cash", "bank_name": None, "bank_account_no": None},
+            )
+
+        cash_account = _create_synthetic_cash_account(company, token)
+        frappe.db.set_value(
+            "Payroll Entry", entry.name,
+            {"payment_account": cash_account, "bank_account": None},
+        )
+        cash_entry_source = frappe.get_doc("Payroll Entry", entry.name)
+        frappe.set_user(manager)
+        cash_readiness = inspect_payroll_payment_readiness(cash_entry_source)
+        assert cash_readiness["status"] == "READY_TO_PREPARE_PAYMENT", cash_readiness
+        cash_entry = cash_entry_source.make_bank_entry()
+        assert cash_entry and cash_entry.docstatus == 0
+        assert cash_entry.voucher_type == "Cash Entry"
+
+        frappe.set_user("Administrator")
+        cash_entry.submit()
+        assert cash_entry.docstatus == 1
+        assert cash_entry.total_debit == cash_entry.total_credit
+        frappe.set_user(manager)
+        cash_posted = inspect_payroll_payment_readiness(cash_entry_source)
+        assert cash_posted["status"] == "CASH_PAYMENT_ACCOUNTING_POSTED", cash_posted
+        assert cash_posted["bank_transactions"] == []
+        assert cash_posted["clearance_date"] is None
     finally:
         frappe.set_user("Administrator")
         # The proof stays under three slips (synchronous HRMS path) and enables
