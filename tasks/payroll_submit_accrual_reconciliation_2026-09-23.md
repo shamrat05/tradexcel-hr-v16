@@ -138,3 +138,12 @@ cost-center field and native Salary Slip submit permission; their fixtures and
 assertions were updated before the passing rerun.
 
 PR remains open/unmerged; no production action is part of this change.
+
+
+## Post-review Salary Slip permission correction
+
+PR #9 review found that granting Salary Slip submit permission to Tradexcel Payroll Manager also allowed a standalone or unmanaged Salary Slip to reach native submission. The server hook now limits users whose submit authority comes only from Tradexcel Payroll Manager or Tradexcel Payroll Approver to an approved, managed Payroll Entry batch. Managed direct submission remains blocked; the native Payroll Entry batch uses Frappe's via_payroll_entry flag and is rechecked for approval and current financial readiness.
+
+Payroll Approver no longer has Salary Slip submit permission. Payroll Manager retains the native submit permission required by HRMS batch submission. Users who also hold another role with an explicit Salary Slip submit DocPerm retain that independent native authority; Administrator and System Manager behavior remains unchanged. The role-only restriction decision is cached for the request so batch processing does not query role permissions per employee.
+
+Regression tests cover standalone and unmanaged Salary Slips for Payroll Manager and Payroll Approver, a native administrative role, an additional native submit role, the real Approver DocPerm, and the existing synthetic managed native batch/partial-retry flow. The >30 employee test proves that HRMS chooses its queued path; a real disposable asynchronous worker end-to-end run remains a pre-production release gate.

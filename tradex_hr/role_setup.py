@@ -200,7 +200,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel HR Manager": READ_ONLY_PERMS,
         "Tradexcel Payroll Manager": EDIT_PERMS | {"submit"},
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
-        "Tradexcel Payroll Approver": APPROVE_PERMS | {"delete"},
+        "Tradexcel Payroll Approver": (APPROVE_PERMS - {"submit"}) | {"delete"},
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
     "Payroll Entry": {

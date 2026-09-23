@@ -334,6 +334,7 @@ def test_direct_individual_managed_salary_slip_submit_is_blocked(monkeypatch):
     entry = frappe._dict(name="PE-APPROVED", docstatus=1, workflow_state="Tradexcel Payroll Approved",
                          salary_slips_created=1, status="Submitted")
     monkeypatch.setattr(native_payroll, "frappe", SimpleNamespace(
+        session=SimpleNamespace(user="Administrator"),
         db=SimpleNamespace(get_value=lambda *_args, **_kwargs: "RUN-1"),
         get_doc=lambda *_args, **_kwargs: entry,
         local=SimpleNamespace(),
@@ -350,6 +351,7 @@ def test_direct_individual_managed_salary_slip_submit_is_blocked(monkeypatch):
 
 def test_unmanaged_salary_slip_keeps_native_submission_path(monkeypatch):
     monkeypatch.setattr(native_payroll, "frappe", SimpleNamespace(
+        session=SimpleNamespace(user="Administrator"),
         db=SimpleNamespace(get_value=lambda *_args, **_kwargs: None),
         flags=SimpleNamespace(via_payroll_entry=False),
     ))
@@ -417,6 +419,7 @@ def test_direct_salary_slip_submit_obeys_financial_readiness(monkeypatch):
     entry = frappe._dict(name="PE-APPROVED", docstatus=1, workflow_state="Tradexcel Payroll Approved",
                          salary_slips_created=1, status="Submitted")
     monkeypatch.setattr(native_payroll, "frappe", SimpleNamespace(
+        session=SimpleNamespace(user="Administrator"),
         db=SimpleNamespace(get_value=lambda *_args, **_kwargs: "RUN-1"),
         get_doc=lambda *_args, **_kwargs: entry,
         local=SimpleNamespace(tradex_financial_readiness={}),

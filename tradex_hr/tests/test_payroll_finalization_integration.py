@@ -390,6 +390,9 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         )
         workflow_users.update(manager=manager, approver=approver, director=director)
         frappe.clear_cache()
+        frappe.set_user(approver)
+        assert not frappe.has_permission("Salary Slip", "submit")
+        frappe.set_user(manager)
 
         # Prove the real Company User Permission denies finalization for another
         # company before reconciliation or readiness reads payroll records.

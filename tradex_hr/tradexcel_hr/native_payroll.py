@@ -170,6 +170,7 @@ MANAGED_RUN_FIELD = "custom_tradex_run_key"
 POPULATION_HASH_FIELD = "custom_tradex_population_hash"
 ATTENDANCE_REVISION_FIELD = "custom_tradex_attendance_revision"
 PAYROLL_MANAGER_ROLE = "Tradexcel Payroll Manager"
+PAYROLL_SLIP_SUBMIT_ROLES = {PAYROLL_MANAGER_ROLE, "Tradexcel Payroll Approver"}
 
 
 def _validate_supported_scope(company: str, start: date, end: date, employee_ids: list[str] | None) -> None:
@@ -335,17 +336,62 @@ def validate_payroll_entry_before_submit(doc, method=None) -> None:
     _verify_managed_entry(doc)
 
 
+def _custom_payroll_role_requires_managed_slips() -> bool:
+    """True when custom payroll roles are the user's only Salary Slip submit authority."""
+    user = frappe.session.user
+    if user == "Administrator":
+        return False
+
+    cache = getattr(frappe.local, "tradex_slip_submit_restrictions", None)
+    if cache is None:
+        cache = frappe.local.tradex_slip_submit_restrictions = {}
+    if user in cache:
+        return cache[user]
+
+    roles = set(frappe.get_roles(user))
+    restricted = bool(roles.intersection(PAYROLL_SLIP_SUBMIT_ROLES))
+    if not restricted or "System Manager" in roles:
+        cache[user] = False
+        return False
+
+    other_roles = roles - PAYROLL_SLIP_SUBMIT_ROLES
+    if other_roles and frappe.get_all(
+        "DocPerm",
+        filters={
+            "parent": "Salary Slip",
+            "role": ["in", sorted(other_roles)],
+            "submit": 1,
+        },
+        pluck="name",
+        limit=1,
+    ):
+        # Preserve a legitimate native Salary Slip submit permission supplied by
+        # another role. The custom payroll roles alone never grant this route.
+        restricted = False
+
+    cache[user] = restricted
+    return restricted
+
+
 def validate_salary_slip_before_submit(doc, method=None) -> None:
-    """Allow managed Salary Slips only through the approved Payroll Entry batch."""
-    if not doc.get("payroll_entry"):
+    """Keep custom payroll-role users on the approved native Payroll Entry path."""
+    payroll_entry = doc.get("payroll_entry")
+    custom_role_only = _custom_payroll_role_requires_managed_slips()
+
+    if not payroll_entry:
+        if custom_role_only:
+            frappe.throw(_("Tradexcel payroll roles may submit Salary Slips only through an approved managed Payroll Entry."))
         return
-    run_key = frappe.db.get_value("Payroll Entry", doc.payroll_entry, MANAGED_RUN_FIELD)
+
+    run_key = frappe.db.get_value("Payroll Entry", payroll_entry, MANAGED_RUN_FIELD)
     if not run_key:
+        if custom_role_only:
+            frappe.throw(_("Tradexcel payroll roles may submit Salary Slips only through an approved managed Payroll Entry."))
         return
     if not getattr(frappe.flags, "via_payroll_entry", False):
         frappe.throw(_("Submit managed Salary Slips from the approved Payroll Entry."))
 
-    entry = frappe.get_doc("Payroll Entry", doc.payroll_entry)
+    entry = frappe.get_doc("Payroll Entry", payroll_entry)
     if (
         entry.docstatus != 1
         or entry.workflow_state != "Tradexcel Payroll Approved"

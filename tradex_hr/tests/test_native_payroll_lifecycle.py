@@ -350,3 +350,58 @@ def test_period_gate_reports_attendance_findings_even_without_finalized_period(m
 
     assert findings[0]["code"] == "ATTENDANCE_UNMARKED"
     assert "3 unmarked" in findings[0]["reason"]
+
+
+def _assert_custom_payroll_role_cannot_submit_unmanaged_slip(monkeypatch, role, payroll_entry=None):
+    from tradex_hr.tradexcel_hr.native_payroll import validate_salary_slip_before_submit
+
+    old_user = frappe.session.user
+    monkeypatch.setattr(frappe.session, "user", f"codex-{role.lower().replace(chr(32), chr(45))}@example.test", raising=False)
+    monkeypatch.setattr(frappe, "get_roles", lambda *_args, **_kwargs: [role])
+    monkeypatch.setattr(frappe.flags, "via_payroll_entry", False, raising=False)
+    monkeypatch.setattr(frappe.db, "get_value", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(frappe, "get_all", lambda *_args, **_kwargs: [])
+    try:
+        slip = frappe._dict({"doctype": "Salary Slip", "payroll_entry": payroll_entry})
+        with pytest.raises(frappe.ValidationError, match="Tradexcel payroll roles may submit Salary Slips only through an approved managed Payroll Entry"):
+            validate_salary_slip_before_submit(slip)
+    finally:
+        monkeypatch.setattr(frappe.session, "user", old_user, raising=False)
+
+
+def test_payroll_manager_cannot_submit_standalone_salary_slip(monkeypatch):
+    _assert_custom_payroll_role_cannot_submit_unmanaged_slip(
+        monkeypatch, "Tradexcel Payroll Manager"
+    )
+
+
+def test_payroll_manager_cannot_submit_salary_slip_from_unmanaged_entry(monkeypatch):
+    _assert_custom_payroll_role_cannot_submit_unmanaged_slip(
+        monkeypatch, "Tradexcel Payroll Manager", "MANUAL-PE-001"
+    )
+
+
+def test_payroll_approver_cannot_submit_unmanaged_salary_slip(monkeypatch):
+    _assert_custom_payroll_role_cannot_submit_unmanaged_slip(
+        monkeypatch, "Tradexcel Payroll Approver", "MANUAL-PE-001"
+    )
+
+
+def test_system_manager_native_unmanaged_salary_slip_behavior_is_not_blocked(monkeypatch):
+    from tradex_hr.tradexcel_hr.native_payroll import validate_salary_slip_before_submit
+
+    monkeypatch.setattr(frappe.session, "user", "sysadmin@example.test", raising=False)
+    monkeypatch.setattr(frappe, "get_roles", lambda *_args, **_kwargs: ["System Manager"])
+    monkeypatch.setattr(frappe.flags, "via_payroll_entry", False, raising=False)
+    validate_salary_slip_before_submit(frappe._dict({"doctype": "Salary Slip"}))
+
+
+def test_custom_payroll_role_with_other_native_submit_authority_keeps_native_behavior(monkeypatch):
+    from tradex_hr.tradexcel_hr.native_payroll import _custom_payroll_role_requires_managed_slips
+
+    user = "codex-native-hr@example.test"
+    monkeypatch.setattr(frappe.session, "user", user, raising=False)
+    monkeypatch.setattr(frappe, "get_roles", lambda *_args, **_kwargs: ["Tradexcel Payroll Manager", "HR Manager"])
+    monkeypatch.setattr(frappe, "get_all", lambda *_args, **_kwargs: ["SAL-SLIP-DOC-PERM"])
+    frappe.local.tradex_slip_submit_restrictions = {}
+    assert not _custom_payroll_role_requires_managed_slips()
