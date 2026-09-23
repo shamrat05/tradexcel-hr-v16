@@ -391,6 +391,20 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         workflow_users.update(manager=manager, approver=approver, director=director)
         frappe.clear_cache()
 
+        # Prove the real Company User Permission denies finalization for another
+        # company before reconciliation or readiness reads payroll records.
+        other_companies = frappe.get_all(
+            "Company", filters={"name": ["!=", company]}, pluck="name", limit=1
+        )
+        assert other_companies
+        out_of_scope_entry = get_controller("Payroll Entry")({"doctype": "Payroll Entry"})
+        out_of_scope_entry.company = other_companies[0]
+        out_of_scope_entry.custom_tradex_run_key = "TRAD-OUT-OF-SCOPE-TEST"
+        out_of_scope_entry.check_permission = lambda *_args, **_kwargs: None
+        frappe.set_user(manager)
+        with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
+            out_of_scope_entry.submit_salary_slips()
+
         # Inject only the synthetic component for the daily input adapter.
         original_create_daily_input = daily_wage_input.create_daily_wage_input
         monkeypatch.setattr(daily_wage_input, "DEFAULT_COMPONENT", daily_component.name)
