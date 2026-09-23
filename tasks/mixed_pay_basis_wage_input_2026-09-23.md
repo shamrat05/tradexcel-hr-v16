@@ -230,3 +230,54 @@ Hardening changes in progress: native submit/cancel Workflow states, review elig
 - That convergence exposed a v16-required Workspace.type field missing from the existing installer; set it to Workspace before saving. The canonical workspace and report/workspace test set now pass.
 - Focused Phase A suite: 17 passed. Full app suite: 225 passed, 2 skipped. Compile and final diff checks are run after review.
 - Staging payroll population was unchanged. The synthetic lifecycle test cleaned its Payroll Entry, draft Salary Slip, derived Additional Salary, Attendance, Attendance Period, Salary Structure/Assignment, and three role-specific users with Company User Permissions. No real Salary Slip or accounting entry was submitted/created.
+
+
+## Phase A lifecycle hardening and Phase B operator flow — 2026-09-23
+
+### Phase A — PR #6 hardening
+
+- Branch: `feat/native-payroll-draft-orchestration`
+- Base: PR #5 `8434d0230a9aa8bc2e9e49c4cdfc2477594af467`
+- Prior head: `f2a71e8`; hardened head: `a2edf9fb071da24e82e4829e188039202f042b1d`
+- Lifecycle: preparation creates only a managed native Draft Payroll Entry. Its single native submit creates Salary Slips. Review and director approval remain submitted states; rejection uses native cancellation.
+- Salary Slip `before_submit` blocks linked managed slips until the Payroll Entry is approved. Payroll Entry `before_submit` blocks an unmanaged or unprepared direct submission.
+- Daily Wage inputs are authorized before writes, all known blockers are preflighted, and unexpected failures roll back to one savepoint. Payroll Manager does not gain arbitrary Additional Salary submit permission.
+- Native queue state gates review and approval. Tests capture the native queue path, worker failure, and retry without adding a custom queue.
+- Managed run identity binds company/month and verifies population and Attendance revision before reuse. Unsupported scopes and unmanaged or mismatched same-period entries block.
+- The old manual `run_payroll_for_month` CLI path was found during the full repository audit. It previously created Salary Slips outside the native workflow. The runner now stops with a clear Payroll Readiness/native-workflow message; the manual slip builder and raw-checkin payroll helpers were removed. There is no remaining whitelisted or UI caller for the retired path.
+
+### Phase B — Payroll Readiness operator flow
+
+- Branch: `feat/payroll-readiness-operator-flow`, based on hardened PR #6 head `a2edf9f`.
+- Surface: standard app-owned Script Report `Tradexcel Payroll Readiness`, with Company and Payroll Month filters, one row per in-scope employee, human-readable blockers, and links to canonical Attendance, Attendance Request, and Salary Structure Assignment records.
+- Readiness actions recalculate on the server and enforce named-user, role, company, employee, and native permission scope. The report client never supplies a trusted READY flag.
+- The migration preview is read-only. It shows current SSA/structure/rate, Attendance and assignment conflicts, and a proposed zero/non-prorated Daily Wage and Overtime shape. No effective date is chosen automatically; absent an approved date it returns `DECISION_REQUIRED`.
+- Workspace `Run Monthly Payroll` now opens the report. Native Payroll Entry remains accessible as `Payroll Entries (Advanced)`.
+- Staging report evidence for TCL September 2026: 238 unique employees, 63 ready, 175 needing attention; findings include 159 unmarked Daily Wage Attendance records, 159 unsafe legacy Daily Wage structures, and 16 employees without applicable submitted SSAs. Findings may overlap. No employee data was auto-fixed.
+- Report execution was approximately 1.4–1.9 seconds in the direct staging checks; query count was not measured.
+
+### Staging backup and synchronization
+
+Staging only: `hrms-v16.localhost`. Before report/workspace metadata synchronization, created and verified backup prefix:
+`/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/20260923_063317-hrms-v16_localhost-*`
+
+- Config SHA-256: `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`
+- Database SHA-256: `82889d13ad3a93da895370ff5d21d0380cd1a0065a1892d613ecb2380bf9072d`
+- Public files SHA-256: `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`
+- Private files SHA-256: `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`
+
+The complete `bench migrate` remains blocked in Frappe orphan Workspace cleanup because the staging default queue has over 550 pending deletion jobs and no workers online. No jobs were drained or removed. App-owned report and Workspace metadata were converged with targeted `ensure_standard_script_reports`, `ensure_workspace`, and cache clear commands; the installed report, script, and shortcuts were then checked directly. No Phase B schema change was needed.
+
+Synthetic tests explicitly clean their named records. Staging remained at zero Payroll Entry, zero Salary Slip, and zero derived Daily Wage input after Phase A integration cleanup. Production was not touched; no real Salary Slip or accounting entry was submitted or created.
+
+### Verification
+
+- Phase A suite before operator work: 225 passed, 2 skipped.
+- Phase B full suite before legacy-runner shutdown: 234 passed, 2 skipped.
+- Legacy runner shutdown tests: 12 passed.
+- Final full app suite: 233 passed, 2 skipped, 8 warnings (all existing Frappe v17 deprecation warnings).
+- Final compilation, report JavaScript `node --check`, and `git diff --check`: passed.
+- Index refreshed with codebase-memory MCP; it still discovers only project/folder nodes for this app, so implementation review used the repository diff and focused source reads.
+- No PR was merged. PR #6 remains open; Phase B is intended as a stacked PR targeting PR #6.
+
+Remaining operator gates: resolve Attendance, create a safe effective-dated Daily Wage structure only after business approval of its effective date, and test the native queued behavior in a clean synthetic environment. Tax, accounting, Salary Slip submission, and payment remain out of scope.

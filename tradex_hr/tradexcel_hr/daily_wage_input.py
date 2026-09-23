@@ -85,15 +85,9 @@ def _native_attendance_units(
     return {"status": "READY", "payable_units": flt(max(units, 0)), "native": True}
 
 
-def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: str | date) -> dict[str, Any]:
-    """Calculate an auditable Daily Wage amount without creating payroll data."""
-    start, end = getdate(start_date), getdate(end_date)
-    basis = resolve_pay_basis(employee, start, end)
+def _inspect_daily_wage_structure(basis: dict[str, Any]) -> dict[str, Any]:
     if basis.get("status") != DAILY:
-        return {"status": basis.get("status"), "employee": employee, "reason": basis.get("reason")}
-    rate = resolve_daily_rate(basis)
-    if rate["status"] != "READY":
-        return rate
+        return {"status": basis.get("status"), "reason": basis.get("reason")}
     structure_rows = frappe.get_all(
         "Salary Detail",
         filters={"parent": basis["salary_structure"], "parenttype": "Salary Structure"},
@@ -103,10 +97,43 @@ def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: 
     if unsafe:
         return {
             "status": "BLOCKED_UNSAFE_STRUCTURE",
-            "employee": employee,
+            "employee": basis["employee"],
             "salary_structure": basis["salary_structure"],
             "reason": "Daily Wage structure still calculates payment_days; converge it to a zero/non-prorated wage row before creating native inputs",
         }
+    return {
+        "status": "READY",
+        "employee": basis["employee"],
+        "salary_structure": basis["salary_structure"],
+    }
+
+
+def inspect_daily_wage_structure(
+    employee: str,
+    start_date: str | date,
+    end_date: str | date | None = None,
+) -> dict[str, Any]:
+    """Inspect the effective structure without calculating money or requiring attendance."""
+    basis = resolve_pay_basis(
+        employee,
+        getdate(start_date),
+        getdate(end_date) if end_date else None,
+    )
+    return _inspect_daily_wage_structure(basis)
+
+
+def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: str | date) -> dict[str, Any]:
+    """Calculate an auditable Daily Wage amount without creating payroll data."""
+    start, end = getdate(start_date), getdate(end_date)
+    basis = resolve_pay_basis(employee, start, end)
+    if basis.get("status") != DAILY:
+        return {"status": basis.get("status"), "employee": employee, "reason": basis.get("reason")}
+    rate = resolve_daily_rate(basis)
+    if rate["status"] != "READY":
+        return rate
+    structure = _inspect_daily_wage_structure(basis)
+    if structure["status"] != "READY":
+        return structure
 
     employee_row = frappe.db.get_value(
         "Employee", employee, ["date_of_joining", "relieving_date"], as_dict=True

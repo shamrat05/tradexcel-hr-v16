@@ -7,6 +7,7 @@ from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
 from frappe.model.workflow import apply_workflow, get_transitions
 
 from tradex_hr.tradexcel_hr import daily_wage_input, native_payroll
+from tradex_hr.tradexcel_hr.report.tradexcel_payroll_readiness import tradexcel_payroll_readiness as payroll_readiness
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -58,6 +59,7 @@ def test_native_readiness_blocks_stale_attendance(monkeypatch):
         "employee": "EMP-DAILY", "code": "BLOCKED_ATTENDANCE_STALE", "reason": "stale"
     }])
     monkeypatch.setattr(native_payroll, "_unapproved_overtime", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "inspect_daily_wage_structure", lambda *_args: {"status": "READY"})
     monkeypatch.setattr(native_payroll, "calculate_daily_wage_input", lambda *_args: pytest.fail("stale input must stop first"))
 
     result = native_payroll.inspect_native_payroll_readiness(
@@ -304,14 +306,20 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
         frappe.enqueue = original_enqueue
         frappe.set_user(workflow_users["Tradexcel Payroll Manager"])
         assert not frappe.has_permission("Additional Salary", "submit")
-        result = native_payroll.prepare_native_payroll(employee.company, start, end)
+        result = payroll_readiness.prepare_payroll(employee.company, start.isoformat())
+        retry_result = payroll_readiness.prepare_payroll(employee.company, start.isoformat())
         frappe.set_user("Administrator")
 
         assert result["status"] == "PREPARED", result
-        assert result["salary_slips"] == []
+        assert retry_result["status"] == "PREPARED"
+        assert retry_result["payroll_entry"] == result["payroll_entry"]
         created["payroll_entry"] = result["payroll_entry"]
         frappe.db.commit()  # Simulate the prepare request boundary; native jobs commit independently.
-        created["additional_salary"] = [item["additional_salary"] for item in result["daily_inputs"]]
+        created["additional_salary"] = frappe.get_all(
+            "Additional Salary",
+            filters={"ref_doctype": "Tradexcel Attendance Period", "ref_docname": period.name},
+            pluck="name",
+        )
         entry = frappe.get_doc("Payroll Entry", result["payroll_entry"])
         assert entry.docstatus == 0
         assert frappe.db.count("Salary Slip", {"payroll_entry": entry.name}) == 0

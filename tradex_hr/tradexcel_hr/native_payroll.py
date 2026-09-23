@@ -25,6 +25,7 @@ from tradex_hr.tradexcel_hr.daily_wage_input import (
     _get_existing_input,
     calculate_daily_wage_input,
     create_daily_wage_input,
+    inspect_daily_wage_structure,
 )
 from tradex_hr.tradexcel_hr.pay_basis import DAILY, MONTHLY, resolve_pay_basis
 
@@ -40,23 +41,36 @@ def _period_attendance_gate(company: str, start: date, end: date, employee_ids: 
     if not employee_ids and not _attendance_required_for_payroll():
         return []
 
+    inspection = inspect_attendance_integrity(company, start, end, employee_ids)
+    findings = [
+        {
+            "code": item.get("code", "BLOCKED_ATTENDANCE"),
+            "employee": item.get("employee") or employee,
+            "reason": item.get("reason", item.get("code", "Attendance needs review.")),
+        }
+        for item in inspection.get("blockers", [])
+        for employee in ([item.get("employee")] if item.get("employee") else employee_ids)
+    ]
+
     periods = frappe.get_all(
         "Tradexcel Attendance Period",
         filters={"company": company, "from_date": start, "to_date": end, "status": "Finalized"},
         fields=["name", "attendance_hash"],
     )
     if len(periods) != 1:
+        if findings:
+            return findings
         return [
             {
                 "code": "BLOCKED_ATTENDANCE_PERIOD",
                 "employee": employee,
-                "reason": "The exact Attendance Period is not finalized once for this payroll range.",
+                "reason": "Attendance review must be finalized once for this payroll month.",
             }
             for employee in employee_ids
         ]
 
     if current_attendance_period_hash(company, start, end) != _row_value(periods[0], "attendance_hash"):
-        return [
+        return findings + [
             {
                 "code": "BLOCKED_ATTENDANCE_STALE",
                 "employee": employee,
@@ -65,16 +79,7 @@ def _period_attendance_gate(company: str, start: date, end: date, employee_ids: 
             for employee in employee_ids
         ]
 
-    inspection = inspect_attendance_integrity(company, start, end, employee_ids)
-    return [
-        {
-            "code": "BLOCKED_ATTENDANCE",
-            "employee": item.get("employee") or employee,
-            "reason": item.get("reason", item.get("code", "Attendance needs review.")),
-        }
-        for item in inspection.get("blockers", [])
-        for employee in ([item.get("employee")] if item.get("employee") else employee_ids)
-    ]
+    return findings
 
 
 def inspect_native_payroll_readiness(
@@ -94,8 +99,10 @@ def inspect_native_payroll_readiness(
     }
 
     def block(employee: str, code: str, reason: str):
-        if outcomes[employee]["status"] == "READY":
-            outcomes[employee].update({"status": code, "reason": reason})
+        outcome = outcomes[employee]
+        outcome.setdefault("findings", []).append({"code": code, "reason": reason})
+        if outcome["status"] == "READY":
+            outcome.update({"status": code, "reason": reason})
 
     for row in employees:
         employee = _row_value(row, "name")
@@ -103,10 +110,9 @@ def inspect_native_payroll_readiness(
             block(employee, "BLOCKED_EMPLOYMENT_STATUS", f"Employment status {_row_value(row, 'status')!r} has no approved payroll meaning.")
             continue
         basis = resolve_pay_basis(employee, start, end)
+        outcomes[employee]["pay_basis"] = basis
         if basis.get("status") not in {MONTHLY, DAILY}:
             block(employee, "BLOCKED_PAY_BASIS", basis.get("reason", basis.get("status", "Pay basis is unresolved.")))
-        else:
-            outcomes[employee]["pay_basis"] = basis
 
     required_attendance = [employee for employee, result in outcomes.items() if result.get("pay_basis", {}).get("status") == DAILY]
     if _attendance_required_for_payroll():
@@ -122,12 +128,17 @@ def inspect_native_payroll_readiness(
             block(employee, "BLOCKED_OT", "Attendance overtime is not in a submitted native Overtime Slip.")
 
     for employee, outcome in outcomes.items():
-        if outcome["status"] != "READY" or outcome.get("pay_basis", {}).get("status") != DAILY:
+        if outcome.get("pay_basis", {}).get("status") != DAILY:
             continue
-        result = calculate_daily_wage_input(employee, start, end)
-        outcome["daily_wage_input"] = result
-        if result.get("status") != "READY":
-            block(employee, "BLOCKED_DAILY_WAGE_STRUCTURE", result.get("reason", result.get("status", "Daily Wage input is blocked.")))
+        structure = inspect_daily_wage_structure(employee, start, end)
+        if structure["status"] != "READY":
+            outcome["daily_wage_input"] = structure
+            block(employee, structure["status"], structure.get("reason", structure["status"]))
+        elif outcome["status"] == "READY":
+            result = calculate_daily_wage_input(employee, start, end)
+            outcome["daily_wage_input"] = result
+            if result.get("status") != "READY":
+                block(employee, result["status"], result.get("reason", result["status"]))
 
     blockers = [result for result in outcomes.values() if result["status"] != "READY"]
     if not employees:

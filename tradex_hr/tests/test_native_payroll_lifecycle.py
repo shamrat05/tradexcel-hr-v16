@@ -119,6 +119,10 @@ def test_real_payroll_manager_permissions_are_narrow_and_company_scoped(monkeypa
     other_employees = frappe.get_all("Employee", filters={"company": ["!=", company], "status": "Active"}, pluck="name", limit=1)
     try:
         frappe.set_user(email)
+        from tradex_hr.tradexcel_hr.report.tradexcel_payroll_readiness import tradexcel_payroll_readiness as readiness_report
+        readiness_report._require_payroll_manager(company)
+        with pytest.raises(frappe.PermissionError):
+            readiness_report._require_payroll_manager("Elegance Footwear Ltd.")
         assert frappe.has_permission("Payroll Entry", "create")
         assert frappe.has_permission("Payroll Entry", "submit")
         assert frappe.has_permission("Additional Salary", "create")
@@ -287,3 +291,55 @@ def test_managed_entry_with_changed_population_is_not_reused(monkeypatch):
     result = native_payroll.prepare_native_payroll("Company A", date(2026, 9, 1), date(2026, 9, 30))
     assert result["status"] == "BLOCKED_EXISTING_PAYROLL_MISMATCH"
     assert "no longer matches current" in result["blockers"][0]["reason"]
+
+
+def test_readiness_keeps_attendance_and_unsafe_structure_findings_visible(monkeypatch):
+    employee = {"name": "EMP-1", "company": "Company A", "status": "Active"}
+    monkeypatch.setattr(native_payroll, "_employees_for_period", lambda *_args: [employee])
+    monkeypatch.setattr(native_payroll, "resolve_pay_basis", lambda *_args: {
+        "status": native_payroll.DAILY,
+        "employee": "EMP-1",
+        "assignment": "SSA-1",
+        "salary_structure": "Legacy Daily",
+        "base": 350,
+    })
+    monkeypatch.setattr(native_payroll, "_attendance_required_for_payroll", lambda: False)
+    monkeypatch.setattr(native_payroll, "_period_attendance_gate", lambda *_args: [{
+        "employee": "EMP-1",
+        "code": "ATTENDANCE_UNMARKED",
+        "reason": "3 attendance days need review.",
+    }])
+    monkeypatch.setattr(native_payroll, "_unapproved_overtime", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "inspect_daily_wage_structure", lambda *_args: {
+        "status": "BLOCKED_UNSAFE_STRUCTURE",
+        "reason": "The current structure prorates Daily Wage.",
+    })
+
+    result = native_payroll.inspect_native_payroll_readiness(
+        "Company A", date(2026, 9, 1), date(2026, 9, 30)
+    )
+
+    outcome = result["outcomes"][0]
+    assert {item["code"] for item in outcome["findings"]} == {
+        "ATTENDANCE_UNMARKED", "BLOCKED_UNSAFE_STRUCTURE"
+    }
+    assert outcome["pay_basis"]["status"] == native_payroll.DAILY
+    assert outcome["daily_wage_input"]["status"] == "BLOCKED_UNSAFE_STRUCTURE"
+
+
+def test_period_gate_reports_attendance_findings_even_without_finalized_period(monkeypatch):
+    monkeypatch.setattr(native_payroll.frappe, "get_all", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(native_payroll, "inspect_attendance_integrity", lambda *_args: {
+        "blockers": [{
+            "code": "ATTENDANCE_UNMARKED",
+            "employee": "EMP-1",
+            "reason": "Native Payroll Entry found 3 unmarked day(s).",
+        }],
+    })
+
+    findings = native_payroll._period_attendance_gate(
+        "Company A", date(2026, 9, 1), date(2026, 9, 30), ["EMP-1"]
+    )
+
+    assert findings[0]["code"] == "ATTENDANCE_UNMARKED"
+    assert "3 unmarked" in findings[0]["reason"]

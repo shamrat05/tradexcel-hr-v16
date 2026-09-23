@@ -110,11 +110,20 @@ def test_payroll_runner_has_no_legacy_manual_or_external_salary_inputs():
     assert "source_compensation_file" not in params
 
 
-def test_payroll_runner_refuses_implicit_site_selection(monkeypatch):
+def test_legacy_manual_runner_is_disabled_without_site_context(monkeypatch):
     monkeypatch.setattr(run_payroll, "frappe", SimpleNamespace(local=SimpleNamespace(site=None)))
 
-    with pytest.raises(ValueError, match="explicit site and sites_path"):
+    with pytest.raises(RuntimeError, match="Tradexcel Payroll Readiness"):
         run_payroll.run_payroll_for_month(2026, 9, "Tradexcel Ceramics Ltd.")
+
+
+def test_legacy_manual_payroll_runner_is_disabled_even_with_site_context(monkeypatch):
+    monkeypatch.setattr(run_payroll, "frappe", SimpleNamespace(local=SimpleNamespace(site="hrms-v16.localhost")))
+
+    with pytest.raises(RuntimeError, match="native Payroll Entry workflow"):
+        run_payroll.run_payroll_for_month(
+            2026, 9, "Tradexcel Ceramics Ltd.", site="hrms-v16.localhost", sites_path="/unused"
+        )
 
 
 def test_payroll_runner_requires_company(monkeypatch):
@@ -129,6 +138,20 @@ def test_cli_requires_explicit_period_company_and_site(monkeypatch):
     with pytest.raises(SystemExit) as error:
         run_payroll.main([])
     assert error.value.code == 2
+
+
+def test_cli_reports_legacy_runner_shutdown_with_managed_recovery_path(capsys):
+    with pytest.raises(SystemExit) as error:
+        run_payroll.main([
+            "--year", "2026",
+            "--month", "9",
+            "--company", "Tradexcel Ceramics Ltd.",
+            "--site", "hrms-v16.localhost",
+            "--sites-path", "/home/sanchita/frappe-bench-v16/sites",
+        ])
+
+    assert error.value.code == 2
+    assert "Tradexcel Payroll Readiness" in capsys.readouterr().err
 
 
 def test_cli_passes_explicit_payroll_target(monkeypatch):
@@ -154,92 +177,3 @@ def test_cli_passes_explicit_payroll_target(monkeypatch):
             "sites_path": "/home/sanchita/frappe-bench-v16/sites",
         },
     )]
-
-
-def test_all_blocked_payroll_run_is_not_success(monkeypatch):
-    class DB:
-        def sql(self, *_args, **_kwargs):
-            return [_row("EMP-BLOCKED", assignment="SSA-ZERO", base=0)]
-
-        def get_value(self, *_args, **_kwargs):
-            return None
-
-    monkeypatch.setattr(
-        run_payroll,
-        "frappe",
-        SimpleNamespace(local=SimpleNamespace(site="hrms-v16.localhost"), db=DB()),
-    )
-    component_exceptions = __import__(
-        "tradex_hr.tradexcel_hr.component_exceptions", fromlist=["load_component_rules"]
-    )
-    monkeypatch.setattr(component_exceptions, "load_component_rules", lambda _company: [])
-
-    assert run_payroll.run_payroll_for_month(
-        2026, 9, company="Tradexcel Ceramics Ltd.", site="hrms-v16.localhost", sites_path="/unused"
-    ) is False
-
-
-def test_run_payroll_orchestration_is_fail_closed_and_preserves_prior_work(monkeypatch):
-    rows = [
-        _row("EMP-EXIST-DRAFT", assignment="SSA-DRAFT", base=1000),
-        _row("EMP-EXIST-SUBMITTED", assignment="SSA-SUBMITTED", base=1000),
-        _row("EMP-MISSING-BASE", assignment="SSA-ZERO", base=0),
-        _row("EMP-OK", assignment="SSA-OK", base=1000),
-        _row("EMP-FAIL", assignment="SSA-FAIL", base=1000),
-    ]
-
-    committed = []
-    rolled_back = []
-    created = []
-
-    class DB:
-        def sql(self, *_args, **_kwargs):
-            return rows
-
-        def get_value(self, _doctype, filters, *_args, **_kwargs):
-            existing = {
-                "EMP-EXIST-DRAFT": SimpleNamespace(name="SLIP-DRAFT", docstatus=0),
-                "EMP-EXIST-SUBMITTED": SimpleNamespace(name="SLIP-SUBMITTED", docstatus=1),
-            }
-            return existing.get(filters["employee"])
-
-        def savepoint(self, name):
-            return name
-
-        def commit(self):
-            committed.append(True)
-
-        def rollback(self, **kwargs):
-            rolled_back.append(kwargs)
-
-    fake_frappe = SimpleNamespace(local=SimpleNamespace(site="hrms-v16.localhost"), db=DB())
-    monkeypatch.setattr(run_payroll, "frappe", fake_frappe)
-    monkeypatch.setattr(run_payroll, "structure_earnings", lambda _structure, base: [
-        {"salary_component": "Basic", "abbr": "B", "amount": base}
-    ])
-    monkeypatch.setattr(run_payroll, "employee_joins_after_period", lambda *_args: False)
-    monkeypatch.setattr(run_payroll, "_load_source_salary", lambda *_args: pytest.fail("audit JSON used for payroll"))
-    monkeypatch.setattr(run_payroll, "_create_manual_slip", lambda data: (
-        (_ for _ in ()).throw(RuntimeError("synthetic row failure"))
-        if data["employee"] == "EMP-FAIL"
-        else (created.append(data["employee"]) or SimpleNamespace(gross_pay=data["gross_pay"]))
-    ))
-
-    component_exceptions = __import__(
-        "tradex_hr.tradexcel_hr.component_exceptions", fromlist=["load_component_rules"]
-    )
-    payroll_policy = __import__(
-        "tradex_hr.tradexcel_hr.payroll_policy", fromlist=["resolve_policy"]
-    )
-    monkeypatch.setattr(component_exceptions, "load_component_rules", lambda _company: [])
-    monkeypatch.setattr(component_exceptions, "apply_component_rules", lambda earnings, *_args: earnings)
-    monkeypatch.setattr(payroll_policy, "resolve_policy", lambda *_args: SimpleNamespace(pay_basis="Monthly"))
-
-    result = run_payroll.run_payroll_for_month(
-        2026, 9, "Tradexcel Ceramics Ltd.", site="hrms-v16.localhost", sites_path="/unused"
-    )
-
-    assert result is False
-    assert created == ["EMP-OK"]
-    assert len(committed) == 1
-    assert rolled_back == [{"save_point": "payroll_row"}]

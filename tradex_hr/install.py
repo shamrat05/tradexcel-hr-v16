@@ -414,6 +414,7 @@ STANDARD_SCRIPT_REPORT_NAMES = (
     "Biometric ID Audit",
     "Employee Data Gaps",
     "Workforce Anomaly Radar",
+    "Tradexcel Payroll Readiness",
 )
 
 
@@ -658,7 +659,8 @@ WORKSPACE_SHORTCUTS = [
     ("Employee Transfers", "Employee Transfer", "DocType"),
     ("Exits / Separations", "Employee Separation", "DocType"),
     ("Final Settlements", "Full and Final Statement", "DocType"),
-    ("Run Monthly Payroll", "Payroll Entry", "DocType"),
+    ("Run Monthly Payroll", "Tradexcel Payroll Readiness", "Report"),
+    ("Payroll Entries (Advanced)", "Payroll Entry", "DocType"),
     ("Salary Slips", "Salary Slip", "DocType"),
     ("Salary Structures", "Salary Structure", "DocType"),
     ("Salary Assignments", "Salary Structure Assignment", "DocType"),
@@ -715,6 +717,7 @@ WORKSPACE_SHORTCUT_ICONS = {
     "Exits / Separations": "remove",
     "Final Settlements": "money-coins-1",
     "Run Monthly Payroll": "accounting",
+    "Payroll Entries (Advanced)": "file",
     "Salary Slips": "file",
     "Salary Structures": "income",
     "Salary Assignments": "assign",
@@ -761,7 +764,7 @@ WORKSPACE_SECTIONS = (
         "Joiners & Leavers", "Employee Transfers", "Exits / Separations", "Final Settlements",
     )),
     ("Payroll & salary", "Prepare payroll, maintain pay rules, and review every amount.", (
-        "Run Monthly Payroll", "Salary Slips", "Salary Structures", "Salary Assignments",
+        "Run Monthly Payroll", "Payroll Entries (Advanced)", "Salary Slips", "Salary Structures", "Salary Assignments",
         "Salary Components", "Extra Pay & Deductions", "Payroll Register", "Payroll Variance",
         "Pay Component Register", "Salary Setup Coverage", "Payroll Rules", "Policy Exceptions",
         "Bulk Salary Structure Assignment",
