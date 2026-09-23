@@ -264,7 +264,6 @@ def _validate_asset_recovery_inputs(doc):
             )
 
 
-@frappe.whitelist()
 def _native_settlement_pending_count(payables, receivables, assets) -> int:
     """Count native rows that HRMS itself will not accept at F&F submission."""
     pending = sum(row.status != "Settled" for row in (*payables, *receivables))
@@ -278,6 +277,7 @@ def _native_settlement_pending_count(payables, receivables, assets) -> int:
     return pending
 
 
+@frappe.whitelist()
 def inspect_full_and_final_readiness(employee_name: str) -> dict:
     """Summarize native settlement sources without calculating or duplicating money."""
     employee = _authorized_employee(employee_name)

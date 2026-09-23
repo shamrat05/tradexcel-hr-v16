@@ -137,3 +137,14 @@ def test_asset_recovery_requires_explicit_positive_cost_and_valid_company_accoun
             employee_separation._validate_asset_recovery_inputs(FakeDoc())
     else:
         assert employee_separation._validate_asset_recovery_inputs(FakeDoc()) is None
+
+
+def test_full_and_final_readiness_is_whitelisted_but_internal_classifier_is_not():
+    import frappe
+    from tradex_hr.tradexcel_hr.employee_separation import (
+        _native_settlement_pending_count,
+        inspect_full_and_final_readiness,
+    )
+
+    assert inspect_full_and_final_readiness in frappe.whitelisted
+    assert _native_settlement_pending_count not in frappe.whitelisted

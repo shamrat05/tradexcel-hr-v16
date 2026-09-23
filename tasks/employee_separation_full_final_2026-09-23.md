@@ -20,6 +20,7 @@
 - `Leave Encashment` calls `validate_active_employee()`. In this installed HRMS version that helper rejects `Inactive`, not `Left`; marking an employee Left does not itself prevent native encashment. The system still prepares any required settlement inputs before access finalization as an operational sequence.
 - Native Full & Final requires native payables/receivables and allocated assets to be settled/returned or have an explicitly selected recovery action. Tradexcel does not calculate recoveries or settlement money.
 - Full & Final readiness now marks native `Unsettled` payables/receivables, owned assets still set to `Return`, and `Recover Cost` rows without cost/account as review-required, matching installed HRMS submission checks.
+- The readiness endpoint remains the whitelisted user-facing method; its native-row classifier is internal only.
 - F&F Journal Entry submission means accounting was posted. A Bank Entry is classified bank-reconciled only when native Bank Transaction allocation is reconciled and the JE has a clearance date. Cash must not be presented as bank-reconciled.
 - The current company has no Lending app installed; loan support is not customized.
 
@@ -54,7 +55,7 @@ Site: `hrms-v16.localhost` on the disposable/local v16 staging bench. Counts wer
 - Workflow, custom fields, and default native template were verified from the migrated site.
 - Final asset build succeeded with Node v24.15.0: JS `tradex_hr.bundle.TAYVRSUG.js`, CSS `tradex_hr.bundle.FKLLR2DQ.css`, RTL CSS `tradex_hr.bundle.V2V7YM4T.css`. `bench --site hrms-v16.localhost clear-cache` completed after the build.
 - Python `compileall` and Node v24 `--check` passed for `employee_calendar.js` and `employee_separation.js`.
-- Full Tradexcel suite passed: 402 passed, 2 skipped. The focused separation/readiness/native workflow tests passed.
+- Full Tradexcel suite passed: 403 passed, 2 skipped. The focused separation/readiness/native workflow tests passed.
 - `git diff --check` passed.
 - Browser/Desk visual E2E has not been performed; no browser DevTools tool is available, so it remains a release gate.
 
@@ -75,7 +76,7 @@ Site: `hrms-v16.localhost` on the disposable/local v16 staging bench. Counts wer
 
 ## Final validation
 
-- `env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q`: **402 passed, 2 skipped**.
+- `env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q`: **403 passed, 2 skipped**.
 - `env/bin/python -m compileall -q apps/tradex_hr/tradex_hr`: passed.
 - Node v24 `--check` for `employee_calendar.js` and `employee_separation.js`: passed.
 - `bench build --app tradex_hr`: passed.
