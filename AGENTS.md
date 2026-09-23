@@ -44,3 +44,11 @@ rehearsed on this machine — see the limitation recorded there.
 - Use native Payroll Correction for approved LWP reversals and native Arrear for approved positive retroactive salary differences.
 - Retroactive reductions and Daily Wage history changes require explicit HR/Finance adjustment review; do not create automatic recovery money.
 - Preserve native Additional Salary provenance and route every approved adjustment into a later payroll.
+
+## Employee separation
+
+- `Employee.relieving_date` is the canonical employment end date; do not duplicate it.
+- Native Employee Separation owns operational exit tasks; native Full and Final Statement owns settlement aggregation.
+- Access shutdown is separate from unpaid settlement. Disable only a dedicated employee User and application biometric mapping; never delete identity or attendance history.
+- Never infer statutory classification or calculate exit entitlements without an approved effective rule.
+- Reject payable Attendance or overtime dated after relieving date; classify offline evidence by its captured event time.

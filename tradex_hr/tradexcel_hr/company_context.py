@@ -38,6 +38,8 @@ def assert_company_access(company: str, *, require_explicit_scope: bool = False)
             {
                 "Tradexcel Payroll Manager",
                 "Tradexcel Payroll Approver",
+                "Tradexcel HR Manager",
+                "Tradexcel Finance/Accounts Officer",
                 "Tradexcel Owner/Director",
             }
         )

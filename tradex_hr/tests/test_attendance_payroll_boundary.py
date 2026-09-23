@@ -10,7 +10,7 @@ from tradex_hr.tradexcel_hr.attendance_payroll_boundary import (
 )
 
 
-def test_mid_period_employment_changes_are_explicit_blockers():
+def test_mid_period_joiner_and_leaver_reach_native_payroll_proration():
     rows = [
         {"name": "EMP-JOIN", "date_of_joining": date(2026, 9, 10), "relieving_date": None},
         {"name": "EMP-LEAVE", "date_of_joining": date(2024, 1, 1), "relieving_date": date(2026, 9, 20)},
@@ -19,9 +19,23 @@ def test_mid_period_employment_changes_are_explicit_blockers():
 
     result = classify_employment_boundaries(rows, date(2026, 9, 1), date(2026, 9, 30))
 
-    assert result["EMP-JOIN"]["status"] == "BLOCKED_JOIN_MID_PERIOD"
-    assert result["EMP-LEAVE"]["status"] == "BLOCKED_RELIEVE_MID_PERIOD"
+    assert result["EMP-JOIN"]["status"] == READY
+    assert result["EMP-LEAVE"]["status"] == READY
     assert result["EMP-FULL"]["status"] == READY
+
+
+def test_employee_left_remains_payroll_eligible_until_inactive():
+    rows = [
+        {"name": "EMP-LEFT", "date_of_joining": date(2024, 1, 1),
+         "relieving_date": date(2026, 9, 15), "status": "Left"},
+        {"name": "EMP-INACTIVE", "date_of_joining": date(2024, 1, 1),
+         "relieving_date": date(2026, 9, 15), "status": "Inactive"},
+    ]
+
+    result = classify_employment_boundaries(rows, date(2026, 9, 1), date(2026, 9, 30))
+
+    assert result["EMP-LEFT"]["status"] == READY
+    assert result["EMP-INACTIVE"]["status"] == "BLOCKED_EMPLOYMENT_STATUS"
 
 
 def test_boundary_result_is_ready_only_without_blockers():

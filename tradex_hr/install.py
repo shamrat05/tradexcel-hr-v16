@@ -1048,12 +1048,15 @@ def after_migrate():
         ensure_income_tax_review_fields,
         ensure_payroll_adjustment_workflow_fields,
     )
+    from tradex_hr.field_employee_exit_setup import ensure_default_exit_template, ensure_employee_exit_fields
     from tradex_hr.tradexcel_hr.salary_setup import ensure_pay_basis_metadata
 
     ensure_branch_hierarchy()
     ensure_tradex_roles()
     ensure_payroll_adjustment_workflow_fields()
+    ensure_employee_exit_fields()
     ensure_tradex_workflows()
+    ensure_default_exit_template()
     ensure_field_attendance_fields()
     ensure_field_transport_component()
     ensure_income_tax_review_fields()

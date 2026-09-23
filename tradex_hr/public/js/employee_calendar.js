@@ -90,3 +90,51 @@ function show_employee_calendar(employee, employee_name) {
 	dialog.show();
 	render();
 }
+
+
+frappe.ui.form.on("Employee", {
+	refresh(frm) {
+		if (frm.is_new() || !frm.doc.name) return;
+		frm.add_custom_button(__("Check Exit Readiness"), () => {
+			frappe.call({
+				method: "tradex_hr.tradexcel_hr.employee_separation.inspect_employee_exit_readiness",
+				args: { employee_name: frm.doc.name },
+			}).then(({ message }) => show_exit_readiness(message));
+		}, __("Separation"));
+		if (["Active", "Left"].includes(frm.doc.status)) {
+			frm.add_custom_button(__("Finalize Exit Access"), () => {
+				frappe.confirm(__("This disables the employee's dedicated application and biometric access. Financial settlement remains separate."), () => {
+					frappe.call({
+						method: "tradex_hr.tradexcel_hr.employee_separation.finalize_employee_exit_access",
+						args: { employee_name: frm.doc.name },
+					}).then(() => frm.reload_doc());
+				});
+			}, __("Separation"));
+		}
+		frm.add_custom_button(__("Check Full & Final Readiness"), () => {
+			frappe.call({
+				method: "tradex_hr.tradexcel_hr.employee_separation.inspect_full_and_final_readiness",
+				args: { employee_name: frm.doc.name },
+			}).then(({ message }) => show_exit_readiness(message));
+		}, __("Separation"));
+	},
+});
+
+function show_exit_readiness(result) {
+	if (!result) return;
+	const messages = {
+		LEGAL_CLASSIFICATION_REVIEW_REQUIRED: __("Legal or statutory classification needs review."),
+		GRATUITY_RULE_DECISION_REQUIRED: __("No approved gratuity rule is configured."),
+		LEAVE_ENCASHMENT_CONFIGURATION_REQUIRED: __("Leave encashment configuration needs review."),
+		FINAL_PAYROLL_PENDING: __("Final regular salary is not finalized through payroll."),
+		PAYROLL_ADJUSTMENT_PENDING: __("Approved payroll adjustments remain unconsumed."),
+		NATIVE_SETTLEMENT_ITEMS_PENDING: __("Native Full & Final payables, receivables, or asset actions need review."),
+	};
+	const lines = [...(result.blockers || []), ...(result.findings || [])]
+		.map((item) => `<li>${frappe.utils.escape_html(item.message || messages[item.code] || item.code)}${item.count ? ` (${item.count})` : ""}</li>`)
+		.join("");
+	frappe.msgprint({
+		title: __(result.status || "Readiness"),
+		message: lines ? `<ul>${lines}</ul>` : __("No outstanding operational findings."),
+	});
+}

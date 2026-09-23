@@ -102,6 +102,24 @@ CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
 # separately with Frappe User Permissions (company, branch, or department), so
 # this matrix describes what a role may do, not which records it may see.
 STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
+    "Employee Separation": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit", "cancel"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Employee Separation Template": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Full and Final Statement": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS | {"write", "submit", "cancel"},
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
     "Employee": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS,

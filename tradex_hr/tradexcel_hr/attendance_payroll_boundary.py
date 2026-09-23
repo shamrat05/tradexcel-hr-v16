@@ -48,22 +48,11 @@ def classify_employment_boundaries(
     results = {}
     for row in rows:
         employee = row["name"]
-        joining = getdate(row.get("date_of_joining")) if row.get("date_of_joining") else None
-        relieving = getdate(row.get("relieving_date")) if row.get("relieving_date") else None
         status = row.get("status") or "Active"
-        if joining and start < joining <= end:
-            results[employee] = {
-                "status": "BLOCKED_JOIN_MID_PERIOD",
-                "employee": employee,
-                "reason": "Employee joined during the payroll period; native proration is not part of this boundary.",
-            }
-        elif relieving and start <= relieving < end:
-            results[employee] = {
-                "status": "BLOCKED_RELIEVE_MID_PERIOD",
-                "employee": employee,
-                "reason": "Employee left during the payroll period; native final-settlement handling is not part of this boundary.",
-            }
-        elif status not in {"Active", "Left"}:
+        # Native Payroll Entry selects employees with status != Inactive and
+        # clips each Salary Slip to joining/relieving dates. Keep these employees
+        # in the explicit payroll universe and let that native calculation run.
+        if status not in {"Active", "Left"}:
             results[employee] = {
                 "status": "BLOCKED_EMPLOYMENT_STATUS",
                 "employee": employee,

@@ -39,6 +39,9 @@ extend_doctype_class = {
     "Arrear": [
         "tradex_hr.tradexcel_hr.payroll_adjustments.TradexcelArrearMixin",
     ],
+    "Full and Final Statement": [
+        "tradex_hr.tradexcel_hr.employee_separation.FullAndFinalTradexcelMixin",
+    ],
 }
 
 doctype_js = {
@@ -46,6 +49,7 @@ doctype_js = {
     "Payroll Entry": "public/js/payroll_entry.js",
     "Salary Slip": "public/js/salary_slip_adjustments.js",
     "Employee": "public/js/employee_calendar.js",
+    "Employee Separation": "public/js/employee_separation.js",
     "Attendance": "public/js/employee_calendar.js",
     "Income Tax Slab": "public/js/income_tax_slab.js",
 }
@@ -97,6 +101,22 @@ doc_events = {
     "Attendance": {
         "before_save": "tradex_hr.tradexcel_hr.attendance_exceptions.apply_to_attendance",
         "validate": "tradex_hr.tradexcel_hr.attendance_exceptions.sync_scope_fields",
+        "before_submit": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+    },
+    "Attendance Request": {
+        "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+    },
+    "Overtime Slip": {
+        "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+    },
+    "Tradexcel Field Duty": {
+        "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+    },
+    "Employee Separation": {
+        "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_employee_separation",
+    },
+    "Full and Final Statement": {
+        "before_submit": "tradex_hr.tradexcel_hr.employee_separation.validate_full_and_final_before_submit",
     },
     "Employee Checkin": {
         "before_validate": "tradex_hr.tradexcel_hr.field_attendance_service.enrich_mobile_checkin",

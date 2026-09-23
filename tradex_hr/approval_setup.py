@@ -81,6 +81,23 @@ WORKFLOWS = {
             ("Tradexcel Adjustment Approved", "Cancel", "Tradexcel Adjustment Cancelled", "Tradexcel Owner/Director"),
         ),
     },
+    "Tradexcel Full & Final Approval": {
+        "document_type": "Full and Final Statement",
+        "states": (
+            ("Tradexcel F&F Draft", "0", "Tradexcel HR Manager"),
+            ("Tradexcel F&F Pending Finance", "0", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Approved", "1", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Rejected", "0", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Cancelled", "2", "Tradexcel Finance/Accounts Officer"),
+        ),
+        "transitions": (
+            ("Tradexcel F&F Draft", "Submit for Finance Review", "Tradexcel F&F Pending Finance", "Tradexcel HR Manager", None, 1),
+            ("Tradexcel F&F Pending Finance", "Approve and Submit", "Tradexcel F&F Approved", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Pending Finance", "Reject", "Tradexcel F&F Rejected", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Rejected", "Return to Draft", "Tradexcel F&F Draft", "Tradexcel HR Manager"),
+            ("Tradexcel F&F Approved", "Cancel", "Tradexcel F&F Cancelled", "Tradexcel Finance/Accounts Officer"),
+        ),
+    },
     "Tradexcel Arrear Approval": {
         "document_type": "Arrear",
         "states": (
