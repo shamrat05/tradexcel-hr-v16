@@ -156,6 +156,8 @@ after_migrate = "tradex_hr.install.after_migrate"
 
 permission_query_conditions = {
     "Tradexcel Statutory Rule Set": "tradex_hr.tradexcel_hr.statutory_exit.statutory_ruleset_query_conditions",
+    "Tradexcel Wage Floor Rule Set": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_query_conditions",
+    "Tradexcel Wage Floor Classification": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_query_conditions",
     "Job Opening": "tradex_hr.tradexcel_hr.joiner_readiness.job_opening_query_conditions",
     "Job Applicant": "tradex_hr.tradexcel_hr.joiner_readiness.job_applicant_query_conditions",
     "Job Offer": "tradex_hr.tradexcel_hr.joiner_readiness.job_offer_query_conditions",
@@ -172,6 +174,8 @@ has_permission = {
     "Interview": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
     "Interview Feedback": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
     "Employee Onboarding": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
+    "Tradexcel Wage Floor Rule Set": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_has_permission",
+    "Tradexcel Wage Floor Classification": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_has_permission",
     "Payroll Correction": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
     "Arrear": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
 }

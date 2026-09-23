@@ -35,6 +35,10 @@ def test_native_readiness_does_not_block_joiner_or_leaver_for_native_proration(m
     monkeypatch.setattr(native_payroll, "resolve_pay_basis", lambda *_args: {"status": "Monthly Salary"})
     monkeypatch.setattr(native_payroll, "_period_attendance_gate", lambda *_args: [])
     monkeypatch.setattr(native_payroll, "_unapproved_overtime", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "prepare_wage_floor_context", lambda *_args: {})
+    monkeypatch.setattr(native_payroll, "inspect_wage_floor_for_employee", lambda *_args, **_kwargs: {
+        "status": "NOT_IN_CONFIGURED_SCOPE", "findings": [],
+    })
 
     result = native_payroll.inspect_native_payroll_readiness(
         "TCL", date(2026, 9, 1), date(2026, 9, 30)
@@ -59,6 +63,10 @@ def test_native_readiness_blocks_stale_attendance(monkeypatch):
         "employee": "EMP-DAILY", "code": "BLOCKED_ATTENDANCE_STALE", "reason": "stale"
     }])
     monkeypatch.setattr(native_payroll, "_unapproved_overtime", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "prepare_wage_floor_context", lambda *_args: {})
+    monkeypatch.setattr(native_payroll, "inspect_wage_floor_for_employee", lambda *_args, **_kwargs: {
+        "status": "NOT_IN_CONFIGURED_SCOPE", "findings": [],
+    })
     monkeypatch.setattr(native_payroll, "inspect_daily_wage_structure", lambda *_args: {"status": "READY"})
     monkeypatch.setattr(native_payroll, "calculate_daily_wage_input", lambda *_args: pytest.fail("stale input must stop first"))
 
@@ -68,6 +76,31 @@ def test_native_readiness_blocks_stale_attendance(monkeypatch):
 
     assert result["status"] == "BLOCKED"
     assert result["outcomes"][0]["status"] == "BLOCKED_ATTENDANCE_STALE"
+
+
+def test_native_readiness_blocks_only_employee_below_wage_floor(monkeypatch):
+    employees = [
+        {"name": "EMP-READY", "employee_name": "Ready", "company": "TCL", "branch": "TCL Factory", "status": "Active"},
+        {"name": "EMP-BELOW", "employee_name": "Below", "company": "TCL", "branch": "TCL Factory", "status": "Active"},
+    ]
+    monkeypatch.setattr(native_payroll, "_employees_for_period", lambda *_args: employees)
+    monkeypatch.setattr(native_payroll, "_validate_supported_scope", lambda *_args: None)
+    monkeypatch.setattr(native_payroll, "resolve_pay_basis", lambda employee, *_args: {"status": "Monthly Salary", "employee": employee})
+    monkeypatch.setattr(native_payroll, "_attendance_required_for_payroll", lambda: False)
+    monkeypatch.setattr(native_payroll, "_period_attendance_gate", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "_unapproved_overtime", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "prepare_wage_floor_context", lambda *_args: {"shared": True})
+    monkeypatch.setattr(native_payroll, "inspect_wage_floor_for_employee", lambda employee, *_args, **_kwargs: {
+        "status": "READY" if employee == "EMP-READY" else "WAGE_FLOOR_BELOW_MINIMUM",
+        "findings": [] if employee == "EMP-READY" else [{"code": "WAGE_COMPONENT_BELOW_MINIMUM", "message": "Basic is below floor.", "severity": "blocker"}],
+    })
+
+    result = native_payroll.inspect_native_payroll_readiness("TCL", date(2026, 9, 1), date(2026, 9, 30))
+
+    outcomes = {row["employee"]: row for row in result["outcomes"]}
+    assert outcomes["EMP-READY"]["status"] == "READY"
+    assert outcomes["EMP-READY"]["wage_floor"]["status"] == "READY"
+    assert outcomes["EMP-BELOW"]["status"] == "WAGE_FLOOR_BELOW_MINIMUM"
 
 
 def test_prepare_reuses_existing_native_payroll_entry(monkeypatch):

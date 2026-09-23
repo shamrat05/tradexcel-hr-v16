@@ -28,6 +28,11 @@ from tradex_hr.tradexcel_hr.daily_wage_input import (
     inspect_daily_wage_structure,
 )
 from tradex_hr.tradexcel_hr.pay_basis import DAILY, MONTHLY, resolve_pay_basis
+from tradex_hr.tradexcel_hr.wage_floor import (
+	PASS_STATUSES as WAGE_FLOOR_PASS_STATUSES,
+	inspect_wage_floor_for_employee,
+	prepare_wage_floor_context,
+)
 
 
 def _dates(start_date: str | date, end_date: str | date) -> tuple[date, date]:
@@ -93,6 +98,7 @@ def inspect_native_payroll_readiness(
     _validate_supported_scope(company, start, end, employee_ids)
     employees = _employees_for_period(company, start, end, employee_ids)
     ids = [_row_value(row, "name") for row in employees]
+    wage_floor_context = prepare_wage_floor_context(company, start, end, ids)
     outcomes = {
         employee: {"employee": employee, "employee_data": row, "status": "READY"}
         for employee, row in ((_row_value(row, "name"), row) for row in employees)
@@ -128,17 +134,29 @@ def inspect_native_payroll_readiness(
             block(employee, "BLOCKED_OT", "Attendance overtime is not in a submitted native Overtime Slip.")
 
     for employee, outcome in outcomes.items():
-        if outcome.get("pay_basis", {}).get("status") != DAILY:
-            continue
-        structure = inspect_daily_wage_structure(employee, start, end)
-        if structure["status"] != "READY":
-            outcome["daily_wage_input"] = structure
-            block(employee, structure["status"], structure.get("reason", structure["status"]))
-        elif outcome["status"] == "READY":
-            result = calculate_daily_wage_input(employee, start, end)
-            outcome["daily_wage_input"] = result
-            if result.get("status") != "READY":
-                block(employee, result["status"], result.get("reason", result["status"]))
+        if outcome.get("pay_basis", {}).get("status") == DAILY:
+            structure = inspect_daily_wage_structure(employee, start, end)
+            if structure["status"] != "READY":
+                outcome["daily_wage_input"] = structure
+                block(employee, structure["status"], structure.get("reason", structure["status"]))
+            elif outcome["status"] == "READY":
+                result = calculate_daily_wage_input(employee, start, end)
+                outcome["daily_wage_input"] = result
+                if result.get("status") != "READY":
+                    block(employee, result["status"], result.get("reason", result["status"]))
+
+        floor = inspect_wage_floor_for_employee(
+            employee,
+            start,
+            end,
+            context=wage_floor_context,
+            employee_data=outcome["employee_data"],
+            pay_basis=outcome.get("pay_basis"),
+        )
+        outcome["wage_floor"] = floor
+        if floor["status"] not in WAGE_FLOOR_PASS_STATUSES:
+            reason = next((finding.get("message") for finding in floor.get("findings", []) if finding.get("severity") == "blocker"), floor["status"])
+            block(employee, floor["status"], reason)
 
     blockers = [result for result in outcomes.values() if result["status"] != "READY"]
     if not employees:

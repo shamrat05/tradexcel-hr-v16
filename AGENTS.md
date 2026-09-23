@@ -60,6 +60,13 @@ rehearsed on this machine — see the limitation recorded there.
 - Unapproved or unresolved statutory rules never produce money. Native Gratuity, Leave Encashment, Additional Salary, and Full and Final documents remain the financial records.
 - A `Not Applicable` decision requires an explicit reviewed classification and notes. Later rule versions never silently change a historical separation or settlement.
 
+## Statutory wage floors
+
+- Sector wage floors come only from approved effective rules with official final-source provenance; draft proposals are never operative.
+- Wage-floor classification is explicit and effective-dated. Employment Type, Employee Grade, Designation, and payroll pay basis do not determine statutory category or grade.
+- Compare against native full-period Salary Structure component values, not net pay or payment-day-reduced amounts.
+- Under-floor findings block readiness but never change compensation. Historical payroll resolves against the immutable rule and classification effective for that period.
+
 ## Recruitment and onboarding
 
 - Employee is the canonical worker identity. Recruited hires use native Job Opening, Job Applicant, accepted Job Offer, and Employee Onboarding; legitimate direct hires may begin at Employee and never need a fake applicant/email.

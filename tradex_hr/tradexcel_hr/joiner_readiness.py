@@ -10,6 +10,7 @@ from frappe.utils import get_first_day, get_last_day, getdate
 from tradex_hr.tradexcel_hr.company_context import assert_company_access
 from tradex_hr.tradexcel_hr.daily_wage_input import inspect_daily_wage_structure
 from tradex_hr.tradexcel_hr.native_payroll import inspect_native_payroll_readiness
+from tradex_hr.tradexcel_hr.wage_floor import inspect_wage_floor_for_employee
 from tradex_hr.tradexcel_hr.pay_basis import DAILY, MONTHLY, resolve_daily_rate, resolve_pay_basis
 
 MAKER_ROLES = {"Tradexcel HR Manager", "Tradexcel Payroll Manager"}
@@ -246,7 +247,7 @@ def inspect_joiner_readiness(employee_name: str) -> dict:
     employee.check_permission("read")
 
     sections = {key: {"status": "READY", "findings": []}
-                for key in ("employment", "payroll", "attendance", "payment", "access")}
+                for key in ("employment", "payroll", "wage_floor", "attendance", "payment", "access")}
 
     def add(section: str, code: str, message: str, severity: str = "blocker"):
         sections[section]["findings"].append(_finding(code, message, severity))
@@ -291,6 +292,18 @@ def inspect_joiner_readiness(employee_name: str) -> dict:
             add("payroll", "FIRST_PAYROLL_REVIEW_REQUIRED", "The Employee is not in the native first-payroll population.")
         elif outcome.get("status") != "READY":
             add("payroll", outcome.get("status", "FIRST_PAYROLL_REVIEW_REQUIRED"), outcome.get("reason") or "First-period payroll readiness needs attention.")
+        wage_floor = (outcome or {}).get("wage_floor") or inspect_wage_floor_for_employee(
+            employee.name,
+            start,
+            end,
+            employee_data={"company": employee.company, "branch": employee.branch},
+        )
+        for finding in wage_floor.get("findings", []):
+            if finding.get("severity") == "info":
+                add("wage_floor", finding["code"], finding["message"], "review")
+            else:
+                add("wage_floor", finding["code"], finding["message"])
+        sections["wage_floor"]["result"] = wage_floor
         from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
         holiday_list = get_holiday_list_for_employee(employee.name, raise_exception=False)
         if not holiday_list:

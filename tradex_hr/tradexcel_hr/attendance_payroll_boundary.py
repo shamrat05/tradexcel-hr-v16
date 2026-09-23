@@ -132,7 +132,7 @@ def _employees_for_period(company: str, start: date, end: date, employee_ids: li
     rows = frappe.get_all(
         "Employee",
         filters=filters,
-        fields=["name", "employee_name", "company", "date_of_joining", "relieving_date", "status"],
+        fields=["name", "employee_name", "company", "branch", "date_of_joining", "relieving_date", "status"],
         order_by="name asc",
     )
     return [row for row in rows if not _row_value(row, "relieving_date") or getdate(_row_value(row, "relieving_date")) >= start]
