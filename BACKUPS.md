@@ -45,6 +45,7 @@ Several are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| 2026-09-24 10:08 | `20260924_040836-hrms-v16_localhost-database.sql.gz` | 12,976,640 | `ff925bf16f9830df` | Before standard staging migration for Tradexcel HR Manager Task Share permission |
 | **2026-09-24 08:15** | `20260924_021507-hrms-v16_localhost-database.sql.gz` | 11,354,058 | `23c8b694aad2b71b` | **Before statutory wage-floor DocType migration** |
 | **2026-09-22 12:17** | `20260922_121725-...-database.sql.gz` | 2,959,372 | `8e62a570fe6a6c43` | **Before v16 staging migration** |
 | **2026-09-22 16:48** | `20260922_164856-hrms-v16_localhost-database.sql.gz` | 3,248,003 | `9d45b229d7caf76f` | **Before v16 staging production-readiness fixes/migrate** |
@@ -166,3 +167,4 @@ new restore rehearsal.
    table. Count SQL rows with a tuple-aware parser, never `line.count("),(")` —
    that substring also appears inside string values and produced a false
    discrepancy on 2026-09-18.
+The 2026-09-24 10:08 backup was taken with `--with-files`; `gzip -t` and both public/private `tar -tf` checks passed. SHA-256: database `ff925bf16f9830df2046248145139765cfea991fe84083a574345047a1a388e3`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.

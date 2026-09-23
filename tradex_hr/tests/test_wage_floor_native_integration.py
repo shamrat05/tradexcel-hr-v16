@@ -285,3 +285,192 @@ def test_native_assignment_full_period_amounts_feed_wage_floor(monkeypatch):
 		if company:
 			cleanup_synthetic_finalization_company(company)
 		frappe.set_user(old_user)
+
+
+def test_historical_branch_classification_and_source_effective_dates(monkeypatch):
+	"""Historical scopes follow the reviewed Rule Set, not today's Employee Branch."""
+	from tradex_hr.tests.test_payroll_finalization_integration import (
+		_component,
+		_create_employee,
+		_create_scoped_user,
+		_create_synthetic_company,
+		cleanup_synthetic_finalization_company,
+	)
+
+	token = frappe.generate_hash(8).upper()[:8]
+	company = None
+	rules = []
+	classification = None
+	branches = []
+	components = []
+	old_user = frappe.session.user
+	try:
+		frappe.set_user("Administrator")
+		company, _abbr, _payable, expense, _cost_center, holiday_list = _create_synthetic_company(token, monkeypatch)
+		old_branch = f"Wage Old {token}"
+		new_branch = f"Wage New {token}"
+		for branch in (old_branch, new_branch):
+			frappe.get_doc({"doctype": "Branch", "branch": branch, "company": company}).insert(ignore_permissions=True)
+			branches.append(branch)
+
+		employee = _create_employee(f"Historical Wage Test {token}", company, holiday_list)
+		frappe.db.set_value("Employee", employee.name, "branch", new_branch)
+		components.extend(
+			_component(f"{label} History Test {token}", f"H{token[:3]}{index}", company, expense)
+			for index, label in enumerate(("Basic", "House", "Medical", "Transport"))
+		)
+
+		def make_rule(title, branch, effective_from, source_dates):
+			doc = frappe.get_doc({
+				"doctype": "Tradexcel Wage Floor Rule Set",
+				"title": f"{title} {token}",
+				"company": company,
+				"branch": branch,
+				"legal_regime": "Bangladesh Labour Act",
+				"industry_sector": f"Synthetic historical sector {token}",
+				"establishment_reference": "Synthetic test establishment only",
+				"currency": "BDT",
+				"effective_from": effective_from,
+				"effective_to": "2026-06-30" if effective_from <= "2026-06-30" else None,
+				"legal_review_notes": "Synthetic test only; not an operative wage rule.",
+				"sources": [{
+					"source_title": f"Synthetic source {index} {token}",
+					"authority_status": "Final Gazette",
+					"issuing_authority": "Synthetic test issuer",
+					"notification_number": f"TEST-{token}-{index}",
+					"publication_date": "2026-01-01",
+					"effective_date": source_date,
+					"section_reference": "TEST ONLY",
+					"official_reference": "https://example.test/synthetic-only",
+				} for index, source_date in enumerate(source_dates)],
+				"floor_rows": [{
+					"worker_category": "Worker", "gazette_grade": "Synthetic Grade",
+					"location_category": "Synthetic Location", "rate_basis": "Monthly",
+					"floor_type": "Component", "component_key": f"TEST-{index}",
+					"salary_component": component.name, "include_in_total_floor": 1,
+					"minimum_amount": 1000,
+				} for index, component in enumerate(components)] + [{
+					"worker_category": "Worker", "gazette_grade": "Synthetic Grade",
+					"location_category": "Synthetic Location", "rate_basis": "Monthly",
+					"floor_type": "Total", "component_key": "TOTAL",
+					"include_in_total_floor": 0, "minimum_amount": 4000,
+				}],
+			})
+			doc.insert(ignore_permissions=True)
+			rules.append(doc)
+			return doc
+
+		# A final source effective in October cannot authorize a September rule.
+		bad_rule = make_rule("Bad source date", "", "2026-09-01", ["2026-01-01", "2026-10-01"])
+		director = _create_scoped_user("Tradexcel Owner/Director", company, token)
+		frappe.set_user(director)
+		with pytest.raises(frappe.ValidationError, match="effective date"):
+			bad_rule.submit()
+		assert bad_rule.reload().docstatus == 0
+		frappe.delete_doc(bad_rule.doctype, bad_rule.name, force=True, ignore_permissions=True)
+		rules.remove(bad_rule)
+
+		# A later supporting source sets the earliest permissible rule start.
+		frappe.set_user("Administrator")
+		old_rule = make_rule("Historical old establishment", old_branch, "2026-06-01", ["2020-01-01", "2026-06-01"])
+		new_rule = make_rule("Historical other establishment", new_branch, "2026-06-01", ["2026-06-01"])
+		hr_user = _create_scoped_user("Tradexcel HR Manager", company, token)
+		frappe.set_user(hr_user)
+		frappe.set_user(director)
+		old_rule.reload().submit()
+		new_rule.submit()
+
+		frappe.set_user(hr_user)
+		classification = frappe.get_doc({
+			"doctype": "Tradexcel Wage Floor Classification",
+			"employee": employee.name,
+			"company": company,
+			"branch": old_branch,
+			"coverage_decision": "Covered",
+			"rule_set": old_rule.name,
+			"worker_category": "Worker",
+			"gazette_grade": "Synthetic Grade",
+			"location_category": "Synthetic Location",
+			"effective_from": "2026-06-01",
+			"effective_to": "2026-06-30",
+			"legal_review_notes": "Synthetic historical branch snapshot only.",
+		}).insert()
+		frappe.set_user(director)
+		classification.reload().submit()
+		assert classification.docstatus == 1
+
+		# The same branch cannot be paired with a Rule Set scoped elsewhere.
+		frappe.set_user(hr_user)
+		with pytest.raises(frappe.ValidationError, match="match the Employee"):
+			frappe.get_doc({
+				"doctype": "Tradexcel Wage Floor Classification",
+				"employee": employee.name,
+				"company": company,
+				"branch": old_branch,
+				"coverage_decision": "Covered",
+				"rule_set": new_rule.name,
+				"worker_category": "Worker",
+				"gazette_grade": "Synthetic Grade",
+				"location_category": "Synthetic Location",
+				"effective_from": "2026-07-01",
+				"effective_to": "2026-07-31",
+				"legal_review_notes": "Synthetic mismatch test only.",
+			}).insert()
+
+		# A historical Branch owned by another Company remains invalid.
+		foreign_branch = frappe.db.get_value("Branch", {"company": "Elegance Footwear Ltd."}, "name")
+		assert foreign_branch
+		with pytest.raises(frappe.ValidationError, match="belong to the Employee's Company"):
+			frappe.get_doc({
+				"doctype": "Tradexcel Wage Floor Classification",
+				"employee": employee.name,
+				"company": company,
+				"branch": foreign_branch,
+				"coverage_decision": "Covered",
+				"rule_set": old_rule.name,
+				"worker_category": "Worker",
+				"gazette_grade": "Synthetic Grade",
+				"location_category": "Synthetic Location",
+				"effective_from": "2026-06-01",
+				"effective_to": "2026-06-30",
+				"legal_review_notes": "Synthetic cross-company branch test only.",
+			}).insert()
+
+		# A future classification cannot retain the Employee's old establishment.
+		with pytest.raises(frappe.ValidationError, match="current Employee Branch"):
+			frappe.get_doc({
+				"doctype": "Tradexcel Wage Floor Classification",
+				"employee": employee.name,
+				"company": company,
+				"branch": old_branch,
+				"coverage_decision": "Covered",
+				"rule_set": old_rule.name,
+				"worker_category": "Worker",
+				"gazette_grade": "Synthetic Grade",
+				"location_category": "Synthetic Location",
+				"effective_from": "2026-10-01",
+				"effective_to": "2026-10-31",
+				"legal_review_notes": "Synthetic stale current branch test only.",
+			}).insert()
+	finally:
+		frappe.set_user("Administrator")
+		if classification and frappe.db.exists(classification.doctype, classification.name):
+			classification.reload()
+			if classification.docstatus == 1:
+				classification.cancel()
+			frappe.delete_doc(classification.doctype, classification.name, force=True, ignore_permissions=True)
+		for rule in rules:
+			if frappe.db.exists(rule.doctype, rule.name):
+				rule.reload()
+				if rule.docstatus == 1:
+					rule.cancel()
+				frappe.delete_doc(rule.doctype, rule.name, force=True, ignore_permissions=True)
+		for branch in branches:
+			if frappe.db.exists("Branch", branch):
+				frappe.delete_doc("Branch", branch, force=True, ignore_permissions=True)
+		for component in components:
+			if frappe.db.exists("Salary Component", component.name):
+				frappe.delete_doc("Salary Component", component.name, force=True, ignore_permissions=True)
+		if company:
+			cleanup_synthetic_finalization_company(company)
+		frappe.set_user(old_user)

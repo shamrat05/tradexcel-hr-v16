@@ -98,6 +98,9 @@ class TradexcelWageFloorRuleSet(Document):
 						row.publication_date, row.effective_date, row.section_reference,
 						row.official_reference)) for row in self.sources):
 			frappe.throw(_("Each wage-order source needs its issuing authority, notification, publication and effective dates, section, and official reference."))
+		latest_source_effective_date = max(getdate(row.effective_date) for row in self.sources)
+		if getdate(self.effective_from) < latest_source_effective_date:
+			frappe.throw(_("A wage-floor rule cannot become effective before its latest supporting legal source effective date."))
 		self.reviewed_by = frappe.session.user
 		self.reviewed_at = frappe.utils.now_datetime()
 

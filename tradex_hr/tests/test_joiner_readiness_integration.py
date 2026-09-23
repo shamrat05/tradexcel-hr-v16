@@ -121,6 +121,7 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
         assert not frappe.has_permission("Employee Onboarding", "delete", user=role_user)
         assert frappe.has_permission("Task", "read", user=role_user)
         assert frappe.has_permission("Task", "write", user=role_user)
+        assert frappe.has_permission("Task", "share", user=role_user)
         assert not frappe.has_permission("Task", "create", user=role_user)
         assert not frappe.has_permission("Task", "delete", user=role_user)
         assert not frappe.has_permission("Journal Entry", "submit", user=role_user)
@@ -356,6 +357,7 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
         assert frappe.has_permission("Employee Onboarding", "read", doc=foreign_onboarding, user=role_user) is False
         assert frappe.has_permission("Task", "read", doc=foreign_task, user=role_user) is False
         assert frappe.has_permission("Task", "write", doc=foreign_task, user=role_user) is False
+        assert frappe.has_permission("Task", "share", doc=foreign_task, user=role_user) is False
         foreign_interview = frappe._dict({
             "doctype": "Interview", "job_opening": foreign_opening.name,
             "job_applicant": foreign_applicant.name,

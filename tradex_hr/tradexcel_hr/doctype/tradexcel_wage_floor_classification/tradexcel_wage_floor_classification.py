@@ -18,8 +18,15 @@ class TradexcelWageFloorClassification(Document):
 		employee = frappe.db.get_value("Employee", self.employee, ["company", "branch"], as_dict=True)
 		if not employee:
 			frappe.throw(_("Select an existing Employee."))
-		if employee.company != self.company or (employee.branch or "") != (self.branch or ""):
-			frappe.throw(_("Classification Company and Branch must match the Employee's employment location."))
+		if employee.company != self.company:
+			frappe.throw(_("Classification Company must match the Employee's Company."))
+		if self.branch:
+			branch_company = frappe.db.get_value("Branch", self.branch, "company")
+			if branch_company != self.company:
+				frappe.throw(_("The classification Branch must belong to the Employee's Company."))
+		current_or_future = not self.effective_to or getdate(self.effective_to) >= getdate(frappe.utils.today())
+		if current_or_future and (employee.branch or "") != (self.branch or ""):
+			frappe.throw(_("A current or future classification must match the current Employee Branch."))
 		if self.effective_to and getdate(self.effective_to) < getdate(self.effective_from):
 			frappe.throw(_("Effective To must be on or after Effective From."))
 		if not (self.legal_review_notes or "").strip():

@@ -142,10 +142,11 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     "Staffing Plan": {
         "Tradexcel HR Manager": READ_ONLY_PERMS,
     },
-    # Native Employee BoardingController checks Task write permission before
-    # assigning generated onboarding tasks. Company User Permission scopes them.
+    # Native Employee BoardingController assigns generated Tasks through
+    # Frappe's share API, which requires Task share permission. User Permissions
+    # still scope both the Task and the resulting share to the operator's Company.
     "Task": {
-        "Tradexcel HR Manager": READ_ONLY_PERMS | {"write"},
+        "Tradexcel HR Manager": READ_ONLY_PERMS | {"write", "share"},
     },
     "Employee Separation": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
