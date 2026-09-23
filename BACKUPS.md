@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-22 20:37 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-23 18:39 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -48,10 +48,25 @@ Several are also mirrored under
 | **2026-09-22 12:17** | `20260922_121725-...-database.sql.gz` | 2,959,372 | `8e62a570fe6a6c43` | **Before v16 staging migration** |
 | **2026-09-22 16:48** | `20260922_164856-hrms-v16_localhost-database.sql.gz` | 3,248,003 | `9d45b229d7caf76f` | **Before v16 staging production-readiness fixes/migrate** |
 | **2026-09-22 20:37** | `20260922_203730-hrms-v16_localhost-database.sql.gz` | 3,272,843 | `f95eae64b85d7c99` | **Before v16 offline-event-time schema migration** |
-| **2026-09-23 17:10** | `20260923_171033-hrms-v16_localhost-database.sql.gz` | 5,012,814 | `d16474ca660a1c35` | Before further synthetic Payroll Correction/Arrear integration cleanup; `gzip -t` passed |
+| **2026-09-23 18:46** | `20260923_184653-hrms-v16_localhost-database.sql.gz` | 5,800,185 | `1e7797d321840954` | Before normal migrate removing Payroll Approver Salary Slip mutation rights |
+| 2026-09-23 18:39 | `20260923_183900-hrms-v16_localhost-database.sql.gz` | 5,629,472 | `8f902f24151a4936` | Before normal migrate proving Payroll Approver salary-structure read scope |
+| 2026-09-23 18:37 | `20260923_183720-hrms-v16_localhost-database.sql.gz` | 5,600,899 | `c1144ef8d76ca10c` | Before normal migrate proving Salary Slip preview-create permission |
+| 2026-09-23 18:32 | `20260923_183206-hrms-v16_localhost-database.sql.gz` | 5,554,167 | `5f461d670b4b0034` | Before normal migrate with Payroll Approver Employee read permission |
+| 2026-09-23 18:20 | `20260923_182028-hrms-v16_localhost-database.sql.gz` | 5,471,465 | `6134484ff37d5784` | Before first normal workflow migration; queued cleanup jobs recovered with worker |
+| 2026-09-23 17:10 | `20260923_171033-hrms-v16_localhost-database.sql.gz` | 5,012,814 | `d16474ca660a1c35` | Before further synthetic Payroll Correction/Arrear integration cleanup; `gzip -t` passed |
 | **2026-09-18 20:02** | `20260918_200222-...-database.sql.gz` | 2,879,266 | `00360386d5ae09a5` | **Before payroll/wage purge** (see §1) |
 | 2026-09-18 18:53 | `20260918_185348-...-database.sql.gz` | 2,861,011 | `b461fba3f4ef29f7` | Before biometric mapping import |
 | 2026-09-18 16:14 | `20260918_161454-...-database.sql.gz` | 2,874,880 | `d7c48e9c2bccdcf2` | Before demo-data removal |
+
+2026-09-23 v16 workflow-migration backups were taken with `--with-files`; each database passed `gzip -t`, and each public/private archive passed `tar -tf`. Full SHA-256 values for database archives:
+
+- 18:20 — `6134484ff37d57845c1ea1296a2990c15982135c247c9f91aadd86b176e0c70a`
+- 18:32 — `5f461d670b4b00349441c7c717383d1636048811b62d6c69fc76dd31300949c1`
+- 18:37 — `c1144ef8d76ca10cba83b6be417d47b9e8f71e474872771576ab297acc23414b`
+- 18:39 — `8f902f24151a49366539d6abed6f9485deedaa130ec30904714679eb5cac90fe`
+- 18:46 — `1e7797d321840954892588ec126ca08990dc6070e852009541550ba3c66e5a88`
+
+For the 18:39 and 18:46 backups, config SHA-256 is `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, and private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`.
 
 Mirrors on the Desktop:
 
@@ -112,20 +127,19 @@ matters.
 
 ---
 
-## 6. Known limitation — restores are NOT rehearsed
+## 6. Restore rehearsal status
 
-A `bench restore` has **never been proven** on this machine. No database
-superuser is reachable:
+The 2026-09-18 host rehearsal remains incomplete, as recorded in
+`tasks/backup_restore_rehearsal_2026-09-18.md`. The later v16 isolated restore
+rehearsal did complete a normal `bench restore`, normal migration with workers,
+and smoke checks on `payroll-migration-check-20260923.localhost`; see the dated
+follow-up in that task and `tasks/v16_migration_execution_2026-09-22.md`.
 
-```
-sudo mariadb                                       -> Access denied for 'root'@'localhost'
-/etc/mysql/debian.cnf                              -> marked OBSOLETE; socket auth does not hold
-common_site_config.json                            -> no admin DB password
-```
-
-So the backups are **verified readable and complete**, but **not verified
-restorable**. See `tasks/backup_restore_rehearsal_2026-09-18.md`. Treat this as
-the top operational risk: there is a verified backup and no proven way to use it.
+That proves the disposable v16 staging restore path for the tested backup and
+branch. It does not certify production recovery. The 2026-09-23 workflow
+permission changes were verified by fresh `--with-files` backups, normal
+`bench migrate`, actual workflow integration, and suite tests; they were not a
+new restore rehearsal.
 
 ---
 

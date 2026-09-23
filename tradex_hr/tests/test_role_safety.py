@@ -16,4 +16,10 @@ def test_payroll_preparer_can_use_native_batch_but_individual_slips_are_guarded(
 def test_payroll_approver_cannot_submit_salary_slips_independently():
     approver = STANDARD_PERMISSION_MATRIX["Salary Slip"]["Tradexcel Payroll Approver"]
     assert "submit" not in approver
+    # Native Arrear approval builds a Salary Slip preview through HRMS make_salary_slip(),
+    # whose mapper checks create permission; the preview is not submitted.
+    assert "create" in approver
+    assert not ({"write", "delete", "cancel", "submit"} & approver)
     assert "submit" in STANDARD_PERMISSION_MATRIX["Payroll Entry"]["Tradexcel Payroll Approver"]
+    assert "read" in STANDARD_PERMISSION_MATRIX["Employee"]["Tradexcel Payroll Approver"]
+    assert "read" in STANDARD_PERMISSION_MATRIX["Salary Structure"]["Tradexcel Payroll Approver"]

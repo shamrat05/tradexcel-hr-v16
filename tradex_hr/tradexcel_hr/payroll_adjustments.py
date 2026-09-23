@@ -50,6 +50,19 @@ def _authorize_company(company: str, *, user=None) -> None:
         )
 
 
+
+def _independent_approval_transition(doc, user, roles, state, status) -> bool:
+    """Permit Frappe's submit/write checks only during pending-to-approved transition."""
+    return bool(
+        roles & APPROVERS
+        and status == 1
+        and state == APPROVED
+        and doc.get("name")
+        and doc.get("owner") != user
+        and frappe.db.get_value(doc.doctype, doc.name, "workflow_state") == PENDING
+    )
+
+
 def adjustment_has_permission(doc, ptype, user=None, debug=False):
     """Deny native broad HRMS permissions unless the user has a Tradexcel role."""
     user = user or frappe.session.user
@@ -81,11 +94,23 @@ def adjustment_has_permission(doc, ptype, user=None, debug=False):
     if ptype == "create":
         return maker
     if ptype == "write":
-        return status == 0 and (
-            maker or (approver and state in {PENDING, REJECTED})
-        )
+        if status == 0:
+            return maker or (approver and state in {PENDING, REJECTED})
+        if status == 1 and approver and state == APPROVED and doc.name:
+            # Frappe sets docstatus=1 before checking write permission during
+            # apply_workflow()'s Draft -> Submitted transition. Permit only an
+            # independent approver moving the persisted Pending record to
+            # Approved; normal edits to submitted adjustments remain denied.
+            return (
+                doc.owner != user
+                and frappe.db.get_value(doc.doctype, doc.name, "workflow_state") == PENDING
+            )
+        return False
     if ptype == "submit":
-        return approver and status == 0 and state in {PENDING, APPROVED}
+        return (
+            (approver and status == 0 and state in {PENDING, APPROVED})
+            or _independent_approval_transition(doc, user, roles, state, status)
+        )
     if ptype == "cancel":
         return director and status == 1 and state in {APPROVED, CANCELLED}
     if ptype == "delete":
@@ -118,30 +143,72 @@ def _employee_company(employee: str) -> str | None:
     return frappe.db.get_value("Employee", employee, "company")
 
 
-def _has_completed_target_payroll(employee: str, company: str, payroll_date) -> bool:
+def _target_payroll_has_started(employee: str, company: str, payroll_date) -> bool:
+    """Return whether payroll processing has started for this employee/date."""
     if not employee or not company or not payroll_date:
         return False
-    return bool(frappe.get_all(
+
+    if frappe.get_all(
         "Salary Slip",
         filters={
             "employee": employee,
             "company": company,
-            "docstatus": 1,
+            "docstatus": ["<", 2],
             "start_date": ["<=", payroll_date],
             "end_date": [">=", payroll_date],
         },
         pluck="name",
         limit=1,
-    ))
+    ):
+        return True
+
+    payroll_entries = frappe.get_all(
+        "Payroll Entry",
+        filters={
+            "company": company,
+            "docstatus": 1,
+            "start_date": ["<=", payroll_date],
+            "end_date": [">=", payroll_date],
+        },
+        fields=[
+            "name",
+            "status",
+            "salary_slips_created",
+            "custom_tradex_run_key",
+        ],
+    )
+    active_managed_entries = [
+        entry
+        for entry in payroll_entries
+        if entry.custom_tradex_run_key
+        and (entry.status == "Queued" or flt(entry.salary_slips_created))
+    ]
+    if not active_managed_entries:
+        return False
+
+    return bool(
+        frappe.get_all(
+            "Payroll Employee Detail",
+            filters={
+                "parent": ["in", [entry.name for entry in active_managed_entries]],
+                "parenttype": "Payroll Entry",
+                "parentfield": "employees",
+                "employee": employee,
+            },
+            pluck="parent",
+            limit=1,
+        )
+    )
 
 
-def _reject_completed_target_payroll(doc) -> None:
+def _reject_target_payroll_if_started(doc) -> None:
     target_date = doc.get("payroll_date")
-    if _has_completed_target_payroll(doc.get("employee"), doc.get("company"), target_date):
+    if _target_payroll_has_started(doc.get("employee"), doc.get("company"), target_date):
         frappe.throw(
-            _("TARGET_PAYROLL_ALREADY_PROCESSED: A submitted Salary Slip already covers {0}. Choose a future payroll date.").format(
-                frappe.bold(target_date)
-            )
+            _(
+                "TARGET_PAYROLL_ALREADY_STARTED: A non-cancelled Salary Slip or active "
+                "managed Payroll Entry already covers {0}. Choose a later payroll date."
+            ).format(frappe.bold(target_date))
         )
 
 
@@ -204,7 +271,7 @@ def validate_payroll_correction(doc, method=None, *, action=None) -> None:
         frappe.throw(_("Payroll Correction must target a payroll date after the source Salary Slip period."))
 
     _validate_managed_source_slip(slip)
-    _reject_completed_target_payroll(doc)
+    _reject_target_payroll_if_started(doc)
 
 
 def validate_arrear(doc, method=None, *, action=None) -> None:
@@ -221,7 +288,7 @@ def validate_arrear(doc, method=None, *, action=None) -> None:
 
     if getdate(doc.payroll_date) <= getdate(period.end_date):
         frappe.throw(_("Arrear must target a payroll date after the selected historical Payroll Period."))
-    _reject_completed_target_payroll(doc)
+    _reject_target_payroll_if_started(doc)
 
 
 def _business_fields_changed(doc, old_doc) -> bool:
@@ -356,11 +423,18 @@ def validate_additional_salary_before_cancel(doc, method=None) -> None:
         frappe.throw(_("Cancel an unconsumed Payroll Correction or Arrear through its approved workflow."))
 
 
-def _insert_native_adjustment_doc(doctype: str, values: dict):
-    doc = frappe.get_doc({"doctype": doctype, **values})
+def _create_submitted_additional_salary(values: dict):
+    """Create native money only after the approved adjustment is submitted."""
+    doc = frappe.get_doc({"doctype": "Additional Salary", **values})
     doc.insert(ignore_permissions=True)
     doc.flags.ignore_permissions = True
     doc.submit()
+    return doc
+
+def _insert_employee_benefit_ledger(values: dict):
+    """Insert the non-submittable native benefit ledger from an approved adjustment."""
+    doc = frappe.get_doc({"doctype": "Employee Benefit Ledger", **values})
+    doc.insert(ignore_permissions=True)
     return doc
 
 
@@ -369,7 +443,7 @@ class PayrollCorrectionMixin:
 
     def create_additional_salary(self):
         for component in (self.earning_arrears or []) + (self.deduction_arrears or []):
-            _insert_native_adjustment_doc("Additional Salary", {
+            _create_submitted_additional_salary({
                 "employee": self.employee,
                 "company": self.company,
                 "payroll_date": self.payroll_date,
@@ -388,7 +462,7 @@ class PayrollCorrectionMixin:
             flexible = frappe.db.get_value(
                 "Salary Component", component.salary_component, "is_flexible_benefit"
             )
-            _insert_native_adjustment_doc("Employee Benefit Ledger", {
+            _insert_employee_benefit_ledger({
                 "employee": self.employee,
                 "employee_name": self.employee_name,
                 "company": self.company,
@@ -460,7 +534,7 @@ class TradexcelArrearMixin:
         for component in (self.earning_arrears or []) + (self.deduction_arrears or []):
             if not component.salary_component or not component.amount:
                 continue
-            _insert_native_adjustment_doc("Additional Salary", {
+            _create_submitted_additional_salary({
                 "employee": self.employee,
                 "company": self.company,
                 "payroll_date": self.payroll_date,
@@ -479,7 +553,7 @@ class TradexcelArrearMixin:
             flexible = frappe.db.get_value(
                 "Salary Component", component.salary_component, "is_flexible_benefit"
             )
-            _insert_native_adjustment_doc("Employee Benefit Ledger", {
+            _insert_employee_benefit_ledger({
                 "employee": self.employee,
                 "employee_name": self.employee_name,
                 "company": self.company,
@@ -521,25 +595,17 @@ def inspect_payroll_adjustment_readiness(
             "status": "DAILY_WAGE_RETRO_ADJUSTMENT_REVIEW_REQUIRED",
             "next_action": _("Review the approved attendance correction and route a future-period adjustment. Do not reopen consumed attendance inputs."),
         }
+    if issue_type not in ("lwp", "salary_structure"):
+        frappe.throw(_("Select LWP reversal, salary structure change, Daily Wage review, or overpayment."))
+    if not payroll_date or getdate(payroll_date) <= getdate(slip.end_date):
+        return {"status": "FUTURE_PAYROLL_DATE_REQUIRED", "next_action": _("Choose a payroll date after the source Salary Slip period.")}
+    if issue_type == "lwp" and not flt(slip.get("leave_without_pay")):
+        return {"status": "ADJUSTMENT_NOT_APPLICABLE", "next_action": _("This Salary Slip has no LWP to reverse.")}
+    if _target_payroll_has_started(slip.employee, slip.company, payroll_date):
+        return {
+            "status": "TARGET_PAYROLL_ALREADY_STARTED",
+            "next_action": _("A non-cancelled target Salary Slip or active managed Payroll Entry already exists. Choose a later payroll date."),
+        }
     if issue_type == "lwp":
-        if not flt(slip.get("leave_without_pay")):
-            return {"status": "ADJUSTMENT_NOT_APPLICABLE", "next_action": _("This Salary Slip has no LWP to reverse.")}
-        if not payroll_date or getdate(payroll_date) <= getdate(slip.end_date):
-            return {"status": "FUTURE_PAYROLL_DATE_REQUIRED", "next_action": _("Choose a payroll date after the source Salary Slip period.")}
-        if frappe.get_all(
-            "Salary Slip",
-            filters={
-                "employee": slip.employee, "company": slip.company, "docstatus": 1,
-                "start_date": ["<=", payroll_date], "end_date": [">=", payroll_date],
-            },
-            pluck="name", limit=1,
-        ):
-            return {"status": "TARGET_PAYROLL_ALREADY_PROCESSED", "next_action": _("Choose a future payroll date that has not been processed.")}
         return {"status": "LWP_REVERSAL_AVAILABLE", "native_doctype": "Payroll Correction"}
-    if issue_type == "salary_structure":
-        if not payroll_date or getdate(payroll_date) <= getdate(slip.end_date):
-            return {"status": "FUTURE_PAYROLL_DATE_REQUIRED", "next_action": _("Choose a payroll date after the source Salary Slip period.")}
-        if _has_completed_target_payroll(slip.employee, slip.company, payroll_date):
-            return {"status": "TARGET_PAYROLL_ALREADY_PROCESSED", "next_action": _("Choose a future payroll date that has not been processed.")}
-        return {"status": "SALARY_ARREAR_AVAILABLE", "native_doctype": "Arrear"}
-    frappe.throw(_("Select LWP reversal, salary structure change, Daily Wage review, or overpayment."))
+    return {"status": "SALARY_ARREAR_AVAILABLE", "native_doctype": "Arrear"}

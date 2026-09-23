@@ -107,6 +107,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
         "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
@@ -178,6 +179,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel Payroll Manager": EDIT_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
@@ -214,7 +216,10 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel HR Manager": READ_ONLY_PERMS,
         "Tradexcel Payroll Manager": EDIT_PERMS | {"submit"},
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
-        "Tradexcel Payroll Approver": (APPROVE_PERMS - {"submit"}) | {"delete"},
+        # Native Arrear approval recalculates a Salary Slip preview through
+        # HRMS make_salary_slip(), whose mapper checks Salary Slip create
+        # permission. No mutation or final submission is granted.
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS | {"create"},
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
     "Payroll Entry": {

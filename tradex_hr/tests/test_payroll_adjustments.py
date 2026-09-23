@@ -87,7 +87,7 @@ def test_correction_needs_future_unprocessed_payroll_date(monkeypatch):
 
     correction.payroll_date = "2026-10-01"
     monkeypatch.setattr(frappe, "get_all", lambda *_args, **_kwargs: ["SS-TARGET"])
-    with pytest.raises(frappe.ValidationError, match="TARGET_PAYROLL_ALREADY_PROCESSED"):
+    with pytest.raises(frappe.ValidationError, match="TARGET_PAYROLL_ALREADY_STARTED"):
         adjustments.validate_payroll_correction(correction)
 
 
@@ -195,6 +195,32 @@ def test_adjustment_permission_requires_explicit_company_scope(monkeypatch):
     monkeypatch.setattr(frappe, "get_roles", lambda _user=None: ["Tradexcel Employee/Worker"])
     assert adjustments.adjustment_has_permission(doc, "create", user=user) is False
 
+def test_approver_write_is_limited_to_frappe_approval_transition(monkeypatch):
+    user = "payroll-approver@example.test"
+    monkeypatch.setattr(frappe, "get_roles", lambda _user=None: ["Tradexcel Payroll Approver"])
+    monkeypatch.setattr(frappe.db, "exists", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(
+        frappe.db,
+        "get_value",
+        lambda _doctype, _name, field: adjustments.PENDING if field == "workflow_state" else None,
+    )
+    doc = frappe._dict(
+        doctype="Arrear",
+        name="AR-TEST",
+        owner="payroll-maker@example.test",
+        company="TCL",
+        docstatus=1,
+        workflow_state=adjustments.APPROVED,
+    )
+    assert adjustments.adjustment_has_permission(doc, "write", user=user) is True
+
+    monkeypatch.setattr(frappe.db, "get_value", lambda *_args, **_kwargs: adjustments.APPROVED)
+    assert adjustments.adjustment_has_permission(doc, "write", user=user) is False
+
+    doc.owner = user
+    monkeypatch.setattr(frappe.db, "get_value", lambda *_args, **_kwargs: adjustments.PENDING)
+    assert adjustments.adjustment_has_permission(doc, "write", user=user) is False
+
 
 def test_pending_adjustment_cannot_be_edited_by_maker_or_approver():
     class Meta:
@@ -290,13 +316,102 @@ def test_arrear_readiness_blocks_completed_target_payroll(monkeypatch):
     monkeypatch.setattr(adjustments, "_authorize_company", lambda _company: None)
     monkeypatch.setattr(frappe, "has_permission", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(frappe.db, "get_value", lambda *_args, **_kwargs: "TCL")
-    monkeypatch.setattr(frappe, "get_doc", lambda *_args, **_kwargs: slip)
+    monkeypatch.setattr(frappe, "get_doc", lambda doctype, *_args, **_kwargs: slip)
     monkeypatch.setattr(frappe, "get_all", lambda *_args, **_kwargs: ["SS-TARGET"])
 
     result = adjustments.inspect_payroll_adjustment_readiness(
         "SS-OLD", "salary_structure", "2026-10-01"
     )
-    assert result["status"] == "TARGET_PAYROLL_ALREADY_PROCESSED"
+    assert result["status"] == "TARGET_PAYROLL_ALREADY_STARTED"
+
+@pytest.mark.parametrize("docstatus", [0, 1])
+def test_non_cancelled_target_slip_blocks_adjustment(monkeypatch, docstatus):
+    calls = []
+
+    def get_all(doctype, **kwargs):
+        calls.append((doctype, kwargs))
+        if doctype != "Salary Slip":
+            return []
+        requested_docstatus = kwargs["filters"].get("docstatus")
+        if requested_docstatus == ["<", 2]:
+            return ["SS-TARGET"] if docstatus < 2 else []
+        if requested_docstatus == 1:
+            return ["SS-TARGET"] if docstatus == 1 else []
+        return []
+
+    monkeypatch.setattr(frappe, "get_all", get_all)
+
+    assert adjustments._target_payroll_has_started("EMP-1", "TCL", "2026-10-01")
+    slip_query = next(kwargs for doctype, kwargs in calls if doctype == "Salary Slip")
+    assert slip_query["filters"]["docstatus"] == ["<", 2]
+    assert slip_query["filters"]["employee"] == "EMP-1"
+    assert slip_query["filters"]["company"] == "TCL"
+
+
+def test_queued_managed_target_payroll_blocks_for_selected_employee(monkeypatch):
+    calls = []
+
+    def get_all(doctype, **kwargs):
+        calls.append((doctype, kwargs))
+        if doctype == "Salary Slip":
+            return []
+        if doctype == "Payroll Entry":
+            return [frappe._dict(
+                name="PE-TARGET", status="Queued", salary_slips_created=0,
+                custom_tradex_run_key="TRAD-2026-10",
+            )]
+        if doctype == "Payroll Employee Detail":
+            return ["PE-TARGET"]
+        return []
+
+    monkeypatch.setattr(frappe, "get_all", get_all)
+
+    assert adjustments._target_payroll_has_started("EMP-1", "TCL", "2026-10-01")
+    detail_query = next(kwargs for doctype, kwargs in calls if doctype == "Payroll Employee Detail")
+    assert detail_query["filters"]["employee"] == "EMP-1"
+    assert detail_query["filters"]["parent"] == ["in", ["PE-TARGET"]]
+
+
+@pytest.mark.parametrize(
+    "payroll_entry,employee_rows,expected",
+    [
+        (frappe._dict(name="PE-OTHER", status="Queued", salary_slips_created=0,
+                      custom_tradex_run_key="TRAD-2026-10"), [], False),
+        (frappe._dict(name="PE-UNMANAGED", status="Queued", salary_slips_created=0,
+                      custom_tradex_run_key=""), ["PE-UNMANAGED"], False),
+        (frappe._dict(name="PE-DRAFT", status="Draft", salary_slips_created=0,
+                      custom_tradex_run_key="TRAD-2026-10"), ["PE-DRAFT"], False),
+        (frappe._dict(name="PE-CREATED", status="Submitted", salary_slips_created=1,
+                      custom_tradex_run_key="TRAD-2026-10"), ["PE-CREATED"], True),
+    ],
+)
+def test_managed_target_payroll_requires_processing_and_employee_membership(
+    monkeypatch, payroll_entry, employee_rows, expected
+):
+    def get_all(doctype, **kwargs):
+        if doctype == "Salary Slip":
+            return []
+        if doctype == "Payroll Entry":
+            return [payroll_entry]
+        if doctype == "Payroll Employee Detail":
+            return employee_rows
+        return []
+
+    monkeypatch.setattr(frappe, "get_all", get_all)
+
+    assert adjustments._target_payroll_has_started("EMP-1", "TCL", "2026-10-01") is expected
+
+
+def test_untouched_target_payroll_draft_does_not_block_adjustment(monkeypatch):
+    calls = []
+
+    def get_all(doctype, **kwargs):
+        calls.append((doctype, kwargs))
+        return []
+
+    monkeypatch.setattr(frappe, "get_all", get_all)
+
+    assert not adjustments._target_payroll_has_started("EMP-1", "TCL", "2026-10-01")
 
 
 def test_independent_approver_can_validate_submitted_adjustment(monkeypatch):
