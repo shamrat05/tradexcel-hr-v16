@@ -466,11 +466,12 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         manager = _create_scoped_user("Tradexcel Payroll Manager", company, token)
         approver = _create_scoped_user("Tradexcel Payroll Approver", company, token)
         director = _create_scoped_user("Tradexcel Owner/Director", company, token)
-        tracked["users"] = [manager, approver, director]
+        finance = _create_scoped_user("Accounts User", company, token)
+        tracked["users"] = [manager, approver, director, finance]
         tracked["permissions"] = frappe.get_all(
             "User Permission", filters={"user": ["in", tracked["users"]]}, pluck="name"
         )
-        workflow_users.update(manager=manager, approver=approver, director=director)
+        workflow_users.update(manager=manager, approver=approver, director=director, finance=finance)
         frappe.clear_cache()
         frappe.set_user(approver)
         assert not frappe.has_permission("Salary Slip", "submit")
@@ -676,6 +677,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         payment_entry.cheque_no = f"PAY-{token}"
         payment_entry.cheque_date = end
         payment_entry.save(ignore_permissions=True)
+        frappe.set_user(finance)
         payment_entry.submit()
         assert payment_entry.docstatus == 1
         assert payment_entry.total_debit == payment_entry.total_credit
@@ -740,7 +742,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         assert cash_entry and cash_entry.docstatus == 0
         assert cash_entry.voucher_type == "Cash Entry"
 
-        frappe.set_user("Administrator")
+        frappe.set_user(finance)
         cash_entry.submit()
         assert cash_entry.docstatus == 1
         assert cash_entry.total_debit == cash_entry.total_credit

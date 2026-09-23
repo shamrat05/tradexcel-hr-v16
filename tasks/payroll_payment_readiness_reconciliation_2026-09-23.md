@@ -43,6 +43,6 @@ These are present-day Employee counts, not a payroll-period population. Previous
 ## Verification
 
 - Payment readiness tests cover accrual gating, Bank/Cash/unknown/mixed modes, missing snapshot data, account company/type/currency checks, required linked company Bank Account, changed Employee bank details, explicit company scope, and withholding separation.
-- Synthetic native integration covers partial Salary Slip submission and retry, native accrual Journal Entries, native Bank Entry draft and idempotent retry before/after posting, native Bank Transaction reconciliation and `clearance_date`, plus a submitted native Cash Entry that reports `CASH_PAYMENT_ACCOUNTING_POSTED` without fabricating a bank match. All synthetic entries are removed during explicit cleanup.
+- Synthetic native integration covers partial Salary Slip submission and retry, native accrual Journal Entries, native Bank Entry draft and idempotent retry before/after posting, submission by a scoped ERPNext Accounts User, native Bank Transaction reconciliation and `clearance_date`, plus a submitted native Cash Entry that reports `CASH_PAYMENT_ACCOUNTING_POSTED` without fabricating a bank match. All synthetic entries are removed during explicit cleanup.
 - Integration cleanup explicitly removes the synthetic Bank Transaction, Journal Entries, GL Entries, Bank Account, Bank, accounts, employee, attendance, and payroll records; assertions verify the synthetic Company and its GL records are gone.
 - Real queued worker E2E (>30 employees) remains a pre-production release gate.
