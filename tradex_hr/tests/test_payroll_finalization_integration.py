@@ -668,6 +668,8 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         tracked["payment_entry"] = payment_entry.name
         retry_entry = entry.make_bank_entry()
         assert retry_entry.name == payment_entry.name
+        draft_payment_readiness = inspect_payroll_payment_readiness(entry)
+        assert draft_payment_readiness["status"] == "PAYMENT_ENTRY_DRAFT", draft_payment_readiness
         assert frappe.db.count(
             "Journal Entry Account",
             {"reference_type": "Payroll Entry", "reference_name": entry.name},

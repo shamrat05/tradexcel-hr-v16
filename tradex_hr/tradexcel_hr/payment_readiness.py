@@ -100,7 +100,7 @@ def _payment_account_findings(entry, expected_type: str) -> list[dict]:
     return findings
 
 
-def _linked_payment_entries(payroll_entry: str, withheld: bool = False) -> tuple[list, list]:
+def _linked_payment_entries(payroll_entry: str) -> tuple[list, list]:
     references = frappe.get_all(
         "Journal Entry Account",
         filters={"reference_type": "Payroll Entry", "reference_name": payroll_entry},
@@ -112,11 +112,53 @@ def _linked_payment_entries(payroll_entry: str, withheld: bool = False) -> tuple
         je = frappe.get_doc("Journal Entry", name)
         if je.voucher_type not in {"Bank Entry", "Cash Entry"}:
             continue
-        is_withheld_entry = "withheld salaries" in (je.get("user_remark") or "").lower()
-        if is_withheld_entry != withheld:
-            continue
         (cancelled if je.docstatus == 2 else active).append(je)
     return active, cancelled
+
+
+def _payment_entry_identity_issue(entry, journal_entry, expected_mode: str) -> str | None:
+    """Check the native JE identity/shape without recalculating payroll accounting."""
+    expected_voucher = {"Bank": "Bank Entry", "Cash": "Cash Entry"}.get(expected_mode)
+    if not expected_voucher:
+        return _("The payroll payment mode is not supported.")
+    if journal_entry.company != entry.company:
+        return _("The linked payment Journal Entry belongs to a different company.")
+    if journal_entry.docstatus not in {0, 1}:
+        return _("The linked payment Journal Entry is not active.")
+    if journal_entry.voucher_type != expected_voucher:
+        return _("The linked Journal Entry type does not match the payroll payment mode.")
+
+    rows = journal_entry.get("accounts") or []
+    payment_rows = [
+        row for row in rows
+        if row.get("account") == entry.get("payment_account") and flt(row.get("credit")) > 0
+    ]
+    if not payment_rows or any(flt(row.get("debit")) > 0 for row in payment_rows):
+        return _("The Journal Entry has no valid credit to the selected payroll payment account.")
+    if expected_mode == "Bank" and any(
+        row.get("bank_account") != entry.get("bank_account") for row in payment_rows
+    ):
+        return _("The Journal Entry uses a different company Bank Account.")
+
+    payroll_refs = [row for row in rows if row.get("reference_type") == "Payroll Entry"]
+    if any(row.get("reference_name") != entry.name for row in payroll_refs):
+        return _("The Journal Entry also references a different Payroll Entry.")
+    payable_rows = [
+        row for row in payroll_refs
+        if row.get("reference_name") == entry.name
+        and row.get("account") == entry.get("payroll_payable_account")
+        and flt(row.get("debit")) > 0
+        and flt(row.get("credit")) <= 0
+    ]
+    if not payable_rows:
+        return _("The Journal Entry has no payroll-payable debit linked to this Payroll Entry.")
+
+    if journal_entry.docstatus == 1:
+        precision = frappe.get_precision("Journal Entry", "total_debit") or 2
+        tolerance = 10 ** (-int(precision))
+        if abs(flt(journal_entry.total_debit) - flt(journal_entry.total_credit)) >= tolerance:
+            return _("The submitted payment Journal Entry is not balanced.")
+    return None
 
 
 def _bank_reconciled(je) -> tuple[bool, list[dict]]:
@@ -167,6 +209,19 @@ def inspect_payroll_payment_readiness(payroll_entry, *, for_withheld_salaries: b
             "blockers": [{
                 "code": "ACCRUAL_NOT_READY",
                 "reason": _("Payroll accrual must reconcile before payment can be prepared."),
+            }],
+            "warnings": [],
+        }
+
+    if for_withheld_salaries:
+        return {
+            "status": "WITHHELD_PAYMENT_REVIEW_REQUIRED",
+            "payroll_entry": entry.name,
+            "company": entry.company,
+            "accrual_status": accrual.get("status"),
+            "blockers": [{
+                "code": "WITHHELD_PAYMENT_REVIEW_REQUIRED",
+                "reason": _("Native withheld-salary payments need a separate Finance review before preparation."),
             }],
             "warnings": [],
         }
@@ -224,9 +279,7 @@ def inspect_payroll_payment_readiness(payroll_entry, *, for_withheld_salaries: b
     if mode in {"Bank", "Cash"}:
         blockers.extend(_payment_account_findings(entry, "Bank" if mode == "Bank" else "Cash"))
 
-    active_entries, cancelled_entries = _linked_payment_entries(
-        entry.name, withheld=for_withheld_salaries
-    )
+    active_entries, cancelled_entries = _linked_payment_entries(entry.name)
     payment_entry = None
     bank_transactions = []
     if len(active_entries) > 1:
@@ -243,10 +296,11 @@ def inspect_payroll_payment_readiness(payroll_entry, *, for_withheld_salaries: b
         status = "PAYMENT_ENTRY_CANCELLED"
     elif active_entries:
         payment_entry = active_entries[0]
-        if payment_entry.company != entry.company:
+        identity_issue = _payment_entry_identity_issue(entry, payment_entry, mode)
+        if identity_issue:
             blockers.append({
                 "code": "PAYMENT_ENTRY_INVALID",
-                "reason": _("A linked payment Journal Entry belongs to a different company. Review it with Finance."),
+                "reason": _("A linked Journal Entry is not a valid native payroll payment: {0}").format(identity_issue),
             })
             status = "PAYMENT_ENTRY_INVALID"
         elif payment_entry.docstatus == 0:

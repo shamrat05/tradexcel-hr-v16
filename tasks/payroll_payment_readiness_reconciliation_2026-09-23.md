@@ -20,7 +20,8 @@ Flow:
 - Cash mode requires a same-company enabled Cash account and no Bank Account.
 - Blank, Cheque, and unknown modes require review until a supported native workflow is selected.
 - Withheld slips are separated using native Salary Slip `status == "Withheld"`, matching HRMS's native `get_salary_slip_details()` filter.
-- Existing active native payment Journal Entries are reused. Multiple active entries and a cancelled-only payment entry block retries.
+- Linked Bank/Cash Journal Entries are reused only after validating company, voucher type, selected payment-account credit, the selected Bank Account for Bank mode, and one or more Payroll Payable debit rows referencing this Payroll Entry. A submitted entry must balance. Multiple active entries and a cancelled-only payment entry block retries.
+- Withheld-salary payment requests stop for Finance review. Native v16 exposes no stable structured marker separate from translated user_remark text for classifying the release entry, so the app does not parse English remarks.
 - Native Bank Transaction allocations, Reconciled status, and Journal Entry `clearance_date` are used to report bank reconciliation. A submitted payment Journal Entry alone is not called paid.
 - Full employee/company account numbers are not returned in the readiness response.
 
@@ -42,7 +43,7 @@ These are present-day Employee counts, not a payroll-period population. Previous
 
 ## Verification
 
-- Payment readiness tests cover accrual gating, Bank/Cash/unknown/mixed modes, missing snapshot data, account company/type/currency checks, required linked company Bank Account, changed Employee bank details, explicit company scope, and withholding separation.
+- Payment readiness tests cover accrual gating, Bank/Cash/unknown/mixed modes, missing snapshot data, account company/type/currency checks, required linked company Bank Account, changed Employee bank details, explicit company scope, native payment Journal Entry identity/shape, and withheld-payment review.
 - Synthetic native integration covers partial Salary Slip submission and retry, native accrual Journal Entries, native Bank Entry draft and idempotent retry before/after posting, submission by a scoped ERPNext Accounts User, native Bank Transaction reconciliation and `clearance_date`, plus a submitted native Cash Entry that reports `CASH_PAYMENT_ACCOUNTING_POSTED` without fabricating a bank match. All synthetic entries are removed during explicit cleanup.
 - Integration cleanup explicitly removes the synthetic Bank Transaction, Journal Entries, GL Entries, Bank Account, Bank, accounts, employee, attendance, and payroll records; assertions verify the synthetic Company and its GL records are gone.
 - Real queued worker E2E (>30 employees) remains a pre-production release gate.

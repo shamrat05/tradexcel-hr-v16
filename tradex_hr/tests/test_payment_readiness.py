@@ -34,6 +34,125 @@ def test_payment_modes_require_one_known_native_mode():
         assert blockers[0]["code"] == payment_readiness.PAYMENT_MODE_REVIEW
 
 
+
+def _native_payment_entry(mode, *, voucher_type=None, payment_account="PAYMENT-ACCOUNT",
+                          bank_account="COMPANY-BANK-ACCOUNT", payable_rows=None,
+                          company="Tradexcel Ceramics Ltd.", docstatus=0):
+    payable_rows = payable_rows if payable_rows is not None else [
+        {"account": "PAYROLL-PAYABLE", "debit": 100, "credit": 0,
+         "reference_type": "Payroll Entry", "reference_name": "PE-PAYMENT-TEST"}
+    ]
+    payment_row = {
+        "account": payment_account, "debit": 0, "credit": 100,
+        "bank_account": bank_account if mode == "Bank" else None,
+    }
+    rows = [payment_row, *payable_rows]
+    return frappe._dict(
+        name="JE-TEST", company=company, voucher_type=voucher_type or f"{mode} Entry",
+        docstatus=docstatus, clearance_date=None,
+        total_debit=sum(row["debit"] for row in rows),
+        total_credit=sum(row["credit"] for row in rows), accounts=rows,
+    )
+
+
+def _payment_entry_source():
+    return frappe._dict(
+        name="PE-PAYMENT-TEST", company="Tradexcel Ceramics Ltd.",
+        payment_account="PAYMENT-ACCOUNT", bank_account="COMPANY-BANK-ACCOUNT",
+        payroll_payable_account="PAYROLL-PAYABLE", currency="BDT",
+    )
+
+
+def test_native_cash_payment_entry_shape_is_accepted():
+    assert payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(), _native_payment_entry("Cash"), "Cash"
+    ) is None
+
+
+def test_native_bank_payment_entry_shape_is_accepted():
+    assert payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(), _native_payment_entry("Bank"), "Bank"
+    ) is None
+
+
+@pytest.mark.parametrize(("expected_mode", "voucher_type"), [
+    ("Cash", "Bank Entry"),
+    ("Bank", "Cash Entry"),
+])
+def test_payment_entry_with_wrong_voucher_type_is_rejected(expected_mode, voucher_type):
+    issue = payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(),
+        _native_payment_entry(expected_mode, voucher_type=voucher_type),
+        expected_mode,
+    )
+    assert issue
+
+
+def test_payment_entry_with_wrong_payment_account_is_rejected():
+    issue = payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(), _native_payment_entry("Cash", payment_account="OTHER"), "Cash"
+    )
+    assert issue
+
+
+def test_bank_payment_entry_with_wrong_bank_account_is_rejected():
+    issue = payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(),
+        _native_payment_entry("Bank", bank_account="UNRELATED-BANK-ACCOUNT"),
+        "Bank",
+    )
+    assert issue
+
+
+def test_payment_entry_without_payroll_payable_reference_is_rejected():
+    issue = payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(),
+        _native_payment_entry("Cash", payable_rows=[
+            {"account": "PAYROLL-PAYABLE", "debit": 100, "credit": 0,
+             "reference_type": None, "reference_name": None}
+        ]),
+        "Cash",
+    )
+    assert issue
+
+
+def test_payment_entry_referencing_another_payroll_entry_is_rejected():
+    issue = payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(),
+        _native_payment_entry("Cash", payable_rows=[
+            {"account": "PAYROLL-PAYABLE", "debit": 100, "credit": 0,
+             "reference_type": "Payroll Entry", "reference_name": "PE-OTHER"}
+        ]),
+        "Cash",
+    )
+    assert issue
+
+
+def test_employee_wise_payable_rows_are_accepted():
+    issue = payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(),
+        _native_payment_entry("Cash", payable_rows=[
+            {"account": "PAYROLL-PAYABLE", "debit": 40, "credit": 0,
+             "reference_type": "Payroll Entry", "reference_name": "PE-PAYMENT-TEST",
+             "party_type": "Employee", "party": "EMP-1"},
+            {"account": "PAYROLL-PAYABLE", "debit": 60, "credit": 0,
+             "reference_type": "Payroll Entry", "reference_name": "PE-PAYMENT-TEST",
+             "party_type": "Employee", "party": "EMP-2"},
+        ]),
+        "Cash",
+    )
+    assert issue is None
+
+
+def test_submitted_payment_entry_must_balance():
+    entry = _native_payment_entry("Cash", docstatus=1)
+    entry.total_credit = 101
+    assert payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(), entry, "Cash"
+    )
+
+
+
 def test_payment_readiness_stops_when_accrual_is_not_ready(monkeypatch):
     entry = frappe._dict({
         "name": "PE-PARTIAL",
@@ -52,7 +171,8 @@ def test_payment_readiness_stops_when_accrual_is_not_ready(monkeypatch):
     assert result["accrual_status"] == "PARTIAL_SUBMISSION"
 
 
-def _payment_result(monkeypatch, *, mode, slips=None, employee=None, bank_account=None, active_entries=None, cancelled_entries=None):
+def _payment_result(monkeypatch, *, mode, slips=None, employee=None, bank_account=None, active_entries=None,
+                    cancelled_entries=None, for_withheld_salaries=False):
     entry = frappe._dict({
         "name": "PE-PAYMENT-TEST",
         "company": "Tradexcel Ceramics Ltd.",
@@ -60,6 +180,7 @@ def _payment_result(monkeypatch, *, mode, slips=None, employee=None, bank_accoun
         "custom_tradex_run_key": "RUN-1",
         "payment_account": "PAYMENT-ACCOUNT",
         "bank_account": "COMPANY-BANK-ACCOUNT",
+        "payroll_payable_account": "PAYROLL-PAYABLE",
     })
     entry.check_permission = lambda *_args: None
 
@@ -85,7 +206,6 @@ def _payment_result(monkeypatch, *, mode, slips=None, employee=None, bank_accoun
             "_linked_payment_entries",
             lambda *_args, **_kwargs: (active_entries or [], cancelled_entries or []),
         )
-        monkeypatch.setattr(payment_readiness, "_bank_reconciled", lambda *_args: (False, []))
 
     def get_value(doctype, name, fields, **kwargs):
         if doctype == "Account":
@@ -101,7 +221,9 @@ def _payment_result(monkeypatch, *, mode, slips=None, employee=None, bank_accoun
         raise AssertionError(f"unexpected doctype {doctype}")
 
     monkeypatch.setattr(frappe.db, "get_value", get_value)
-    return payment_readiness.inspect_payroll_payment_readiness(entry)
+    return payment_readiness.inspect_payroll_payment_readiness(
+        entry, for_withheld_salaries=for_withheld_salaries
+    )
 
 
 def test_bank_mode_missing_snapshot_account_blocks(monkeypatch):
@@ -236,6 +358,23 @@ def test_native_make_bank_entry_is_blocked_when_payment_readiness_fails(monkeypa
     assert entry.calls == 0
 
 
+def test_invalid_existing_payment_entry_blocks_retry(monkeypatch):
+    entry = _ManagedPayrollEntry()
+    native = _native_payment_entry("Cash", payment_account="UNRELATED-ACCOUNT")
+    native.name = "JE-INVALID"
+    monkeypatch.setattr(
+        "tradex_hr.tradexcel_hr.company_context.assert_company_access",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(payment_readiness, "inspect_payroll_payment_readiness", lambda *_args, **_kwargs: {
+        "status": "PAYMENT_ENTRY_INVALID",
+        "blockers": [{"code": "PAYMENT_ENTRY_INVALID", "reason": "wrong payment account"}],
+    })
+    with pytest.raises(frappe.ValidationError, match="Payroll payment is blocked: wrong payment account"):
+        entry.make_bank_entry()
+    assert entry.calls == 0
+
+
 def test_existing_native_payment_entry_is_reused_on_retry(monkeypatch):
     entry = _ManagedPayrollEntry()
     existing = frappe._dict(name="JE-EXISTING")
@@ -287,6 +426,12 @@ def test_withheld_salary_slips_are_separate_from_normal_payment_batch(monkeypatc
     assert result["payment_mode"] == "Cash"
     assert result["payment_mode_counts"] == {"Cash": 1}
 
+    withheld = _payment_result(
+        monkeypatch, mode="Cash", slips=slips, for_withheld_salaries=True
+    )
+    assert withheld["status"] == "WITHHELD_PAYMENT_REVIEW_REQUIRED"
+    assert withheld["blockers"][0]["code"] == "WITHHELD_PAYMENT_REVIEW_REQUIRED"
+
 
 def test_payment_readiness_requires_explicit_company_scope(monkeypatch):
     calls = []
@@ -320,21 +465,76 @@ def test_linked_payment_entry_from_another_company_is_blocked(monkeypatch):
 
 
 def test_submitted_payment_entry_awaits_bank_reconciliation(monkeypatch):
-    posted = frappe._dict(
-        name="JE-POSTED", company="Tradexcel Ceramics Ltd.", docstatus=1,
-        voucher_type="Bank Entry", clearance_date=None,
+    posted = _native_payment_entry("Bank", docstatus=1)
+    posted.name = "JE-POSTED"
+    posted.clearance_date = None
+    reconciled_calls = []
+    monkeypatch.setattr(
+        payment_readiness, "_bank_reconciled",
+        lambda je: (reconciled_calls.append(je.name) or False, []),
     )
     result = _payment_result(
         monkeypatch,
-        mode="Cash",
+        mode="Bank",
         slips=[{
             "name": "SS-1", "employee": "EMP-1", "net_pay": 100,
-            "mode_of_payment": "Cash", "status": "Submitted",
+            "mode_of_payment": "Bank", "bank_name": "Test Bank",
+            "bank_account_no": "1234", "status": "Submitted",
         }],
+        employee=frappe._dict(
+            name="EMP-1", salary_mode="Bank", bank_name="Test Bank", bank_ac_no="1234"
+        ),
+        bank_account=frappe._dict(
+            account="PAYMENT-ACCOUNT", company="Tradexcel Ceramics Ltd.",
+            is_company_account=1, disabled=0, bank_account_no="BANK-001",
+        ),
         active_entries=[posted],
     )
     assert result["status"] == "AWAITING_BANK_RECONCILIATION"
     assert result["payment_journal_entry"] == "JE-POSTED"
+    assert reconciled_calls == ["JE-POSTED"]
+
+
+def test_invalid_linked_payment_entry_never_reaches_bank_reconciliation(monkeypatch):
+    invalid = _native_payment_entry("Bank", bank_account="OTHER-BANK")
+    invalid.name = "JE-INVALID"
+    reconcile_calls = []
+    monkeypatch.setattr(
+        payment_readiness, "_bank_reconciled",
+        lambda je: (reconcile_calls.append(je.name) or True, [{"name": "BT-1"}]),
+    )
+    result = _payment_result(
+        monkeypatch,
+        mode="Bank",
+        slips=[{
+            "name": "SS-1", "employee": "EMP-1", "net_pay": 100,
+            "mode_of_payment": "Bank", "bank_name": "Test Bank",
+            "bank_account_no": "1234", "status": "Submitted",
+        }],
+        employee=frappe._dict(
+            name="EMP-1", salary_mode="Bank", bank_name="Test Bank", bank_ac_no="1234"
+        ),
+        bank_account=frappe._dict(
+            account="PAYMENT-ACCOUNT", company="Tradexcel Ceramics Ltd.",
+            is_company_account=1, disabled=0, bank_account_no="BANK-001",
+        ),
+        active_entries=[invalid],
+    )
+    assert result["status"] == "PAYMENT_ENTRY_INVALID"
+    assert result["payment_journal_entry"] == "JE-INVALID"
+    assert not reconcile_calls
+
+
+def test_payment_entry_with_no_payroll_payable_row_is_rejected():
+    issue = payment_readiness._payment_entry_identity_issue(
+        _payment_entry_source(),
+        _native_payment_entry("Cash", payable_rows=[
+            {"account": "OTHER-ACCOUNT", "debit": 100, "credit": 0,
+             "reference_type": "Payroll Entry", "reference_name": "PE-PAYMENT-TEST"}
+        ]),
+        "Cash",
+    )
+    assert issue
 
 
 def test_multiple_active_payment_entries_are_ambiguous(monkeypatch):
