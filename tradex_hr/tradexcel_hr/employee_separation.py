@@ -283,6 +283,16 @@ def inspect_full_and_final_readiness(employee_name: str) -> dict:
         from tradex_hr.tradexcel_hr.statutory_exit import inspect_statutory_exit_readiness
         statutory = inspect_statutory_exit_readiness(separation.name)
         findings.extend(statutory.get("findings", []))
+        if separation.get(SEPARATION_TYPE_FIELD) == "Death":
+            from tradex_hr.tradexcel_hr.statutory_benefits import inspect_statutory_benefit_readiness
+            benefit_readiness = inspect_statutory_benefit_readiness(
+                employee.name, employee.relieving_date, employee.relieving_date
+            )
+            if any(
+                item.get("benefit_type") == "Group Insurance" and item.get("status") == "READY"
+                for item in benefit_readiness.get("benefits", [])
+            ):
+                findings.append({"code": "GROUP_INSURANCE_CLAIM_REQUIRED"})
     else:
         findings.append({"code": "LEGAL_CLASSIFICATION_REVIEW_REQUIRED"})
     slips = frappe.get_all("Salary Slip", filters={"employee": employee.name,

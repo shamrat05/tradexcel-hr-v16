@@ -74,3 +74,9 @@ rehearsed on this machine — see the limitation recorded there.
 - A submitted Salary Structure Assignment and its explicit Salary Structure pay basis authorize payroll. Employment Type is not pay basis or legal classification.
 - Employee and User remain separate; account access is optional. Bank details are required only for Bank salary mode. Shift and biometric needs follow the actual attendance setup, not a universal default-shift rule.
 - Joiner Readiness reflects that Employee's own canonical payroll outcome; the company-wide Payroll Readiness screen owns blockers from other employees. Onboarding never creates payroll or submits financial records.
+
+## Statutory benefits
+
+- PF, Progoti, and group-insurance applicability require explicit, source-linked, effective-dated approval; operational Employee counts and Employment Type never decide legal thresholds or participation.
+- Salary Slip deductions do not prove remittance. Do not activate PF/Progoti payroll deductions until native employer-contribution accrual accounting is supported and verified; never substitute a custom Journal Entry.
+- Native Gratuity and Full and Final remain the only gratuity/settlement path; do not create a parallel benefit ledger.

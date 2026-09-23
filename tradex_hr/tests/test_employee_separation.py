@@ -148,3 +148,71 @@ def test_full_and_final_readiness_is_whitelisted_but_internal_classifier_is_not(
 
     assert inspect_full_and_final_readiness in frappe.whitelisted
     assert _native_settlement_pending_count not in frappe.whitelisted
+
+
+def test_death_separation_surfaces_claim_for_active_group_insurance(monkeypatch):
+    import frappe
+    from tradex_hr.tradexcel_hr import employee_separation, statutory_benefits, statutory_exit
+
+    employee = frappe._dict(name="EMP-SYNTHETIC", company="TCL", relieving_date=date(2026, 9, 30))
+    separation = frappe._dict(name="SEP-SYNTHETIC", custom_tradex_separation_type="Death")
+    preview = frappe._dict(payables=[], receivables=[], assets_allocated=[])
+    preview.get_outstanding_statements = lambda: None
+
+    class FakeFrappe:
+        @staticmethod
+        def get_all(*_args, **_kwargs):
+            return []
+
+        @staticmethod
+        def get_doc(*_args, **_kwargs):
+            return preview
+
+    monkeypatch.setattr(employee_separation, "frappe", FakeFrappe)
+    monkeypatch.setattr(employee_separation, "_authorized_employee", lambda _name: employee)
+    monkeypatch.setattr(employee_separation, "_latest_separation", lambda _name: separation)
+    monkeypatch.setattr(employee_separation, "_native_settlement_pending_count", lambda *_args: 0)
+    monkeypatch.setattr(employee_separation, "_full_and_final_payment_status", lambda _fnf: {"status": "NONE", "journal_entries": []})
+    monkeypatch.setattr(statutory_exit, "inspect_statutory_exit_readiness", lambda _name: {"findings": []})
+    monkeypatch.setattr(
+        statutory_benefits,
+        "inspect_statutory_benefit_readiness",
+        lambda *_args: {"benefits": [{"benefit_type": "Group Insurance", "status": "READY"}]},
+    )
+
+    result = employee_separation.inspect_full_and_final_readiness(employee.name)
+    assert any(item["code"] == "GROUP_INSURANCE_CLAIM_REQUIRED" for item in result["findings"])
+
+
+def test_death_separation_without_active_group_coverage_does_not_claim_ready(monkeypatch):
+    import frappe
+    from tradex_hr.tradexcel_hr import employee_separation, statutory_benefits, statutory_exit
+
+    employee = frappe._dict(name="EMP-SYNTHETIC", company="TCL", relieving_date=date(2026, 9, 30))
+    separation = frappe._dict(name="SEP-SYNTHETIC", custom_tradex_separation_type="Death")
+    preview = frappe._dict(payables=[], receivables=[], assets_allocated=[])
+    preview.get_outstanding_statements = lambda: None
+
+    class FakeFrappe:
+        @staticmethod
+        def get_all(*_args, **_kwargs):
+            return []
+
+        @staticmethod
+        def get_doc(*_args, **_kwargs):
+            return preview
+
+    monkeypatch.setattr(employee_separation, "frappe", FakeFrappe)
+    monkeypatch.setattr(employee_separation, "_authorized_employee", lambda _name: employee)
+    monkeypatch.setattr(employee_separation, "_latest_separation", lambda _name: separation)
+    monkeypatch.setattr(employee_separation, "_native_settlement_pending_count", lambda *_args: 0)
+    monkeypatch.setattr(employee_separation, "_full_and_final_payment_status", lambda _fnf: {"status": "NONE", "journal_entries": []})
+    monkeypatch.setattr(statutory_exit, "inspect_statutory_exit_readiness", lambda _name: {"findings": []})
+    monkeypatch.setattr(
+        statutory_benefits,
+        "inspect_statutory_benefit_readiness",
+        lambda *_args: {"benefits": [{"benefit_type": "Group Insurance", "status": "GROUP_INSURANCE_POLICY_REQUIRED"}]},
+    )
+
+    result = employee_separation.inspect_full_and_final_readiness(employee.name)
+    assert not any(item["code"] == "GROUP_INSURANCE_CLAIM_REQUIRED" for item in result["findings"])

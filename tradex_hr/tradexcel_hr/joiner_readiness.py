@@ -11,6 +11,7 @@ from tradex_hr.tradexcel_hr.company_context import assert_company_access
 from tradex_hr.tradexcel_hr.daily_wage_input import inspect_daily_wage_structure
 from tradex_hr.tradexcel_hr.native_payroll import inspect_native_payroll_readiness
 from tradex_hr.tradexcel_hr.wage_floor import inspect_wage_floor_for_employee
+from tradex_hr.tradexcel_hr.statutory_benefits import inspect_statutory_benefit_readiness
 from tradex_hr.tradexcel_hr.pay_basis import DAILY, MONTHLY, resolve_daily_rate, resolve_pay_basis
 
 MAKER_ROLES = {"Tradexcel HR Manager", "Tradexcel Payroll Manager"}
@@ -247,7 +248,7 @@ def inspect_joiner_readiness(employee_name: str) -> dict:
     employee.check_permission("read")
 
     sections = {key: {"status": "READY", "findings": []}
-                for key in ("employment", "payroll", "wage_floor", "attendance", "payment", "access")}
+                for key in ("employment", "payroll", "wage_floor", "statutory_benefits", "attendance", "payment", "access")}
 
     def add(section: str, code: str, message: str, severity: str = "blocker"):
         sections[section]["findings"].append(_finding(code, message, severity))
@@ -304,6 +305,13 @@ def inspect_joiner_readiness(employee_name: str) -> dict:
             else:
                 add("wage_floor", finding["code"], finding["message"])
         sections["wage_floor"]["result"] = wage_floor
+        benefits = (outcome or {}).get("statutory_benefits") or inspect_statutory_benefit_readiness(employee.name, start, end)
+        for finding in benefits.get("findings", []):
+            if finding.get("severity") in {"info", "review"}:
+                add("statutory_benefits", finding["code"], finding["message"], "review")
+            else:
+                add("statutory_benefits", finding["code"], finding["message"])
+        sections["statutory_benefits"]["result"] = benefits
         from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
         holiday_list = get_holiday_list_for_employee(employee.name, raise_exception=False)
         if not holiday_list:
