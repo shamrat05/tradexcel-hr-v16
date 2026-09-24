@@ -1049,6 +1049,7 @@ def after_migrate():
         ensure_payroll_adjustment_workflow_fields,
     )
     from tradex_hr.field_employee_exit_setup import ensure_default_exit_template, ensure_employee_exit_fields
+    from tradex_hr.field_working_time_setup import ensure_working_time_holiday_category_field
     from tradex_hr.tradexcel_hr.salary_setup import ensure_pay_basis_metadata
 
     ensure_branch_hierarchy()
@@ -1059,6 +1060,7 @@ def after_migrate():
     ensure_default_exit_template()
     ensure_field_attendance_fields()
     ensure_field_transport_component()
+    ensure_working_time_holiday_category_field()
     ensure_income_tax_review_fields()
     # Persist explicit financial pay basis on existing native structures. This
     # does not infer from Employment Type and does not rewrite earnings rows.

@@ -85,6 +85,7 @@ doc_events = {
         "before_cancel": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_adjustment_before_cancel",
     },
     "Additional Salary": {
+        "before_submit": "tradex_hr.tradexcel_hr.working_time_compliance.validate_overtime_generated_additional_salary",
         "before_cancel": "tradex_hr.tradexcel_hr.payroll_adjustments.validate_additional_salary_before_cancel",
     },
     "Payroll Entry": {
@@ -108,6 +109,7 @@ doc_events = {
     },
     "Overtime Slip": {
         "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+        "before_submit": "tradex_hr.tradexcel_hr.working_time_compliance.validate_overtime_slip_before_submit",
     },
     "Tradexcel Field Duty": {
         "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
@@ -155,6 +157,8 @@ after_migrate = "tradex_hr.install.after_migrate"
 
 
 permission_query_conditions = {
+    "Tradexcel Working Time Rule Set": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_query_conditions",
+    "Tradexcel Working Time Classification": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_query_conditions",
     "Tradexcel Statutory Rule Set": "tradex_hr.tradexcel_hr.statutory_exit.statutory_ruleset_query_conditions",
     "Tradexcel Wage Floor Rule Set": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_query_conditions",
     "Tradexcel Wage Floor Classification": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_query_conditions",
@@ -174,6 +178,8 @@ has_permission = {
     "Interview": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
     "Interview Feedback": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
     "Employee Onboarding": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
+    "Tradexcel Working Time Rule Set": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_has_permission",
+    "Tradexcel Working Time Classification": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_has_permission",
     "Tradexcel Wage Floor Rule Set": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_has_permission",
     "Tradexcel Wage Floor Classification": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_has_permission",
     "Payroll Correction": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",

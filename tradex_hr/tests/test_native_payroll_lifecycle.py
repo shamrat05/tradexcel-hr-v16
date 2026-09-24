@@ -308,6 +308,17 @@ def test_managed_entry_with_changed_population_is_not_reused(monkeypatch):
     assert "no longer matches current" in result["blockers"][0]["reason"]
 
 
+@pytest.fixture(autouse=True)
+def no_approved_working_time_rules(monkeypatch):
+	from tradex_hr.tradexcel_hr import working_time_compliance
+
+	monkeypatch.setattr(
+		working_time_compliance,
+		"inspect_working_time_compliance",
+		lambda *_args, **_kwargs: {"employees": [], "findings": [], "status": "READY"},
+	)
+
+
 def test_readiness_keeps_attendance_and_unsafe_structure_findings_visible(monkeypatch):
     employee = {"name": "EMP-1", "company": "Company A", "status": "Active"}
     monkeypatch.setattr(native_payroll, "_employees_for_period", lambda *_args: [employee])

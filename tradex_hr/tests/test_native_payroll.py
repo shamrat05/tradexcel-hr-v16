@@ -10,6 +10,17 @@ from tradex_hr.tradexcel_hr import daily_wage_input, financial_readiness, native
 from tradex_hr.tradexcel_hr.report.tradexcel_payroll_readiness import tradexcel_payroll_readiness as payroll_readiness
 
 
+@pytest.fixture(autouse=True)
+def no_approved_working_time_rules(monkeypatch):
+	from tradex_hr.tradexcel_hr import working_time_compliance
+
+	monkeypatch.setattr(
+		working_time_compliance,
+		"inspect_working_time_compliance",
+		lambda *_args, **_kwargs: {"employees": [], "findings": [], "status": "READY"},
+	)
+
+
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(

@@ -303,9 +303,10 @@ def cleanup_synthetic_finalization_company(company_name):
     # Transactions and employee data must go before their account/tree masters.
     company_linked = (
         "Payroll Entry", "Journal Entry", "Bank Account", "Gratuity",
-        "Payroll Correction", "Arrear", "Additional Salary", "Payroll Period", "Salary Slip",
-        "Salary Structure Assignment", "Salary Structure", "Salary Component",
-        "Attendance", "Leave Application", "Employee Checkin", "Tradexcel Attendance Period", "Employee",
+        "Payroll Correction", "Arrear", "Additional Salary", "Overtime Slip", "Payroll Period", "Salary Slip",
+        "Salary Structure Assignment", "Salary Structure",
+        "Attendance", "Leave Application", "Employee Checkin", "Tradexcel Attendance Period",
+        "Tradexcel Working Time Classification", "Tradexcel Working Time Rule Set", "Employee",
         "Payment Ledger Entry",
     )
     for doctype in company_linked:
@@ -323,6 +324,12 @@ def cleanup_synthetic_finalization_company(company_name):
             continue
         for name in frappe.get_all(doctype, filters=filters, pluck="name"):
             delete_doc(doctype, name)
+
+    overtime_type = f"Test Overtime Type {token}"
+    if frappe.db.exists("Overtime Type", overtime_type):
+        delete_doc("Overtime Type", overtime_type)
+    for name in frappe.get_all("Salary Component", filters={"company": company_name}, pluck="name"):
+        delete_doc("Salary Component", name)
 
     # Cancelling a synthetic native Journal Entry writes reversal GL Entries.
     # They have no value after the disposable company is torn down, and ERPNext
@@ -414,10 +421,13 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         "holiday_list": None,
         "holiday_assignment": None,
         "fiscal_year": None,
+        "overtime_slip": None,
+        "overtime_type": None,
+        "overtime_additional": None,
     }
     original_in_test = frappe.in_test
     original_user = frappe.session.user
-    component_names = (f"Test Basic {token}", f"Test Daily {token}")
+    component_names = (f"Test Basic {token}", f"Test Daily {token}", f"Test Overtime {token}")
     workflow_users = {}
 
     try:
@@ -438,7 +448,22 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         daily_component = _component(
             component_names[1], f"D{token[:3]}", company, expense
         )
-        tracked["components"] = [basic_component.name, daily_component.name]
+        overtime_component = _component(component_names[2], f"O{token[:3]}", company, expense)
+        tracked["components"] = [basic_component.name, daily_component.name, overtime_component.name]
+        overtime_type = frappe.get_doc({
+            "doctype": "Overtime Type",
+            "name": f"Test Overtime Type {token}",
+            "maximum_overtime_hours_allowed": 2,
+            "overtime_salary_component": overtime_component.name,
+            "overtime_calculation_method": "Salary Component Based",
+            "applicable_salary_component": [{"salary_component": basic_component.name}],
+            "standard_multiplier": 2,
+            "applicable_for_weekend": 0,
+            "weekend_multiplier": 2,
+            "applicable_for_public_holiday": 0,
+            "public_holiday_multiplier": 2,
+        }).insert(ignore_permissions=True)
+        tracked["overtime_type"] = overtime_type.name
 
         monthly_structure = _create_structure(
             f"Test Monthly {token}", company, "BDT", "Monthly Salary", basic_component.name, 30000,
@@ -483,13 +508,21 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
             employee_end = min(end, frappe.utils.getdate(employee.relieving_date)) if employee.relieving_date else end
             for offset in range((employee_end - employee_start).days + 1):
                 day = employee_start + timedelta(days=offset)
-                attendance = frappe.get_doc({
+                attendance_fields = {
                     "doctype": "Attendance",
                     "employee": employee.name,
                     "attendance_date": day,
                     "status": "Present",
                     "company": company,
-                }).insert(ignore_permissions=True)
+                }
+                if employee.name == employees[0].name and day == date(2026, 8, 17):
+                    attendance_fields.update({
+                        "working_hours": 10,
+                        "standard_working_hours": 8,
+                        "actual_overtime_duration": 2,
+                        "overtime_type": overtime_type.name,
+                    })
+                attendance = frappe.get_doc(attendance_fields).insert(ignore_permissions=True)
                 attendance.submit()
                 tracked["attendance"].append(attendance.name)
 
@@ -513,9 +546,10 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         role_setup.ensure_tradex_roles()
         manager = _create_scoped_user("Tradexcel Payroll Manager", company, token)
         approver = _create_scoped_user("Tradexcel Payroll Approver", company, token)
+        hr_manager = _create_scoped_user("Tradexcel HR Manager", company, token)
         director = _create_scoped_user("Tradexcel Owner/Director", company, token)
         finance = _create_scoped_user("Accounts User", company, token)
-        tracked["users"] = [manager, approver, director, finance]
+        tracked["users"] = [manager, approver, hr_manager, director, finance]
         tracked["permissions"] = frappe.get_all(
             "User Permission", filters={"user": ["in", tracked["users"]]}, pluck="name"
         )
@@ -523,6 +557,67 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         frappe.clear_cache()
         frappe.set_user(approver)
         assert not frappe.has_permission("Salary Slip", "submit")
+        frappe.set_user(manager)
+        overtime_day = next(
+            row for row in frappe.get_all(
+                "Attendance",
+                filters={"employee": employees[0].name, "attendance_date": date(2026, 8, 17), "docstatus": 1},
+                fields=["name", "attendance_date", "actual_overtime_duration", "overtime_type", "standard_working_hours"],
+            )
+        )
+        frappe.set_user(hr_manager)
+        overtime_slip = frappe.get_doc({
+            "doctype": "Overtime Slip",
+            "employee": employees[0].name,
+            "company": company,
+            "posting_date": end,
+            "start_date": overtime_day.attendance_date,
+            "end_date": end,
+            "overtime_details": [{
+                "reference_document": overtime_day.name,
+                "date": overtime_day.attendance_date,
+                "overtime_type": overtime_type.name,
+                "overtime_duration": overtime_day.actual_overtime_duration,
+                "standard_working_hours": overtime_day.standard_working_hours,
+            }],
+        }).insert()
+        tracked["overtime_slip"] = overtime_slip.name
+        # Even a user temporarily holding both maker and approver roles cannot
+        # submit their own money-bearing Overtime Slip.
+        maker = frappe.get_doc("User", hr_manager)
+        maker.append("roles", {"role": "Tradexcel Payroll Approver"})
+        maker.save(ignore_permissions=True)
+        frappe.clear_cache()
+        frappe.set_user(hr_manager)
+        with pytest.raises(frappe.PermissionError, match="maker cannot approve"):
+            overtime_slip.submit()
+        maker = frappe.get_doc("User", hr_manager)
+        maker.roles = [row for row in maker.roles if row.role != "Tradexcel Payroll Approver"]
+        maker.save(ignore_permissions=True)
+        frappe.clear_cache()
+        overtime_slip = frappe.get_doc("Overtime Slip", overtime_slip.name)
+        frappe.set_user(approver)
+        overtime_slip.submit()
+        native_ot_input = frappe.get_value(
+            "Additional Salary",
+            {"ref_doctype": "Overtime Slip", "ref_docname": overtime_slip.name, "docstatus": 1},
+            ["name", "amount", "salary_component"],
+            as_dict=True,
+        )
+        assert native_ot_input and native_ot_input.amount > 0
+        tracked["overtime_additional"] = native_ot_input.name
+        assert native_ot_input.salary_component == overtime_component.name
+        unauthorized_adjustment = frappe.get_doc({
+            "doctype": "Additional Salary",
+            "company": company,
+            "employee": employees[0].name,
+            "salary_component": overtime_component.name,
+            "amount": 1,
+            "payroll_date": end,
+        })
+        with pytest.raises(frappe.PermissionError):
+            unauthorized_adjustment.insert()
+            unauthorized_adjustment.submit()
         frappe.set_user(manager)
 
         # Prove the real Company User Permission denies finalization for another
@@ -627,9 +722,11 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         assert joiner_slip.earnings[0].amount < joiner_slip.earnings[0].default_amount
         assert joiner_slip.gross_pay == joiner_slip.get_component_totals("earnings", depends_on_payment_days=1)
         assert 0 < joiner_slip.gross_pay < 30000
+        assert frappe.db.get_value("Additional Salary", native_ot_input.name, "ref_docname") == overtime_slip.name
         assert joiner_slip.net_pay == joiner_slip.gross_pay
 
         monthly_leaver_slip = slips_by_employee[employees[2].name]
+        assert any(row.salary_component == overtime_component.name for row in joiner_slip.earnings)
         assert employees[2].status == "Left"
         assert frappe.utils.getdate(monthly_leaver_slip.actual_start_date) == start
         assert frappe.utils.getdate(monthly_leaver_slip.actual_end_date) == date(2026, 8, 20)

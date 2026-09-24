@@ -92,6 +92,17 @@ class TradexcelAttendancePeriod(Document):
         if result["status"] != "READY":
             reasons = "; ".join(item.get("reason", item.get("code", "Unknown issue")) for item in result["blockers"][:8])
             frappe.throw(_("Attendance cannot be finalized yet: {0}").format(reasons))
+        from tradex_hr.tradexcel_hr.working_time_compliance import inspect_working_time_compliance
+        legal_review = inspect_working_time_compliance(self.company, self.from_date, self.to_date)
+        statutory_blocks = [
+            finding
+            for employee in legal_review.get("employees", [])
+            for finding in employee.get("findings", [])
+            if finding["severity"] == "block"
+        ]
+        if statutory_blocks:
+            reasons = "; ".join(item["code"] for item in statutory_blocks[:8])
+            frappe.throw(_("Working-time review must be resolved before Attendance finalization: {0}").format(reasons))
         self.status = "Finalized"
         self.revision = (self.revision or 0) + 1
         self.attendance_hash = current_attendance_period_hash(self.company, self.from_date, self.to_date)

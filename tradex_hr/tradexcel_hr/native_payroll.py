@@ -101,6 +101,11 @@ def inspect_native_payroll_readiness(
     ids = [_row_value(row, "name") for row in employees]
     wage_floor_context = prepare_wage_floor_context(company, start, end, ids)
     benefit_context = prepare_statutory_benefit_context(company, start, end, employees)
+    from tradex_hr.tradexcel_hr.working_time_compliance import inspect_working_time_compliance
+    working_time_context = inspect_working_time_compliance(company, start, end, employee_ids=ids)
+    working_time_by_employee = {
+        row["employee"]: row for row in working_time_context.get("employees", [])
+    }
     outcomes = {
         employee: {"employee": employee, "employee_data": row, "status": "READY"}
         for employee, row in ((_row_value(row, "name"), row) for row in employees)
@@ -159,6 +164,12 @@ def inspect_native_payroll_readiness(
         if floor["status"] not in WAGE_FLOOR_PASS_STATUSES:
             reason = next((finding.get("message") for finding in floor.get("findings", []) if finding.get("severity") == "blocker"), floor["status"])
             block(employee, floor["status"], reason)
+
+        working_time = working_time_by_employee.get(employee, {"status": "READY", "findings": []})
+        outcome["working_time"] = working_time
+        for finding in working_time.get("findings", []):
+            if finding["severity"] == "block":
+                block(employee, finding["code"], finding["message"])
 
         benefits = benefit_context.get(employee, {"status": "READY", "benefits": [], "findings": []})
         outcome["statutory_benefits"] = benefits

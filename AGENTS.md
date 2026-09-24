@@ -82,3 +82,11 @@ rehearsed on this machine — see the limitation recorded there.
 - Salary Slip deductions do not prove remittance. Do not activate PF/Progoti payroll deductions until native employer-contribution accrual accounting is supported and verified; never substitute a custom Journal Entry.
 - Detect native employer-contribution accrual from the installed Payroll Entry controller and accrual path, not a permanent HRMS version assumption; capability alone is not integration proof.
 - Native Gratuity and Full and Final remain the only gratuity/settlement path; do not create a parallel benefit ledger.
+
+## Working time, overtime, holidays, and leave
+
+- Submitted Attendance is the approved work-time source; raw Employee Checkin evidence is never counted directly as legal or payroll hours.
+- Legal work-time scope and limits are explicit, source-linked, effective-dated, and company/establishment-scoped; Employment Type and payroll pay basis do not determine legal coverage.
+- Native Overtime Type, Overtime Slip, Additional Salary, Holiday List, Leave Policy, and Leave Allocation remain canonical. Tradexcel validates configuration/readiness and does not calculate overtime money or allocate statutory leave.
+- Missing native overtime evidence blocks approval; the system does not skip `OVERTIME_REQUIRED` during Attendance Period finalization or Overtime Slip submission. Weekly-rest readiness uses explicit native Holiday List weekly-off rows; unsupported fractional-day rest remains blocked for review.
+- Missing legal scope stays review-only during staged rollout. Approved-rule violations block the relevant attendance/payroll approval; historical finalized Attendance and submitted payroll remain immutable.
