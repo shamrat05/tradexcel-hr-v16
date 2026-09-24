@@ -103,6 +103,11 @@ class TradexcelAttendancePeriod(Document):
         if statutory_blocks:
             reasons = "; ".join(item["code"] for item in statutory_blocks[:8])
             frappe.throw(_("Working-time review must be resolved before Attendance finalization: {0}").format(reasons))
+        from tradex_hr.tradexcel_hr.flexible_work_records import validate_operational_day_overrides
+        override_findings = validate_operational_day_overrides(self.company, self.from_date, self.to_date)
+        if override_findings:
+            reasons = "; ".join(item["code"] for item in override_findings[:8])
+            frappe.throw(_("Operational-day pay decisions need a current preview before Attendance finalization: {0}").format(reasons))
         self.status = "Finalized"
         self.revision = (self.revision or 0) + 1
         self.attendance_hash = current_attendance_period_hash(self.company, self.from_date, self.to_date)

@@ -102,6 +102,22 @@ CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
 # separately with Frappe User Permissions (company, branch, or department), so
 # this matrix describes what a role may do, not which records it may see.
 STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
+    "Tradexcel Flexible Work Policy": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel HR/Attendance Officer": EDIT_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit", "cancel"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Operational Day Override": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel HR/Attendance Officer": EDIT_PERMS,
+        "Tradexcel Factory Supervisor": EDIT_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS | {"write", "submit", "cancel"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
     "Tradexcel Working Time Rule Set": {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit"},

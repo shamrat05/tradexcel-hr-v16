@@ -87,6 +87,10 @@ ATTENDANCE_FINGERPRINT_FIELDS = (
     "leave_type",
     "leave_application",
     "half_day_status",
+    "working_hours",
+    "company",
+    "branch",
+    "department",
     "docstatus",
 )
 

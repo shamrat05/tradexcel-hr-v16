@@ -94,3 +94,12 @@ rehearsed on this machine — see the limitation recorded there.
 - Casual/Sick leave readiness accepts either a sufficient effective submitted Leave Policy Assignment or a submitted Leave Allocation covering the period. Annual-leave statutory accrual remains review-only until native parity is proven.
 - Payroll Approver Additional Salary sourced from Overtime Slip must match the slip's native component/amount calculation at currency precision and cannot duplicate an active slip/component row. Preserve native Payroll Correction and Arrear provenance.
 - Missing legal scope stays review-only during staged rollout. Approved-rule violations block the relevant attendance/payroll approval; historical finalized Attendance and submitted payroll remain immutable.
+
+
+## Flexible factory work
+
+- Daily Wage money remains effective Salary Structure Assignment.base with the explicit Salary Structure pay basis; flexible policy changes only capped base payable units and never calculates OT.
+- Work-hour proration uses submitted Attendance working_hours only for work-only statuses; native Leave/Holiday semantics remain intact. Working hours are part of finalized Attendance financial provenance.
+- An Operational Day Override can grant full-day base pay only to a present employee with positive approved work evidence. It never changes Attendance, pays absence/leave, or creates OT.
+- Native Shift Assignment and HRMS timestamp resolution own flexible shift selection. Never enable multiple same-date assignments site-wide from app code.
+- Effective flexible policy and override changes require Attendance reopen/refinalization and cannot rewrite consumed payroll.

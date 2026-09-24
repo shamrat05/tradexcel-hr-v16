@@ -20,6 +20,7 @@ from tradex_hr.tradexcel_hr.attendance_payroll_boundary import (
     require_finalized_attendance,
 )
 from tradex_hr.tradexcel_hr.pay_basis import DAILY, resolve_daily_rate, resolve_pay_basis
+from tradex_hr.tradexcel_hr.flexible_work import apply_policy_to_daily_wage
 
 
 DEFAULT_COMPONENT = "Daily Wage"
@@ -33,7 +34,7 @@ def _attendance_rows(employee: str, start: date, end: date) -> list[dict[str, An
             "attendance_date": ["between", [start, end]],
             "docstatus": 1,
         },
-        fields=["name", "attendance_date", "status", "leave_type", "half_day_status"],
+        fields=["name", "attendance_date", "status", "leave_type", "leave_application", "half_day_status", "working_hours", "branch", "department"],
         order_by="attendance_date asc",
     )
 
@@ -82,7 +83,9 @@ def _native_attendance_units(
         )
         units -= half_absent * fraction
 
-    return {"status": "READY", "payable_units": flt(max(units, 0)), "native": True}
+    return {"status": "READY", "payable_units": flt(max(units, 0)), "native": True,
+            "holidays": holidays, "include_holidays": cint(settings.include_holidays_in_total_working_days),
+            "half_day_fraction": fraction}
 
 
 def _inspect_daily_wage_structure(basis: dict[str, Any]) -> dict[str, Any]:
@@ -136,7 +139,9 @@ def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: 
         return structure
 
     employee_row = frappe.db.get_value(
-        "Employee", employee, ["date_of_joining", "relieving_date"], as_dict=True
+        "Employee", employee,
+        ["date_of_joining", "relieving_date", "company", "branch", "department"],
+        as_dict=True,
     )
     joining = employee_row.get("date_of_joining") if isinstance(employee_row, dict) else employee_row.date_of_joining
     relieving = employee_row.get("relieving_date") if isinstance(employee_row, dict) else employee_row.relieving_date
@@ -154,6 +159,7 @@ def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: 
         actual_start,
         actual_end,
     )
+    units = apply_policy_to_daily_wage(employee, employee_row, actual_start, actual_end, rows, units)
     units["attendance_count"] = len(rows)
     if units["status"] != "READY":
         return {"status": units["status"], "employee": employee, "reason": units["reason"]}

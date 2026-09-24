@@ -157,6 +157,8 @@ after_migrate = "tradex_hr.install.after_migrate"
 
 
 permission_query_conditions = {
+    "Tradexcel Flexible Work Policy": "tradex_hr.tradexcel_hr.flexible_work_records.flexible_policy_query_conditions",
+    "Tradexcel Operational Day Override": "tradex_hr.tradexcel_hr.flexible_work_records.operational_override_query_conditions",
     "Tradexcel Working Time Rule Set": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_query_conditions",
     "Tradexcel Working Time Classification": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_query_conditions",
     "Tradexcel Statutory Rule Set": "tradex_hr.tradexcel_hr.statutory_exit.statutory_ruleset_query_conditions",
@@ -171,6 +173,8 @@ permission_query_conditions = {
 }
 
 has_permission = {
+    "Tradexcel Flexible Work Policy": "tradex_hr.tradexcel_hr.flexible_work_records.flexible_work_has_permission",
+    "Tradexcel Operational Day Override": "tradex_hr.tradexcel_hr.flexible_work_records.flexible_work_has_permission",
     "Salary Slip": "tradex_hr.tradexcel_hr.native_payroll.restrict_salary_slip_delete",
     "Job Opening": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
     "Job Applicant": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
