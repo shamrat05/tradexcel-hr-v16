@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 import frappe
 from frappe import _
 from frappe.utils import flt, getdate, today
+from frappe.model.meta import get_field_precision
 
 from tradex_hr.tradexcel_hr.company_context import assert_company_access
 
@@ -15,6 +16,19 @@ def _finding(code, message, severity="block"):
 def _week_start(day, configured_start):
 	weekdays = {name: number for number, name in enumerate(("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))}
 	return day - timedelta(days=(day.weekday() - weekdays.get(configured_start, 0)) % 7)
+
+
+def _attendance_hours_precision():
+	try:
+		field = frappe.get_meta("Attendance").get_field("actual_overtime_duration")
+		return get_field_precision(field)
+	except (AttributeError, RuntimeError):
+		# Pure service tests may run outside a bound Frappe site context.
+		return 2
+
+
+def _rounded_hours(value, precision):
+	return round(flt(value), precision)
 
 
 def _spread_hours(row):
@@ -30,21 +44,30 @@ def _spread_hours(row):
 	return (end - start).total_seconds() / 3600
 
 
-def evaluate_attendance_compliance(rule, attendance_rows, from_date, to_date):
+def evaluate_attendance_compliance(rule, attendance_rows, from_date, to_date, holiday_dates=None):
 	"""Check approved Attendance values; never derive time or modify source rows."""
 	start, end = getdate(from_date), getdate(to_date)
 	first_week = _week_start(start, rule.get("week_start_day"))
 	last_week = _week_start(end, rule.get("week_start_day"))
-	findings, weekly_hours = [], defaultdict(float)
+	holiday_dates = {getdate(day) for day in (holiday_dates or [])}
+	findings, weekly_hours, rows_by_week = [], defaultdict(float), defaultdict(list)
+	work_statuses = {"Present", "Half Day", "Work From Home"}
+	hours_precision = _attendance_hours_precision()
 	for row in attendance_rows:
 		day = getdate(row.get("attendance_date"))
 		week = _week_start(day, rule.get("week_start_day"))
-		if not first_week <= week <= last_week or row.get("status") != "Present":
+		if not first_week <= week <= last_week:
 			continue
-		hours = row.get("working_hours")
+		rows_by_week[week].append(row)
+		status, hours = row.get("status"), row.get("working_hours")
+		if status in {"Absent", "On Leave"}:
+			if start <= day <= end and hours is not None and flt(hours) > 0:
+				findings.append(_finding("WORKING_TIME_ATTENDANCE_STATUS_CONFLICT", f"{status} Attendance on {day} contains positive working hours."))
+			continue
+		if status not in work_statuses:
+			continue
 		if hours is None:
-			if start <= day <= end:
-				findings.append(_finding("WORKING_TIME_EVIDENCE_REQUIRED", "Present Attendance has no approved working-hours value.", "review"))
+			findings.append(_finding("WORKING_TIME_EVIDENCE_REQUIRED", f"{status} Attendance on {day} has no approved working-hours value.", "review"))
 			continue
 		hours = flt(hours)
 		weekly_hours[week] += hours
@@ -52,8 +75,13 @@ def evaluate_attendance_compliance(rule, attendance_rows, from_date, to_date):
 			continue
 		if hours > flt(rule.get("daily_max_hours")):
 			findings.append(_finding("DAILY_HOUR_LIMIT_EXCEEDED", f"Attendance on {day} exceeds the approved daily maximum."))
-		if hours > flt(rule.get("daily_standard_hours")) and not (flt(row.get("actual_overtime_duration")) > 0 and row.get("overtime_type")):
-			findings.append(_finding("OVERTIME_REQUIRED", f"Attendance on {day} exceeds normal hours without native overtime evidence."))
+		daily_required_ot = max(0, hours - flt(rule.get("daily_standard_hours")))
+		if daily_required_ot > 0:
+			recorded_ot = _rounded_hours(row.get("actual_overtime_duration"), hours_precision)
+			if not row.get("overtime_type") or recorded_ot <= 0:
+				findings.append(_finding("OVERTIME_REQUIRED", f"Attendance on {day} exceeds normal hours without native overtime evidence."))
+			elif _rounded_hours(recorded_ot, hours_precision) < _rounded_hours(daily_required_ot, hours_precision):
+				findings.append(_finding("OVERTIME_DURATION_INCOMPLETE", f"Native overtime evidence on {day} does not cover the statutory excess hours."))
 		for requirement in rule.get("break_requirements") or []:
 			if hours >= flt(requirement.get("minimum_work_duration")):
 				findings.append(_finding("BREAK_EVIDENCE_REVIEW_REQUIRED", f"Break evidence is not recorded for {day}.", "review"))
@@ -62,25 +90,31 @@ def evaluate_attendance_compliance(rule, attendance_rows, from_date, to_date):
 			findings.append(_finding("SPREAD_OVER_EVIDENCE_REQUIRED", f"Start and end evidence is incomplete for {day}.", "review"))
 		elif rule.get("spread_over_hours") and spread > flt(rule["spread_over_hours"]):
 			findings.append(_finding("SPREAD_OVER_LIMIT_EXCEEDED", f"Attendance on {day} exceeds the approved spread-over limit."))
-	rows_by_week = defaultdict(list)
-	for row in attendance_rows:
-		day = getdate(row.get("attendance_date"))
-		week = _week_start(day, rule.get("week_start_day"))
-		if first_week <= week <= last_week:
-			rows_by_week[week].append(row)
-	for week, hours in weekly_hours.items():
+	week = first_week
+	while week <= last_week:
 		week_rows = rows_by_week[week]
-		covered_dates = {getdate(row.get("attendance_date")) for row in week_rows}
-		weekly_ot = sum(flt(row.get("actual_overtime_duration")) for row in week_rows)
+		hours = weekly_hours.get(week, 0)
+		covered_dates = {getdate(row.get("attendance_date")) for row in week_rows} | holiday_dates
+		weekly_ot = sum(
+			_rounded_hours(row.get("actual_overtime_duration"), hours_precision)
+			for row in week_rows
+			if row.get("status") in work_statuses and row.get("overtime_type")
+		)
 		if hours > flt(rule.get("weekly_max_hours")):
 			findings.append(_finding("WEEKLY_HOUR_LIMIT_EXCEEDED", f"Week beginning {week} exceeds the approved weekly maximum."))
-		if hours > flt(rule.get("weekly_standard_hours")) and weekly_ot <= 0:
-			findings.append(_finding("OVERTIME_REQUIRED", f"Week beginning {week} exceeds normal weekly hours without native overtime evidence."))
-		if len(covered_dates) < 7:
+		weekly_required_ot = max(0, hours - flt(rule.get("weekly_standard_hours")))
+		if weekly_required_ot > 0:
+			if weekly_ot <= 0:
+				findings.append(_finding("OVERTIME_REQUIRED", f"Week beginning {week} exceeds normal weekly hours without native overtime evidence."))
+			elif _rounded_hours(weekly_ot, hours_precision) < _rounded_hours(weekly_required_ot, hours_precision):
+				findings.append(_finding("OVERTIME_DURATION_INCOMPLETE", f"Native overtime evidence for the week beginning {week} does not cover the statutory excess hours."))
+		week_dates = {week + timedelta(days=offset) for offset in range(7)}
+		if week_dates - covered_dates:
 			findings.append(_finding("WORKING_TIME_EVIDENCE_REQUIRED", f"Approved Attendance does not cover the full week beginning {week}.", "review"))
+		week += timedelta(days=7)
 	for row in attendance_rows:
 		day = getdate(row.get("attendance_date"))
-		if not start <= day <= end or row.get("status") != "Present":
+		if not start <= day <= end or row.get("status") not in work_statuses or not flt(row.get("working_hours")):
 			continue
 		categories = set(row.get("holiday_categories") or [])
 		if row.get("holiday_category"):
@@ -93,30 +127,36 @@ def evaluate_attendance_compliance(rule, attendance_rows, from_date, to_date):
 
 
 
-def evaluate_rolling_weekly_average(rule, attendance_rows, period_start):
+def evaluate_rolling_weekly_average(rule, attendance_rows, period_start, holiday_dates=None):
 	"""Check 52 complete historical weeks; unknown history remains review-only."""
 	if not rule.get("weekly_average_max_hours"):
 		return []
 	week_end = _week_start(getdate(period_start), rule.get("week_start_day")) - timedelta(days=1)
-	window_start = week_end - timedelta(days=363)
+	last_week = _week_start(week_end, rule.get("week_start_day"))
+	window_start = last_week - timedelta(days=357)
+	holiday_dates = {getdate(day) for day in (holiday_dates or [])}
 	rows_by_week = defaultdict(list)
 	for row in attendance_rows:
 		day = getdate(row.get("attendance_date"))
 		if window_start <= day <= week_end:
 			rows_by_week[_week_start(day, rule.get("week_start_day"))].append(row)
-	last_week = _week_start(week_end, rule.get("week_start_day"))
 	weeks = [last_week - timedelta(days=7 * index) for index in reversed(range(52))]
 	weekly_totals = []
+	work_statuses = {"Present", "Half Day", "Work From Home"}
 	for week in weeks:
 		rows = rows_by_week.get(week, [])
-		if len({getdate(row.get("attendance_date")) for row in rows}) < 7 or any(
-			row.get("status") == "Present" and row.get("working_hours") is None for row in rows
+		covered_dates = {getdate(row.get("attendance_date")) for row in rows} | holiday_dates
+		week_dates = {week + timedelta(days=offset) for offset in range(7)}
+		if week_dates - covered_dates or any(
+			row.get("status") in work_statuses and row.get("working_hours") is None for row in rows
+		) or any(
+			row.get("status") in {"Absent", "On Leave"} and flt(row.get("working_hours")) > 0 for row in rows
 		):
 			return [_finding("WEEKLY_AVERAGE_HISTORY_INSUFFICIENT", "A complete 52-week approved Attendance history is not available.", "review")]
 		weekly_totals.append(sum(
 			flt(row.get("working_hours"))
 			for row in rows
-			if row.get("status") == "Present" and row.get("working_hours") is not None
+			if row.get("status") in work_statuses and row.get("working_hours") is not None
 		))
 	average = sum(weekly_totals) / len(weekly_totals)
 	if average > flt(rule.get("weekly_average_max_hours")):
@@ -274,8 +314,12 @@ def inspect_working_time_compliance(company, from_date, to_date, employee_ids=No
 		by_classification[classification.employee].append(classification)
 
 	attendance_start = min(_week_start(start, rule.week_start_day) for rule in rules)
-	if any(rule.weekly_average_max_hours for rule in rules):
-		attendance_start = min(attendance_start, start - timedelta(days=365))
+	for rule in rules:
+		if rule.weekly_average_max_hours:
+			last_complete_week = _week_start(
+				_week_start(start, rule.week_start_day) - timedelta(days=1), rule.week_start_day
+			)
+			attendance_start = min(attendance_start, last_complete_week - timedelta(days=357))
 	attendance_end = max(_week_start(end, rule.week_start_day) + timedelta(days=6) for rule in rules)
 	attendance = frappe.get_all(
 		"Attendance",
@@ -285,7 +329,7 @@ def inspect_working_time_compliance(company, from_date, to_date, employee_ids=No
 			"actual_overtime_duration", "overtime_type", "in_time", "out_time", "shift"],
 	)
 	attendance_by_employee = defaultdict(list)
-	holiday_scope = _holiday_category_by_list(company, employees, attendance, start, end)
+	holiday_scope = _holiday_category_by_list(company, employees, attendance, start, end, attendance_start, attendance_end)
 	for row in attendance:
 		attendance_by_employee[row.employee].append(row)
 
@@ -325,9 +369,16 @@ def inspect_working_time_compliance(company, from_date, to_date, employee_ids=No
 			elif getdate(classification.effective_from) > start or (classification.effective_to and getdate(classification.effective_to) < end):
 				items = [_finding("WORKING_TIME_CLASSIFICATION_CHANGE_REVIEW_REQUIRED", "Legal working-time coverage changes inside this period.")]
 			else:
-				items = evaluate_attendance_compliance(rule.as_dict(), attendance_by_employee.get(employee, []), start, end)
-				items.extend(evaluate_rolling_weekly_average(rule.as_dict(), attendance_by_employee.get(employee, []), start))
 				holiday_list = holiday_scope["employee_lists"].get(employee)
+				holiday_dates = {
+					day for parent, day in holiday_scope["by_list_date"] if parent == holiday_list
+				} if holiday_list else set()
+				items = evaluate_attendance_compliance(
+					rule.as_dict(), attendance_by_employee.get(employee, []), start, end, holiday_dates
+				)
+				items.extend(evaluate_rolling_weekly_average(
+					rule.as_dict(), attendance_by_employee.get(employee, []), start, holiday_dates
+				))
 				categorized_days = [
 					(day, categories)
 					for (parent, day), categories in holiday_scope["by_list_date"].items()
@@ -422,7 +473,7 @@ def _inspect_leave_and_overtime(rule, native_configs):
 
 
 
-def _holiday_category_by_list(company, employees, attendance, start, end):
+def _holiday_category_by_list(company, employees, attendance, start, end, coverage_start=None, coverage_end=None):
 	"""Batch-load native Holiday rows and retain weekly-rest plus festival tags."""
 	company_default = frappe.db.get_value("Company", company, "default_holiday_list")
 	employee_lists = {row.name: row.holiday_list or company_default for row in employees}
@@ -444,8 +495,9 @@ def _holiday_category_by_list(company, employees, attendance, start, end):
 	list_names.discard("")
 	if not list_names:
 		return {"employee_lists": employee_lists, "by_list_date": {}}
-	holiday_start = date(start.year, 1, 1) - timedelta(days=7)
-	holiday_end = date(end.year, 12, 31) + timedelta(days=7)
+	start, end = getdate(start), getdate(end)
+	holiday_start = min(date(start.year, 1, 1) - timedelta(days=7), getdate(coverage_start or start))
+	holiday_end = max(date(end.year, 12, 31) + timedelta(days=7), getdate(coverage_end or end))
 	holiday_rows = frappe.get_all(
 		"Holiday",
 		filters={
@@ -458,6 +510,7 @@ def _holiday_category_by_list(company, employees, attendance, start, end):
 	by_list_date = defaultdict(set)
 	for holiday in holiday_rows:
 		day = getdate(holiday.holiday_date)
+		by_list_date[(holiday.parent, day)]
 		if holiday.weekly_off:
 			by_list_date[(holiday.parent, day)].add("Weekly Rest")
 		if holiday.custom_tradex_holiday_category:
@@ -470,42 +523,97 @@ def _holiday_category_by_list(company, employees, attendance, start, end):
 
 
 def _leave_policy_findings(employee_ids, rules, from_date, to_date):
-	"""Check native Leave Policy Assignment coverage without creating allocations."""
-	requirements_by_type = defaultdict(set)
+	"""Accept effective native Leave Policy Assignments or sufficient Leave Allocations."""
+	requirements_by_type = {}
 	for rule in rules:
-		for field in ("casual_leave_type", "sick_leave_type", "annual_leave_type"):
-			if rule.get(field):
-				requirements_by_type[rule.get(field)].add(rule.name)
+		for category, type_field, days_field in (
+			("Casual", "casual_leave_type", "casual_days_per_year"),
+			("Sick", "sick_leave_type", "sick_days_per_year"),
+		):
+			leave_type = rule.get(type_field)
+			entitlement = rule.get(days_field)
+			if leave_type and entitlement is not None:
+				requirements_by_type[leave_type] = {
+					"entitlement": flt(entitlement),
+					"carry_forward": bool(rule.get(f"{category.lower()}_carry_forward")),
+				}
 	if not requirements_by_type or not employee_ids:
 		return {}
 	assignments = frappe.get_all(
 		"Leave Policy Assignment",
 		filters={"employee": ["in", employee_ids], "company": rules[0].company, "docstatus": 1, "effective_from": ["<=", to_date]},
 		or_filters=[["effective_to", "is", "not set"], ["effective_to", ">=", from_date]],
-		fields=["employee", "leave_policy", "effective_from", "effective_to"],
+		fields=["employee", "leave_policy", "effective_from", "effective_to", "carry_forward"],
 	)
 	policy_names = list({row.leave_policy for row in assignments if row.leave_policy})
 	policy_details = frappe.get_all(
 		"Leave Policy Detail",
 		filters={"parent": ["in", policy_names], "parenttype": "Leave Policy", "parentfield": "leave_policy_details"},
-		fields=["parent", "leave_type"],
+		fields=["parent", "leave_type", "annual_allocation"],
 	) if policy_names else []
-	leave_types_by_policy = defaultdict(set)
+	leave_types_by_policy = defaultdict(dict)
 	for row in policy_details:
-		leave_types_by_policy[row.parent].add(row.leave_type)
-	assigned = defaultdict(set)
+		leave_types_by_policy[row.parent][row.leave_type] = flt(row.annual_allocation)
+	assigned, deficient_assignments = defaultdict(set), set()
 	for row in assignments:
 		if getdate(row.effective_from) <= getdate(from_date) and (
 			not row.effective_to or getdate(row.effective_to) >= getdate(to_date)
 		):
-			assigned[row.employee].update(leave_types_by_policy.get(row.leave_policy, set()))
+			for leave_type, entitlement in requirements_by_type.items():
+				if leave_type not in leave_types_by_policy.get(row.leave_policy, {}):
+					continue
+				if (
+					leave_types_by_policy[row.leave_policy][leave_type] >= entitlement["entitlement"]
+					and bool(row.carry_forward) == entitlement["carry_forward"]
+				):
+					assigned[row.employee].add(leave_type)
+				else:
+					deficient_assignments.add((row.employee, leave_type))
+	allocations = frappe.get_all(
+		"Leave Allocation",
+		filters={"employee": ["in", employee_ids], "company": rules[0].company,
+			"leave_type": ["in", sorted(requirements_by_type)], "docstatus": 1},
+		fields=["employee", "leave_type", "from_date", "to_date", "new_leaves_allocated",
+			"total_leaves_allocated", "carry_forward"],
+	)
+	allocations_by_employee_type = defaultdict(list)
+	for row in allocations:
+		allocations_by_employee_type[(row.employee, row.leave_type)].append(row)
 	result = defaultdict(list)
 	for employee in employee_ids:
-		for leave_type in requirements_by_type:
-			if leave_type not in assigned.get(employee, set()):
+		for leave_type, requirement in requirements_by_type.items():
+			if leave_type in assigned.get(employee, set()):
+				continue
+			rows = allocations_by_employee_type.get((employee, leave_type), [])
+			covering = [
+				row for row in rows
+				if getdate(row.from_date) <= getdate(from_date) and getdate(row.to_date) >= getdate(to_date)
+			]
+			if any(
+				flt(row.new_leaves_allocated) >= requirement["entitlement"]
+				and flt(row.total_leaves_allocated) >= requirement["entitlement"]
+				and bool(row.carry_forward) == requirement["carry_forward"]
+				for row in covering
+			):
+				continue
+			if covering and all(
+				flt(row.new_leaves_allocated) < requirement["entitlement"]
+				or flt(row.total_leaves_allocated) < requirement["entitlement"]
+				for row in covering
+			):
+				result[employee].append(_finding(
+					"LEAVE_ALLOCATION_MISMATCH",
+					f"Submitted Leave Allocation for {leave_type} is below the reviewed entitlement.",
+				))
+			elif rows or (employee, leave_type) in deficient_assignments:
+				result[employee].append(_finding(
+					"LEAVE_ALLOCATION_REVIEW_REQUIRED",
+					f"Submitted Leave setup for {leave_type} does not safely cover the full review period and entitlement.",
+				))
+			else:
 				result[employee].append(_finding(
 					"LEAVE_POLICY_CONFIGURATION_REQUIRED",
-					f"Employee has no effective native Leave Policy Assignment for mapped Leave Type {leave_type}.",
+					f"Employee has no effective Leave Policy Assignment or submitted Leave Allocation for mapped Leave Type {leave_type}.",
 				))
 	return result
 
@@ -608,6 +716,22 @@ def validate_overtime_generated_additional_salary(doc, method=None):
 			slip and slip.docstatus == 1 and slip.employee == doc.employee and slip.company == doc.company
 			and getdate(slip.end_date) == getdate(doc.payroll_date)
 		)
+		if valid:
+			native_slip = frappe.get_doc("Overtime Slip", doc.ref_docname)
+			expected_amounts = native_slip.get_overtime_component_amounts()
+			expected_amount = expected_amounts.get(doc.salary_component)
+			precision = frappe.db.get_single_value("System Settings", "currency_precision") or 2
+			valid = expected_amount is not None and flt(doc.amount, precision) == flt(expected_amount, precision)
+		if valid:
+			filters = {
+				"ref_doctype": "Overtime Slip",
+				"ref_docname": doc.ref_docname,
+				"salary_component": doc.salary_component,
+				"docstatus": ["!=", 2],
+			}
+			if doc.name:
+				filters["name"] = ["!=", doc.name]
+			valid = not frappe.db.exists("Additional Salary", filters)
 	elif doc.ref_doctype in {"Payroll Correction", "Arrear"} and doc.ref_docname:
 		if not frappe.db.exists("DocType", doc.ref_doctype) or not frappe.db.exists(doc.ref_doctype, doc.ref_docname):
 			valid = False

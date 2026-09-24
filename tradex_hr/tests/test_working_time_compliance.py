@@ -1,4 +1,6 @@
-from datetime import date
+from datetime import date, timedelta
+
+import pytest
 
 from tradex_hr.tradexcel_hr.working_time_compliance import (
 	evaluate_attendance_compliance,
@@ -8,6 +10,7 @@ from tradex_hr.tradexcel_hr.working_time_compliance import (
 	evaluate_leave_configuration,
 	evaluate_overtime_configuration,
 )
+from tradex_hr.tradexcel_hr import working_time_compliance as working_time
 
 
 def _rule(**overrides):
@@ -185,3 +188,210 @@ def test_rolling_average_requires_full_history_then_checks_52_weeks():
 			{"week_start_day": "Monday", "weekly_average_max_hours": 55}, rows[:30], start
 		)
 	)
+
+
+def test_half_day_and_work_from_home_hours_count_for_statutory_hours():
+	for status, hours in (("Half Day", 6), ("Work From Home", 8)):
+		row = _attendance(date(2026, 9, 7), hours, status=status)
+		findings = evaluate_attendance_compliance(_rule(), [row], date(2026, 9, 7), date(2026, 9, 7))
+		assert "WORKING_TIME_ATTENDANCE_STATUS_CONFLICT" not in _codes(findings)
+		assert "DAILY_HOUR_LIMIT_EXCEEDED" not in _codes(findings)
+
+
+def test_absent_or_leave_with_positive_working_hours_is_a_conflict():
+	for status in ("Absent", "On Leave"):
+		findings = evaluate_attendance_compliance(
+			_rule(), [_attendance(date(2026, 9, 7), 5, status=status)], date(2026, 9, 7), date(2026, 9, 7)
+		)
+		assert "WORKING_TIME_ATTENDANCE_STATUS_CONFLICT" in _codes(findings)
+
+
+def test_daily_overtime_duration_must_cover_statutory_excess():
+	day = date(2026, 9, 7)
+	adequate = evaluate_attendance_compliance(_rule(), [_attendance(day, 10, 2)], day, day)
+	insufficient = evaluate_attendance_compliance(_rule(), [_attendance(day, 10, 0.5)], day, day)
+	assert "OVERTIME_DURATION_INCOMPLETE" not in _codes(adequate)
+	assert "OVERTIME_DURATION_INCOMPLETE" in _codes(insufficient)
+
+
+def test_weekly_overtime_duration_must_cover_weekly_excess():
+	start, end = date(2026, 9, 7), date(2026, 9, 13)
+	adequate = [_attendance(start.fromordinal(start.toordinal() + offset), 8) for offset in range(7)]
+	adequate[0]["actual_overtime_duration"] = 8
+	adequate[0]["overtime_type"] = "Synthetic OT"
+	insufficient = [dict(row) for row in adequate]
+	insufficient[0]["actual_overtime_duration"] = 0.5
+	assert "OVERTIME_DURATION_INCOMPLETE" not in _codes(
+		evaluate_attendance_compliance(_rule(), adequate, start, end)
+	)
+	assert "OVERTIME_DURATION_INCOMPLETE" in _codes(
+		evaluate_attendance_compliance(_rule(), insufficient, start, end)
+	)
+
+
+def test_native_holidays_account_for_non_attendance_dates_in_complete_weeks():
+	start, end = date(2026, 9, 7), date(2026, 9, 13)
+	rows = [_attendance(start.fromordinal(start.toordinal() + offset), 8) for offset in range(6)]
+	assert "WORKING_TIME_EVIDENCE_REQUIRED" not in _codes(
+		evaluate_attendance_compliance(_rule(), rows, start, end, {date(2026, 9, 13)})
+	)
+	assert "WORKING_TIME_EVIDENCE_REQUIRED" not in _codes(
+		evaluate_attendance_compliance(_rule(), rows[:5], start, end, {date(2026, 9, 12), date(2026, 9, 13)})
+	)
+	assert "WORKING_TIME_EVIDENCE_REQUIRED" in _codes(
+		evaluate_attendance_compliance(_rule(), rows[:5], start, end, {date(2026, 9, 12)})
+	)
+
+
+def test_rolling_average_uses_holidays_and_previous_calendar_year():
+	start = date(2026, 9, 7)
+	last_week = date(2026, 8, 31)
+	first_week = last_week.fromordinal(last_week.toordinal() - 357)
+	holiday = date(2025, 9, 14)
+	rows = [
+		_attendance(first_week.fromordinal(first_week.toordinal() + offset), 8)
+		for offset in range(364)
+		if first_week.fromordinal(first_week.toordinal() + offset) != holiday
+	]
+	findings = evaluate_rolling_weekly_average(
+		{"week_start_day": "Monday", "weekly_average_max_hours": 55}, rows, start, {holiday}
+	)
+	assert "WEEKLY_AVERAGE_HISTORY_INSUFFICIENT" not in _codes(findings)
+	assert "WEEKLY_AVERAGE_LIMIT_EXCEEDED" in _codes(findings)
+
+
+def test_holiday_loader_covers_rolling_window_before_calendar_year(monkeypatch):
+	from frappe import _dict
+
+	queried = {}
+	db = _dict(get_value=lambda *args, **kwargs: "SYN-HOLIDAYS")
+	def get_all(doctype, filters=None, **kwargs):
+		if doctype == "Holiday":
+			queried.update(filters)
+			return []
+		return [_dict(name="SYN-HOLIDAYS", holiday_list=None)]
+	monkeypatch.setattr(working_time, "frappe", _dict(db=db, get_all=get_all))
+	working_time._holiday_category_by_list(
+		"SYN-COMPANY", [_dict(name="SYN-EMP", holiday_list=None)], [],
+		date(2026, 9, 1), date(2026, 9, 30), date(2025, 9, 7), date(2026, 10, 4),
+	)
+	assert queried["holiday_date"] == ["between", [date(2025, 9, 7), date(2026, 12, 31) + timedelta(days=7)]]
+
+
+def _leave_rule():
+	from frappe import _dict
+
+	return _dict(
+		name="SYN-WT-RULE", company="SYN-COMPANY", casual_leave_type="SYN-CASUAL",
+		casual_days_per_year=10, casual_carry_forward=0, sick_leave_type=None,
+		annual_leave_type=None,
+	)
+
+
+def test_direct_leave_allocation_without_policy_assignment_is_accepted(monkeypatch):
+	from frappe import _dict
+
+	def get_all(doctype, filters=None, **kwargs):
+		if doctype == "Leave Allocation":
+			return [_dict(
+				employee="SYN-EMP", leave_type="SYN-CASUAL", from_date=date(2026, 1, 1),
+				to_date=date(2026, 12, 31), new_leaves_allocated=10,
+				total_leaves_allocated=10, carry_forward=0,
+			)]
+		return []
+
+	monkeypatch.setattr(working_time.frappe, "get_all", get_all)
+	assert working_time._leave_policy_findings(
+		["SYN-EMP"], [_leave_rule()], date(2026, 9, 1), date(2026, 9, 30)
+	).get("SYN-EMP", []) == []
+
+
+def test_direct_leave_allocation_amount_and_period_are_checked(monkeypatch):
+	from frappe import _dict
+
+	rows = [_dict(
+		employee="SYN-EMP", leave_type="SYN-CASUAL", from_date=date(2026, 1, 1),
+		to_date=date(2026, 12, 31), new_leaves_allocated=8,
+		total_leaves_allocated=8, carry_forward=0,
+	)]
+	monkeypatch.setattr(working_time.frappe, "get_all", lambda doctype, **kwargs: rows if doctype == "Leave Allocation" else [])
+	findings = working_time._leave_policy_findings(
+		["SYN-EMP"], [_leave_rule()], date(2026, 9, 1), date(2026, 9, 30)
+	)
+	assert "LEAVE_ALLOCATION_MISMATCH" in _codes(findings["SYN-EMP"])
+	rows[0].to_date = date(2026, 8, 31)
+	findings = working_time._leave_policy_findings(
+		["SYN-EMP"], [_leave_rule()], date(2026, 9, 1), date(2026, 9, 30)
+	)
+	assert "LEAVE_ALLOCATION_REVIEW_REQUIRED" in _codes(findings["SYN-EMP"])
+
+
+def test_leave_policy_assignment_path_still_covers_required_type(monkeypatch):
+	from frappe import _dict
+
+	def get_all(doctype, filters=None, **kwargs):
+		if doctype == "Leave Policy Assignment":
+			return [_dict(employee="SYN-EMP", leave_policy="SYN-POLICY", effective_from=date(2026, 1, 1), effective_to=date(2026, 12, 31), carry_forward=0)]
+		if doctype == "Leave Policy Detail":
+			return [_dict(parent="SYN-POLICY", leave_type="SYN-CASUAL", annual_allocation=10)]
+		return []
+
+	monkeypatch.setattr(working_time.frappe, "get_all", get_all)
+	assert working_time._leave_policy_findings(
+		["SYN-EMP"], [_leave_rule()], date(2026, 9, 1), date(2026, 9, 30)
+	).get("SYN-EMP", []) == []
+
+
+def _patch_overtime_salary_validation(monkeypatch, expected_amounts=None, duplicate=False):
+	from frappe import _dict
+
+	db = _dict(
+		get_value=lambda *args, **kwargs: _dict(
+			docstatus=1, employee="SYN-EMP", company="SYN-COMPANY", end_date=date(2026, 9, 30)
+		),
+		get_single_value=lambda *args, **kwargs: 2,
+		exists=lambda *args, **kwargs: duplicate,
+	)
+	def throw(message, exception):
+		raise exception(message)
+	monkeypatch.setattr(working_time, "frappe", _dict(
+		session=_dict(user="synthetic-approver"),
+		get_roles=lambda *args, **kwargs: ["Tradexcel Payroll Approver"],
+		db=db,
+		get_doc=lambda *args, **kwargs: _dict(
+			get_overtime_component_amounts=lambda: expected_amounts or {"Synthetic OT": 125.5}
+		),
+		throw=throw,
+		PermissionError=working_time.frappe.PermissionError,
+	))
+	monkeypatch.setattr(working_time, "flt", lambda value, precision=None: round(float(value or 0), precision) if precision is not None else float(value or 0))
+	monkeypatch.setattr(working_time, "assert_company_access", lambda *args, **kwargs: None)
+
+
+def test_native_overtime_additional_salary_amount_and_component_are_verified(monkeypatch):
+	from frappe import _dict
+
+	_patch_overtime_salary_validation(monkeypatch)
+	doc = _dict(
+		ref_doctype="Overtime Slip", ref_docname="SYN-OT", employee="SYN-EMP",
+		company="SYN-COMPANY", payroll_date=date(2026, 9, 30), salary_component="Synthetic OT", amount=125.5,
+	)
+	working_time.validate_overtime_generated_additional_salary(doc)
+	doc.amount = 999
+	with pytest.raises(working_time.frappe.PermissionError):
+		working_time.validate_overtime_generated_additional_salary(doc)
+	doc.amount, doc.salary_component = 125.5, "Wrong Component"
+	with pytest.raises(working_time.frappe.PermissionError):
+		working_time.validate_overtime_generated_additional_salary(doc)
+
+
+def test_duplicate_overtime_additional_salary_is_denied(monkeypatch):
+	from frappe import _dict
+
+	_patch_overtime_salary_validation(monkeypatch, duplicate=True)
+	doc = _dict(
+		ref_doctype="Overtime Slip", ref_docname="SYN-OT", employee="SYN-EMP",
+		company="SYN-COMPANY", payroll_date=date(2026, 9, 30), salary_component="Synthetic OT", amount=125.5,
+	)
+	with pytest.raises(working_time.frappe.PermissionError):
+		working_time.validate_overtime_generated_additional_salary(doc)
