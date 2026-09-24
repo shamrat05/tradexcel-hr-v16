@@ -68,19 +68,20 @@ def _native_attendance_units(
     slip.end_date = end
 
     holidays = slip.get_holidays_for_employee(start, end)
+    consider_marked_holidays = cint(settings.include_holidays_in_total_working_days) and cint(
+        settings.consider_marked_attendance_on_holidays
+    )
     lwp, absent = slip.calculate_lwp_ppl_and_absent_days_based_on_attendance(
         holidays,
         fraction,
-        cint(settings.consider_marked_attendance_on_holidays),
+        consider_marked_holidays,
     )
     payment_days = slip.get_payment_days(cint(settings.include_holidays_in_total_working_days))
     if payment_days <= lwp:
         units = 0.0
     else:
         units = payment_days - lwp - absent
-        half_absent = slip.get_half_absent_days(
-            cint(settings.consider_marked_attendance_on_holidays), holidays
-        )
+        half_absent = slip.get_half_absent_days(consider_marked_holidays, holidays)
         units -= half_absent * fraction
 
     return {"status": "READY", "payable_units": flt(max(units, 0)), "native": True,

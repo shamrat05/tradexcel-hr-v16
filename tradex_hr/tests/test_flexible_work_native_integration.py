@@ -8,6 +8,8 @@ from hrms.hr.doctype.shift_assignment.shift_assignment import get_employee_shift
 from hrms.payroll.doctype.salary_slip.salary_slip import SalarySlip
 from hrms.payroll.doctype.salary_structure.salary_structure import make_salary_slip
 
+from tradex_hr.tradexcel_hr.daily_wage_input import _native_attendance_units
+
 from tradex_hr.tradexcel_hr import daily_wage_input
 from tradex_hr.tradexcel_hr.flexible_work_records import validate_operational_day_overrides
 
@@ -94,6 +96,118 @@ def _attendance(employee, day, status, hours, half_day_status=None):
     return doc
 
 
+def test_daily_wage_native_attendance_unit_parity_across_holiday_settings():
+    """Compare the adapter with native Salary Slip semantics using disposable site records."""
+    savepoint = "daily_wage_native_holiday_parity"
+    frappe.db.savepoint(savepoint)
+    suffix = frappe.generate_hash(7)
+    company = "Tradexcel Ceramics Ltd."
+    employee = None
+    holiday_list = None
+    leave_types = []
+    settings_fields = (
+        "payroll_based_on",
+        "include_holidays_in_total_working_days",
+        "consider_marked_attendance_on_holidays",
+        "daily_wages_fraction_for_half_day",
+        "consider_unmarked_attendance_as",
+    )
+    original_settings = {
+        field: frappe.db.get_single_value("Payroll Settings", field)
+        for field in settings_fields
+    }
+    try:
+        holiday_list = frappe.get_doc({
+            "doctype": "Holiday List",
+            "holiday_list_name": f"TEST Native Parity {suffix}",
+            "from_date": "2026-09-01",
+            "to_date": "2026-09-06",
+            "holidays": [{"holiday_date": "2026-09-03", "description": "Synthetic holiday"}],
+        })
+        holiday_list.insert(ignore_permissions=True)
+
+        employee_doc = frappe.get_doc({
+            "doctype": "Employee",
+            "employee_name": f"TEST Native Parity {suffix}",
+            "first_name": f"TEST Native Parity {suffix}",
+            "company": company,
+            "date_of_birth": "1990-01-01",
+            "date_of_joining": "2020-01-01",
+            "gender": "Female",
+            "employment_type": "Intern",
+            "holiday_list": holiday_list.name,
+            "status": "Active",
+        })
+        employee_doc.insert(ignore_permissions=True)
+        employee = employee_doc.name
+
+        for title, flags in (
+            (f"TEST LWP {suffix}", {"is_lwp": 1}),
+            (f"TEST PPL {suffix}", {"is_ppl": 1, "fraction_of_daily_salary_per_leave": 0.5}),
+        ):
+            leave_type = frappe.get_doc({
+                "doctype": "Leave Type",
+                "leave_type_name": title,
+                "include_holiday": 0,
+                **flags,
+            })
+            leave_type.insert(ignore_permissions=True)
+            leave_types.append(leave_type.name)
+        frappe.clear_cache(doctype="Leave Type")
+
+        attendance_rows = [
+            ("2026-09-01", "Present", None, None),
+            ("2026-09-02", "Half Day", None, "Absent"),
+            ("2026-09-03", "Present", None, None),
+            ("2026-09-04", "On Leave", leave_types[0], None),
+            ("2026-09-05", "On Leave", leave_types[1], None),
+            ("2026-09-06", "Absent", None, None),
+        ]
+        for day, status, leave_type, half_day_status in attendance_rows:
+            _attendance(employee, day, status, 4 if status in {"Present", "Half Day"} else 0,
+                        half_day_status=half_day_status)
+            if leave_type:
+                attendance_name = frappe.db.get_value(
+                    "Attendance", {"employee": employee, "attendance_date": day, "docstatus": 1}, "name"
+                )
+                frappe.db.set_value("Attendance", attendance_name, "leave_type", leave_type)
+        frappe.clear_cache(doctype="Payroll Settings")
+
+        for include_holidays in (0, 1):
+            for consider_marked in (0, 1):
+                frappe.db.set_single_value("Payroll Settings", "payroll_based_on", "Attendance")
+                frappe.db.set_single_value(
+                    "Payroll Settings", "include_holidays_in_total_working_days", include_holidays
+                )
+                frappe.db.set_single_value(
+                    "Payroll Settings", "consider_marked_attendance_on_holidays", consider_marked
+                )
+                frappe.db.set_single_value("Payroll Settings", "daily_wages_fraction_for_half_day", 0.5)
+                frappe.db.set_single_value("Payroll Settings", "consider_unmarked_attendance_as", "Present")
+                frappe.clear_cache(doctype="Payroll Settings")
+
+                native_slip = SalarySlip({
+                    "doctype": "Salary Slip", "employee": employee,
+                    "start_date": "2026-09-01", "end_date": "2026-09-06",
+                })
+                native_slip.employee = employee
+                native_slip.start_date = date(2026, 9, 1)
+                native_slip.end_date = date(2026, 9, 6)
+                native_slip.get_working_days_details()
+
+                adapter = _native_attendance_units(employee, date(2026, 9, 1), date(2026, 9, 6))
+                assert adapter["payable_units"] == native_slip.payment_days
+    finally:
+        for field, value in original_settings.items():
+            frappe.db.set_single_value("Payroll Settings", field, value)
+        frappe.db.rollback(save_point=savepoint)
+        frappe.clear_cache(doctype="Payroll Settings")
+        frappe.clear_cache(doctype="Leave Type")
+        assert employee is None or not frappe.db.exists("Employee", employee)
+        assert holiday_list is None or not frappe.db.exists("Holiday List", holiday_list.name)
+        assert all(not frappe.db.exists("Leave Type", name) for name in leave_types)
+
+
 def test_native_daily_wage_policy_changes_only_work_day_units():
     employee = "HR-EMP-00225"
     if not frappe.db.exists("Employee", {"name": employee, "company": "Tradexcel Ceramics Ltd.", "status": "Active"}):
@@ -112,12 +226,28 @@ def test_native_daily_wage_policy_changes_only_work_day_units():
         holidays = set(slip.get_holidays_for_employee(slip.start_date, slip.end_date))
         workdays = [slip.start_date + timedelta(days=i) for i in range(31)
                     if slip.start_date + timedelta(days=i) not in holidays]
+        holiday_day = next(iter(holidays), None)
+        if holiday_day:
+            holiday_attendance = _attendance(employee, holiday_day, "Present", 4)
+            created.append(("Attendance", holiday_attendance.name))
+            from tradex_hr.tradexcel_hr.flexible_work_records import build_operational_day_override_preview
+            holiday_preview = build_operational_day_override_preview(frappe._dict({
+                "company": "Tradexcel Ceramics Ltd.", "operational_date": holiday_day,
+                "branch": None, "department": None,
+            }))
+            assert holiday_preview["status"] == "READY"
+            assert holiday_preview["affected_count"] == 0
+            assert holiday_preview["normal_units"] == 0
+            assert holiday_preview["override_units"] == 0
+            assert holiday_preview["amount_impact"] == 0
         if len(workdays) < 3:
             pytest.skip("TCL Holiday List has fewer than three working days in test month")
 
+        work_attendance = None
         for index, day in enumerate(workdays):
             if index == 0:
-                attendance = _attendance(employee, day, "Present", 6)
+                work_attendance = _attendance(employee, day, "Present", 6)
+                attendance = work_attendance
             elif index == 1:
                 attendance = _attendance(employee, day, "Present", 7)
             elif index == 2:
@@ -157,8 +287,8 @@ def test_native_daily_wage_policy_changes_only_work_day_units():
         assert override.preview_amount_impact == 87.5
         override.submit()
 
-        frappe.db.set_value("Attendance", created[2][1], "working_hours", 5)
-        assert frappe.db.get_value("Attendance", created[2][1], "working_hours") == 5
+        frappe.db.set_value("Attendance", work_attendance.name, "working_hours", 5)
+        assert frappe.db.get_value("Attendance", work_attendance.name, "working_hours") == 5
         from tradex_hr.tradexcel_hr.flexible_work_records import build_operational_day_override_preview
         fresh_preview = build_operational_day_override_preview(override)
         assert fresh_preview["attendance_hash"] != override.preview_hash
@@ -166,7 +296,7 @@ def test_native_daily_wage_policy_changes_only_work_day_units():
             "Tradexcel Ceramics Ltd.", "2026-12-01", "2026-12-31"
         )
         assert stale == [{"code": "OPERATIONAL_DAY_OVERRIDE_PREVIEW_STALE", "record": override.name}]
-        frappe.db.set_value("Attendance", created[2][1], "working_hours", 6)
+        frappe.db.set_value("Attendance", work_attendance.name, "working_hours", 6)
         assert validate_operational_day_overrides(
             "Tradexcel Ceramics Ltd.", "2026-12-01", "2026-12-31"
         ) == []

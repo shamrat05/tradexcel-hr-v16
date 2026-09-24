@@ -52,7 +52,6 @@ def apply_flexible_work_adjustments(
     overrides=None,
     employee=None,
     holidays=(),
-    include_holidays=False,
     half_day_fraction=0.5,
 ):
     """Adjust work-only days and leave all other native payroll units intact."""
@@ -69,7 +68,7 @@ def apply_flexible_work_adjustments(
             continue
         if status not in WORK_STATUSES:
             continue
-        if day in holiday_dates and not include_holidays:
+        if day in holiday_dates:
             continue
         if _v(row, "leave_type") or _v(row, "leave_application"):
             continue
@@ -231,14 +230,14 @@ def load_operational_overrides(company, start, end):
     return cache[key]
 
 
-def _override_matches_work_rows(override, attendance_rows, employee, holidays, include_holidays):
+def _override_matches_work_rows(override, attendance_rows, employee, holidays):
     for row in attendance_rows:
         if _v(row, "status") not in {"Present", "Half Day"}:
             continue
         if _v(row, "leave_type") or _v(row, "leave_application"):
             continue
         day = getdate(_v(row, "attendance_date"))
-        if day in holidays and not include_holidays:
+        if day in holidays:
             continue
         if _matches_override(override, row, employee):
             return True
@@ -257,7 +256,6 @@ def apply_policy_to_daily_wage(employee, employee_data, start, end, attendance_r
         row for row in overrides
         if _override_matches_work_rows(
             row, attendance_rows, employee, native.get("holidays", ()),
-            bool(native.get("include_holidays")),
         )
     ]
     policy = resolution.get("policy")
@@ -270,7 +268,6 @@ def apply_policy_to_daily_wage(employee, employee_data, start, end, attendance_r
     adjusted = apply_flexible_work_adjustments(
         native["payable_units"], attendance_rows, policy, overrides=overrides,
         employee=employee_data, holidays=native.get("holidays", ()),
-        include_holidays=bool(native.get("include_holidays")),
         half_day_fraction=native.get("half_day_fraction", 0.5),
     )
     if adjusted["status"] != "READY":
@@ -283,7 +280,10 @@ def apply_policy_to_daily_wage(employee, employee_data, start, end, attendance_r
 
 
 @frappe.whitelist()
-def inspect_mass_early_release_candidates(company, from_date, to_date, minimum_headcount, minimum_percentage, clustering_window_minutes=30):
+def inspect_mass_early_release_candidates(
+    company, from_date, to_date, minimum_headcount, minimum_percentage,
+    clustering_window_minutes=30, scope_level="Branch",
+):
     """Read-only detector with explicit thresholds and no automatic pay action."""
     assert_company_access(company, require_explicit_scope=True)
     rows = frappe.get_all(
@@ -296,6 +296,7 @@ def inspect_mass_early_release_candidates(company, from_date, to_date, minimum_h
         rows, minimum_headcount=int(minimum_headcount),
         minimum_percentage=float(minimum_percentage),
         clustering_window_minutes=int(clustering_window_minutes),
+        scope_level=scope_level,
     )
 
 
@@ -315,15 +316,22 @@ def detect_mass_early_release_candidates(
     minimum_headcount: int,
     minimum_percentage: float,
     clustering_window_minutes: int,
+    scope_level: str = "Branch",
 ):
     """Return read-only candidates and never create or submit an override."""
     if minimum_headcount < 1 or not 0 < minimum_percentage <= 1 or clustering_window_minutes < 0:
         raise ValueError("Provide explicit, valid detection thresholds.")
+    if scope_level not in {"Branch", "Department"}:
+        raise ValueError("scope_level must be Branch or Department.")
     groups = defaultdict(list)
     for row in attendance_rows:
-        if _v(row, "status") in {"Present", "Half Day"} and flt(_v(row, "working_hours")) > 0:
-            groups[(str(getdate(_v(row, "attendance_date"))), _v(row, "branch") or "",
-                    _v(row, "department") or "")].append(row)
+        if _v(row, "status") in {"Present", "Half Day"}:
+            group = (
+                str(getdate(_v(row, "attendance_date"))),
+                _v(row, "branch") or "",
+                (_v(row, "department") or "") if scope_level == "Department" else "",
+            )
+            groups[group].append(row)
     results = []
     for (day, branch, department), rows in groups.items():
         present = {str(_v(row, "employee")) for row in rows}
@@ -357,7 +365,8 @@ def detect_mass_early_release_candidates(
         median = values[len(values) // 2]
         results.append({
             "code": "MASS_EARLY_RELEASE_CANDIDATE", "date": day,
-            "branch": branch or None, "department": department or None,
+            "scope_level": scope_level, "branch": branch or None,
+            "department": department or None,
             "present_count": len(present), "affected_count": len(affected),
             "affected_ratio": ratio, "suggested_release_time": f"{median // 60:02d}:{median % 60:02d}",
             "creates_override": False,

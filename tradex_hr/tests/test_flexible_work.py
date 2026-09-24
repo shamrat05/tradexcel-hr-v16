@@ -105,6 +105,36 @@ def test_mass_early_release_detector_only_suggests_a_candidate():
     assert result[0]["creates_override"] is False
 
 
+def test_mass_early_release_branch_scope_finds_cross_department_event():
+    rows = []
+    for department_index in range(4):
+        for worker_index in range(6):
+            index = department_index * 6 + worker_index
+            rows.append({
+                "attendance_date": date(2026, 9, 18), "employee": f"EMP-{index:03}",
+                "branch": "Factory", "department": f"Department {department_index}",
+                "status": "Present", "working_hours": 6 if index < 18 else None,
+                "early_exit": int(index < 18),
+                "out_time": datetime(2026, 9, 18, 18 if index < 18 else 20, index % 20),
+            })
+
+    branch = detect_mass_early_release_candidates(
+        rows, minimum_headcount=15, minimum_percentage=0.70,
+        clustering_window_minutes=20, scope_level="Branch",
+    )
+    department = detect_mass_early_release_candidates(
+        rows, minimum_headcount=15, minimum_percentage=0.70,
+        clustering_window_minutes=20, scope_level="Department",
+    )
+
+    assert len(branch) == 1
+    assert branch[0]["affected_count"] == 18
+    assert branch[0]["present_count"] == 24
+    assert branch[0]["department"] is None
+    assert branch[0]["creates_override"] is False
+    assert department == []
+
+
 def test_policy_for_an_unrelated_branch_does_not_block_employee():
     policy = {"branch": "Factory B", "department": None}
     assert flexible_policy_scope_state(policy, {("Factory A", "Production")}) == "outside"
@@ -121,13 +151,23 @@ def test_flexible_shift_assignment_must_cover_the_requested_period():
     assert not shift_assignment_covers_period(later_assignment, date(2026, 9, 1), date(2026, 9, 30))
 
 
-def test_operational_override_preview_respects_native_holiday_payroll_setting():
+def test_holiday_attendance_is_never_repriced_by_flexible_work_or_override():
     rows = [
-        {"employee": "EMP-1", "status": "Present"},
-        {"employee": "EMP-2", "status": "Present"},
+        {"employee": "EMP-1", "status": "Present", "attendance_date": date(2026, 9, 1),
+         "working_hours": 4, "branch": "Factory"},
+        {"employee": "EMP-2", "status": "Present", "attendance_date": date(2026, 9, 2),
+         "working_hours": 4, "branch": "Factory"},
     ]
-    assert _holiday_payable_work_rows(rows, {"EMP-1"}, False) == [rows[1]]
-    assert _holiday_payable_work_rows(rows, {"EMP-1"}, True) == rows
+    policy = {"standard_paid_hours": 8, "full_day_minimum_hours": 7}
+    override = [{"attendance_date": date(2026, 9, 1), "branch": "Factory"}]
+
+    result = apply_flexible_work_adjustments(
+        1, rows[:1], policy, overrides=override, employee={"branch": "Factory"},
+        holidays={date(2026, 9, 1)},
+    )
+    assert result["status"] == "READY"
+    assert result["payable_units"] == 1
+    assert _holiday_payable_work_rows(rows, {"EMP-1"}) == [rows[1]]
 
 
 def test_operational_override_readiness_ignores_configured_monthly_workers():

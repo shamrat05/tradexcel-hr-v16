@@ -83,15 +83,11 @@ def _native_holiday_context(employee_names, day):
         employee for employee, holiday_list in employee_lists.items()
         if holiday_list in holiday_list_names
     }
-    include_holidays = bool(
-        frappe.db.get_single_value("Payroll Settings", "include_holidays_in_total_working_days")
-    )
-    return employee_lists, holiday_employees, include_holidays
+    return employee_lists, holiday_employees
 
 
-def _holiday_payable_work_rows(work_rows, holiday_employees, include_holidays):
-    if include_holidays:
-        return work_rows
+def _holiday_payable_work_rows(work_rows, holiday_employees):
+    """Operational Day Overrides never reprice native holiday pay."""
     return [row for row in work_rows if _get(row, "employee") not in holiday_employees]
 
 
@@ -153,10 +149,10 @@ def build_operational_day_override_preview(doc):
         and (not doc.department or row.department == doc.department)
     ]
     work_rows = [row for row in scoped if row.status in {"Present", "Half Day", "Work From Home"}]
-    employee_holiday_lists, holiday_employees, include_holidays = _native_holiday_context(
+    employee_holiday_lists, holiday_employees = _native_holiday_context(
         sorted({row.employee for row in work_rows}), day
     )
-    payable_work_rows = _holiday_payable_work_rows(work_rows, holiday_employees, include_holidays)
+    payable_work_rows = _holiday_payable_work_rows(work_rows, holiday_employees)
     candidate_rows = [
         row for row in payable_work_rows
         if row.status in {"Present", "Half Day"}
@@ -232,7 +228,6 @@ def build_operational_day_override_preview(doc):
         "company": doc.company, "operational_date": str(day),
         "branch": doc.branch or "", "department": doc.department or "",
         "native_holiday_context": {
-            "include_holidays": include_holidays,
             "employee_lists": sorted(employee_holiday_lists.items()),
             "holiday_employees": sorted(holiday_employees),
         },
@@ -263,7 +258,7 @@ def build_operational_day_override_preview(doc):
     return {
         "status": "NEEDS_ATTENTION" if findings else "READY",
         "findings": findings,
-        "present_count": len({row.employee for row in work_rows}),
+        "present_count": len({row.employee for row in payable_work_rows}),
         "affected_count": len(affected),
         "normal_units": round(normal_units, 8),
         "override_units": round(override_units, 8),
