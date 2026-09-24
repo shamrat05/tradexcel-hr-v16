@@ -28,9 +28,9 @@ The references are source candidates only. No production legal values are approv
 
 Read-only site: hrms-v16.localhost; HRMS 16.19.0, ERPNext 16.35.0, Frappe 16.34.0.
 - Shift Types: 2; Overtime Types: 0; Overtime Slips: 0.
-- Attendance: 16,077 rows; 0 submitted; 9,535 rows have working-hours values; no OT duration/type values.
+- Attendance: 16,077 rows; 0 submitted; 9,535 have positive working hours (all rows have a non-null value); 0 OT duration/type rows; 1,786 late-entry and 3,155 early-exit rows.
 - Holiday Lists: 1 (Tradex Holidays 2026), 62 holidays, 52 marked native weekly-off.
-- Leave Types: 6; Leave Policies: 3 drafts; submitted Leave Policy Assignments: 1,190; Leave Allocations: 0.
+- Leave Types: 6; Leave Policies: 3 drafts; Leave Policy Assignments: 0; Leave Allocations: 1,190 submitted (confirmed by direct read-only table counts).
 - No approved Working Time rules exist. These are operational counts, not legal coverage decisions.
 
 ## Synthetic proof
