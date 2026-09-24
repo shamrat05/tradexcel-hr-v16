@@ -96,29 +96,69 @@ doc_events = {
         "before_update_after_submit": "tradex_hr.tradexcel_hr.financial_readiness.validate_payroll_financial_readiness_before_approval",
     },
     "Salary Slip": {
-        "before_submit": "tradex_hr.tradexcel_hr.native_payroll.validate_salary_slip_before_submit",
+        "before_submit": [
+            "tradex_hr.tradexcel_hr.native_payroll.validate_salary_slip_before_submit",
+            "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_salary_slip",
+        ],
         "before_validate": "tradex_hr.tradexcel_hr.component_exceptions.apply_to_salary_slip",
     },
     "Attendance": {
         "before_save": "tradex_hr.tradexcel_hr.attendance_exceptions.apply_to_attendance",
         "validate": "tradex_hr.tradexcel_hr.attendance_exceptions.sync_scope_fields",
-        "before_submit": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+        "before_submit": [
+            "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+            "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_attendance",
+        ],
     },
     "Attendance Request": {
         "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
     },
     "Overtime Slip": {
         "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
-        "before_submit": "tradex_hr.tradexcel_hr.working_time_compliance.validate_overtime_slip_before_submit",
+        "before_submit": [
+            "tradex_hr.tradexcel_hr.working_time_compliance.validate_overtime_slip_before_submit",
+            "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_overtime",
+        ],
     },
     "Tradexcel Field Duty": {
-        "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+        "validate": [
+            "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+            "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_field_duty",
+        ],
     },
     "Employee Separation": {
         "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_employee_separation",
+        "before_submit": "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_employee_separation",
     },
     "Full and Final Statement": {
-        "before_submit": "tradex_hr.tradexcel_hr.employee_separation.validate_full_and_final_before_submit",
+        "before_submit": [
+            "tradex_hr.tradexcel_hr.employee_separation.validate_full_and_final_before_submit",
+            "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_full_and_final",
+        ],
+    },
+    "Tradexcel Maternity Rule Set": {
+        "validate": "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_rule_set",
+        "before_submit": "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_rule_submit",
+        "before_update_after_submit": "tradex_hr.tradexcel_hr.maternity_welfare.before_update_after_submit_maternity_rule",
+        "before_cancel": "tradex_hr.tradexcel_hr.maternity_welfare.prevent_maternity_rule_cancel",
+    },
+    "Tradexcel Maternity Review": {
+        "validate": "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_review",
+        "before_submit": "tradex_hr.tradexcel_hr.maternity_welfare.before_submit_maternity_review",
+        "before_update_after_submit": "tradex_hr.tradexcel_hr.maternity_welfare.before_update_after_submit_maternity_review",
+        "before_cancel": "tradex_hr.tradexcel_hr.maternity_welfare.before_cancel_maternity_review",
+    },
+    "Tradexcel Maternity Separation Review": {
+        "validate": "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_separation_review",
+        "before_submit": "tradex_hr.tradexcel_hr.maternity_welfare.before_submit_maternity_separation_review",
+        "before_update_after_submit": "tradex_hr.tradexcel_hr.maternity_welfare.before_update_after_submit_maternity_separation_review",
+        "before_cancel": "tradex_hr.tradexcel_hr.maternity_welfare.before_cancel_maternity_separation_review",
+    },
+    "Tradexcel Workplace Welfare Review": {
+        "validate": "tradex_hr.tradexcel_hr.maternity_welfare.validate_workplace_welfare_review",
+        "before_submit": "tradex_hr.tradexcel_hr.maternity_welfare.before_submit_workplace_welfare_review",
+        "before_update_after_submit": "tradex_hr.tradexcel_hr.maternity_welfare.before_update_after_submit_workplace_welfare_review",
+        "before_cancel": "tradex_hr.tradexcel_hr.maternity_welfare.before_cancel_workplace_welfare_review",
     },
     "Tradexcel Statutory Rule Set": {
         "validate": "tradex_hr.tradexcel_hr.statutory_exit.validate_statutory_ruleset",
@@ -162,6 +202,10 @@ permission_query_conditions = {
     "Tradexcel Working Time Rule Set": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_query_conditions",
     "Tradexcel Working Time Classification": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_query_conditions",
     "Tradexcel Statutory Rule Set": "tradex_hr.tradexcel_hr.statutory_exit.statutory_ruleset_query_conditions",
+    "Tradexcel Maternity Rule Set": "tradex_hr.tradexcel_hr.maternity_welfare.maternity_rule_query_conditions",
+    "Tradexcel Maternity Review": "tradex_hr.tradexcel_hr.maternity_welfare.maternity_sensitive_query_conditions",
+    "Tradexcel Maternity Separation Review": "tradex_hr.tradexcel_hr.maternity_welfare.maternity_sensitive_query_conditions",
+    "Tradexcel Workplace Welfare Review": "tradex_hr.tradexcel_hr.maternity_welfare.welfare_query_conditions",
     "Tradexcel Wage Floor Rule Set": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_query_conditions",
     "Tradexcel Wage Floor Classification": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_query_conditions",
     "Job Opening": "tradex_hr.tradexcel_hr.joiner_readiness.job_opening_query_conditions",
@@ -184,6 +228,10 @@ has_permission = {
     "Employee Onboarding": "tradex_hr.tradexcel_hr.joiner_readiness.recruitment_has_permission",
     "Tradexcel Working Time Rule Set": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_has_permission",
     "Tradexcel Working Time Classification": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_has_permission",
+    "Tradexcel Maternity Rule Set": "tradex_hr.tradexcel_hr.maternity_welfare.maternity_rule_has_permission",
+    "Tradexcel Maternity Review": "tradex_hr.tradexcel_hr.maternity_welfare.maternity_sensitive_has_permission",
+    "Tradexcel Maternity Separation Review": "tradex_hr.tradexcel_hr.maternity_welfare.maternity_sensitive_has_permission",
+    "Tradexcel Workplace Welfare Review": "tradex_hr.tradexcel_hr.maternity_welfare.welfare_has_permission",
     "Tradexcel Wage Floor Rule Set": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_has_permission",
     "Tradexcel Wage Floor Classification": "tradex_hr.tradexcel_hr.wage_floor.wage_floor_has_permission",
     "Payroll Correction": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",

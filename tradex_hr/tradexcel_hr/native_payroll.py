@@ -106,6 +106,9 @@ def inspect_native_payroll_readiness(
     working_time_by_employee = {
         row["employee"]: row for row in working_time_context.get("employees", [])
     }
+    from tradex_hr.tradexcel_hr.maternity_welfare import prepare_maternity_payroll_context
+
+    maternity_context = prepare_maternity_payroll_context(company, ids, start, end)
     outcomes = {
         employee: {"employee": employee, "employee_data": row, "status": "READY"}
         for employee, row in ((_row_value(row, "name"), row) for row in employees)
@@ -177,6 +180,17 @@ def inspect_native_payroll_readiness(
             finding = next((item for item in benefits["findings"] if item.get("severity") == "blocker"), None)
             if finding:
                 block(employee, finding["code"], finding["message"])
+
+        maternity_codes = maternity_context.get(employee, [])
+        outcome["maternity"] = {
+            "status": "NEEDS_REVIEW" if maternity_codes else "READY",
+            "findings": [
+                {"code": code, "message": "Maternity payment needs restricted HR/legal review."}
+                for code in maternity_codes
+            ],
+        }
+        for code in maternity_codes:
+            block(employee, code, "Maternity payment needs restricted HR/legal review.")
 
     blockers = [result for result in outcomes.values() if result["status"] != "READY"]
     if not employees:

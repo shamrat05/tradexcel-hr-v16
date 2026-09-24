@@ -1,0 +1,35 @@
+{
+ "doctype":"DocType","name":"Tradexcel Workplace Welfare Review","module":"Tradexcel HR","autoname":"naming_series:","naming_series":"TWWR-.YYYY.-.#####","allow_rename":0,"is_submittable":1,"track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","company","branch","legal_regime","effective_from","effective_to","first_aid_applicability","reviewed_worker_count","worker_count_as_of","worker_count_evidence_reference","workers_per_first_aid_box","first_aid_box_count","first_aid_accessibility_evidence","trained_custodian_evidence","child_room_applicability","reviewed_women_worker_count","women_count_as_of","women_count_evidence_reference","child_room_status","child_room_evidence_reference","sources","review_notes","reviewed_by","reviewed_at"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Series","options":"TWWR-.YYYY.-.#####","default":"TWWR-.YYYY.-.#####","reqd":1},
+  {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
+  {"fieldname":"branch","fieldtype":"Link","label":"Branch / Establishment","options":"Branch"},
+  {"fieldname":"legal_regime","fieldtype":"Select","label":"Legal Regime","options":"Bangladesh Labour Act\nBangladesh EPZ Labour Act\nOther Reviewed Regime","reqd":1},
+  {"fieldname":"effective_from","fieldtype":"Date","label":"Effective From","reqd":1},
+  {"fieldname":"effective_to","fieldtype":"Date","label":"Effective To"},
+  {"fieldname":"first_aid_applicability","fieldtype":"Select","label":"First Aid Applicability","options":"Review Required\nApplicable\nNot Applicable","reqd":1},
+  {"fieldname":"reviewed_worker_count","fieldtype":"Int","label":"Reviewed Workforce Count"},
+  {"fieldname":"worker_count_as_of","fieldtype":"Date","label":"Workforce Count As Of"},
+  {"fieldname":"worker_count_evidence_reference","fieldtype":"Data","label":"Workforce Evidence Reference"},
+  {"fieldname":"workers_per_first_aid_box","fieldtype":"Int","label":"Reviewed Workers per First Aid Box"},
+  {"fieldname":"first_aid_box_count","fieldtype":"Int","label":"First Aid Boxes Available"},
+  {"fieldname":"first_aid_accessibility_evidence","fieldtype":"Data","label":"First Aid Accessibility Evidence Reference"},
+  {"fieldname":"trained_custodian_evidence","fieldtype":"Data","label":"Trained Custodian Evidence Reference"},
+  {"fieldname":"child_room_applicability","fieldtype":"Select","label":"Child Room Applicability","options":"Review Required\nApplicable\nNot Applicable","reqd":1},
+  {"fieldname":"reviewed_women_worker_count","fieldtype":"Int","label":"Reviewed Women Worker Count"},
+  {"fieldname":"women_count_as_of","fieldtype":"Date","label":"Women Worker Count As Of"},
+  {"fieldname":"women_count_evidence_reference","fieldtype":"Data","label":"Aggregate Applicability Evidence Reference"},
+  {"fieldname":"child_room_status","fieldtype":"Select","label":"Child Room Facility Status","options":"Not Reviewed\nAvailable\nRequired\nNot Available\nNot Applicable","reqd":1},
+  {"fieldname":"child_room_evidence_reference","fieldtype":"Data","label":"Facility Evidence Reference"},
+  {"fieldname":"sources","fieldtype":"Table","label":"Official / Reviewed Sources","options":"Tradexcel Statutory Source","reqd":1},
+  {"fieldname":"review_notes","fieldtype":"Small Text","label":"Review Notes","reqd":1},
+  {"fieldname":"reviewed_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1,"allow_on_submit":0},
+  {"fieldname":"reviewed_at","fieldtype":"Datetime","label":"Approved At","read_only":1,"allow_on_submit":0}
+ ],
+ "permissions":[
+  {"role":"Tradexcel HR Manager","read":1,"write":1,"create":1},
+  {"role":"Tradexcel Owner/Director","read":1,"write":1,"create":1,"submit":1},
+  {"role":"Tradexcel Compliance Auditor","read":1,"report":1}
+ ]
+}

@@ -59,6 +59,46 @@ def test_native_readiness_does_not_block_joiner_or_leaver_for_native_proration(m
     assert result["outcomes"][0]["status"] == "READY"
 
 
+def test_native_readiness_blocks_maternity_payment_with_generic_code_only(monkeypatch):
+    employees = [{
+        "name": "EMP-MATERNITY",
+        "employee_name": "Synthetic Employee",
+        "company": "TCL",
+        "status": "Active",
+        "date_of_joining": date(2020, 1, 1),
+    }]
+    monkeypatch.setattr(native_payroll, "_validate_supported_scope", lambda *_args: None)
+    monkeypatch.setattr(native_payroll, "_employees_for_period", lambda *_args: employees)
+    monkeypatch.setattr(native_payroll, "resolve_pay_basis", lambda *_args: {"status": "Monthly Salary"})
+    monkeypatch.setattr(native_payroll, "_attendance_required_for_payroll", lambda: False)
+    monkeypatch.setattr(native_payroll, "_period_attendance_gate", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "_unapproved_overtime", lambda *_args: [])
+    monkeypatch.setattr(native_payroll, "prepare_wage_floor_context", lambda *_args: {})
+    monkeypatch.setattr(native_payroll, "inspect_wage_floor_for_employee", lambda *_args, **_kwargs: {
+        "status": "NOT_IN_CONFIGURED_SCOPE", "findings": [],
+    })
+    monkeypatch.setattr(native_payroll, "prepare_statutory_benefit_context", lambda *_args: {
+        "EMP-MATERNITY": {"status": "READY", "benefits": [], "findings": []},
+    })
+    monkeypatch.setattr(
+        "tradex_hr.tradexcel_hr.maternity_welfare.prepare_maternity_payroll_context",
+        lambda *_args: {"EMP-MATERNITY": ["MATERNITY_BENEFIT_PAYMENT_PATH_REVIEW_REQUIRED"]},
+    )
+
+    result = native_payroll.inspect_native_payroll_readiness(
+        "TCL", date(2026, 9, 1), date(2026, 9, 30)
+    )
+
+    outcome = result["outcomes"][0]
+    assert outcome["status"] == "MATERNITY_BENEFIT_PAYMENT_PATH_REVIEW_REQUIRED"
+    assert outcome["maternity"]["findings"] == [{
+        "code": "MATERNITY_BENEFIT_PAYMENT_PATH_REVIEW_REQUIRED",
+        "message": "Maternity payment needs restricted HR/legal review.",
+    }]
+    assert "actual_delivery_date" not in repr(outcome)
+    assert "eligibility_reason" not in repr(outcome)
+
+
 def test_native_readiness_blocks_stale_attendance(monkeypatch):
     employees = [{
         "name": "EMP-DAILY",
