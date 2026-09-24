@@ -47,3 +47,11 @@ Before standard staging migration, `bench --site hrms-v16.localhost backup --wit
 - Synthetic Benefit Rule Set, Enrollment, component, employee, and company records were explicitly cleaned; post-cleanup count is zero. A pre-existing disposable wage-test company/employee fixture was also removed through the repository's guarded synthetic cleanup helper; the synthetic-company/employee count is zero.
 - Installed HRMS v16 has a material accounting boundary: `PayrollEntry.make_accrual_jv_entry()` requests earnings and deductions, but not `employer_contributions`. PF/Progoti participation therefore fails closed at `STATUTORY_BENEFIT_ACCOUNTING_PATH_REVIEW_REQUIRED`; no custom Journal Entry or claimed remittance is created.
 - Production was not touched. No real employee enrollment, Salary Component, Salary Structure, SSA, deduction, employer contribution, or remittance was changed.
+
+## PR #16 hardening follow-up
+
+- Company-wide rules now apply to employees in any Branch of the same Company. Branch-specific rules remain limited to their Branch. Historical branch-specific applicability is accepted only when a submitted enrollment snapshots that exact rule and Branch; the Employee's current Branch is never used to invent prior history.
+- A company-wide rule can be enrolled with the Employee's reviewed Branch snapshot. Current/future enrollments must match the current Employee Branch; historical snapshots may retain a different Branch only within the same Company and the selected rule's scope.
+- Group-insurance policy dates must cover the entire payroll period. A start/end transition inside the period requires explicit review.
+- Employer-contribution capability is detected from the installed Payroll Entry controller and accrual method. On this HRMS 16.19.0 staging runtime it is absent; if present on a future HRMS build, readiness still blocks until the full native accrual integration is verified. No version-based permanent limitation or custom Journal Entry was added.
+- Regression tests: 26 passed, including company-wide and branch-specific scope, historic enrollment, full-period policy coverage, and capability detection. Full suite: 451 passed, 2 skipped, 31 warnings. `compileall` and `git diff --check` passed. No schema or JavaScript changes, so migration/build were not required.

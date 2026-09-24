@@ -28,6 +28,7 @@ def test_company_scoped_approved_benefits_and_native_accounting_boundary(monkeyp
 		_create_synthetic_company,
 		cleanup_synthetic_finalization_company,
 	)
+	from tradex_hr.tradexcel_hr.statutory_benefits import native_employer_contribution_accounting_supported
 	from tradex_hr.tradexcel_hr.statutory_benefits import inspect_statutory_benefit_readiness
 
 	token = frappe.generate_hash(8).upper()[:8]
@@ -160,8 +161,11 @@ def test_company_scoped_approved_benefits_and_native_accounting_boundary(monkeyp
 		assert result["benefits"][0]["status"] == "STATUTORY_BENEFIT_ACCOUNTING_PATH_REVIEW_REQUIRED"
 		assert f"SYNTHETIC-PF-{token}" not in frappe.as_json(result)
 
-		# Execute installed Payroll Entry accrual code with a capture seam. HRMS v16
-		# asks for earnings and deductions only; employer_contributions is absent.
+		# This staging bench is still on 16.19.0. A later v16 upgrade must make
+		# this capability probe true, then remain blocked until full integration proof.
+		assert native_employer_contribution_accounting_supported() is False
+
+		# Execute installed Payroll Entry accrual code with a capture seam.
 		frappe.set_user("Administrator")
 		payroll_entry = frappe.new_doc("Payroll Entry")
 		payroll_entry.company = company

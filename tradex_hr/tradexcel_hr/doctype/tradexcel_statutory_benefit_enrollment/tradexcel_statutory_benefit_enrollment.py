@@ -20,7 +20,8 @@ class TradexcelStatutoryBenefitEnrollment(Document):
 			frappe.throw(_("Effective To must be on or after Effective From."))
 		if self.branch and frappe.db.get_value("Branch", self.branch, "company") != self.company:
 			frappe.throw(_("The enrollment establishment must belong to the Employee's Company."))
-		if (not self.effective_to or getdate(self.effective_to) >= getdate(frappe.utils.today())) and (employee.branch or "") != (self.branch or ""):
+		is_current_or_future = not self.effective_to or getdate(self.effective_to) >= getdate(frappe.utils.today())
+		if is_current_or_future and (employee.branch or "") != (self.branch or ""):
 			frappe.throw(_("A current or future enrollment must match the current Employee Branch."))
 		self._validate_rule()
 		self._validate_status_evidence()
@@ -37,8 +38,8 @@ class TradexcelStatutoryBenefitEnrollment(Document):
 			frappe.throw(_("Select an approved benefit rule set."))
 		if rule.company != self.company or rule.benefit_type != self.benefit_type or rule.applicability != "Applicable":
 			frappe.throw(_("The approved rule must match the enrollment Company, benefit type, and Applicable decision."))
-		if (rule.branch or "") != (self.branch or ""):
-			frappe.throw(_("The enrollment establishment must match its exact approved rule set."))
+		if rule.branch and rule.branch != self.branch:
+			frappe.throw(_("A branch-specific benefit rule requires an enrollment for that same Branch."))
 		if getdate(self.effective_from) < getdate(rule.effective_from) or (
 			rule.effective_to and (not self.effective_to or getdate(self.effective_to) > getdate(rule.effective_to))
 		):

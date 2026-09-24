@@ -6,6 +6,7 @@ from datetime import date
 
 import frappe
 from frappe import _
+from frappe.model.base_document import get_controller
 from frappe.utils import getdate
 
 from tradex_hr.tradexcel_hr.company_context import assert_company_access
@@ -69,6 +70,16 @@ def prepare_statutory_benefit_context(company: str, from_date: str | date, to_da
 	}
 
 
+def native_employer_contribution_accounting_supported() -> bool:
+	"""Detect the installed Payroll Entry accrual capability without version strings."""
+	controller = get_controller("Payroll Entry")
+	accrual = getattr(controller, "make_accrual_jv_entry", None)
+	employer_method = getattr(controller, "make_employer_contribution_jv_entry", None)
+	function = getattr(accrual, "__func__", accrual)
+	code = getattr(function, "__code__", None)
+	return callable(employer_method) and code is not None and "make_employer_contribution_jv_entry" in code.co_names
+
+
 def _inspect_employee(employee, employee_data, start, end):
 	return _evaluate_employee(
 		employee,
@@ -95,10 +106,14 @@ def _evaluate_employee(employee, employee_data, start, end, rules, enrollments):
 	benefits = []
 	current_or_future = end >= getdate(frappe.utils.today())
 	if current_or_future:
-		matching = [r for r in rules if (r.branch or "") == (employee_data.get("branch") or "")]
+		matching = [r for r in rules if not r.branch or r.branch == (employee_data.get("branch") or "")]
 	else:
-		linked_rule_names = {e.rule_set for e in enrollments if e.employee == employee}
-		matching = [r for r in rules if not r.branch or r.name in linked_rule_names]
+		linked_enrollments = [e for e in enrollments if e.employee == employee]
+		linked_rule_names = {e.rule_set for e in linked_enrollments}
+		matching = [
+			r for r in rules
+			if not r.branch or any(e.rule_set == r.name and e.branch == r.branch for e in linked_enrollments)
+		]
 		if any(r.branch and r.name not in linked_rule_names for r in rules):
 			findings.append(_finding("BENEFIT_ESTABLISHMENT_REVIEW_REQUIRED", "Historical establishment cannot be inferred from the Employee's current Branch; verify the benefit enrollment snapshot.", "review"))
 
@@ -124,18 +139,26 @@ def _evaluate_employee(employee, employee_data, start, end, rules, enrollments):
 			findings.append(_finding("PF_PROGOTI_EXEMPTION_REVIEW_REQUIRED", "The reviewed Progoti exemption needs a separate linked rule and employee-level evidence."))
 			continue
 
-		if rule.benefit_type == "Group Insurance" and (
-			not rule.policy_reference
-			or not rule.policy_effective_from
-			or (rule.policy_effective_to and getdate(rule.policy_effective_to) < end)
-		):
-			benefits.append({"benefit_type": rule.benefit_type, "rule_set": rule.name, "status": "GROUP_INSURANCE_POLICY_REQUIRED"})
-			findings.append(_finding("GROUP_INSURANCE_POLICY_REQUIRED", "The approved group insurance policy does not cover this period."))
-			continue
+		if rule.benefit_type == "Group Insurance":
+			policy_start = getdate(rule.policy_effective_from) if rule.policy_effective_from else None
+			policy_end = getdate(rule.policy_effective_to) if rule.policy_effective_to else None
+			policy_changes_mid_period = (policy_start and start < policy_start <= end) or (
+				policy_end and start <= policy_end < end
+			)
+			if policy_changes_mid_period:
+				status = "BENEFIT_MID_PERIOD_CHANGE"
+				benefits.append({"benefit_type": rule.benefit_type, "rule_set": rule.name, "status": status})
+				findings.append(_finding(status, "The group-insurance policy starts or expires inside this period; review coverage explicitly."))
+				continue
+			if not rule.policy_reference or not policy_start or policy_start > start or (policy_end and policy_end < end):
+				benefits.append({"benefit_type": rule.benefit_type, "rule_set": rule.name, "status": "GROUP_INSURANCE_POLICY_REQUIRED"})
+				findings.append(_finding("GROUP_INSURANCE_POLICY_REQUIRED", "The approved group insurance policy does not cover this period."))
+				continue
 
 		enrollment = next((
 			e for e in enrollments
 			if e.employee == employee and e.rule_set == rule.name
+			and (not rule.branch or e.branch == rule.branch)
 			and getdate(e.effective_from) <= start
 			and (not e.effective_to or getdate(e.effective_to) >= end)
 		), None)
@@ -167,8 +190,13 @@ def _evaluate_employee(employee, employee_data, start, end, rules, enrollments):
 		else:
 			status = "READY"
 			if rule.benefit_type in ("Provident Fund", "Progoti Pension"):
-				status = "STATUTORY_BENEFIT_ACCOUNTING_PATH_REVIEW_REQUIRED"
-				findings.append(_finding(status, "Installed HRMS v16 does not include employer_contributions in Payroll Entry accrual Journal Entries; do not start PF/Progoti payroll deductions until an approved native accounting path exists."))
+				if native_employer_contribution_accounting_supported():
+					status = "STATUTORY_BENEFIT_NATIVE_ACCOUNTING_UNVERIFIED"
+					message = "The installed Payroll Entry exposes native employer-contribution accrual, but Tradexcel has not verified its complete native payroll/accounting path. Keep participation blocked until that integration is proven."
+				else:
+					status = "STATUTORY_BENEFIT_ACCOUNTING_PATH_REVIEW_REQUIRED"
+					message = "The installed Payroll Entry has no native employer-contribution accrual path; do not start PF/Progoti payroll deductions until a supported native path exists."
+				findings.append(_finding(status, message))
 		benefits.append({"benefit_type": rule.benefit_type, "rule_set": rule.name, "status": status})
 
 	if not matching:

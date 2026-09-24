@@ -78,5 +78,7 @@ rehearsed on this machine — see the limitation recorded there.
 ## Statutory benefits
 
 - PF, Progoti, and group-insurance applicability require explicit, source-linked, effective-dated approval; operational Employee counts and Employment Type never decide legal thresholds or participation.
+- A company-wide benefit rule applies to all Branches in its Company; branch-specific rules and enrollment snapshots must match the reviewed establishment, including historical same-company transfers.
 - Salary Slip deductions do not prove remittance. Do not activate PF/Progoti payroll deductions until native employer-contribution accrual accounting is supported and verified; never substitute a custom Journal Entry.
+- Detect native employer-contribution accrual from the installed Payroll Entry controller and accrual path, not a permanent HRMS version assumption; capability alone is not integration proof.
 - Native Gratuity and Full and Final remain the only gratuity/settlement path; do not create a parallel benefit ledger.
