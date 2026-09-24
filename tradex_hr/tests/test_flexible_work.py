@@ -85,8 +85,15 @@ def test_working_hours_are_part_of_finalized_attendance_fingerprint():
 
 def test_mass_early_release_detector_only_suggests_a_candidate():
     rows = [
-        {"attendance_date": date(2026, 9, 18), "employee": f"EMP-{index:03}", "branch": "Factory", "department": "Production", "status": "Present", "working_hours": 6, "early_exit": int(index < 15), "out_time": datetime(2026, 9, 18, 18 if index < 15 else 20, 0)}
-        for index in range(18)
+        {
+            "attendance_date": date(2026, 9, 18), "employee": f"EMP-{index:03}",
+            "branch": "Factory", "department": "Production",
+            "status": "Present" if index < 18 else "Absent",
+            "working_hours": 6 if index < 18 else 0,
+            "early_exit": int(index < 15),
+            "out_time": datetime(2026, 9, 18, 18 if index < 15 else 20, 0),
+        }
+        for index in range(20)
     ]
     result = detect_mass_early_release_candidates(rows, minimum_headcount=10, minimum_percentage=0.75, clustering_window_minutes=30)
     assert len(result) == 1
@@ -166,3 +173,29 @@ def test_applicable_stale_override_blocks_daily_wage_input(monkeypatch):
     }])
     result = apply_policy_to_daily_wage("EMP-1", employee, date(2026, 9, 1), date(2026, 9, 30), rows, native)
     assert result["status"] == "NEEDS_ATTENTION"
+
+
+def test_leave_linked_work_days_keep_native_payable_units():
+    policy = {"standard_paid_hours": 8, "full_day_minimum_hours": 7}
+    rows = [
+        {"status": "On Leave", "leave_type": "Paid Leave", "leave_application": "LAP-1", "working_hours": 0},
+        {"status": "On Leave", "leave_type": "Leave Without Pay", "leave_application": "LAP-2", "working_hours": 0},
+        {"status": "On Leave", "leave_type": "PPL", "leave_application": "LAP-3", "working_hours": 0},
+        {"status": "Half Day", "leave_type": "Paid Leave", "leave_application": "LAP-4", "working_hours": 4},
+        {"status": "Half Day", "leave_type": "PPL", "leave_application": "LAP-5", "working_hours": 4},
+    ]
+    for index, row in enumerate(rows):
+        row["attendance_date"] = date(2026, 9, index + 1)
+        result = apply_flexible_work_adjustments(1.25, [row], policy)
+        assert result["status"] == "READY"
+        assert result["payable_units"] == 1.25
+
+
+def test_short_hours_half_day_without_leave_uses_worked_hours():
+    result = apply_flexible_work_adjustments(
+        0.5,
+        [{"attendance_date": date(2026, 9, 1), "status": "Half Day", "half_day_status": "Absent", "working_hours": 4}],
+        {"standard_paid_hours": 8, "full_day_minimum_hours": 7},
+    )
+    assert result["status"] == "READY"
+    assert result["payable_units"] == 0.5
