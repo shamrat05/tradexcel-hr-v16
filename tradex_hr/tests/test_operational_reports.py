@@ -27,15 +27,31 @@ def site():
 
 
 def test_operations_reports_registered():
-    for name in (
-        "Tradexcel Shift Coverage",
-        "Tradexcel Pay Component Register",
-        "Tradexcel Payroll Variance",
-        "Tradexcel Joiners and Leavers",
-    ):
+    for name in ("Tradexcel Pay Component Register", "Tradexcel Payroll Variance"):
         assert frappe.db.exists("Report", name)
         assert REPORTS[name]["ref_doctype"] in {"Salary Slip", "Employee", "Shift Assignment"}
         assert frappe.get_doc("Report", name).roles
+
+    for name, ref_doctype in (
+        ("Tradexcel Shift Coverage", "Employee"),
+        ("Tradexcel Joiners and Leavers", "Employee"),
+    ):
+        report = frappe.get_doc("Report", name)
+        assert report.report_type == "Script Report"
+        assert report.is_standard == "Yes"
+        assert report.module == "Tradexcel HR"
+        assert report.ref_doctype == ref_doctype
+        assert report.roles
+        assert "Tradexcel Employee/Worker" not in {row.role for row in report.roles}
+
+    query_reports = set(frappe.get_all(
+        "Report", filters={"module": "Tradexcel HR", "report_type": "Query Report"}, pluck="name"
+    ))
+    assert query_reports == {"Tradexcel Pay Component Register", "Tradexcel Payroll Variance"}
+    from tradex_hr.report_filters import normalise_query_report_filters
+    filters = {"company": "Tradexcel Ceramics Ltd."}
+    for name in ("Tradexcel Shift Coverage", "Tradexcel Joiners and Leavers"):
+        assert normalise_query_report_filters(name, filters) == filters
 
 
 def test_payroll_variance_is_scoped_and_flags_zero_pay():
@@ -60,22 +76,6 @@ def test_payroll_variance_is_scoped_and_flags_zero_pay():
     assert all(value(row, "Employee") for row in rows)
     assert all(value(row, "Slip Count") >= 1 for row in rows)
     assert any(value(row, "Review") == "Zero pay - review" for row in rows)
-
-
-def test_joiners_leavers_query_runs_for_both_companies():
-    for company in ("Tradexcel Ceramics Ltd.", "Elegance Footwear Ltd."):
-        rows = frappe.db.sql(
-            REPORTS["Tradexcel Joiners and Leavers"]["query"],
-            {
-                "company": company,
-                "from_date": "2026-01-01",
-                "to_date": "2026-12-31",
-                "branch": "",
-            },
-            as_dict=True,
-        )
-        assert all(value(row, "Company") == company for row in rows)
-        assert all(value(row, "Movement") in {"Joined", "Left"} for row in rows)
 
 
 def test_payroll_variance_does_not_cross_company_boundary():
@@ -112,24 +112,28 @@ def test_component_register_shows_only_actual_slip_lines():
     assert all(value(row, "Salary Slip") for row in rows)
 
 
-def test_shift_coverage_reports_each_active_employee_once():
-    rows = frappe.db.sql(
-        REPORTS["Tradexcel Shift Coverage"]["query"],
-        {
-            "company": "Tradexcel Ceramics Ltd.",
-            "as_of_date": "2026-09-17",
-            "branch": "",
-            "department": "",
-            "coverage": "All",
-        },
-        as_dict=True,
-    )
-    employee_ids = [value(row, "Employee") for row in rows]
-    assert employee_ids
-    assert len(employee_ids) == len(set(employee_ids))
-    assert all(value(row, "Coverage") in {
-        "Overlap - review", "Assigned", "Default only", "Missing - review"
-    } for row in rows)
+def test_shift_coverage_and_movement_script_reports_run_directly():
+    from tradex_hr.tradexcel_hr.report.tradexcel_joiners_and_leavers.tradexcel_joiners_and_leavers import execute as run_movements
+    from tradex_hr.tradexcel_hr.report.tradexcel_shift_coverage.tradexcel_shift_coverage import execute as run_coverage
+
+    frappe.set_user("Administrator")
+    _, coverage = run_coverage({
+        "company": "Tradexcel Ceramics Ltd.", "as_of_date": "2026-09-17",
+        "branch": "", "department": "", "coverage": "All",
+    })
+    names = [row.employee for row in coverage]
+    assert len(names) == len(set(names))
+    assert all(row.coverage in {
+        "Multiple active assignments — review", "Assigned",
+        "Default shift only", "No shift assigned — review",
+    } for row in coverage)
+
+    _, events = run_movements({
+        "company": "Tradexcel Ceramics Ltd.", "from_date": "2026-01-01",
+        "to_date": "2026-12-31", "branch": "", "department": "",
+    })
+    assert all(row.movement in {"Joined", "Left"} for row in events)
+    assert all(row.movement_date for row in events)
 
 
 def test_workspace_links_only_to_installed_doctypes():

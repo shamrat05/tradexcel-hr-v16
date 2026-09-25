@@ -10,8 +10,8 @@ import frappe
 COMPANY = "Tradexcel Ceramics Ltd."
 USER_COMPANY_DEFAULT_JS = '(frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || ""'
 # Query Reports execute raw SQL and do not apply Employee/Company user-permission
-# filters. Keep these cross-company reports global-admin-only until replaced by
-# explicitly scoped Script Reports.
+# filters. The remaining financial Query Reports stay global-admin-only until a
+# separate salary-report conversion proves their row scopes.
 GLOBAL_REPORT_ROLES = ("System Manager",)
 
 DAILY_ATTENDANCE_JAVASCRIPT = """
@@ -122,58 +122,6 @@ frappe.query_reports["Workforce Anomaly Radar"] = {
 """
 
 REPORTS = {
-    "Tradexcel Shift Coverage": {
-        "ref_doctype": "Shift Assignment",
-        "roles": GLOBAL_REPORT_ROLES,
-        "query": """
-WITH active_assignments AS (
-    SELECT employee, COUNT(*) assignment_count,
-           GROUP_CONCAT(DISTINCT shift_type ORDER BY shift_type SEPARATOR ', ') shifts,
-           MIN(start_date) first_start, MAX(end_date) last_end
-    FROM `tabShift Assignment`
-    WHERE docstatus=1 AND start_date<=%(as_of_date)s
-      AND (end_date IS NULL OR end_date>=%(as_of_date)s)
-    GROUP BY employee
-)
-SELECT e.name AS "Employee:Link/Employee:120",
-       e.employee_name AS "Employee Name:Data:180",
-       e.company AS "Company:Link/Company:160",
-       e.branch AS "Branch:Link/Branch:130",
-       e.department AS "Department:Link/Department:150",
-       COALESCE(a.assignment_count,0) AS "Assignments:Int:90",
-       COALESCE(a.shifts,'') AS "Assigned Shifts:Data:170",
-       COALESCE(e.default_shift,'') AS "Default Shift:Link/Shift Type:140",
-       CASE WHEN a.assignment_count>1 THEN 'Overlap - review'
-            WHEN a.assignment_count=1 THEN 'Assigned'
-            WHEN e.default_shift IS NOT NULL AND e.default_shift<>'' THEN 'Default only'
-            ELSE 'Missing - review' END AS "Coverage:Data:130"
-FROM `tabEmployee` e
-LEFT JOIN active_assignments a ON a.employee=e.name
-WHERE e.company=%(company)s AND e.status='Active'
-  AND (e.date_of_joining IS NULL OR e.date_of_joining<=%(as_of_date)s)
-  AND (e.relieving_date IS NULL OR e.relieving_date>=%(as_of_date)s)
-  AND (%(branch)s='' OR e.branch=%(branch)s)
-  AND (%(department)s='' OR e.department=%(department)s)
-  AND (%(coverage)s='All' OR
-       (%(coverage)s='Overlap' AND a.assignment_count>1) OR
-       (%(coverage)s='Assigned' AND a.assignment_count=1) OR
-       (%(coverage)s='Missing' AND a.assignment_count IS NULL AND
-        (e.default_shift IS NULL OR e.default_shift='')) OR
-       (%(coverage)s='Default only' AND a.assignment_count IS NULL AND e.default_shift IS NOT NULL AND e.default_shift<>''))
-ORDER BY CASE WHEN a.assignment_count>1 THEN 0
-              WHEN a.assignment_count IS NULL AND (e.default_shift IS NULL OR e.default_shift='') THEN 1
-              ELSE 2 END, e.branch, e.department, e.name
-""",
-        "javascript": """
-frappe.query_reports["Tradexcel Shift Coverage"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
-  {fieldname: "as_of_date", label: __("As Of Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-  {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
-  {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: ""},
-  {fieldname: "coverage", label: __("Coverage"), fieldtype: "Select", options: "All\\nOverlap\\nMissing\\nAssigned\\nDefault only", default: "All"}
-]};
-""",
-    },
     "Tradexcel Pay Component Register": {
         "ref_doctype": "Salary Slip",
         "roles": GLOBAL_REPORT_ROLES,
@@ -266,36 +214,6 @@ frappe.query_reports["Tradexcel Payroll Variance"] = {filters: [
 ]};
 """,
     },
-    "Tradexcel Joiners and Leavers": {
-        "ref_doctype": "Employee",
-        "roles": GLOBAL_REPORT_ROLES,
-        "query": """
-SELECT e.name AS "Employee:Link/Employee:120",
-       e.employee_name AS "Employee Name:Data:180",
-       e.company AS "Company:Link/Company:160",
-       e.branch AS "Branch:Link/Branch:130",
-       e.department AS "Department:Link/Department:150",
-       'Joined' AS "Movement:Data:90", e.date_of_joining AS "Date:Date:100"
-FROM `tabEmployee` e
-WHERE e.company=%(company)s AND e.date_of_joining BETWEEN %(from_date)s AND %(to_date)s
-  AND (%(branch)s='' OR e.branch=%(branch)s)
-UNION ALL
-SELECT e.name, e.employee_name, e.company, e.branch, e.department,
-       'Left', e.relieving_date
-FROM `tabEmployee` e
-WHERE e.company=%(company)s AND e.relieving_date BETWEEN %(from_date)s AND %(to_date)s
-  AND (%(branch)s='' OR e.branch=%(branch)s)
-ORDER BY 7, 6, 1
-""",
-        "javascript": """
-frappe.query_reports["Tradexcel Joiners and Leavers"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
-  {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-  {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-  {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""}
-]};
-""",
-    },
     "Tradexcel Salary Coverage Board": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
@@ -349,14 +267,13 @@ STANDARD_SCRIPT_REPORT_NAMES = (
     "Employee Data Gaps",
     "Workforce Anomaly Radar",
     "Tradexcel Payroll Readiness",
-    # Promoted from DB-backed Query Reports on 2026-09-23. A Query Report runs
-    # frappe.db.sql(query, filters) directly, so a missing placeholder raises
-    # from the DB driver (KeyError / "format requires a mapping") before MariaDB
-    # sees the query. As Script Reports these normalise and validate filters in
-    # Python, so a direct API call with {} resolves defaults instead of crashing.
+    # Promoted from DB-backed Query Reports. Script Reports reload from their
+    # standard app JSON, which converges existing custom Query Report metadata.
     "Tradexcel Payroll Register",
     "Tradexcel Leave Balance Board",
     "Tradexcel Daily Attendance Board",
+    "Tradexcel Shift Coverage",
+    "Tradexcel Joiners and Leavers",
 )
 
 
@@ -365,7 +282,7 @@ def ensure_standard_script_reports() -> None:
 
     Frappe executes a standard Script Report through its app module. A custom
     Script Report instead executes ``report_script`` with safe_exec, which is
-    disabled by default in v16. Older migrations demoted these five records;
+    disabled by default in v16. Older migrations demoted some bundled reports;
     repair only those known app-owned records, then let the JSON files remain
     the source of truth on future migrations.
     """

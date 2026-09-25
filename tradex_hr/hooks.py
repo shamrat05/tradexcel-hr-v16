@@ -13,11 +13,11 @@ app_license = "MIT"
 app_include_css = ["tradex_hr.bundle.css"]
 app_include_js = ["tradex_hr.bundle.js"]
 
-# A DB-backed Query Report interpolates its SQL with the filter dict directly, so
-# a missing placeholder raises from the database driver before MariaDB sees the
-# query. This override fills the unambiguous ones for the app's own reports and
-# delegates to Frappe unchanged for everything else. Frappe's supported
-# extension point -- no core files are modified.
+# The two remaining salary-sensitive DB-backed Query Reports interpolate their
+# SQL with the filter dict directly, so a missing placeholder raises from the
+# database driver before MariaDB sees the query. This override fills only
+# unambiguous values for app reports and delegates to Frappe unchanged for
+# everything else. Frappe's supported extension point; no core files are changed.
 override_whitelisted_methods = {
     "frappe.desk.query_report.run": "tradex_hr.report_filters.run",
 }

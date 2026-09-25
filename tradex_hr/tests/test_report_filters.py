@@ -16,8 +16,8 @@ Three guarantees, all provable without a browser:
    declares fields its own SQL asks for. That is the static half of the leak
    guard; the browser half is verified manually (no headless browser in suite).
 
-Reports promoted to file-backed Script Reports on 2026-09-23 normalise filters in
-Python. The remaining DB-backed Query Reports cannot run Python, so their only
+File-backed Script Reports normalise filters in Python. The remaining two
+salary-sensitive DB-backed Query Reports cannot run Python, so their only
 defence is a declared default — which is asserted here.
 """
 
@@ -36,21 +36,21 @@ REPORT_DIR = APP / "tradex_hr" / "tradexcel_hr" / "report"
 BENCH = pathlib.Path(os.path.expanduser("~/frappe-bench-v16"))
 SITE = "hrms-v16.localhost"
 
-# Promoted to Script Reports — SQL lives in <report>.py, normalised in Python.
+# Standard Script Reports — SQL or native service use lives in <report>.py.
 SCRIPT_REPORTS = {
     "Tradexcel Payroll Register": {"company", "from_date", "to_date"},
     "Tradexcel Leave Balance Board": {"company", "as_of_date"},
     "Tradexcel Daily Attendance Board": {"company", "attendance_date"},
+    "Tradexcel Shift Coverage": {"company", "as_of_date", "branch", "department", "coverage"},
+    "Tradexcel Joiners and Leavers": {"company", "from_date", "to_date", "branch", "department"},
 }
 
-# Still DB-backed Query Reports — SQL lives in install.py.
+# The two salary-sensitive DB-backed Query Reports still live in install.py.
 QUERY_REPORTS = {
-    "Tradexcel Shift Coverage": {"company", "as_of_date", "branch", "department", "coverage"},
     "Tradexcel Pay Component Register": {
         "company", "from_date", "to_date", "branch", "department",
         "component_type", "component"},
     "Tradexcel Payroll Variance": {"company", "from_date", "to_date", "branch", "department"},
-    "Tradexcel Joiners and Leavers": {"company", "from_date", "to_date", "branch"},
 }
 
 # Fields belonging to a report that must not appear in a later report's request.
@@ -110,7 +110,10 @@ def test_script_report_placeholders_match_this_test():
             f"{name}: SQL requires {sorted(actual)}, test expects {sorted(expected)}. "
             f"Update SCRIPT_REPORTS."
         )
-        if name in {"Tradexcel Daily Attendance Board", "Tradexcel Leave Balance Board"}:
+        if name in {
+            "Tradexcel Daily Attendance Board", "Tradexcel Leave Balance Board",
+            "Tradexcel Shift Coverage", "Tradexcel Joiners and Leavers",
+        }:
             assert "employee_names" in actual
 
 

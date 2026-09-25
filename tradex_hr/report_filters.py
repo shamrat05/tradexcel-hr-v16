@@ -11,10 +11,10 @@ so any placeholder the caller did not supply raises **from the database driver**
 *before MariaDB ever sees the query*. The user sees a Python traceback rather
 than a report or a usable message.
 
-Promoted reports (Payroll Register, Leave Balance Board, Daily Attendance Board)
-are now Script Reports and normalise their own filters in Python. The remaining
-DB-backed Query Reports cannot run Python, so this wrapper supplies the missing
-values at the one place all callers pass through.
+Operational reports are promoted to standard Script Reports and normalise their
+own filters in Python. The remaining salary-sensitive DB-backed Query Reports
+cannot run Python, so this wrapper supplies the missing values at the one place
+all callers pass through.
 
 It is wired via `override_whitelisted_methods` in hooks.py, which is Frappe's
 supported extension point — no core files are modified.

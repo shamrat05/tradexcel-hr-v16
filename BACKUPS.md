@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-25 17:03 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-25 17:54 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -47,6 +47,7 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-25 17:54** | `20260925_175417-hrms-v16_localhost-database.sql.gz` | 25,666,278 | `05dfbfaefb610c01` | Before converting Shift Coverage and Joiners/Leavers Report metadata to standard Script Reports; database gzip and public/private archives verified |
 | **2026-09-25 17:03** | `20260925_170339-hrms-v16_localhost-database.sql.gz` | 24,670,590 | `b3244c0653d41c25` | Before removing unlinked Worker DocPerm access to native Employee-linked records; database gzip and public/private file archives verified |
 | **2026-09-25 16:53** | `20260925_165337-hrms-v16_localhost-database.sql.gz` | 24,647,575 | `ea6b62ad992cbdd5` | Before Company read-only DocPerm convergence; database gzip and public/private file archives verified |
 | **2026-09-25 16:51** | `20260925_165127-hrms-v16_localhost-database.sql.gz` | 24,634,604 | `27f66bf1c0c5d656` | Before standard report-role metadata migration; database gzip and public/private file archives verified |
@@ -273,3 +274,5 @@ The 2026-09-25 10:26 backup was taken with `--with-files` before the Employee Li
 The 2026-09-25 12:31 backup was taken with `--with-files` before the PR #20 lifecycle role-permission migration. Database `gzip -t` and both public/private `tar -tf` checks passed. SHA-256: database `8d9ec41802b8dc4f9d02a03a2eb2b103375ad93fc98f2423ba8292a5a32edefd`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`. Sizes: database 21,042,747 bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245 bytes. Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/` with prefix `20260925_123055-hrms-v16_localhost-`.
 
 The 2026-09-25 13:04 backup was taken with `--with-files` before cleanup of two confirmed synthetic payroll-test Companies left by earlier integration runs. Database `gzip -t` and both public/private `tar -tf` checks passed. SHA-256: database `879f5db0ed4883d655ae995dbeb2e99dd5edb1c146697939b1536a4cb42f9a42`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`. Sizes: database 21,854,634 bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245 bytes. Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/` with prefix `20260925_130433-hrms-v16_localhost-`.
+
+The 2026-09-25 17:54:24 backup was taken with `bench --site hrms-v16.localhost backup --with-files` before converting Tradexcel Shift Coverage and Tradexcel Joiners and Leavers from Query Reports to standard Script Reports. `gzip -t` and both public/private `tar -tf` checks passed. SHA-256: config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`, database `05dfbfaefb610c017ed4ba114836a213c31c838769dad066ef0bcc5f60b2aa82`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`. Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/` with prefix `20260925_175417-hrms-v16_localhost-`; sizes: config 245 bytes, database 25,666,278 bytes, public files 10,240 bytes, private files 38,932,480 bytes.

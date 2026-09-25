@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-APP_ROOT = Path(r"\\wsl.localhost\Ubuntu\home\sanchita\frappe-bench\apps\tradex_hr")
+APP_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(APP_ROOT))
 
 from tradex_hr.install import (
@@ -16,6 +16,7 @@ from tradex_hr.install import (
     WORKSPACE_SHORTCUTS,
     workspace_blocks,
     workspace_is_visible,
+    STANDARD_SCRIPT_REPORT_NAMES,
 )
 
 
@@ -102,11 +103,46 @@ def test_sensitive_standard_reports_have_explicit_non_employee_roles():
         "Biometric ID Audit",
         "Employee Data Gaps",
         "Workforce Anomaly Radar",
+        "Tradexcel Shift Coverage",
+        "Tradexcel Joiners and Leavers",
     }
     for name in protected:
         roles = {row["role"] for row in definitions[name]["roles"]}
         assert roles
         assert not roles.intersection({"Employee", "Employee Self Service"})
+
+
+def test_operational_reports_are_file_backed_and_not_query_definitions():
+    reports = {"Tradexcel Shift Coverage", "Tradexcel Joiners and Leavers"}
+    assert reports <= set(STANDARD_SCRIPT_REPORT_NAMES)
+    assert not reports.intersection(REPORTS)
+    report_root = Path(__file__).resolve().parents[1] / "tradexcel_hr" / "report"
+    definitions = {
+        definition["report_name"]: definition
+        for path in report_root.glob("*/*.json")
+        for definition in [json.loads(path.read_text())]
+    }
+    expected = {
+        "Tradexcel Shift Coverage": {
+            "Tradexcel Owner/Director", "Tradexcel HR Manager",
+            "Tradexcel HR/Attendance Officer", "Tradexcel Factory Supervisor",
+            "Tradexcel Branch Manager", "Tradexcel Department Manager",
+            "Tradexcel Compliance Auditor",
+        },
+        "Tradexcel Joiners and Leavers": {
+            "Tradexcel Owner/Director", "Tradexcel HR Manager",
+            "Tradexcel HR/Attendance Officer", "Tradexcel Branch Manager",
+            "Tradexcel Department Manager", "Tradexcel Compliance Auditor",
+        },
+    }
+    for name in reports:
+        definition = definitions[name]
+        assert definition["report_type"] == "Script Report"
+        assert definition["is_standard"] == "Yes"
+        assert definition["ref_doctype"] == "Employee"
+        roles = {row["role"] for row in definition["roles"]}
+        assert roles == expected[name]
+        assert "Tradexcel Employee/Worker" not in roles
 
 
 def test_only_canonical_tradexcel_workspace_is_managed():
