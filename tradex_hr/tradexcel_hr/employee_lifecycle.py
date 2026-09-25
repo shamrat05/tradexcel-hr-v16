@@ -17,7 +17,6 @@ MOVEMENT_FIELDS = (
 	"ctc",
 )
 HISTORY_FIELDS = ("branch", "department", "designation", "from_date", "to_date")
-HISTORY_MOVEMENT_FIELDS = {"branch", "department", "designation"}
 EMPLOYEE_REVIEW_SNAPSHOTS = {
 	"Tradexcel Statutory Benefit Enrollment": ("effective_from",),
 	"Tradexcel Wage Floor Classification": ("effective_from",),
@@ -200,7 +199,10 @@ def _allow_native_employee_movement(record, fieldnames):
 		"doctype": record.doctype,
 		"employee": record.employee,
 		"fields": allowed,
-		"history": bool(allowed & HISTORY_MOVEMENT_FIELDS),
+		# HRMS seeds the Employee's initial Internal Work History row whenever
+		# update_employee_work_history receives any detail, including Promotion
+		# details such as employment_type that do not themselves add a history row.
+		"history": bool(allowed),
 	}
 	try:
 		yield
@@ -328,6 +330,8 @@ def validate_salary_structure_assignment_before_cancel(doc, method=None):
 	"""Do not cancel an assignment already used by payroll or superseded."""
 	if not doc.get("employee") or not doc.get("from_date"):
 		return
+	_assert_employee_visible(doc.employee)
+	_assert_company_visible(doc.get("company"))
 	if _has_matching(
 		"Salary Slip",
 		{"employee": doc.employee, "end_date": [">=", getdate(doc.from_date)], "docstatus": 1},

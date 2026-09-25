@@ -234,6 +234,40 @@ def test_consumed_salary_slip_blocks_lifecycle_cancellation(monkeypatch):
 		lifecycle._assert_lifecycle_change_unconsumed(doc)
 
 
+@pytest.mark.parametrize(
+	("doctype", "date_field"),
+	[
+		(doctype, date_field)
+		for doctype, date_fields in lifecycle.EMPLOYEE_REVIEW_SNAPSHOTS.items()
+		for date_field in date_fields
+	],
+)
+def test_effective_review_snapshot_blocks_movement_cancellation(monkeypatch, doctype, date_field):
+	"""Exercise installed review-boundary mechanics without inventing legal data."""
+	def exists(candidate, filters=None):
+		if candidate == "DocType":
+			return True
+		return candidate == doctype and filters.get(date_field) == [">=", lifecycle.getdate("2026-09-01")]
+
+	_stub_db(monkeypatch, lambda *args, **kwargs: None, exists=exists)
+	monkeypatch.setattr(
+		lifecycle.frappe,
+		"get_meta",
+		lambda candidate: SimpleNamespace(has_field=lambda field: field in {"employee", "docstatus", date_field}),
+	)
+	monkeypatch.setattr(lifecycle.frappe, "get_all", lambda *args, **kwargs: [])
+	doc = AttrDict(
+		doctype="Employee Transfer",
+		name="TRANSFER-1",
+		employee="EMP-1",
+		new_employee_id=None,
+		transfer_date="2026-09-01",
+		creation="2026-08-01 00:00:00",
+	)
+	with pytest.raises(lifecycle.frappe.ValidationError, match="LIFECYCLE_CHANGE_ALREADY_CONSUMED"):
+		lifecycle._assert_lifecycle_change_unconsumed(doc)
+
+
 @pytest.mark.parametrize("consumed_doctype", ["Salary Slip", "later Salary Structure Assignment"])
 def test_consumed_ssa_cannot_be_cancelled(monkeypatch, consumed_doctype):
 	def exists(doctype, filters=None):

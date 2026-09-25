@@ -86,3 +86,66 @@ were changed. No PR was merged.
   employee, structure, and SSA counts were checked; a fresh backup was taken,
   and the repository's scoped synthetic-company cleanup routine removed only
   those fixtures. The subsequent clean full suite passed.
+
+## PR #20 closure compatibility evidence — 2026-09-25
+
+- Installed HRMS 16.19 source review confirmed native Employee Transfer and
+  Promotion mutate existing Employee through `update_employee_work_history()`
+  inside their `on_submit`/`on_cancel` methods. Transfer supports the installed
+  Employee Property History fields; Promotion uses the same generic property
+  detail table. Synthetic site tests submitted and cancelled a same-company
+  Transfer changing Branch, Department, Designation, and Employment Type. The
+  resulting Internal Work History was checked, and all four prior Employee
+  values were restored. Promotion Designation and Employment Type changes also submitted
+  and reversed. The staging site has no Employee Grade rows, so Grade behavior
+  was not exercised with invented master data. Exact-date submitted SSA + CTC
+  Promotion and reversal remain covered by the lifecycle role integration.
+- The Employee Onboarding mapper returns a new Employee document; the recruited
+  onboarding integration inserted that Employee successfully under the guard.
+  Employee Separation remained functional in its native integration. No
+  installed existing-Employee helper outside Transfer/Promotion was found that
+  should change the guarded movement fields; standard Employee saves/imports
+  pass through Employee validation.
+- Extended the synthetic native Payroll Entry integration through actual
+  submitted native Salary Slips. Employee A's submitted SSA begins 2026-08-15;
+  its submitted Salary Slip ends 2026-08-31. No submitted Attendance exists for
+  that Employee on/after 2026-08-31, isolating the Salary Slip boundary. A native
+  Employment Type Promotion effective 2026-08-31 submitted, but cancellation
+  failed with `LIFECYCLE_CHANGE_ALREADY_CONSUMED`. The independent, company-
+  scoped Payroll Approver could not cancel the consumed SSA; both submitted
+  Salary Slip and SSA remained submitted during the assertion. The test's
+  synthetic-company cleanup later removed its fixture in dependency order.
+- A synthetic cross-company native Transfer created the new Employee ID and
+  preserved the old employment spell. A submitted Attendance on the generated
+  Employee blocked Transfer cancellation. After cancelling/deleting that test
+  Attendance and deleting the generated Employee as native HRMS requires,
+  Transfer cancellation restored the old Employee to Active without changing
+  its original joining date.
+- The installed Statutory Benefit Enrollment, Wage Floor Classification,
+  Working Time Classification, and Maternity Review DocTypes are all submittable
+  and their snapshot fields/date semantics were inspected. Each requires an
+  approved legal Rule Set plus explicit reviewed applicability/evidence. The
+  staging site has no rows for these snapshots. No synthetic legal applicability
+  or rule/rate was invented; unit tests exercise every configured snapshot
+  date-field cancellation boundary without inserting legal records.
+- Role integration reproduced two defects and verifies their fixes. First,
+  native SSA cancellation did not enforce Company User Permission; its
+  `before_cancel` now explicitly checks Employee and Company scope, and the
+  in-scope Payroll Approver is denied cancellation of an EFL assignment. Site
+  tests also prove that a later submitted SSA blocks cancellation of its
+  predecessor. Second, HRMS seeds the initial Internal Work History row for any nonempty Transfer or
+  Promotion detail, even Employment Type; the scoped native context now permits
+  that HRMS-owned seed while still rejecting direct Employee history mutation.
+- Read-only post-test staging audit found zero Transfer and Promotion documents,
+  227 submitted SSAs, and zero rows in the four listed legal snapshots. Synthetic
+  lifecycle users, User Permissions, Employees, and disposable payroll Companies
+  were absent. No schema/permission metadata changed in this closure; migration
+  was not required. A fresh `--with-files` backup was taken before synthetic
+  cleanup testing at 2026-09-25 13:57:51 Asia/Dhaka; file integrity and hashes
+  are recorded in `BACKUPS.md`.
+- Closure test evidence: lifecycle focused tests `22 passed`; separation,
+  onboarding/joiner, maternity, native payroll lifecycle, adjustment, and payroll
+  finalization regression batch `28 passed`; final Tradexcel suite `563 passed,
+  2 skipped`. The suite also ran `compileall`, all 59 app JSON files parsed, and
+  `git diff --check`. No assets changed. GitHub PR #20 has no reported workflow
+  or status checks; local staging results are not CI.

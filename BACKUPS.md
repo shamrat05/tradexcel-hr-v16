@@ -48,6 +48,7 @@ Several older files are also mirrored under
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
 | **2026-09-25 11:14** | `20260925_111432-hrms-v16_localhost-database.sql.gz` | 20,389,261 | `9dcac7c73acbd29e` | Before standard lifecycle-branch migration; gzip and both file archives verified |
+| **2026-09-25 13:57** | `20260925_135751-hrms-v16_localhost-database.sql.gz` | 23,518,137 | `392607c1445ebdb3` | Before synthetic PR #20 lifecycle/payroll compatibility cleanup tests; `--with-files`, gzip and both file archives verified |
 | **2026-09-25 10:26** | `20260925_102545-hrms-v16_localhost-database.sql.gz` | 20,389,491 | `49ed5d561ba4abe4` | Before synthetic Employee Lifecycle integration retry |
 | **2026-09-25 10:29** | `20260925_042901-hrms-v16_localhost-database.sql.gz` | 19,262,541 | `1eac1fc84f418807` | **Before standard maternity DocType migration** |
 | **2026-09-25 15:14** | `20260925_091421-hrms-v16_localhost-database.sql.gz` | 19,413,925 | `7e877a8fa3b9e042` | **After maternity schema migration; before synthetic integration cleanup and migration retry** |
@@ -73,6 +74,17 @@ Several older files are also mirrored under
 | **2026-09-18 20:02** | `20260918_200222-...-database.sql.gz` | 2,879,266 | `00360386d5ae09a5` | **Before payroll/wage purge** (see §1) |
 | 2026-09-18 18:53 | `20260918_185348-...-database.sql.gz` | 2,861,011 | `b461fba3f4ef29f7` | Before biometric mapping import |
 | 2026-09-18 16:14 | `20260918_161454-...-database.sql.gz` | 2,874,880 | `d7c48e9c2bccdcf2` | Before demo-data removal |
+
+The **2026-09-25 13:57:51** backup was taken with `--with-files` before synthetic
+PR #20 lifecycle/payroll compatibility tests. `gzip -t` and both public/private
+`tar -tf` checks passed. SHA-256: database
+`392607c1445ebdb356494fcc8285def850d6ef2e00974efdbbce6a38b2b66a11`, public
+files `407aa11be1920d8b2022cb054d30fb752d6a8a40fd28b560744a5f4df7fef0532`,
+private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`,
+config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
+Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260925_135751-hrms-v16_localhost-`; sizes: database 23,518,137
+bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245 bytes.
 
 The **2026-09-25 11:14:32** backup was taken with `--with-files` before the
 Employee Lifecycle branch migration. `gzip -t` and both public/private

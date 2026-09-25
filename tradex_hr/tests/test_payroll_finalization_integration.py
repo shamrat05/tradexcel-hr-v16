@@ -306,17 +306,20 @@ def cleanup_synthetic_finalization_company(company_name):
         "Payroll Correction", "Arrear", "Additional Salary", "Overtime Slip", "Payroll Period", "Salary Slip",
         "Salary Structure Assignment", "Salary Structure",
         "Attendance", "Leave Application", "Employee Checkin", "Tradexcel Attendance Period",
-        "Tradexcel Working Time Classification", "Tradexcel Working Time Rule Set", "Employee",
+        "Tradexcel Working Time Classification", "Tradexcel Working Time Rule Set",
+        "Employee Transfer", "Employee Promotion", "Employee",
         "Payment Ledger Entry",
     )
     for doctype in company_linked:
         if not frappe.db.exists("DocType", doctype):
             continue
         meta = frappe.get_meta(doctype)
-        if meta.has_field("company"):
+        employee_names = frappe.get_all("Employee", filters={"company": company_name}, pluck="name")
+        if doctype in ("Employee Transfer", "Employee Promotion"):
+            filters = {"employee": ["in", employee_names]} if employee_names else None
+        elif meta.has_field("company"):
             filters = {"company": company_name}
         elif doctype == "Employee Checkin":
-            employee_names = frappe.get_all("Employee", filters={"company": company_name}, pluck="name")
             filters = {"employee": ["in", employee_names]} if employee_names else None
         else:
             continue
@@ -508,6 +511,12 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
             employee_end = min(end, frappe.utils.getdate(employee.relieving_date)) if employee.relieving_date else end
             for offset in range((employee_end - employee_start).days + 1):
                 day = employee_start + timedelta(days=offset)
+                # Leave the final payroll-period day without Attendance for
+                # Employee A. Its Salary Slip still closes Aug 31, allowing
+                # the lifecycle test to isolate Salary Slip consumption from
+                # the separate Attendance guard at the same effective date.
+                if employee.name == employees[0].name and day == date(2026, 8, 31):
+                    continue
                 attendance_fields = {
                     "doctype": "Attendance",
                     "employee": employee.name,
@@ -840,7 +849,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         slips_after_retry = frappe.get_all(
             "Salary Slip",
             filters={"payroll_entry": entry.name, "docstatus": 1},
-            fields=["name", "employee", "journal_entry"],
+            fields=["name", "employee", "journal_entry", "end_date"],
         )
         assert {row.employee for row in slips_after_retry} == set(tracked["employees"])
         assert all(row.journal_entry for row in slips_after_retry)
@@ -849,6 +858,51 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         for name in tracked["journal_entries"]:
             assert frappe.db.get_value("Journal Entry", name, "docstatus") == 1
         assert final["journal_entry_count"] == 2
+
+        # Actual submitted native Salary Slips consume later lifecycle changes
+        # and their submitted SSA. Aug 31 is after the assignment's Aug 15
+        # effective date and equals the submitted Salary Slip end date.
+        consumed_ssa = frappe.get_doc("Salary Structure Assignment", tracked["assignments"][0])
+        assert consumed_ssa.docstatus == 1
+        consuming_slip = next(row for row in slips_after_retry if row.employee == employees[0].name)
+        assert frappe.utils.getdate(consuming_slip.end_date) == date(2026, 8, 31)
+        assert not frappe.db.exists("Attendance", {
+            "employee": employees[0].name,
+            "attendance_date": [">=", "2026-08-31"],
+            "docstatus": 1,
+        })
+        frappe.set_user(approver)
+        assert "Tradexcel Payroll Approver" in frappe.get_roles()
+        assert frappe.has_permission("Salary Structure Assignment", "cancel", doc=consumed_ssa)
+        with pytest.raises(frappe.ValidationError, match="LIFECYCLE_CHANGE_ALREADY_CONSUMED"):
+            consumed_ssa.cancel()
+        assert frappe.db.get_value("Salary Structure Assignment", consumed_ssa.name, "docstatus") == 1
+
+        frappe.set_user("Administrator")
+        old_employment_type = frappe.db.get_value("Employee", employees[0].name, "employment_type")
+        new_employment_type = next(
+            name for name in frappe.get_all("Employment Type", pluck="name", order_by="name asc")
+            if name != old_employment_type
+        )
+        promotion = frappe.get_doc({
+            "doctype": "Employee Promotion",
+            "employee": employees[0].name,
+            "promotion_date": "2026-08-31",
+            "promotion_details": [{
+                "property": "Employment Type",
+                "current": old_employment_type,
+                "new": new_employment_type,
+                "fieldname": "employment_type",
+            }],
+        }).insert(ignore_permissions=True)
+        promotion.submit()
+        assert frappe.db.get_value("Employee", employees[0].name, "employment_type") == new_employment_type
+        frappe.set_user("Administrator")
+        with pytest.raises(frappe.ValidationError, match="LIFECYCLE_CHANGE_ALREADY_CONSUMED"):
+            promotion.cancel()
+        assert frappe.db.get_value("Employee Promotion", promotion.name, "docstatus") == 1
+        assert frappe.db.get_value("Employee", employees[0].name, "employment_type") == new_employment_type
+        assert frappe.db.get_value("Salary Slip", consuming_slip.name, "docstatus") == 1
 
         # Payment readiness uses the submitted Salary Slip snapshots and native
         # Bank Account. HRMS creates the only payment Journal Entry.

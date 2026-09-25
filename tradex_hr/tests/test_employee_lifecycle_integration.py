@@ -94,6 +94,7 @@ def test_native_transfer_and_rehire_employment_spell_boundaries():
 	old_user = frappe.session.user
 	employee_name = None
 	transfer_names = []
+	attendance_names = []
 	new_employee_name = None
 	try:
 		frappe.set_user("Administrator")
@@ -156,6 +157,24 @@ def test_native_transfer_and_rehire_employment_spell_boundaries():
 		assert str(frappe.db.get_value("Employee", employee_name, "date_of_joining")) == "2020-01-01"
 		assert str(frappe.db.get_value("Employee", employee_name, "relieving_date")) == "2026-09-25"
 
+		# A submitted record on the generated employment spell consumes this
+		# cross-company Transfer and must block reversal.
+		attendance = frappe.get_doc({
+			"doctype": "Attendance",
+			"employee": new_employee_name,
+			"employee_name": frappe.db.get_value("Employee", new_employee_name, "employee_name"),
+			"company": other_company,
+			"attendance_date": "2026-09-25",
+			"status": "Present",
+		}).insert(ignore_permissions=True)
+		attendance_names.append(attendance.name)
+		attendance.submit()
+		with pytest.raises(frappe.ValidationError, match="LIFECYCLE_CHANGE_ALREADY_CONSUMED"):
+			valid.cancel()
+		attendance.cancel()
+		frappe.delete_doc("Attendance", attendance.name, force=True, ignore_permissions=True)
+		attendance_names.remove(attendance.name)
+
 		# HRMS requires its generated Employee to be removed before reversal.
 		frappe.delete_doc("Employee", new_employee_name, force=True, ignore_permissions=True)
 		frappe.db.set_value("Employee Transfer", valid.name, "new_employee_id", None)
@@ -183,6 +202,12 @@ def test_native_transfer_and_rehire_employment_spell_boundaries():
 		validate_employee_employment_spell(left_employee)
 	finally:
 		frappe.set_user("Administrator")
+		for name in attendance_names:
+			if frappe.db.exists("Attendance", name):
+				doc = frappe.get_doc("Attendance", name)
+				if doc.docstatus == 1:
+					doc.cancel()
+				frappe.delete_doc("Attendance", name, force=True, ignore_permissions=True)
 		if new_employee_name and frappe.db.exists("Employee", new_employee_name):
 			frappe.delete_doc("Employee", new_employee_name, force=True, ignore_permissions=True)
 			if transfer_names and frappe.db.exists("Employee Transfer", transfer_names[-1]):
@@ -264,6 +289,12 @@ def test_scoped_tradexcel_roles_can_operate_native_lifecycle_and_ssa_maker_check
 		old_department = department
 		old_branch = frappe.db.get_value("Employee", employee, "branch")
 		old_designation = frappe.db.get_value("Employee", employee, "designation")
+		old_employment_type = frappe.db.get_value("Employee", employee, "employment_type")
+		new_employment_type = next(
+			(name for name in frappe.get_all("Employment Type", pluck="name", order_by="name asc")
+			 if name != old_employment_type),
+			None,
+		)
 		new_branch = next(
 			(name for name in frappe.get_all("Branch", pluck="name", order_by="name asc") if name != old_branch),
 			None,
@@ -272,7 +303,9 @@ def test_scoped_tradexcel_roles_can_operate_native_lifecycle_and_ssa_maker_check
 			(name for name in frappe.get_all("Designation", pluck="name", order_by="name asc") if name != old_designation),
 			None,
 		)
-		assert new_branch and new_designation, "Direct-mutation checks need alternative native Branch and Designation values"
+		assert new_branch and new_designation and new_employment_type, (
+			"Native movement checks need alternative Branch, Designation, and Employment Type values"
+		)
 
 		frappe.clear_cache()
 		frappe.set_user(manager)
@@ -322,20 +355,33 @@ def test_scoped_tradexcel_roles_can_operate_native_lifecycle_and_ssa_maker_check
 				"employee": employee,
 				"company": company,
 				"transfer_date": frappe.utils.today(),
-				"transfer_details": [_movement_row("department", old_department, new_department, "Department")],
+				"transfer_details": [
+					_movement_row("branch", old_branch, new_branch, "Branch"),
+					_movement_row("department", old_department, new_department, "Department"),
+					_movement_row("designation", old_designation, new_designation, "Designation"),
+					_movement_row("employment_type", old_employment_type, new_employment_type, "Employment Type"),
+				],
 			}
 		).insert()
 		tracked["transfers"].append(transfer.name)
 		transfer.submit()
+		assert frappe.db.get_value("Employee", employee, "branch") == new_branch
 		assert frappe.db.get_value("Employee", employee, "department") == new_department
+		assert frappe.db.get_value("Employee", employee, "designation") == new_designation
+		assert frappe.db.get_value("Employee", employee, "employment_type") == new_employment_type
 		history = frappe.get_all(
 			"Employee Internal Work History",
 			filters={"parent": employee, "parenttype": "Employee", "parentfield": "internal_work_history"},
-			fields=["department", "from_date"],
+			fields=["branch", "department", "designation", "from_date"],
 		)
+		assert any(row.branch == new_branch for row in history)
 		assert any(row.department == new_department for row in history)
+		assert any(row.designation == new_designation for row in history)
 		transfer.cancel()
+		assert frappe.db.get_value("Employee", employee, "branch") == old_branch
 		assert frappe.db.get_value("Employee", employee, "department") == old_department
+		assert frappe.db.get_value("Employee", employee, "designation") == old_designation
+		assert frappe.db.get_value("Employee", employee, "employment_type") == old_employment_type
 
 		# The Promotion path also performs its Employee update inside native context.
 		designations = frappe.get_all("Designation", pluck="name", order_by="name asc")
@@ -354,6 +400,21 @@ def test_scoped_tradexcel_roles_can_operate_native_lifecycle_and_ssa_maker_check
 		assert frappe.db.get_value("Employee", employee, "designation") == new_designation
 		promotion.cancel()
 		assert frappe.db.get_value("Employee", employee, "designation") == old_designation
+
+		# Employment Type is supported by the native Promotion detail table.
+		employment_promotion = frappe.get_doc({
+			"doctype": "Employee Promotion",
+			"employee": employee,
+			"promotion_date": frappe.utils.today(),
+			"promotion_details": [
+				_movement_row("employment_type", old_employment_type, new_employment_type, "Employment Type")
+			],
+		}).insert()
+		tracked["promotions"].append(employment_promotion.name)
+		employment_promotion.submit()
+		assert frappe.db.get_value("Employee", employee, "employment_type") == new_employment_type
+		employment_promotion.cancel()
+		assert frappe.db.get_value("Employee", employee, "employment_type") == old_employment_type
 
 		# Maker can save but cannot submit; an independent Payroll Approver can submit.
 		structure = frappe.db.get_value(
@@ -451,6 +512,35 @@ def test_scoped_tradexcel_roles_can_operate_native_lifecycle_and_ssa_maker_check
 		with pytest.raises(frappe.ValidationError, match="SSA_MAKER_CHECKER"):
 			dual_ssa.submit()
 
+		# A submitted later effective assignment also consumes its predecessor.
+		frappe.set_user(manager)
+		older_ssa = frappe.get_doc({
+			"doctype": "Salary Structure Assignment",
+			"employee": employee,
+			"company": company,
+			"salary_structure": structure.name,
+			"from_date": frappe.utils.add_days(frappe.utils.today(), 2),
+			"base": 1000,
+		}).insert()
+		tracked["ssas"].append(older_ssa.name)
+		frappe.set_user(approver)
+		older_ssa.submit()
+		frappe.set_user(manager)
+		newer_ssa = frappe.get_doc({
+			"doctype": "Salary Structure Assignment",
+			"employee": employee,
+			"company": company,
+			"salary_structure": structure.name,
+			"from_date": frappe.utils.add_days(frappe.utils.today(), 3),
+			"base": 1100,
+		}).insert()
+		tracked["ssas"].append(newer_ssa.name)
+		frappe.set_user(approver)
+		newer_ssa.submit()
+		with pytest.raises(frappe.ValidationError, match="LIFECYCLE_CHANGE_ALREADY_CONSUMED"):
+			older_ssa.cancel()
+		assert frappe.db.get_value("Salary Structure Assignment", older_ssa.name, "docstatus") == 1
+
 		# A TCL manager cannot write an EFL assignment, even with direct insertion.
 		frappe.set_user("Administrator")
 		tcl_manager = manager
@@ -470,6 +560,23 @@ def test_scoped_tradexcel_roles_can_operate_native_lifecycle_and_ssa_maker_check
 						"base": 1000,
 					}
 				).insert()
+			# An in-scope Payroll Approver may cancel unconsumed SSA drafts, but
+			# Company User Permission must also protect cancellation of a submitted
+			# foreign-company assignment.
+			frappe.set_user("Administrator")
+			foreign_ssa = frappe.get_doc({
+				"doctype": "Salary Structure Assignment",
+				"employee": foreign_employee,
+				"company": other_company,
+				"salary_structure": foreign_structure,
+				"from_date": frappe.utils.today(),
+				"base": 1000,
+			}).insert(ignore_permissions=True)
+			tracked.setdefault("foreign_ssas", []).append(foreign_ssa.name)
+			foreign_ssa.submit()
+			frappe.set_user(approver)
+			with pytest.raises(frappe.PermissionError):
+				foreign_ssa.cancel()
 		else:
 			assert not frappe.has_permission("Employee", "read", foreign_employee)
 	finally:
@@ -478,6 +585,7 @@ def test_scoped_tradexcel_roles_can_operate_native_lifecycle_and_ssa_maker_check
 			for permission_name in frappe.get_all("User Permission", filters={"user": name}, pluck="name"):
 				frappe.delete_doc("User Permission", permission_name, force=True, ignore_permissions=True)
 		_cancel_and_delete("Salary Structure Assignment", tracked["ssas"])
+		_cancel_and_delete("Salary Structure Assignment", tracked.get("foreign_ssas", []))
 		_cancel_and_delete("Employee Promotion", tracked["promotions"])
 		_cancel_and_delete("Employee Transfer", tracked["transfers"])
 		_cancel_and_delete("Employee Promotion", tracked.get("foreign_promotions", []))
@@ -494,6 +602,7 @@ def test_scoped_tradexcel_roles_can_operate_native_lifecycle_and_ssa_maker_check
 	assert all(not frappe.db.exists("User Permission", name) for name in tracked["permissions"])
 	assert all(not frappe.db.exists("Employee", name) for name in tracked["employees"])
 	assert all(not frappe.db.exists("Salary Structure Assignment", name) for name in tracked["ssas"])
+	assert all(not frappe.db.exists("Salary Structure Assignment", name) for name in tracked.get("foreign_ssas", []))
 	assert all(not frappe.db.exists("Employee Transfer", name) for name in tracked["transfers"])
 	assert all(not frappe.db.exists("Employee Promotion", name) for name in tracked["promotions"])
 	assert all(not frappe.db.exists("Employee Transfer", name) for name in tracked.get("foreign_transfers", []))
