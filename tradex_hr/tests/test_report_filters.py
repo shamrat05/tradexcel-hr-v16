@@ -103,10 +103,15 @@ def _script_report_js(name: str) -> str:
 def test_script_report_placeholders_match_this_test():
     for name, expected in SCRIPT_REPORTS.items():
         actual = _placeholders(_script_report_sql(name))
-        assert actual == expected, (
+        # Bound employee_names is an internal permission result, not a user
+        # filter and must never be declared in the report UI.
+        user_filters = actual - {"employee_names"}
+        assert user_filters == expected, (
             f"{name}: SQL requires {sorted(actual)}, test expects {sorted(expected)}. "
             f"Update SCRIPT_REPORTS."
         )
+        if name in {"Tradexcel Daily Attendance Board", "Tradexcel Leave Balance Board"}:
+            assert "employee_names" in actual
 
 
 def test_query_report_placeholders_match_this_test():

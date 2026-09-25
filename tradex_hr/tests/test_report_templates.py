@@ -31,4 +31,9 @@ def test_salary_coverage_report_has_a_module():
     assert "assignment_status" in source
     assert "structure_company" in source
     assert "salary_basis" in source
-    assert "Source Salary Pending" in source
+    assert "resolve_pay_basis" in source
+    assert "MONTHLY" in source and "DAILY" in source
+    assert "Pay Basis Missing" in source
+    assert "e.employment_type" not in source
+    assert "TCL Factory Daily Wage Worker Structure" not in source
+    assert "Selevo Source Salary" not in source

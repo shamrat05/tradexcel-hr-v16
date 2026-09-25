@@ -22,7 +22,16 @@
  "ref_doctype": "Attendance",
  "report_name": "Tradexcel Daily Attendance Board",
  "report_type": "Script Report",
- "roles": [],
+ "roles": [
+  {"role": "Tradexcel Owner/Director"},
+  {"role": "Tradexcel HR Manager"},
+  {"role": "Tradexcel HR/Attendance Officer"},
+  {"role": "Tradexcel Factory Supervisor"},
+  {"role": "Tradexcel Branch Manager"},
+  {"role": "Tradexcel Department Manager"},
+  {"role": "Tradexcel Attendance Correction Approver"},
+  {"role": "Tradexcel Compliance Auditor"}
+ ],
  "snapshot_report": 0,
  "timeout": 0
 }

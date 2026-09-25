@@ -102,6 +102,21 @@ CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
 # separately with Frappe User Permissions (company, branch, or department), so
 # this matrix describes what a role may do, not which records it may see.
 STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
+    # Company context validation performs a permission-aware Company lookup
+    # before report SQL. User Permissions restrict these read-only rows to the
+    # user's assigned Company; no Company maintenance rights are added.
+    "Company": {
+        "Tradexcel Owner/Director": {"read"},
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel HR/Attendance Officer": {"read"},
+        "Tradexcel Payroll Manager": {"read"},
+        "Tradexcel Finance/Accounts Officer": {"read"},
+        "Tradexcel Factory Supervisor": {"read"},
+        "Tradexcel Branch Manager": {"read"},
+        "Tradexcel Department Manager": {"read"},
+        "Tradexcel Attendance Correction Approver": {"read"},
+        "Tradexcel Compliance Auditor": {"read"},
+    },
     "Tradexcel Flexible Work Policy": {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
@@ -246,7 +261,9 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": READ_ONLY_PERMS,
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
-        "Tradexcel Employee/Worker": READ_ONLY_PERMS,
+        # Linked employees keep HRMS's native Employee-role own-record access.
+        # The Tradexcel role must not grant a directory to unlinked users.
+        "Tradexcel Employee/Worker": set(),
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
@@ -266,7 +283,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     "Attendance Request": {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
-        "Tradexcel Employee/Worker": EDIT_PERMS,
+        "Tradexcel Employee/Worker": set(),
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
@@ -276,7 +293,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     "Leave Application": {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
-        "Tradexcel Employee/Worker": EDIT_PERMS,
+        "Tradexcel Employee/Worker": set(),
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
@@ -287,7 +304,9 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
-        "Tradexcel Employee/Worker": READ_ONLY_PERMS,
+        # HRMS does not grant its native Employee role direct allocation
+        # browsing; balance checks remain in native Leave Application flows.
+        "Tradexcel Employee/Worker": set(),
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,

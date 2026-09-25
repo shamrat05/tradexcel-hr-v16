@@ -7,7 +7,8 @@ The `as_of_date` placeholder previously had no declaration in some call paths,
 which produced `KeyError: b'as_of_date'` from SQL interpolation. It is now
 defaulted and validated in Python before the query runs.
 
-The SQL is unchanged from the original Query Report.
+Raw report SQL is constrained to Employees resolved through Frappe's
+permission-aware list API; SQL itself does not apply User Permissions.
 """
 
 from __future__ import annotations
@@ -27,14 +28,18 @@ def _normalise(filters) -> frappe._dict:
 
     filters.as_of_date = filters.get("as_of_date") or today()
 
-    from tradex_hr.tradexcel_hr.company_context import assert_company_access
-
-    assert_company_access(filters.company)
     return filters
 
 
 def execute(filters=None):
     filters = _normalise(filters)
+    from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
+
+    employees = permitted_employee_names(
+        filters.company,
+        branch=filters.get("branch"),
+        department=filters.get("department"),
+    )
 
     columns = [
         {"label": _("Employee"), "fieldname": "employee", "fieldtype": "Link",
@@ -57,6 +62,9 @@ def execute(filters=None):
          "fieldtype": "Float", "width": 100},
     ]
 
+    if not employees:
+        return columns, []
+
     data = frappe.db.sql(
         """
         SELECT e.name AS employee, e.employee_number, e.employee_name, e.company,
@@ -65,11 +73,12 @@ def execute(filters=None):
         FROM `tabLeave Allocation` la
         JOIN `tabEmployee` e ON e.name = la.employee
         WHERE e.company = %(company)s
+          AND e.name IN %(employee_names)s
           AND la.from_date <= %(as_of_date)s
           AND la.to_date >= %(as_of_date)s
         ORDER BY e.department, e.employee_name, la.leave_type
         """,
-        filters,
+        {**filters, "employee_names": employees},
         as_dict=True,
     )
 

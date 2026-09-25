@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-25 11:30 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-25 17:03 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -47,6 +47,9 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-25 17:03** | `20260925_170339-hrms-v16_localhost-database.sql.gz` | 24,670,590 | `b3244c0653d41c25` | Before removing unlinked Worker DocPerm access to native Employee-linked records; database gzip and public/private file archives verified |
+| **2026-09-25 16:53** | `20260925_165337-hrms-v16_localhost-database.sql.gz` | 24,647,575 | `ea6b62ad992cbdd5` | Before Company read-only DocPerm convergence; database gzip and public/private file archives verified |
+| **2026-09-25 16:51** | `20260925_165127-hrms-v16_localhost-database.sql.gz` | 24,634,604 | `27f66bf1c0c5d656` | Before standard report-role metadata migration; database gzip and public/private file archives verified |
 | **2026-09-25 11:14** | `20260925_111432-hrms-v16_localhost-database.sql.gz` | 20,389,261 | `9dcac7c73acbd29e` | Before standard lifecycle-branch migration; gzip and both file archives verified |
 | **2026-09-25 13:57** | `20260925_135751-hrms-v16_localhost-database.sql.gz` | 23,518,137 | `392607c1445ebdb3` | Before synthetic PR #20 lifecycle/payroll compatibility cleanup tests; `--with-files`, gzip and both file archives verified |
 | **2026-09-25 10:26** | `20260925_102545-hrms-v16_localhost-database.sql.gz` | 20,389,491 | `49ed5d561ba4abe4` | Before synthetic Employee Lifecycle integration retry |
@@ -85,6 +88,43 @@ config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
 Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
 with prefix `20260925_135751-hrms-v16_localhost-`; sizes: database 23,518,137
 bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245 bytes.
+
+The **2026-09-25 16:51:27** backup was taken with `--with-files` before the
+report authorization role metadata migration. `gzip -t` and both public/private
+`tar -tf` checks passed. SHA-256: database
+`27f66bf1c0c5d65682625e0418fbe20ea2f9c0130020bf9ec5340bb1c05812bc`, public
+files `407aa11be1920d8b2022cb054d30fb752d6a8a40fd28b560744a5f4df7fef0532`,
+private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`,
+config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
+Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260925_165127-hrms-v16_localhost-`; sizes: database 24,634,604
+bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245
+bytes.
+
+The **2026-09-25 16:53:37** backup was taken with `--with-files` before the
+Company read-only DocPerm convergence required by the report Company context
+check. `gzip -t` and both public/private `tar -tf` checks passed. SHA-256:
+database `ea6b62ad992cbdd532980867be280f5edde473ec4fe0c14dbe8795cae9093da7`,
+public files `407aa11be1920d8b2022cb054d30fb752d6a8a40fd28b560744a5f4df7fef0532`,
+private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`,
+config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
+Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260925_165337-hrms-v16_localhost-`; sizes: database 24,647,575
+bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245
+bytes.
+
+The **2026-09-25 17:03:39** backup was taken with `--with-files` before removing
+unlinked Worker access to Employee Checkin, Leave Allocation, Leave Application,
+and Attendance Request. `gzip -t` and both public/private `tar -tf` checks
+passed. SHA-256: database
+`b3244c0653d41c25e5f0a9230cb4e1b0d9b1f5717cbf5c4cc09de5f75f8f18fc`, public
+files `407aa11be1920d8b2022cb054d30fb752d6a8a40fd28b560744a5f4df7fef0532`,
+private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`,
+config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
+Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260925_170339-hrms-v16_localhost-`; sizes: database 24,670,590
+bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245
+bytes.
 
 The **2026-09-25 11:14:32** backup was taken with `--with-files` before the
 Employee Lifecycle branch migration. `gzip -t` and both public/private

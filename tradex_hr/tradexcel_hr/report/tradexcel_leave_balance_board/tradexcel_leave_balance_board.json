@@ -22,7 +22,15 @@
  "ref_doctype": "Leave Allocation",
  "report_name": "Tradexcel Leave Balance Board",
  "report_type": "Script Report",
- "roles": [],
+ "roles": [
+  {"role": "Tradexcel Owner/Director"},
+  {"role": "Tradexcel HR Manager"},
+  {"role": "Tradexcel HR/Attendance Officer"},
+  {"role": "Tradexcel Factory Supervisor"},
+  {"role": "Tradexcel Branch Manager"},
+  {"role": "Tradexcel Department Manager"},
+  {"role": "Tradexcel Compliance Auditor"}
+ ],
  "snapshot_report": 0,
  "timeout": 0
 }

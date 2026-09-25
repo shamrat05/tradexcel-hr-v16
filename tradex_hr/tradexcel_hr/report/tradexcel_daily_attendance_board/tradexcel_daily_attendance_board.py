@@ -7,7 +7,8 @@ module docstring for the rationale; it is identical.
 validated before SQL interpolation. Both are now defaulted in Python, so a
 direct API call with `{}` returns a normal result instead of a `KeyError`.
 
-The SQL is unchanged from the original Query Report.
+Raw report SQL is constrained to Employees resolved through Frappe's
+permission-aware list API; SQL itself does not apply User Permissions.
 """
 
 from __future__ import annotations
@@ -27,14 +28,18 @@ def _normalise(filters) -> frappe._dict:
 
     filters.attendance_date = filters.get("attendance_date") or today()
 
-    from tradex_hr.tradexcel_hr.company_context import assert_company_access
-
-    assert_company_access(filters.company)
     return filters
 
 
 def execute(filters=None):
     filters = _normalise(filters)
+    from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
+
+    employees = permitted_employee_names(
+        filters.company,
+        branch=filters.get("branch"),
+        department=filters.get("department"),
+    )
 
     columns = [
         {"label": _("Employee"), "fieldname": "employee", "fieldtype": "Link",
@@ -63,6 +68,9 @@ def execute(filters=None):
          "width": 70},
     ]
 
+    if not employees:
+        return columns, []
+
     data = frappe.db.sql(
         """
         SELECT e.name AS employee, e.employee_number, e.employee_name, e.company,
@@ -81,11 +89,12 @@ def execute(filters=None):
                ON c.employee = e.name
               AND DATE(c.time) = %(attendance_date)s
         WHERE e.company = %(company)s
+          AND e.name IN %(employee_names)s
           AND (e.status = 'Active' OR e.relieving_date >= %(attendance_date)s)
         GROUP BY e.name, a.name
         ORDER BY e.branch, e.department, e.name
         """,
-        filters,
+        {**filters, "employee_names": employees},
         as_dict=True,
     )
 
