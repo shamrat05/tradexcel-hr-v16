@@ -39,6 +39,9 @@ extend_doctype_class = {
     "Full and Final Statement": [
         "tradex_hr.tradexcel_hr.employee_separation.FullAndFinalTradexcelMixin",
     ],
+    "Shift Assignment Tool": [
+        "tradex_hr.tradexcel_hr.shift_assignment_tool.TradexcelShiftAssignmentToolMixin",
+    ],
 }
 
 doctype_js = {
@@ -48,6 +51,7 @@ doctype_js = {
     "Employee": "public/js/employee_calendar.js",
     "Employee Separation": "public/js/employee_separation.js",
     "Attendance": "public/js/employee_calendar.js",
+    "Shift Assignment Tool": "public/js/shift_assignment_tool.js",
     "Income Tax Slab": "public/js/income_tax_slab.js",
 }
 

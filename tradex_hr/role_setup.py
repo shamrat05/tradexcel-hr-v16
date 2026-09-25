@@ -287,6 +287,28 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Attendance Correction Approver": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
+    # The native Shift Assignment Tool exposes several bulk actions. The
+    # Tradexcel operator action list is narrowed to Assign Shift; read on the
+    # singleton is enough to open it and call its read-only preview method.
+    "Shift Assignment Tool": {
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel HR/Attendance Officer": {"read"},
+    },
+    # Native bulk assignment creates and submits each Shift Assignment under
+    # the caller. Keep this to the two scheduling operators and omit cancel,
+    # delete, export, print, and import.
+    "Shift Assignment": {
+        "Tradexcel HR Manager": {"read", "create", "write", "submit"},
+        "Tradexcel HR/Attendance Officer": {"read", "create", "write", "submit"},
+    },
+    "Shift Type": {
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel HR/Attendance Officer": {"read"},
+    },
+    "Shift Location": {
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel HR/Attendance Officer": {"read"},
+    },
     "Attendance Request": {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
