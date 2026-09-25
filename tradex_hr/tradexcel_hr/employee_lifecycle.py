@@ -318,6 +318,18 @@ def validate_salary_structure_assignment_before_submit(doc, method=None):
 	"""Enforce independent Payroll Approver submission even via HRMS bulk helpers."""
 	if frappe.session.user == "Administrator":
 		return
+	# Keep the installed HRMS one-step action available to native HR User/Manager
+	# accounts only when they reach it through the native bulk tool. The extension
+	# still checks Employee, Company, structure, account, date, and row values
+	# before HRMS creates/submits anything. Tradexcel-only makers never set this
+	# request-local compatibility flag and remain draft-only.
+	if (
+		getattr(frappe.flags, "tradex_native_bulk_ssa_submission", False)
+		and set(frappe.get_roles()).intersection({"HR User", "HR Manager"})
+	):
+		_assert_employee_visible(doc.employee)
+		_assert_company_visible(doc.company)
+		return
 	if "Tradexcel Payroll Approver" not in frappe.get_roles():
 		_throw("Only a Tradexcel Payroll Approver may submit a Salary Structure Assignment.", frappe.PermissionError)
 	if doc.owner == frappe.session.user:

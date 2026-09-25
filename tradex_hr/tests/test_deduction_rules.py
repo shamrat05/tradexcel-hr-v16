@@ -98,7 +98,7 @@ def test_recompute_totals_reflects_exceptions(monkeypatch):
     assert slip.net_pay == 1000.0 and slip.rounded_total == 1000
 
 
-def test_do_not_include_in_total_is_excluded_from_totals():
+def test_do_not_include_in_total_is_excluded_from_totals(monkeypatch):
     """A non-total component must not inflate gross/net.
 
     This flag was previously dropped when rows were rebuilt and then summed, so
@@ -107,6 +107,13 @@ def test_do_not_include_in_total_is_excluded_from_totals():
     """
     from types import SimpleNamespace
     import tradex_hr.tradexcel_hr.deduction_rules as dr
+    from frappe.utils.data import rounded as frappe_rounded
+
+    # This unit test has no site fixture; pin the native rounding mode instead
+    # of requiring System Settings to have been loaded by another test module.
+    monkeypatch.setattr(
+        dr, "rounded", lambda value, precision=0: frappe_rounded(value, precision, "Banker's Rounding (legacy)")
+    )
 
     doc = SimpleNamespace(
         earnings=[

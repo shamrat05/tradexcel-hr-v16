@@ -47,6 +47,7 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-25 22:00:38** | `20260925_220031-hrms-v16_localhost-database.sql.gz` | 29,500,665 | `15d9c3178f37676a` | Before native bulk SSA permissions and Workspace target migration; gzip and both file archives verified |
 | **2026-09-25 20:54:37** | `20260925_205430-hrms-v16_localhost-database.sql.gz` | 28,547,805 | `c82369eea7a30dc4` | Before standard migration for scoped native Shift Assignment Tool permissions; gzip and both file archives verified |
 | **2026-09-25 19:53:09** | `20260925_195302-hrms-v16_localhost-database.sql.gz` | 27,079,768 | `0d00492b22e2abdb` | Before adding explicit financial audience to Payroll Register after Workspace exposed it to an operational persona; gzip and both file archives verified |
 | **2026-09-25 19:49:36** | `20260925_194930-hrms-v16_localhost-database.sql.gz` | 27,070,502 | `c7e0fef7c6eb1423` | Before adding Leave Approver Employee read and limiting Leave Allocation to read/report; gzip and both file archives verified |
@@ -63,6 +64,20 @@ Several older files are also mirrored under
 | **2026-09-25 11:14** | `20260925_111432-hrms-v16_localhost-database.sql.gz` | 20,389,261 | `9dcac7c73acbd29e` | Before standard lifecycle-branch migration; gzip and both file archives verified |
 | **2026-09-25 13:57** | `20260925_135751-hrms-v16_localhost-database.sql.gz` | 23,518,137 | `392607c1445ebdb3` | Before synthetic PR #20 lifecycle/payroll compatibility cleanup tests; `--with-files`, gzip and both file archives verified |
 | **2026-09-25 10:26** | `20260925_102545-hrms-v16_localhost-database.sql.gz` | 20,389,491 | `49ed5d561ba4abe4` | Before synthetic Employee Lifecycle integration retry |
+
+The **2026-09-25 22:00:38** backup was taken with `--with-files` before the
+native Bulk Salary Structure Assignment role and Workspace shortcut convergence.
+Files are under
+`/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260925_220031-hrms-v16_localhost-`. Database gzip and public and
+private tar listings all verified. Exact sizes and SHA-256:
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260925_220031-hrms-v16_localhost-database.sql.gz` | 29,500,665 | `15d9c3178f37676a5d58830a8fb1e6f9d55fa69045fcab6639b91e9f29fddc87` |
+| `20260925_220031-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260925_220031-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260925_220031-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
 | **2026-09-25 10:29** | `20260925_042901-hrms-v16_localhost-database.sql.gz` | 19,262,541 | `1eac1fc84f418807` | **Before standard maternity DocType migration** |
 | **2026-09-25 15:14** | `20260925_091421-hrms-v16_localhost-database.sql.gz` | 19,413,925 | `7e877a8fa3b9e042` | **After maternity schema migration; before synthetic integration cleanup and migration retry** |
 | 2026-09-24 10:49 | `20260924_044901-hrms-v16_localhost-database.sql.gz` | 13,174,769 | `f98108cfe1439da1` | Before standard staging migration for versioned PF trigger parameters |

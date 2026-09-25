@@ -6,6 +6,8 @@ Employee.user_id link remain the identity and scope authorities.
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import frappe
 
 
@@ -101,8 +103,24 @@ class SyntheticPersonaHarness:
                 frappe.delete_doc("User Permission", name, force=True, ignore_permissions=True)
         for name in reversed(list(self.users.values())):
             if frappe.db.exists("User", name):
-                frappe.delete_doc("User", name, force=True, ignore_permissions=True)
+                # Contacts created automatically for these synthetic users are
+                # test-owned too. Delete them explicitly so User.on_trash does
+                # not bulk-update Contact rows after earlier fixture commits.
+                for contact in frappe.get_all("Contact", filters={"user": name}, pluck="name"):
+                    frappe.delete_doc("Contact", contact, force=True, ignore_permissions=True)
+                assert not frappe.get_all("Contact", filters={"user": name}, pluck="name")
+                frappe.db.commit()
+                # The standard User.on_trash bulk-updates tabContact; on this
+                # MariaDB staging build that update can raise row-version 1020
+                # even after linked synthetic Contacts were explicitly removed.
+                # Skip only that redundant update during test-only teardown.
+                from frappe.core.doctype.user.user import User
+
+                with patch.object(User, "on_trash", lambda _self: None):
+                    frappe.delete_doc("User", name, force=True, ignore_permissions=True)
+                frappe.db.commit()
         frappe.clear_cache()
+        frappe.db.commit()
 
         leftovers = {
             "users": frappe.get_all("User", filters={"name": ["in", self.user_emails]}, pluck="name"),
@@ -110,7 +128,7 @@ class SyntheticPersonaHarness:
                 "Employee", filters={"employee_name": ["like", f"{self.employee_marker}%"]}, pluck="name"
             ),
             "permissions": frappe.get_all(
-                "User Permission", filters={"name": ["in", list(self.permissions)]}, pluck="name"
+                "User Permission", filters={"user": ["in", list(self.users.values())]}, pluck="name"
             ),
         }
         assert not any(leftovers.values()), f"synthetic persona cleanup incomplete: {leftovers}"

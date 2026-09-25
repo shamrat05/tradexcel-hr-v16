@@ -42,6 +42,9 @@ extend_doctype_class = {
     "Shift Assignment Tool": [
         "tradex_hr.tradexcel_hr.shift_assignment_tool.TradexcelShiftAssignmentToolMixin",
     ],
+    "Bulk Salary Structure Assignment": [
+        "tradex_hr.tradexcel_hr.bulk_salary_structure_assignment.TradexcelBulkSalaryStructureAssignmentMixin",
+    ],
 }
 
 doctype_js = {
@@ -52,6 +55,7 @@ doctype_js = {
     "Employee Separation": "public/js/employee_separation.js",
     "Attendance": "public/js/employee_calendar.js",
     "Shift Assignment Tool": "public/js/shift_assignment_tool.js",
+    "Bulk Salary Structure Assignment": "public/js/bulk_salary_structure_assignment.js",
     "Income Tax Slab": "public/js/income_tax_slab.js",
 }
 

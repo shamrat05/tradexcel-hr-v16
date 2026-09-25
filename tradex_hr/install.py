@@ -457,7 +457,7 @@ WORKSPACE_SHORTCUTS = [
 ]
 
 BULK_WORKSPACE_SHORTCUTS = [
-    ("Bulk Salary Structure Assignment", "Salary Structure Assignment Tool", "DocType"),
+    ("Bulk Salary Structure Assignment", "Bulk Salary Structure Assignment", "DocType"),
     ("Attendance Fix Requests", "Attendance Request", "DocType"),
     ("Bulk Leave Allocation", "Leave Control Panel", "DocType"),
     ("Bulk Shift Assignment", "Shift Assignment Tool", "DocType"),

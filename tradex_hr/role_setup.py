@@ -121,6 +121,19 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Leave Approver": {"read"},
         "Tradexcel Compliance Auditor": {"read"},
     },
+    # The native HRMS bulk SSA form is used only by the two preparation roles.
+    # Its own permission is read/write; actual SSA creation remains on the
+    # native Salary Structure Assignment DocType and approver submit policy.
+    "Bulk Salary Structure Assignment": {
+        "Tradexcel HR Manager": {"read", "write", "create"},
+        "Tradexcel Payroll Manager": {"read", "write", "create"},
+    },
+    # Makers may select a reviewed slab when a Salary Structure requires one;
+    # they do not receive slab maintenance or submission permissions here.
+    "Income Tax Slab": {
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel Payroll Manager": {"read"},
+    },
     "Tradexcel Flexible Work Policy": {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
