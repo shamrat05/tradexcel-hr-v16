@@ -37,3 +37,54 @@ def permitted_employee_names(company: str, *, branch: str | None = None,
         if (not branch or row.branch == branch)
         and (not department or row.department == department)
     )
+
+
+def permitted_salary_slips(company: str, employee_names: tuple[str, ...], *,
+                           from_date: str, to_date: str, branch: str = "",
+                           department: str = "") -> list[frappe._dict]:
+    """Return submitted Salary Slips visible through native Employee/Slip permissions.
+
+    These financial Script Reports read Salary Detail with SQL after this
+    permission-aware parent lookup. Both native Salary Slip access and the
+    caller's permitted Employee population are required; caller filters only
+    narrow the returned period.
+    """
+    from tradex_hr.tradexcel_hr.company_context import assert_company_access
+
+    assert_company_access(company)
+    if not frappe.has_permission("Salary Slip", "read") or not frappe.has_permission("Salary Slip", "report"):
+        frappe.throw(
+            _("You do not have permission to view salary reports."),
+            frappe.PermissionError,
+        )
+    if not employee_names:
+        return []
+
+    filters = {
+        "company": company,
+        "employee": ["in", employee_names],
+        "docstatus": 1,
+        "start_date": ["between", [from_date, to_date]],
+    }
+    if branch:
+        filters["branch"] = branch
+    if department:
+        filters["department"] = department
+
+    try:
+        return frappe.get_list(
+            "Salary Slip",
+            filters=filters,
+            fields=[
+                "name", "employee", "employee_name", "company", "branch",
+                "department", "designation", "start_date", "end_date",
+                "posting_date", "gross_pay", "total_deduction", "net_pay",
+                "docstatus",
+            ],
+            order_by="start_date asc, employee asc, name asc",
+        )
+    except frappe.PermissionError:
+        frappe.throw(
+            _("You do not have permission to view salary reports."),
+            frappe.PermissionError,
+        )

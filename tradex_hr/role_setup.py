@@ -110,6 +110,9 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel HR Manager": {"read"},
         "Tradexcel HR/Attendance Officer": {"read"},
         "Tradexcel Payroll Manager": {"read"},
+        # Payroll approvers run scoped Payroll Entry and salary reports; they
+        # need Company read for the existing permission-aware company guard.
+        "Tradexcel Payroll Approver": {"read"},
         "Tradexcel Finance/Accounts Officer": {"read"},
         "Tradexcel Factory Supervisor": {"read"},
         "Tradexcel Branch Manager": {"read"},

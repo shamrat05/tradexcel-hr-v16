@@ -108,7 +108,7 @@ def _component(name, abbreviation, company, account, *, depends_on_payment_days=
     }).insert(ignore_permissions=True)
 
 
-def _create_employee(label, company, holiday_list, salary_mode=None):
+def _create_employee(label, company, holiday_list, salary_mode=None, branch=None, department=None):
     fields = {
         "doctype": "Employee",
         "first_name": label,
@@ -120,6 +120,10 @@ def _create_employee(label, company, holiday_list, salary_mode=None):
         "holiday_list": holiday_list,
         "status": "Active",
     }
+    if branch:
+        fields["branch"] = branch
+    if department:
+        fields["department"] = department
     if salary_mode == "Bank":
         fields.update({
             "salary_mode": "Bank",
@@ -328,10 +332,17 @@ def cleanup_synthetic_finalization_company(company_name):
         for name in frappe.get_all(doctype, filters=filters, pluck="name"):
             delete_doc(doctype, name)
 
+    for name in frappe.get_all(
+        "Department", filters={"company": company_name}, fields=["name", "rgt"], order_by="rgt desc"
+    ):
+        delete_doc("Department", name.name)
+
     overtime_type = f"Test Overtime Type {token}"
     if frappe.db.exists("Overtime Type", overtime_type):
         delete_doc("Overtime Type", overtime_type)
-    for name in frappe.get_all("Salary Component", filters={"company": company_name}, pluck="name"):
+    # Salary Component has no Company link. Remove only the three names this
+    # fixture creates, after Salary Structures and Salary Slips are gone.
+    for name in (f"Test Basic {token}", f"Test Daily {token}", f"Test Overtime {token}"):
         delete_doc("Salary Component", name)
 
     # Cancelling a synthetic native Journal Entry writes reversal GL Entries.
@@ -341,7 +352,7 @@ def cleanup_synthetic_finalization_company(company_name):
         frappe.db.delete("GL Entry", {"company": company_name})
 
     for name in frappe.get_all(
-        "User", filters={"email": ["like", f"codex-finalize-%-{token}@example.test"]}, pluck="name"
+        "User", filters={"email": ["like", f"codex-finalize-%-{token}%@example.test"]}, pluck="name"
     ):
         for permission in frappe.get_all("User Permission", filters={"user": name}, pluck="name"):
             delete_doc("User Permission", permission)
@@ -428,6 +439,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         "overtime_type": None,
         "overtime_additional": None,
     }
+    synthetic_branches = []
     original_in_test = frappe.in_test
     original_user = frappe.session.user
     component_names = (f"Test Basic {token}", f"Test Daily {token}", f"Test Overtime {token}")
@@ -444,6 +456,26 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         test_bank, payment_account, company_bank_account = _create_synthetic_company_bank_account(
             company, abbreviation, token
         )
+
+        branch_a = frappe.get_doc({
+            "doctype": "Branch",
+            "branch": f"Payroll Report Branch A {token}",
+        }).insert(ignore_permissions=True)
+        branch_b = frappe.get_doc({
+            "doctype": "Branch",
+            "branch": f"Payroll Report Branch B {token}",
+        }).insert(ignore_permissions=True)
+        synthetic_branches.extend([branch_a.name, branch_b.name])
+        department_a = frappe.get_doc({
+            "doctype": "Department",
+            "department_name": f"Payroll Report Department A {token}",
+            "company": company,
+        }).insert(ignore_permissions=True)
+        department_b = frappe.get_doc({
+            "doctype": "Department",
+            "department_name": f"Payroll Report Department B {token}",
+            "company": company,
+        }).insert(ignore_permissions=True)
 
         basic_component = _component(
             component_names[0], f"B{token[:3]}", company, expense, depends_on_payment_days=1
@@ -478,9 +510,18 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         tracked["structures"] = [monthly_structure.name, daily_structure.name]
 
         employees = [
-            _create_employee(f"Payroll A {token}", company, holiday_list, salary_mode="Bank"),
-            _create_employee(f"Payroll B {token}", company, holiday_list, salary_mode="Bank"),
-            _create_employee(f"Payroll C {token}", company, holiday_list, salary_mode="Bank"),
+            _create_employee(
+                f"Payroll A {token}", company, holiday_list, salary_mode="Bank",
+                branch=branch_a.name, department=department_a.name,
+            ),
+            _create_employee(
+                f"Payroll B {token}", company, holiday_list, salary_mode="Bank",
+                branch=branch_b.name, department=department_b.name,
+            ),
+            _create_employee(
+                f"Payroll C {token}", company, holiday_list, salary_mode="Bank",
+                branch=branch_b.name, department=department_b.name,
+            ),
         ]
         tracked["employees"] = [employee.name for employee in employees]
         employees[0].date_of_joining = date(2026, 8, 15)
@@ -558,7 +599,29 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         hr_manager = _create_scoped_user("Tradexcel HR Manager", company, token)
         director = _create_scoped_user("Tradexcel Owner/Director", company, token)
         finance = _create_scoped_user("Accounts User", company, token)
-        tracked["users"] = [manager, approver, hr_manager, director, finance]
+        report_reader = _create_scoped_user("Tradexcel Finance/Accounts Officer", company, token)
+        report_worker = _create_scoped_user("Tradexcel Employee/Worker", company, token)
+        report_compliance = _create_scoped_user("Tradexcel Compliance Auditor", company, token)
+        report_supervisor = _create_scoped_user("Tradexcel Factory Supervisor", company, token)
+        report_branch_manager = _create_scoped_user("Tradexcel Branch Manager", company, token)
+        report_department_manager = _create_scoped_user("Tradexcel Department Manager", company, token)
+        report_attendance_officer = _create_scoped_user("Tradexcel HR/Attendance Officer", company, token)
+        report_branch_scoped_payroll = _create_scoped_user(
+            "Tradexcel Payroll Manager", company, f"{token}-branch"
+        )
+        for allow, value in (("Branch", branch_a.name), ("Department", department_a.name)):
+            frappe.get_doc({
+                "doctype": "User Permission",
+                "user": report_branch_scoped_payroll,
+                "allow": allow,
+                "for_value": value,
+                "apply_to_all_doctypes": 1,
+            }).insert(ignore_permissions=True)
+        tracked["users"] = [
+            manager, approver, hr_manager, director, finance, report_reader, report_worker,
+            report_compliance, report_supervisor, report_branch_manager,
+            report_department_manager, report_attendance_officer, report_branch_scoped_payroll,
+        ]
         tracked["permissions"] = frappe.get_all(
             "User Permission", filters={"user": ["in", tracked["users"]]}, pluck="name"
         )
@@ -721,6 +784,28 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         assert {row.employee for row in slips} == set(tracked["employees"])
         assert any(row.gross_pay > 0 for row in slips)
 
+        # Financial reports deliberately exclude unapproved draft payroll.
+        # This is checked through the real Desk endpoint as a scoped Finance
+        # persona while the native Payroll Entry has created draft slips.
+        from frappe.desk.query_report import run as run_report
+
+        frappe.set_user(report_reader)
+        report_filters = {
+            "company": company,
+            "from_date": start.isoformat(),
+            "to_date": end.isoformat(),
+            "branch": "",
+            "department": "",
+        }
+        draft_components = run_report(
+            "Tradexcel Pay Component Register",
+            filters={**report_filters, "component_type": "All", "component": ""},
+        )
+        draft_variance = run_report("Tradexcel Payroll Variance", filters=report_filters)
+        assert not ({row.salary_slip for row in draft_components["result"]} & set(tracked["salary_slips"]))
+        assert not ({row.employee for row in draft_variance["result"]} & set(tracked["employees"]))
+        frappe.set_user(manager)
+
         slips_by_employee = {row.employee: frappe.get_doc("Salary Slip", row.name) for row in slips}
         joiner_slip = slips_by_employee[employees[0].name]
         assert frappe.utils.getdate(joiner_slip.actual_start_date) == date(2026, 8, 15)
@@ -858,6 +943,153 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         for name in tracked["journal_entries"]:
             assert frappe.db.get_value("Journal Entry", name, "docstatus") == 1
         assert final["journal_entry_count"] == 2
+
+        # The same native report endpoint exposes only the submitted synthetic
+        # payroll, and amounts come from Salary Detail and native Salary Slip
+        # totals. Direct execute has the same server-side scope.
+        for payroll_persona in (manager, approver, report_reader, hr_manager, director, report_compliance):
+            frappe.set_user(payroll_persona)
+            assert frappe.has_permission("Salary Slip", "read")
+            assert frappe.has_permission("Salary Slip", "report")
+            assert frappe.has_permission("Salary Slip", "export")
+            component_persona_rows = run_report(
+                "Tradexcel Pay Component Register",
+                filters={**report_filters, "component_type": "All", "component": ""},
+            )["result"]
+            variance_persona_rows = run_report("Tradexcel Payroll Variance", filters=report_filters)["result"]
+            assert {row.salary_slip for row in component_persona_rows} == {row.name for row in slips_after_retry}
+            assert {row.employee for row in variance_persona_rows} == set(tracked["employees"])
+
+        frappe.set_user(report_reader)
+        component_result = component_persona_rows
+        variance_result = variance_persona_rows
+        submitted_names = {row.name for row in slips_after_retry}
+        assert component_result
+        assert {row.salary_slip for row in component_result} == submitted_names
+        assert {row.slip_status for row in component_result} == {"Submitted"}
+        native_details = frappe.get_all(
+            "Salary Detail",
+            filters={"parent": ["in", tuple(submitted_names)], "parenttype": "Salary Slip"},
+            fields=["parent", "parentfield", "salary_component", "amount"],
+            order_by="parent, idx",
+        )
+        report_details = {
+            (row.salary_slip, row.component_type, row.salary_component, float(row.amount))
+            for row in component_result
+        }
+        expected_details = {
+            (row.parent, "Earning" if row.parentfield == "earnings" else "Deduction",
+             row.salary_component, float(row.amount))
+            for row in native_details if row.parentfield in ("earnings", "deductions")
+        }
+        assert report_details == expected_details
+        native_slips = {
+            row.name: row for row in frappe.get_all(
+                "Salary Slip",
+                filters={"name": ["in", tuple(submitted_names)]},
+                fields=["name", "employee", "employee_name", "company", "branch", "department",
+                        "gross_pay", "total_deduction", "net_pay", "docstatus"],
+            )
+        }
+        assert {row.employee for row in variance_result} == set(tracked["employees"])
+        for row in variance_result:
+            employee_slips = [slip for slip in native_slips.values() if slip.employee == row.employee]
+            assert row.current_net == sum(slip.net_pay for slip in employee_slips)
+            assert row.gross == sum(slip.gross_pay for slip in employee_slips)
+            assert row.deductions == sum(slip.total_deduction for slip in employee_slips)
+            assert row.review == "No previous payroll"
+
+        frappe.set_user(report_branch_scoped_payroll)
+        branch_scoped_components = run_report(
+            "Tradexcel Pay Component Register",
+            filters={**report_filters, "component_type": "All", "component": ""},
+        )["result"]
+        branch_scoped_variance = run_report("Tradexcel Payroll Variance", filters=report_filters)["result"]
+        assert {row.employee for row in branch_scoped_components} == {employees[0].name}
+        assert {row.employee for row in branch_scoped_variance} == {employees[0].name}
+        assert run_report(
+            "Tradexcel Pay Component Register",
+            filters={**report_filters, "branch": branch_b.name, "component_type": "All", "component": ""},
+        )["result"] == []
+        assert run_report(
+            "Tradexcel Payroll Variance",
+            filters={**report_filters, "department": department_b.name},
+        )["result"] == []
+        from tradex_hr.tradexcel_hr.report.tradexcel_pay_component_register.tradexcel_pay_component_register import execute as execute_components
+        _, direct_components = execute_components({
+            **report_filters, "component_type": "All", "component": "",
+        })
+        assert {row.employee for row in direct_components} == {employees[0].name}
+        assert {row.salary_slip for row in direct_components} == {
+            row.name for row in slips_after_retry if row.employee == employees[0].name
+        }
+        assert run_report(
+            "Tradexcel Pay Component Register",
+            filters={**report_filters, "branch": f"Outside {token}", "component_type": "All", "component": ""},
+        )["result"] == []
+        assert run_report(
+            "Tradexcel Payroll Variance",
+            filters={**report_filters, "department": f"Outside {token}"},
+        )["result"] == []
+        with pytest.raises(frappe.PermissionError):
+            run_report(
+                "Tradexcel Payroll Variance",
+                filters={**report_filters, "company": "Tradexcel Ceramics Ltd."},
+            )
+
+        # Move the synthetic Employee after the August payroll period using
+        # native Employee Transfer. Salary Slip must keep its August Branch A
+        # snapshot even though Employee now says Branch B.
+        frappe.set_user("Administrator")
+        historical_transfer = frappe.get_doc({
+            "doctype": "Employee Transfer",
+            "employee": employees[0].name,
+            "company": company,
+            "transfer_date": "2026-09-01",
+            "transfer_details": [{
+                "property": "Branch",
+                "current": branch_a.name,
+                "new": branch_b.name,
+                "fieldname": "branch",
+            }],
+        }).insert(ignore_permissions=True)
+        historical_transfer.submit()
+        assert frappe.db.get_value("Employee", employees[0].name, "branch") == branch_b.name
+        frappe.set_user(report_reader)
+        historical_rows = run_report(
+            "Tradexcel Pay Component Register",
+            filters={**report_filters, "branch": branch_a.name, "component_type": "All", "component": ""},
+        )["result"]
+        assert historical_rows
+        assert {row.branch for row in historical_rows if row.employee == employees[0].name} == {branch_a.name}
+        historical_variance = run_report(
+            "Tradexcel Payroll Variance",
+            filters={**report_filters, "branch": branch_a.name},
+        )["result"]
+        employee_a_variance = next(row for row in historical_variance if row.employee == employees[0].name)
+        assert employee_a_variance.branch == branch_a.name
+        assert frappe.db.get_value("Employee", employees[0].name, "branch") == branch_b.name
+        frappe.set_user("Administrator")
+        historical_transfer.cancel()
+        assert frappe.db.get_value("Employee", employees[0].name, "branch") == branch_a.name
+
+        for excluded_persona in (
+            report_worker, report_supervisor, report_branch_manager,
+            report_department_manager, report_attendance_officer,
+        ):
+            frappe.set_user(excluded_persona)
+            for report_name, report_filters_for_call in (
+            ("Tradexcel Pay Component Register", {**report_filters, "component_type": "All", "component": ""}),
+            ("Tradexcel Payroll Variance", report_filters),
+            ):
+                with pytest.raises(frappe.PermissionError):
+                    run_report(report_name, filters=report_filters_for_call)
+        with pytest.raises(frappe.PermissionError):
+            execute_components({**report_filters, "component_type": "All", "component": ""})
+        from tradex_hr.tradexcel_hr.report.tradexcel_payroll_variance.tradexcel_payroll_variance import execute as execute_variance
+        with pytest.raises(frappe.PermissionError):
+            execute_variance(report_filters)
+        frappe.set_user("Administrator")
 
         # Actual submitted native Salary Slips consume later lifecycle changes
         # and their submitted SSA. Aug 31 is after the assignment's Aug 15
@@ -1012,10 +1244,15 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         frappe.db.rollback()
 
         cleanup_synthetic_finalization_company(tracked["company"])
+        for branch_name in reversed(synthetic_branches):
+            if frappe.db.exists("Branch", branch_name):
+                frappe.delete_doc("Branch", branch_name, force=True, ignore_permissions=True)
+        assert all(not frappe.db.exists("Branch", name) for name in synthetic_branches)
 
         frappe.in_test = original_in_test
         frappe.local.flags.in_test = original_in_test
         assert not frappe.db.exists("Company", tracked["company"])
+        assert all(not frappe.db.exists("Salary Component", name) for name in tracked["components"])
         for doctype in ("Account", "Cost Center", "Warehouse", "GL Entry"):
             assert frappe.db.count(doctype, {"company": tracked["company"]}) == 0
         if tracked["payroll_entry"]:

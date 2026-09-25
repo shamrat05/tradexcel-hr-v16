@@ -9,10 +9,6 @@ import frappe
 
 COMPANY = "Tradexcel Ceramics Ltd."
 USER_COMPANY_DEFAULT_JS = '(frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || ""'
-# Query Reports execute raw SQL and do not apply Employee/Company user-permission
-# filters. The remaining financial Query Reports stay global-admin-only until a
-# separate salary-report conversion proves their row scopes.
-GLOBAL_REPORT_ROLES = ("System Manager",)
 
 DAILY_ATTENDANCE_JAVASCRIPT = """
 frappe.query_reports["Daily Attendance Summary"] = {
@@ -122,98 +118,6 @@ frappe.query_reports["Workforce Anomaly Radar"] = {
 """
 
 REPORTS = {
-    "Tradexcel Pay Component Register": {
-        "ref_doctype": "Salary Slip",
-        "roles": GLOBAL_REPORT_ROLES,
-        "query": """
-SELECT s.name AS "Salary Slip:Link/Salary Slip:150",
-       s.employee AS "Employee:Link/Employee:120",
-       s.employee_name AS "Employee Name:Data:180",
-       e.branch AS "Branch:Link/Branch:130",
-       e.department AS "Department:Link/Department:150",
-       s.start_date AS "Period From:Date:100",
-       s.end_date AS "Period To:Date:100",
-       CASE WHEN d.parentfield='earnings' THEN 'Earning' ELSE 'Deduction' END AS "Type:Data:95",
-       d.salary_component AS "Component:Link/Salary Component:180",
-       d.amount AS "Amount:Currency:110",
-       CASE WHEN s.docstatus=0 THEN 'Draft' ELSE 'Submitted' END AS "Slip Status:Data:90"
-FROM `tabSalary Detail` d
-JOIN `tabSalary Slip` s ON s.name=d.parent AND d.parenttype='Salary Slip'
-JOIN `tabEmployee` e ON e.name=s.employee
-WHERE s.company=%(company)s AND s.docstatus<2
-  AND s.start_date>=%(from_date)s AND s.start_date<=%(to_date)s
-  AND d.parentfield IN ('earnings', 'deductions')
-  AND (%(branch)s='' OR e.branch=%(branch)s)
-  AND (%(department)s='' OR e.department=%(department)s)
-  AND (%(component)s='' OR d.salary_component=%(component)s)
-  AND (%(component_type)s='All' OR
-       (%(component_type)s='Earning' AND d.parentfield='earnings') OR
-       (%(component_type)s='Deduction' AND d.parentfield='deductions'))
-ORDER BY s.start_date, e.branch, e.department, s.employee, d.parentfield, d.idx
-""",
-        "javascript": """
-frappe.query_reports["Tradexcel Pay Component Register"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
-  {fieldname: "from_date", label: __("Period From"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-  {fieldname: "to_date", label: __("Period To"), fieldtype: "Date", default: frappe.datetime.month_end(), reqd: 1},
-  {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
-  {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: ""},
-  {fieldname: "component_type", label: __("Type"), fieldtype: "Select", options: "All\\nEarning\\nDeduction", default: "All"},
-  {fieldname: "component", label: __("Component"), fieldtype: "Link", options: "Salary Component", default: ""}
-]};
-""",
-    },
-    "Tradexcel Payroll Variance": {
-        "ref_doctype": "Salary Slip",
-        "roles": GLOBAL_REPORT_ROLES,
-        "query": """
-WITH current_pay AS (
-    SELECT employee, MAX(employee_name) employee_name, MAX(company) company,
-           COUNT(*) slips, SUM(gross_pay) gross, SUM(total_deduction) deductions,
-           SUM(net_pay) net, SUM(docstatus=0) drafts, SUM(docstatus=1) submitted
-    FROM `tabSalary Slip`
-    WHERE company=%(company)s AND docstatus<2
-      AND start_date>=%(from_date)s AND start_date<=%(to_date)s
-    GROUP BY employee
-), previous_pay AS (
-    SELECT employee, SUM(net_pay) net
-    FROM `tabSalary Slip`
-    WHERE company=%(company)s AND docstatus<2
-      AND start_date>=DATE_SUB(%(from_date)s, INTERVAL 1 MONTH)
-      AND start_date<%(from_date)s
-    GROUP BY employee
-)
-SELECT c.employee AS "Employee:Link/Employee:120",
-       c.employee_name AS "Employee Name:Data:180",
-       e.branch AS "Branch:Link/Branch:130",
-       e.department AS "Department:Link/Department:150",
-       c.slips AS "Slip Count:Int:90", c.drafts AS "Drafts:Int:75",
-       c.submitted AS "Submitted:Int:90", c.gross AS "Gross:Currency:110",
-       c.deductions AS "Deductions:Currency:110",
-       c.net AS "Current Net:Currency:120",
-       p.net AS "Previous Net:Currency:120",
-       c.net-COALESCE(p.net,0) AS "Change:Currency:110",
-       CASE WHEN c.net=0 THEN 'Zero pay - review'
-            WHEN p.net IS NULL THEN 'No previous slip'
-            WHEN c.slips>1 THEN 'Multiple slips - review'
-            ELSE 'Compare' END AS "Review:Data:170"
-FROM current_pay c
-JOIN `tabEmployee` e ON e.name=c.employee
-LEFT JOIN previous_pay p ON p.employee=c.employee
-WHERE (%(branch)s='' OR e.branch=%(branch)s)
-  AND (%(department)s='' OR e.department=%(department)s)
-ORDER BY e.branch, e.department, c.employee
-""",
-        "javascript": """
-frappe.query_reports["Tradexcel Payroll Variance"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
-  {fieldname: "from_date", label: __("Period From"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-  {fieldname: "to_date", label: __("Period To"), fieldtype: "Date", default: frappe.datetime.month_end(), reqd: 1},
-  {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
-  {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: ""}
-]};
-""",
-    },
     "Tradexcel Salary Coverage Board": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
@@ -274,6 +178,8 @@ STANDARD_SCRIPT_REPORT_NAMES = (
     "Tradexcel Daily Attendance Board",
     "Tradexcel Shift Coverage",
     "Tradexcel Joiners and Leavers",
+    "Tradexcel Pay Component Register",
+    "Tradexcel Payroll Variance",
 )
 
 

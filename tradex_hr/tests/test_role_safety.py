@@ -23,3 +23,7 @@ def test_payroll_approver_cannot_submit_salary_slips_independently():
     assert "submit" in STANDARD_PERMISSION_MATRIX["Payroll Entry"]["Tradexcel Payroll Approver"]
     assert "read" in STANDARD_PERMISSION_MATRIX["Employee"]["Tradexcel Payroll Approver"]
     assert "read" in STANDARD_PERMISSION_MATRIX["Salary Structure"]["Tradexcel Payroll Approver"]
+
+
+def test_payroll_approver_has_only_read_company_context_for_scoped_payroll():
+    assert STANDARD_PERMISSION_MATRIX["Company"]["Tradexcel Payroll Approver"] == {"read"}
