@@ -1,14 +1,19 @@
-# SenseFace bridge integration contract (audit, not go-live approval)
+# SenseFace bridge integration contract (source audit, not device approval)
 
-Source: private `shamrat05/SenseFace-HRMS-Bridge`, inspected at commit `c4839d5f4016072dded72a0f009049f145b59690` on 2026-09-17. Keep the standalone listener separately versioned and backed up; never put its SQLite database or API key in this app repository.
+The standalone bridge stays in `shamrat05/SenseFace-HRMS-Bridge`. Its local
+read-only checkout was clean on `main` at
+`2cb9c50e2af2c0b995cd3e7d75185b98487d58e2` on 2026-09-26. The old
+`c4839d5` audit below was accurate for its date but is superseded by this
+source review. No bridge secrets, SQLite data or device commands were used.
 
-| Function | Bridge at pinned commit | Tradexcel HR currently |
-| --- | --- | --- |
-| ADMS receive | `/iclock/cdata`, `/iclock/getrequest`, SQLite durability | Device must point to the listener hostname; no actual device test in this audit |
-| Punch import | `GET /api/v1/attendance?after_id=...&serial_number=...`; API key enforced only when configured | Bench-local `sync/reliable_bridge_worker.py` polls per device; worker is **not packaged in this app** |
-| Device configuration | No `/api/v1/devices/{serial}/configure` endpoint | `tradex_hr/api.py:push_device_configuration` calls that missing endpoint; Frappe's Configure button fails |
-| Cross-device people | Bridge stores device serial + local PIN | Frappe must map `(serial, PIN)` to one canonical Employee; sync user template to another device is a separate command/consent flow |
+| Function | Current bridge source | Tradexcel app source | Remaining evidence |
+| --- | --- | --- | --- |
+| ADMS receive | `/iclock/*` receives punches and stores them in SQLite; serials must be registered or explicitly allowed. ADMS terminals do not send an API key. | Biometric mapping is keyed by terminal serial and PIN. | Physical device/network restriction test. An asserted registered serial is not cryptographic device identity. |
+| Punch import | `/api/v1/attendance` supports per-device cursor reads and requires a configured API key. `/health` also requires the key. | Packaged `tradex_hr.tradexcel_hr.biometric.worker` polls the bridge, records durable cursor/retry state and creates idempotent native Employee Checkins. | Deployed worker and physical delayed/replay tests. |
+| Device configuration | Authenticated `POST /api/v1/devices/{serial}/configure` validates and stores a profile. It returns `applied_to_terminal: false` with manual Cloud Server Settings instructions. | `tradex_hr.api.push_device_configuration` sends that profile and stores bridge status on the native app device record. | Browser/device UAT must verify the manual terminal step. A stored bridge profile is not proof that a terminal changed settings. |
+| Cross-device transfer | Authenticated `/api/v1/device-transfers` accepts an idempotency key and queues device commands. | App transfer API checks source/target records and uses a stable request key before creating the target PIN mapping. | Real terminal command/ack, retry and duplicate-delivery UAT. |
 
-Safety findings: the device-facing `/iclock/*` receiver accepts an asserted serial number and has no per-device authentication; the API key protects `/api/v1/*` reads only when configured. `/health` exposes device metadata. Do not put this listener on a public Contabo endpoint as-is and call it hardened. Require a tested HTTPS reverse proxy, restricted receiver exposure where feasible, request-size/rate controls, secret management, monitoring and backup/restore. Decide how legitimate devices authenticate or are network-restricted before enabling remote configuration commands.
-
-Next verified slice: write failing bridge tests for authorized configuration, unknown serial, duplicate/replayed command, unsafe payload, unreachable device, and persistence/retry. Define the ADMS command/ack protocol from actual device behavior; only then add the endpoint and connect the Frappe button. Separately package the Frappe worker into this app and prove two-device cursor replay, no duplicate Employee Checkins, ambiguous PIN quarantine, and cross-branch attendance attribution. A successful `/health` response is not proof of delivery to Frappe.
+The current bridge source has request-size limits and registration checks.
+Production still requires HTTPS, receiver network controls, off-box backup of
+the separate bridge database, secret management, monitoring, and physical
+device tests. Its local SQLite state must never be copied into this app.

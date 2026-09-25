@@ -4,7 +4,7 @@ app_publisher = "Tradexcel"
 # Describes what the app *is*, not its migration history. It previously said
 # "integration for SelevoHR and SenseFace devices" — Selevo is the retired
 # system, and the app is the HR system now, not an integration to it.
-app_description = "Configurable Tradexcel HRMS for Tradexcel Ceramics Ltd. and Elegance Footwear Ltd."
+app_description = "Configurable, native-first Tradexcel HRMS workflows"
 # Was the placeholder admin@tradex.com, which is also the address the retired
 # Selevo used. Kept as a real support mailbox rather than a non-existent domain.
 app_email = "hr@tradexcel.com"

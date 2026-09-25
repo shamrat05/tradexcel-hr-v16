@@ -94,7 +94,9 @@ def ensure_structures(spec: dict, *, commit: bool) -> list[str]:
     """Create or converge each Salary Structure, including its earnings rows."""
     log = []
     company = spec["company"]
-    currency = spec.get("currency", "BDT")
+    currency = spec.get("currency")
+    if not currency:
+        raise frappe.ValidationError("The explicit salary setup specification needs a currency")
 
     for st in spec["structures"]:
         name = st["name"]

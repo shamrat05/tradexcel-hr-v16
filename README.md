@@ -1,5 +1,30 @@
 # Tradexcel HR — start here
 
+## Current v16 engineering status — 2026-09-26
+
+The active repository is `/home/sanchita/frappe-bench-v16/apps/tradex_hr`,
+stacked on open draft PRs. The isolated staging site is `hrms-v16.localhost`
+with MariaDB on `127.0.0.1:3307`. The accepted attendance-correction head
+passed **585 tests, 0 skipped** on the full Tradexcel suite. The current
+engineering campaign and resume point are in
+[`tasks/sol_completion_state_2026-09-26.md`](tasks/sol_completion_state_2026-09-26.md).
+
+Native Employee, Attendance Request/Attendance, Leave, Shift, Salary Structure
+Assignment, Payroll Entry/Salary Slip, and accounting records remain the
+authorities. Pay basis comes from the effective submitted assignment's Salary
+Structure field `custom_tradex_pay_basis`; no Employment Type or Branch
+heuristic may decide pay. The app's payroll and biometric worker source is
+versioned here; the SenseFace listener is a separate repository.
+
+**Production is not approved.** Real staff roles, pay-authority gaps,
+company/legal/finance configuration, physical device and browser UAT,
+parallel payroll, and cutover evidence remain gates. The table and counts
+below are the preserved **2026-09-18 historical snapshot**. They are not
+current staging counts or current architecture. See newer dated task notes
+and live read-only audits before using any number below.
+
+---
+
 **Frappe custom app for Tradexcel Ceramics Ltd. and Elegance Footwear Ltd.**
 Replaced a previous custom system (Selevo). This README is the entry point: it
 says where things are and **exactly what is done and what is not.**

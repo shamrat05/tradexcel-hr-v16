@@ -307,6 +307,13 @@ def _duty_points(duty_name, employee_name):
     return points
 
 
+def _company_currency(company):
+	currency = frappe.db.get_value("Company", company, "default_currency")
+	if not currency:
+		frappe.throw(_("Set the Company's default currency before preparing a field-duty allowance."))
+	return currency
+
+
 def settle_field_duty_allowance(duty_name):
 	"""Create one draft Additional Salary from a completed duty, idempotently."""
 	duty = frappe.get_doc("Tradexcel Field Duty", duty_name)
@@ -329,7 +336,7 @@ def settle_field_duty_allowance(duty_name):
 	)
 	if result["amount"] <= 0:
 		return {"duty": duty.name, **result, "status": "Zero allowance"}
-	currency = frappe.db.get_value("Company", employee.company, "default_currency") or "BDT"
+	currency = _company_currency(employee.company)
 	doc = frappe.get_doc({
 		"doctype": "Additional Salary",
 		"employee": employee.name,

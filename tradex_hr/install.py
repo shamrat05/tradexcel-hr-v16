@@ -7,9 +7,6 @@ import json
 import frappe
 
 
-COMPANY = "Tradexcel Ceramics Ltd."
-USER_COMPANY_DEFAULT_JS = '(frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || ""'
-
 DAILY_ATTENDANCE_JAVASCRIPT = """
 frappe.query_reports["Daily Attendance Summary"] = {
   filters: [
@@ -169,14 +166,8 @@ def ensure_standard_script_reports() -> None:
         # Always reload the app-owned JSON so role-table changes self-heal on
         # existing standard reports without converting them to custom reports.
         frappe.reload_doc("tradexcel_hr", "report", frappe.scrub(report_name), force=True)
-        doc = frappe.get_doc("Report", report_name)
-        javascript = doc.javascript or ""
-        company_aware_javascript = javascript.replace(
-            'default: "Tradexcel Ceramics Ltd."',
-            f"default: {USER_COMPANY_DEFAULT_JS}",
-        )
-        if company_aware_javascript != javascript:
-            doc.db_set("javascript", company_aware_javascript, update_modified=False)
+        # The standard report JSON is the source of filter defaults. Legacy
+        # company-specific JavaScript rewriting is no longer needed.
 
 NUMBER_CARDS = {
     "Tradexcel Active Employees": {
@@ -191,34 +182,6 @@ NUMBER_CARDS = {
         "module": "Tradexcel HR",
         "is_public": 1,
         "color": "Green",
-    },
-    "Tradexcel TCL Active Employees": {
-        "label": "TCL Active Employees",
-        "type": "Document Type",
-        "document_type": "Employee",
-        "function": "Count",
-        "filters_json": json.dumps([
-            ["Employee", "company", "=", COMPANY, False],
-            ["Employee", "status", "=", "Active", False],
-        ]),
-        "is_standard": 0,
-        "module": "Tradexcel HR",
-        "is_public": 1,
-        "color": "Blue",
-    },
-    "Tradexcel EFL Active Employees": {
-        "label": "EFL Active Employees",
-        "type": "Document Type",
-        "document_type": "Employee",
-        "function": "Count",
-        "filters_json": json.dumps([
-            ["Employee", "company", "=", "Elegance Footwear Ltd.", False],
-            ["Employee", "status", "=", "Active", False],
-        ]),
-        "is_standard": 0,
-        "module": "Tradexcel HR",
-        "is_public": 1,
-        "color": "Purple",
     },
     "Tradexcel Punches Logged": {
         "label": "Total Punches Logged",
@@ -261,8 +224,6 @@ NUMBER_CARDS = {
 
 LEGACY_NUMBER_CARD_NAMES = {
     "TradeX Active Employees": "Tradexcel Active Employees",
-    "TradeX TCL Active Employees": "Tradexcel TCL Active Employees",
-    "TradeX EFL Active Employees": "Tradexcel EFL Active Employees",
     "TradeX Punches Logged": "Tradexcel Punches Logged",
     "TradeX Present Records": "Tradexcel Present Records",
     "TradeX Absent Records": "Tradexcel Absent Records",
@@ -280,8 +241,10 @@ ORPHANED_NUMBER_CARD_NAMES = (
     "Attendance Present Logs-4",
     "EFL Active Employees",
     "EFL Active Employees-1",
+    "Tradexcel EFL Active Employees",
     "TCL Active Employees",
     "TCL Active Employees-1",
+    "Tradexcel TCL Active Employees",
     "Total Punches Logged-3",
     "Total Punches Logged-4",
     "TradeX Absent Records",
@@ -828,7 +791,7 @@ def after_install():
 
 
 def after_migrate():
-    from tradex_hr.branch_setup import ensure_branch_hierarchy
+    from tradex_hr.branch_setup import ensure_branch_fields
     from tradex_hr.role_setup import ensure_tradex_roles
     from tradex_hr.approval_setup import ensure_tradex_workflows
     from tradex_hr.field_attendance_setup import ensure_field_attendance_fields, ensure_field_transport_component
@@ -838,9 +801,8 @@ def after_migrate():
     )
     from tradex_hr.field_employee_exit_setup import ensure_default_exit_template, ensure_employee_exit_fields
     from tradex_hr.field_working_time_setup import ensure_working_time_holiday_category_field
-    from tradex_hr.tradexcel_hr.salary_setup import ensure_pay_basis_metadata
 
-    ensure_branch_hierarchy()
+    ensure_branch_fields()
     ensure_tradex_roles()
     ensure_payroll_adjustment_workflow_fields()
     ensure_employee_exit_fields()
@@ -850,9 +812,8 @@ def after_migrate():
     ensure_field_transport_component()
     ensure_working_time_holiday_category_field()
     ensure_income_tax_review_fields()
-    # Persist explicit financial pay basis on existing native structures. This
-    # does not infer from Employment Type and does not rewrite earnings rows.
-    ensure_pay_basis_metadata(commit=False)
+    # Historic structure pay-basis seeding is an explicit reviewed migration
+    # utility, not a generic install action on another company's structures.
     rename_legacy_dashboard_charts()
     ensure_reports()
     ensure_number_cards()

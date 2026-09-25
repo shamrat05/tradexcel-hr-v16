@@ -26,6 +26,8 @@ FORBIDDEN_STEMS = {
     "cleanup_false_import_employees",
     "source_staff_salary",
     "purge_cancelled_salary_slips",
+    "payroll_setup",
+    "salary_excel",
 }
 
 # A module is treated as a destructive one-off if it calls any of these at module

@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import frappe
+import pytest
 
 from tradex_hr.tradexcel_hr import field_attendance_service as service
 from tradex_hr.tradexcel_hr.field_attendance_service import (
@@ -33,6 +35,23 @@ def test_matched_face_is_not_rejected():
     assert _face_match_rejection_message(
         {"status": "Matched", "score": 0.91, "threshold": 0.363}
     ) is None
+
+
+def test_field_duty_allowance_requires_company_currency(monkeypatch):
+    monkeypatch.setattr(service, "_", lambda message: message)
+    fake = SimpleNamespace(
+        db=SimpleNamespace(get_value=lambda *_args: None),
+        throw=lambda message: (_ for _ in ()).throw(frappe.ValidationError(message)),
+    )
+    monkeypatch.setattr(service, "frappe", fake)
+    with pytest.raises(frappe.ValidationError, match="default currency"):
+        service._company_currency("Synthetic Company")
+
+
+def test_field_duty_allowance_uses_company_currency(monkeypatch):
+    fake = SimpleNamespace(db=SimpleNamespace(get_value=lambda *_args: "EUR"))
+    monkeypatch.setattr(service, "frappe", fake)
+    assert service._company_currency("Synthetic Company") == "EUR"
 
 
 def test_delayed_offline_event_keeps_captured_time_as_canonical():

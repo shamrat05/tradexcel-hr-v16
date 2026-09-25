@@ -63,8 +63,12 @@ def test_dashboard_chart_definitions_are_serializable():
         assert definition["filters_json"].startswith("[")
 
 
-def test_dashboard_has_company_specific_headcount_cards():
-    assert {"Tradexcel Active Employees", "Tradexcel TCL Active Employees", "Tradexcel EFL Active Employees"} <= set(NUMBER_CARDS)
+def test_dashboard_does_not_ship_company_specific_headcount_cards():
+    assert "Tradexcel Active Employees" in NUMBER_CARDS
+    assert not {"Tradexcel TCL Active Employees", "Tradexcel EFL Active Employees"}.intersection(NUMBER_CARDS)
+    assert not {"Tradexcel TCL Active Employees", "Tradexcel EFL Active Employees"}.intersection(
+        block["data"].get("number_card_name") for block in workspace_blocks()
+    )
 
 
 def test_app_owned_dashboard_records_are_custom_records():
