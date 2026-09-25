@@ -153,11 +153,25 @@ def test_migrated_maternity_doctypes_enforce_permissions_and_native_workflows(mo
         company, _abbr, _payable, _expense, _cost_center, holiday_list = _create_synthetic_company(token, monkeypatch)
         branch_a = frappe.get_doc({"doctype": "Branch", "branch": f"Maternity Test A {token}", "company": company}).insert(ignore_permissions=True).name
         branch_b = frappe.get_doc({"doctype": "Branch", "branch": f"Maternity Test B {token}", "company": company}).insert(ignore_permissions=True).name
-        employee = _create_employee(f"Maternity Test {token}", company, holiday_list)
-        employee.branch = branch_a
-        employee.append("internal_work_history", {"branch": branch_b, "from_date": "2020-01-01", "to_date": "2026-08-31"})
-        employee.append("internal_work_history", {"branch": branch_a, "from_date": "2026-09-01"})
-        employee.save(ignore_permissions=True)
+        # Seed this synthetic historical Employee in its initial insert. After
+        # creation, lifecycle-controlled Branch/history edits must use native
+        # Employee Transfer rather than direct Employee.save().
+        employee = frappe.get_doc({
+            "doctype": "Employee",
+            "first_name": f"Maternity Test {token}",
+            "company": company,
+            "date_of_birth": "1990-05-08",
+            "date_of_joining": "2020-01-01",
+            "gender": "Female",
+            "employment_type": "Intern",
+            "holiday_list": holiday_list,
+            "status": "Active",
+            "branch": branch_a,
+            "internal_work_history": [
+                {"branch": branch_b, "from_date": "2020-01-01", "to_date": "2026-08-31"},
+                {"branch": branch_a, "from_date": "2026-09-01"},
+            ],
+        }).insert(ignore_permissions=True)
 
         for key, role, scoped_company in (
             ("hr", "Tradexcel HR Manager", company),

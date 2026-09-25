@@ -213,10 +213,14 @@ def test_native_recruited_and_direct_hire_joiner_boundaries(monkeypatch):
             f"Joiner Monthly {token}", company, "BDT", "Monthly Salary",
             component.name, 30000, depends_on_payment_days=1,
         )
+        # This SSA is synthetic test setup. The lifecycle-specific role test
+        # separately proves maker/approver submission without Administrator.
+        frappe.set_user("Administrator")
         assignment = _create_assignment(
             recruited_employee.name, company, "BDT", _payable, structure.name,
             30000, _cost, from_date="2026-08-15",
         )
+        frappe.set_user(role_user)
         for offset in range(17):
             attendance = frappe.get_doc({
                 "doctype": "Attendance",

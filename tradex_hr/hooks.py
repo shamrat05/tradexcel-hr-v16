@@ -33,6 +33,9 @@ extend_doctype_class = {
     "Employee Transfer": [
         "tradex_hr.tradexcel_hr.employee_lifecycle.EmployeeTransferLifecycleMixin",
     ],
+    "Employee Promotion": [
+        "tradex_hr.tradexcel_hr.employee_lifecycle.EmployeePromotionLifecycleMixin",
+    ],
     "Payroll Entry": [
         "tradex_hr.tradexcel_hr.payroll_finalization.PayrollEntryFinalizationMixin",
     ],
@@ -195,7 +198,15 @@ doc_events = {
     },
     "Employee": {
         "before_insert": "tradex_hr.tradexcel_hr.joiner_readiness.validate_unique_employee_job_applicant",
-        "validate": "tradex_hr.tradexcel_hr.employee_lifecycle.validate_employee_employment_spell",
+        "validate": [
+            "tradex_hr.tradexcel_hr.employee_lifecycle.validate_employee_lifecycle_fields",
+            "tradex_hr.tradexcel_hr.employee_lifecycle.validate_employee_employment_spell",
+        ],
+    },
+    "Salary Structure Assignment": {
+        "validate": "tradex_hr.tradexcel_hr.employee_lifecycle.validate_salary_structure_assignment",
+        "before_submit": "tradex_hr.tradexcel_hr.employee_lifecycle.validate_salary_structure_assignment_before_submit",
+        "before_cancel": "tradex_hr.tradexcel_hr.employee_lifecycle.validate_salary_structure_assignment_before_cancel",
     },
     "Employee Checkin": {
         "before_validate": "tradex_hr.tradexcel_hr.field_attendance_service.enrich_mobile_checkin",
