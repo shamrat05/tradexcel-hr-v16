@@ -67,40 +67,6 @@ frappe.query_reports["Biometric ID Audit"] = {
 };
 """
 
-EMPLOYEE_DATA_GAPS_JAVASCRIPT = """
-frappe.query_reports["Employee Data Gaps"] = {
-  filters: [
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
-    {fieldname: "status", label: __("Employee Status"), fieldtype: "Select", options: "Active\\nInactive\\nLeft\\nAll", default: "Active"},
-    {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
-    {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},
-    {fieldname: "employment_type", label: __("Employment Type"), fieldtype: "Select", options: "All\\nWorker\\nNon Worker", default: "All"},
-    {fieldname: "gap_type", label: __("Gap"), fieldtype: "Select", options: "All\\nMissing Department\\nMissing Employee Number\\nNo Active Salary Assignment\\nMultiple Active Salary Assignments\\nLatest Structure Is a Wage Structure\\nWorker Without Wage Structure\\nFuture Joining Date With Punches\\nMissing Designation\\nMissing Date of Birth\\nMissing Holiday List", default: "All"},
-    {fieldname: "priority", label: __("Priority"), fieldtype: "Select", options: "All\\nHigh\\nMedium\\nLow", default: "All"}
-  ],
-  onload: function(report) {
-    report.page.add_inner_button(__("Open Employee List for Bulk Fix"), function() {
-      frappe.route_options = {
-        company: report.get_filter_value("company"),
-        status: report.get_filter_value("status")
-      };
-      frappe.set_route("List", "Employee");
-    });
-    report.page.add_inner_button(__("Fill Missing Fields (Export / Upload)"), function() {
-      frappe.msgprint({
-        title: __("Employee data update"),
-        message: __("In Data Import, download an Update Existing Records template, select only the fields you need, fill verified values, then upload and review the preview/errors before starting import. Leave unknown values blank; do not create employee users until their emails are verified."),
-        indicator: "blue"
-      });
-      frappe.new_doc("Data Import", {
-        reference_doctype: "Employee",
-        import_type: "Update Existing Records"
-      });
-    });
-  }
-};
-"""
-
 WORKFORCE_ANOMALY_RADAR_JAVASCRIPT = """
 frappe.query_reports["Workforce Anomaly Radar"] = {
   filters: [
@@ -147,7 +113,6 @@ frappe.query_reports[\"Tradexcel Salary Coverage Board\"] = {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
         "is_standard": "Yes",
-        "javascript": EMPLOYEE_DATA_GAPS_JAVASCRIPT,
     },
     "Workforce Anomaly Radar": {
         "ref_doctype": "Employee",

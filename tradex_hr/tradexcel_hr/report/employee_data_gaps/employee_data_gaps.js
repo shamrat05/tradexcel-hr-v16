@@ -20,12 +20,6 @@ frappe.query_reports["Employee Data Gaps"] = {
 
 		// Gap -> in-place resolver fields. Any gap added here becomes resolvable from this dialog.
 		const GAP_RESOLVERS = {
-			"No Shift Assignment": [
-				{fieldname: "shift_type", label: __("Shift Type"), fieldtype: "Link", options: "Shift Type", reqd: 1},
-				{fieldname: "start_date", label: __("Effective From"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-				{fieldname: "exception", label: __("Shift Exception (optional)"), fieldtype: "Link", options: "Tradexcel Policy Exception",
-					get_query: function() { return {filters: {exception_type: "Shift"}}; }}
-			],
 			"Missing Department": [
 				{fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", reqd: 1}
 			],
@@ -38,12 +32,7 @@ frappe.query_reports["Employee Data Gaps"] = {
 		};
 
 		function open_preview(gap, employees, values) {
-			const names = {};
-			(employees || []).forEach(function(emp) { names[emp.employee] = emp.employee_name; });
-			const action = gap === "No Shift Assignment"
-				? __("Assign shift <b>{0}</b> from <b>{1}</b>", [values.shift_type, values.start_date])
-				: __("Set the missing value to <b>{0}</b>", [values[Object.keys(values).find(function(k) { return values[k]; })] || ""]);
-			const exception_line = values.exception ? `<div class="text-muted mt-2">${__("Shift exception")}: <b>${frappe.utils.escape_html(values.exception)}</b> ${__("(scoped to each selected employee)")}</div>` : "";
+			const action = __("Set the missing value to <b>{0}</b>", [values[Object.keys(values).find(function(k) { return values[k]; })] || ""]);
 			const rows_html = employees.map(function(emp) {
 				return `<tr><td style="padding:4px 8px">${frappe.utils.escape_html(emp.employee_name || emp.employee)}</td>
 					<td style="padding:4px 8px" class="text-muted">${emp.employee}</td>
@@ -52,7 +41,7 @@ frappe.query_reports["Employee Data Gaps"] = {
 			const html = `<div class="mb-2">${action} — <b>${employees.length}</b> ${__("employee(s)")}</div>
 				<table class="table table-bordered" style="font-size:12px">
 				<thead><tr><th style="padding:4px 8px">${__("Employee")}</th><th style="padding:4px 8px">${__("ID")}</th><th style="padding:4px 8px">${__("Department")}</th></tr></thead>
-				<tbody>${rows_html}</tbody></table>${exception_line}`;
+				<tbody>${rows_html}</tbody></table>`;
 
 			const confirm = new frappe.ui.Dialog({
 				title: __("Preview: {0}", [gap]),
@@ -126,6 +115,10 @@ frappe.query_reports["Employee Data Gaps"] = {
 				return;
 			}
 
+			if (gap === "No Shift Assignment") {
+				frappe.msgprint(__("Use Open Bulk Shift Assignment. The native tool will refresh and validate the eligible Employee list."));
+				return;
+			}
 			const employees = rows.map(function(row) { return row.employee; }).filter(Boolean);
 			const options = {
 				company: report.get_filter_value("company"),
@@ -138,5 +131,18 @@ frappe.query_reports["Employee Data Gaps"] = {
 			frappe.route_options = options;
 			frappe.set_route("List", "Employee");
 		});
+		if (["Tradexcel HR Manager", "Tradexcel HR/Attendance Officer", "HR User", "HR Manager"].some((role) => frappe.user.has_role(role))) {
+			report.page.add_inner_button(__("Open Bulk Shift Assignment"), function() {
+				const route_options = {start_date: frappe.datetime.get_today()};
+				for (const fieldname of ["company", "branch", "department"]) {
+					const value = report.get_filter_value(fieldname);
+					if (value) route_options[fieldname] = value;
+				}
+				// Do not pass report row Employee IDs: the native tool rebuilds its
+				// permission-aware preview and revalidates selected rows at apply.
+				frappe.route_options = route_options;
+				frappe.set_route("Form", "Shift Assignment Tool");
+			});
+		}
 	}
 };
