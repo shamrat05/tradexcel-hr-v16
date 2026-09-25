@@ -195,7 +195,7 @@ def test_report_roles_and_company_branch_department_scope():
                 "Tradexcel Owner/Director", "Tradexcel HR Manager",
                 "Tradexcel HR/Attendance Officer", "Tradexcel Factory Supervisor",
                 "Tradexcel Branch Manager", "Tradexcel Department Manager",
-                "Tradexcel Compliance Auditor",
+                "Tradexcel Compliance Auditor", "Tradexcel Leave Approver",
             },
         }
         for report_name, expected_roles in expected_report_roles.items():

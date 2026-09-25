@@ -118,6 +118,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Branch Manager": {"read"},
         "Tradexcel Department Manager": {"read"},
         "Tradexcel Attendance Correction Approver": {"read"},
+        "Tradexcel Leave Approver": {"read"},
         "Tradexcel Compliance Auditor": {"read"},
     },
     "Tradexcel Flexible Work Policy": {
@@ -259,6 +260,9 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         # Explicitly revoke any previously provisioned broad directory access.
         # Add own-record access only after a tested row-level rule exists.
         "Tradexcel Employee/Worker": set(),
+        # A leave approver must identify and scope the Employee whose native
+        # leave balance is being reviewed; User Permissions bound the rows.
+        "Tradexcel Leave Approver": {"read"},
     },
     "Employee Checkin": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
@@ -307,6 +311,10 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
+        # Leave approvers need the native balance evidence that informs their
+        # Leave Application decision; Company/Branch/Department scope remains
+        # the native User Permission boundary.
+        "Tradexcel Leave Approver": {"read", "report"},
         # HRMS does not grant its native Employee role direct allocation
         # browsing; balance checks remain in native Leave Application flows.
         "Tradexcel Employee/Worker": set(),
