@@ -270,6 +270,9 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+        # Attendance Request approvers need a permission-aware Employee list
+        # solely to revalidate Company/Branch/Department scope at submit time.
+        "Tradexcel Attendance Correction Approver": {"select", "read"},
         # Explicitly revoke any previously provisioned broad directory access.
         # Add own-record access only after a tested row-level rule exists.
         "Tradexcel Employee/Worker": set(),
@@ -329,7 +332,10 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
-        "Tradexcel Attendance Correction Approver": APPROVE_PERMS,
+        # Native Attendance Request cancellation also cancels linked submitted
+        # Attendance and therefore requires broad Attendance write permission.
+        # Keep custom approvers on submit-only; native HR roles retain HRMS cancel.
+        "Tradexcel Attendance Correction Approver": APPROVE_PERMS - {"cancel"},
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
     "Leave Application": {

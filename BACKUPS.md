@@ -48,6 +48,8 @@ Several older files are also mirrored under
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
 | **2026-09-25 22:00:38** | `20260925_220031-hrms-v16_localhost-database.sql.gz` | 29,500,665 | `15d9c3178f37676a` | Before native bulk SSA permissions and Workspace target migration; gzip and both file archives verified |
+| **2026-09-25 23:53:24** | `20260925_235317-hrms-v16_localhost-database.sql.gz` | 31,385,027 | `2db1cf58ec51e498` | Before Attendance Correction Approver Employee read/select DocPerm convergence; gzip and both file archives verified |
+| **2026-09-26 00:03:13** | `20260926_000304-hrms-v16_localhost-database.sql.gz` | 31,453,473 | `dde0ca2590d382d7` | Before removing Attendance Request cancel from custom approver and syncing report JavaScript; gzip and both file archives verified |
 | **2026-09-25 20:54:37** | `20260925_205430-hrms-v16_localhost-database.sql.gz` | 28,547,805 | `c82369eea7a30dc4` | Before standard migration for scoped native Shift Assignment Tool permissions; gzip and both file archives verified |
 | **2026-09-25 19:53:09** | `20260925_195302-hrms-v16_localhost-database.sql.gz` | 27,079,768 | `0d00492b22e2abdb` | Before adding explicit financial audience to Payroll Register after Workspace exposed it to an operational persona; gzip and both file archives verified |
 | **2026-09-25 19:49:36** | `20260925_194930-hrms-v16_localhost-database.sql.gz` | 27,070,502 | `c7e0fef7c6eb1423` | Before adding Leave Approver Employee read and limiting Leave Allocation to read/report; gzip and both file archives verified |
@@ -78,6 +80,33 @@ private tar listings all verified. Exact sizes and SHA-256:
 | `20260925_220031-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
 | `20260925_220031-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
 | `20260925_220031-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+The **2026-09-25 23:53:24** backup was taken with `--with-files` before
+granting the Attendance Correction Approver the minimum permission-aware
+Employee list context needed for submit-time scope validation. Database gzip
+and public/private archives all verified. SHA-256: database
+`2db1cf58ec51e4987ff3d1d37ec24615ceeb02d7e53da2f18dd8866cd2886b6e`, public
+files `407aa11be1920d8b2022cb054d30fb752d6a8a40fd28b560744a5f4df7fef0532`,
+private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`,
+config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
+Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260925_235317-hrms-v16_localhost-`; sizes: database 31,385,027
+bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245
+bytes.
+
+The **2026-09-26 00:03:13** backup was taken with `--with-files` before removing
+Attendance Request cancellation from the custom Attendance Correction
+Approver (native cancellation also needs Attendance write) and syncing the
+updated Daily Attendance Board report JavaScript. Database gzip and both file
+archives verified. SHA-256: database
+`dde0ca2590d382d73f266ae87efb53b938766f4b5b4382301dfdea043b0913ee`, public
+files `407aa11be1920d8b2022cb054d30fb752d6a8a40fd28b560744a5f4df7fef0532`,
+private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`,
+config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`.
+Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260926_000304-hrms-v16_localhost-`; sizes: database 31,453,473
+bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245
+bytes.
 | **2026-09-25 10:29** | `20260925_042901-hrms-v16_localhost-database.sql.gz` | 19,262,541 | `1eac1fc84f418807` | **Before standard maternity DocType migration** |
 | **2026-09-25 15:14** | `20260925_091421-hrms-v16_localhost-database.sql.gz` | 19,413,925 | `7e877a8fa3b9e042` | **After maternity schema migration; before synthetic integration cleanup and migration retry** |
 | 2026-09-24 10:49 | `20260924_044901-hrms-v16_localhost-database.sql.gz` | 13,174,769 | `f98108cfe1439da1` | Before standard staging migration for versioned PF trigger parameters |

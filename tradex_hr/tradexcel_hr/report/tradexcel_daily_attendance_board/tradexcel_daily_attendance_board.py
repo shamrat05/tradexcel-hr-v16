@@ -54,6 +54,10 @@ def execute(filters=None):
          "options": "Branch", "width": 130},
         {"label": _("Department"), "fieldname": "department", "fieldtype": "Link",
          "options": "Department", "width": 160},
+        {"label": _("Attendance"), "fieldname": "attendance", "fieldtype": "Link",
+         "options": "Attendance", "width": 150},
+        {"label": _("Attendance State"), "fieldname": "attendance_state", "fieldtype": "Data",
+         "width": 150},
         {"label": _("Status"), "fieldname": "status", "fieldtype": "Data",
          "width": 90},
         {"label": _("In Time"), "fieldname": "in_time", "fieldtype": "Datetime",
@@ -75,7 +79,11 @@ def execute(filters=None):
         """
         SELECT e.name AS employee, e.employee_number, e.employee_name, e.company,
                e.branch, e.department,
-               COALESCE(a.status, 'Absent') AS status,
+               a.name AS attendance,
+               CASE WHEN a.name IS NULL THEN 'Not Marked'
+                    WHEN a.docstatus = 0 THEN 'Draft Attendance'
+                    ELSE 'Submitted Attendance' END AS attendance_state,
+               CASE WHEN a.name IS NULL THEN 'Not Marked' ELSE a.status END AS status,
                a.in_time, a.out_time,
                COALESCE(a.late_entry, 0) AS late_entry,
                COALESCE(a.early_exit, 0) AS early_exit,

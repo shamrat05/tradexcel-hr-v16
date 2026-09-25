@@ -117,6 +117,8 @@ doc_events = {
     },
     "Attendance Request": {
         "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",
+        "before_submit": "tradex_hr.tradexcel_hr.attendance_corrections.validate_attendance_request_before_submit",
+        "before_cancel": "tradex_hr.tradexcel_hr.attendance_corrections.validate_attendance_request_before_cancel",
     },
     "Overtime Slip": {
         "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_no_payable_work_after_relieving_date",

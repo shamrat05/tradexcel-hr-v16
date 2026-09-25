@@ -11,7 +11,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "javascript": "\nfrappe.query_reports[\"Tradexcel Daily Attendance Board\"] = {\n\tfilters: [\n\t\t{fieldname: \"attendance_date\", label: __(\"Attendance Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1},\n\t\t{fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default(\"Company\")) || \"\", reqd: 1}\n\t]\n};\n",
+ "javascript": "frappe.query_reports[\"Tradexcel Daily Attendance Board\"] = {\n\tget_datatable_options(options) {\n\t\treturn { ...options, checkboxColumn: true };\n\t},\n\tonload(report) {\n\t\tconst roles = [\"Tradexcel HR Manager\", \"Tradexcel HR/Attendance Officer\"];\n\t\tif (!roles.some((role) => frappe.user.has_role(role))) return;\n\n\treport.page.add_inner_button(__(\"Prepare Attendance Corrections\"), () => {\n\t\tconst selected = report.get_checked_items().map((row) => row.employee).filter(Boolean);\n\t\tif (!selected.length) {\n\t\t\tfrappe.msgprint(__(\"Select one or more Employees in the report first.\"));\n\t\t\treturn;\n\t\t}\n\t\tconst values = report.get_filter_values();\n\t\tconst dialog = new frappe.ui.Dialog({\n\t\t\ttitle: __(\"Prepare Attendance Corrections\"),\n\t\t\tfields: [\n\t\t\t\t{ fieldname: \"action\", label: __(\"Correction\"), fieldtype: \"Select\", reqd: 1,\n\t\t\t\t\toptions: [\"Present\", \"Half Day\", \"Work From Home\"].join(\"\\n\") },\n\t\t\t\t{ fieldname: \"explanation\", label: __(\"Explanation\"), fieldtype: \"Small Text\", reqd: 1 },\n\t\t\t\t{ fieldname: \"preview\", fieldtype: \"HTML\" },\n\t\t\t],\n\t\t});\n\t\tlet previewReady = false;\n\t\tconst args = () => ({\n\t\t\tcompany: values.company,\n\t\t\tattendance_date: values.attendance_date,\n\t\t\tbranch: values.branch || \"\",\n\t\t\tdepartment: values.department || \"\",\n\t\t\temployee_names: selected,\n\t\t\taction: dialog.get_value(\"action\"),\n\t\t\texplanation: dialog.get_value(\"explanation\"),\n\t\t});\n\t\tconst render = (rows) => {\n\t\t\tconst escape = frappe.utils.escape_html;\n\t\t\tconst body = rows.map((row) => `<tr><td>${escape(row.employee_name || row.employee || \"\")}</td>\n\t\t\t\t<td>${escape(row.current_state || \"\")}${row.current_attendance ? `: ${escape(row.current_attendance)}` : \"\"}</td>\n\t\t\t\t<td>${escape(row.current_status || \"\")}</td><td>${escape(row.active_shift || \"\")}</td>\n\t\t\t\t<td>${escape(row.checkin_count ?? \"\")}</td><td>${escape(row.in_time || \"\")}</td><td>${escape(row.out_time || \"\")}</td>\n\t\t\t\t<td>${escape(row.proposed_status || \"\")}</td>\n\t\t\t\t<td>${escape(row.outcome || \"\")}</td><td>${escape((row.native_warnings || []).map((item) => `${item.reason} — ${item.action}`).join(\"; \"))}</td>\n\t\t\t\t<td>${escape(row.message || \"\")}</td></tr>`).join(\"\");\n\t\t\tdialog.fields_dict.preview.$wrapper.html(`<div class=\"small text-muted\">${__(\"Punches are evidence only. No Attendance changes until an approver submits the native request.\")}</div>\n\t\t\t\t<div class=\"table-responsive\"><table class=\"table table-bordered\"><thead><tr>\n\t\t\t\t<th>${__(\"Employee\")}</th><th>${__(\"Current record\")}</th><th>${__(\"Current status\")}</th><th>${__(\"Active Shift\")}</th>\n\t\t\t\t<th>${__(\"Punches\")}</th><th>${__(\"First IN\")}</th><th>${__(\"Last OUT\")}</th>\n\t\t\t\t<th>${__(\"Proposed\")}</th><th>${__(\"Result\")}</th><th>${__(\"Native warning\")}</th><th>${__(\"Review note\")}</th>\n\t\t\t\t</tr></thead><tbody>${body}</tbody></table></div>`);\n\t\t};\n\t\tconst prepareArgs = () => ({ method: \"tradex_hr.tradexcel_hr.attendance_corrections.prepare_attendance_corrections\", args: args() });\n\t\tconst preview = () => {\n\t\t\tif (!dialog.get_values()) return;\n\t\t\tfrappe.call({ method: \"tradex_hr.tradexcel_hr.attendance_corrections.preview_attendance_corrections\", args: args() })\n\t\t\t\t.then((response) => {\n\t\t\t\t\trender(response.message.rows || []);\n\t\t\t\t\tpreviewReady = true;\n\t\t\t\t\tdialog.set_primary_action(__(\"Create draft requests\"), () => {\n\t\t\t\t\t\tif (!previewReady) return;\n\t\t\t\t\t\tpreviewReady = false;\n\t\t\t\t\t\tfrappe.call(prepareArgs()).then((result) => {\n\t\t\t\t\t\t\tconst message = result.message || {};\n\t\t\t\t\t\t\tconst created = (message.created || []).length;\n\t\t\t\t\t\t\tconst blocked = (message.results || []).length;\n\t\t\t\t\t\t\tfrappe.msgprint(__(\"Draft requests created: {0}. Skipped or blocked: {1}.\", [created, blocked]));\n\t\t\t\t\t\t\tdialog.hide();\n\t\t\t\t\t\t\treport.refresh();\n\t\t\t\t\t\t});\n\t\t\t\t\t});\n\t\t\t\t});\n\t\t};\n\t\tconst invalidatePreview = () => {\n\t\t\tif (!previewReady) return;\n\t\t\tpreviewReady = false;\n\t\t\tdialog.set_primary_action(__(\"Preview\"), preview);\n\t\t};\n\t\tdialog.fields_dict.action.$input.on(\"change\", invalidatePreview);\n\t\tdialog.fields_dict.explanation.$input.on(\"input\", invalidatePreview);\n\t\tdialog.set_primary_action(__(\"Preview\"), () => {\n\t\t\tpreview();\n\t\t});\n\t\tdialog.show();\n\t});\n\t},\n\tfilters: [\n\t\t{fieldname: \"attendance_date\", label: __(\"Attendance Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1},\n\t\t{fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default(\"Company\")) || \"\", reqd: 1},\n\t\t{fieldname: \"branch\", label: __(\"Branch\"), fieldtype: \"Link\", options: \"Branch\", get_query: () => ({ filters: { company: frappe.query_report.get_filter_value(\"company\") } })},\n\t\t{fieldname: \"department\", label: __(\"Department\"), fieldtype: \"Link\", options: \"Department\", get_query: () => ({ filters: { company: frappe.query_report.get_filter_value(\"company\") } })}\n\t]\n};\n",
  "letter_head": null,
  "modified": "2026-09-23 00:00:00.000000",
  "modified_by": "Administrator",
@@ -23,14 +23,30 @@
  "report_name": "Tradexcel Daily Attendance Board",
  "report_type": "Script Report",
  "roles": [
-  {"role": "Tradexcel Owner/Director"},
-  {"role": "Tradexcel HR Manager"},
-  {"role": "Tradexcel HR/Attendance Officer"},
-  {"role": "Tradexcel Factory Supervisor"},
-  {"role": "Tradexcel Branch Manager"},
-  {"role": "Tradexcel Department Manager"},
-  {"role": "Tradexcel Attendance Correction Approver"},
-  {"role": "Tradexcel Compliance Auditor"}
+  {
+   "role": "Tradexcel Owner/Director"
+  },
+  {
+   "role": "Tradexcel HR Manager"
+  },
+  {
+   "role": "Tradexcel HR/Attendance Officer"
+  },
+  {
+   "role": "Tradexcel Factory Supervisor"
+  },
+  {
+   "role": "Tradexcel Branch Manager"
+  },
+  {
+   "role": "Tradexcel Department Manager"
+  },
+  {
+   "role": "Tradexcel Attendance Correction Approver"
+  },
+  {
+   "role": "Tradexcel Compliance Auditor"
+  }
  ],
  "snapshot_report": 0,
  "timeout": 0

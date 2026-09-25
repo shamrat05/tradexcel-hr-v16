@@ -203,6 +203,8 @@ def test_native_persona_access_report_and_workspace_contract():
             "device_admin": [("Tradexcel Biometric Device", "write", True),
                              ("Employee", "write", False), ("Salary Slip", "read", False)],
             "attendance_correction_approver": [("Attendance Request", "submit", True),
+                                               ("Attendance Request", "cancel", False),
+                                               ("Employee", "read", True),
                                                ("Salary Slip", "read", False)],
             "leave_approver": [("Leave Application", "submit", True),
                                ("Company", "read", True),
