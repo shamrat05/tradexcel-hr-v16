@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-24 08:15 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-25 15:14 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -39,12 +39,16 @@ sha256sum  /home/sanchita/frappe-bench/sites/hrms.localhost/private/backups/2026
 
 ## 2. Every site backup, newest first
 
-All under `/home/sanchita/frappe-bench/sites/hrms.localhost/private/backups/`.
-Several are also mirrored under
+Historical backups are under `/home/sanchita/frappe-bench/sites/hrms.localhost/private/backups/`.
+The current v16 staging backup is under
+`/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`.
+Several older files are also mirrored under
 `/mnt/c/Users/Sanchita/Desktop/tradex_hr_backup_20260918/`.
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-25 10:29** | `20260925_042901-hrms-v16_localhost-database.sql.gz` | 19,262,541 | `1eac1fc84f418807` | **Before standard maternity DocType migration** |
+| **2026-09-25 15:14** | `20260925_091421-hrms-v16_localhost-database.sql.gz` | 19,413,925 | `7e877a8fa3b9e042` | **After maternity schema migration; before synthetic integration cleanup and migration retry** |
 | 2026-09-24 10:49 | `20260924_044901-hrms-v16_localhost-database.sql.gz` | 13,174,769 | `f98108cfe1439da1` | Before standard staging migration for versioned PF trigger parameters |
 | 2026-09-24 10:40 | `20260924_044050-hrms-v16_localhost-database.sql.gz` | 13,135,247 | `f2f84912e2574296` | Before standard staging migration for reviewed PF demand count field |
 | 2026-09-24 10:31 | `20260924_043109-hrms-v16_localhost-database.sql.gz` | 13,061,103 | `af4c7cac0cdd2114` | **Before statutory-benefit DocType and permission migration** |
@@ -192,3 +196,7 @@ The 2026-09-24 15:42:37 backup was taken with `--with-files` after the first sta
 
 
 The 2026-09-24 15:52:04 backup was taken with `--with-files` after the first standard schema migration completed and before applying the final approver-cancel permission updates. Database gzip and both public/private tar archives passed integrity checks. SHA-256: database `8a273d27d8d15ecd50b643cb9d51c447389683a43690836c9ce71c9ddd9017ed` (15,954,031 bytes), public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28a5f4df7fef0532` (10,240 bytes), private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` (38,932,480 bytes), config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` (245 bytes). Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`.
+
+The 2026-09-25 10:29 backup for the maternity DocType migration was taken with `--with-files`; database `gzip -t` and public/private `tar -tf` checks passed. SHA-256: database `1eac1fc84f4188078123ab25950ce41a86e9c097a865e3579411daa44724aa14`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`. Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/` with prefix `20260925_042901-hrms-v16_localhost-`; sizes: database 19,262,541 bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245 bytes.
+
+The 2026-09-25 15:14 backup was taken with `--with-files` after the standard maternity schema migration and before synthetic integration cleanup/migration retry. Database `gzip -t` and both public/private `tar -tf` checks passed. SHA-256: database `7e877a8fa3b9e0425b193f83689eaec5897bb5956626c3e3f6e9d59b69d82248`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`. Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/` with prefix `20260925_091421-hrms-v16_localhost-`; sizes: database 19,413,925 bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245 bytes.

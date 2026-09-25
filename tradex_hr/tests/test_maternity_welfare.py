@@ -1,6 +1,22 @@
 """Synthetic decision-boundary tests for maternity and workplace welfare."""
 
 from datetime import date
+import os
+
+import frappe
+import pytest
+
+@pytest.fixture(scope="module", autouse=True)
+def frappe_site():
+    frappe.init(
+        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        force=True,
+    )
+    frappe.connect()
+    yield
+    frappe.destroy()
+
 
 from tradex_hr.tradexcel_hr.maternity_welfare import (
     calculate_maternity_benefit_preview,
@@ -34,6 +50,8 @@ def test_maternity_review_validates_service_against_event_date(monkeypatch):
     monkeypatch.setattr(module, "_scope", lambda _doc: None)
     monkeypatch.setattr(module, "_freeze_submitted_fields", lambda *_: None)
     monkeypatch.setattr(module, "_employee_row", lambda _employee: employee)
+    monkeypatch.setattr(module, "_validate_maternity_establishment", lambda *_args: None)
+    monkeypatch.setattr(module, "_validate_no_overlapping_maternity_review", lambda *_args: None)
     monkeypatch.setattr(module, "_approved_rule", lambda *_: rule)
     monkeypatch.setattr(module, "_historical_work_evidence", lambda *_: False)
     monkeypatch.setattr(module.frappe, "throw", lambda message, title=None: (_ for _ in ()).throw(ValueError(title or str(message))))
@@ -126,11 +144,11 @@ def test_sensitive_roles_exclude_payroll_and_factory_roles(monkeypatch):
 
     monkeypatch.setattr(module.frappe, "get_roles", lambda _user=None: ["Tradexcel Payroll Manager"])
     assert module.maternity_sensitive_has_permission(
-        {"company": "Synthetic Company"}, "payroll@example.invalid"
+        {"company": "Synthetic Company"}, ptype="read", user="payroll@example.invalid"
     ) is False
     monkeypatch.setattr(module.frappe, "get_roles", lambda _user=None: ["Tradexcel Factory Supervisor"])
     assert module.maternity_sensitive_has_permission(
-        {"company": "Synthetic Company"}, "supervisor@example.invalid"
+        {"company": "Synthetic Company"}, ptype="read", user="supervisor@example.invalid"
     ) is False
 
 
@@ -349,8 +367,9 @@ def test_protected_separation_requires_independent_proceed_review(monkeypatch):
     monkeypatch.setattr(module, "_maternity_schema_installed", lambda: True)
     monkeypatch.setattr(module.frappe, "get_all", lambda doctype, **_k: ["CASE-SYNTHETIC"] if doctype == module.MATERNITY_REVIEW else [])
     monkeypatch.setattr(module.frappe, "get_doc", lambda doctype, _name: review if doctype == module.MATERNITY_REVIEW else rule)
+    monkeypatch.setattr(module.frappe.db, "get_value", lambda doctype, name, field: date(2026, 9, 20))
     monkeypatch.setattr(module.frappe, "throw", lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("review required")))
-    separation = SimpleNamespace(employee="EMP-SYNTHETIC", company="Synthetic Company", relieving_date=date(2026, 9, 20), name="SEP-SYNTHETIC")
+    separation = SimpleNamespace(employee="EMP-SYNTHETIC", company="Synthetic Company", name="SEP-SYNTHETIC")
     with pytest.raises(RuntimeError, match="review required"):
         module.validate_maternity_employee_separation(separation)
 
@@ -372,11 +391,9 @@ def test_expected_delivery_date_still_triggers_pre_delivery_separation_review(mo
     monkeypatch.setattr(module, "_maternity_schema_installed", lambda: True)
     monkeypatch.setattr(module.frappe, "get_all", lambda *_args, **_kwargs: ["CASE-SYNTHETIC"])
     monkeypatch.setattr(module.frappe, "get_doc", lambda doctype, _name: review if doctype == module.MATERNITY_REVIEW else rule)
+    monkeypatch.setattr(module.frappe.db, "get_value", lambda doctype, name, field: date(2026, 9, 1))
     monkeypatch.setattr(module.frappe, "throw", lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("review required")))
-    separation = SimpleNamespace(
-        employee="EMP-SYNTHETIC", company="Synthetic Company",
-        relieving_date=date(2026, 9, 1), name="SEP-SYNTHETIC",
-    )
+    separation = SimpleNamespace(employee="EMP-SYNTHETIC", company="Synthetic Company", name="SEP-SYNTHETIC")
     with pytest.raises(RuntimeError, match="review required"):
         module.validate_maternity_employee_separation(separation)
 
@@ -393,5 +410,185 @@ def test_independent_proceed_review_allows_separation_to_continue(monkeypatch):
     monkeypatch.setattr(module, "_maternity_schema_installed", lambda: True)
     monkeypatch.setattr(module.frappe, "get_all", lambda doctype, **_k: ["CASE-SYNTHETIC"] if doctype == module.MATERNITY_REVIEW else ["Proceed After Legal Review"])
     monkeypatch.setattr(module.frappe, "get_doc", lambda doctype, _name: review if doctype == module.MATERNITY_REVIEW else rule)
-    separation = SimpleNamespace(employee="EMP-SYNTHETIC", company="Synthetic Company", relieving_date=date(2026, 9, 20), name="SEP-SYNTHETIC")
+    monkeypatch.setattr(module.frappe.db, "get_value", lambda doctype, name, field: date(2026, 9, 20))
+    separation = SimpleNamespace(employee="EMP-SYNTHETIC", company="Synthetic Company", name="SEP-SYNTHETIC")
     assert module.validate_maternity_employee_separation(separation) is None
+
+
+def test_permission_hooks_accept_real_frappe_call_keywords(monkeypatch):
+    from tradex_hr.tradexcel_hr import maternity_welfare as module
+
+    monkeypatch.setattr(module.frappe, "get_roles", lambda user=None: {
+        "hr@example.test": ["Tradexcel HR Manager"],
+        "auditor@example.test": ["Tradexcel Compliance Auditor"],
+    }.get(user, []))
+    monkeypatch.setattr(module.frappe.db, "exists", lambda *_args, **_kwargs: True)
+    doc = {"company": "Synthetic Company"}
+    assert module.maternity_sensitive_has_permission(
+        doc=doc, ptype="read", user="hr@example.test", debug=False
+    )
+    assert module.maternity_rule_has_permission(
+        doc=doc, ptype="read", user="auditor@example.test", debug=False
+    )
+    assert module.welfare_has_permission(
+        doc=doc, ptype="read", user="auditor@example.test", debug=False
+    )
+    assert not module.maternity_sensitive_has_permission(
+        doc=doc, ptype="read", user="auditor@example.test", debug=False
+    )
+
+
+def test_maternity_rule_submission_blocks_native_leave_findings(monkeypatch):
+    import pytest
+    from types import SimpleNamespace
+    from tradex_hr.tradexcel_hr import maternity_welfare as module
+
+    monkeypatch.setattr(module.frappe, "session", SimpleNamespace(user="reviewer@example.test"))
+    monkeypatch.setattr(module, "_assert_maker_checker", lambda _doc: None)
+    monkeypatch.setattr(module, "validate_maternity_rule_set", lambda _doc: None)
+    monkeypatch.setattr(module, "_validate_native_leave_type", lambda _doc: [
+        {"code": "MATERNITY_LEAVE_CONFIGURATION_MISMATCH"}
+    ])
+    monkeypatch.setattr(
+        module.frappe, "throw",
+        lambda _message, title=None: (_ for _ in ()).throw(ValueError(title)),
+    )
+    with pytest.raises(ValueError, match="MATERNITY_LEAVE_CONFIGURATION_MISMATCH"):
+        module.validate_maternity_rule_submit(SimpleNamespace())
+
+
+def test_maternity_review_submission_uses_employee_exit_date_without_nonexistent_separation_field(monkeypatch):
+    import pytest
+    from types import SimpleNamespace
+    from tradex_hr.tradexcel_hr import maternity_welfare as module
+
+    doc = SimpleNamespace(
+        employee="EMP-SYNTHETIC", rule_set="RULE-SYNTHETIC", actual_delivery_date=None,
+        expected_delivery_date="2026-10-01", notice_date=None,
+        benefit_eligibility="Pending Review", reviewed_by=None, reviewed_at=None,
+    )
+    rule = SimpleNamespace(minimum_service_months=6)
+    monkeypatch.setattr(module, "_assert_maker_checker", lambda _doc: None)
+    monkeypatch.setattr(module, "validate_maternity_review", lambda _doc: None)
+    monkeypatch.setattr(module.frappe, "get_doc", lambda *_args: rule)
+    monkeypatch.setattr(module, "service_months_result", lambda *_args: "MEETS")
+    monkeypatch.setattr(module, "now_datetime", lambda: "synthetic timestamp")
+
+    active_employee = SimpleNamespace(
+        date_of_joining="2020-01-01", status="Active", relieving_date=None,
+    )
+    monkeypatch.setattr(module, "_employee_row", lambda *_args: active_employee)
+    module.before_submit_maternity_review(doc)
+    assert doc.reviewed_at == "synthetic timestamp"
+
+    left_employee = SimpleNamespace(
+        date_of_joining="2020-01-01", status="Left", relieving_date="2026-09-30",
+    )
+    monkeypatch.setattr(module, "_employee_row", lambda *_args: left_employee)
+    monkeypatch.setattr(
+        module.frappe, "throw",
+        lambda _message, title=None: (_ for _ in ()).throw(ValueError(title)),
+    )
+    with pytest.raises(ValueError, match="MATERNITY_SERVICE_HISTORY_REVIEW_REQUIRED"):
+        module.before_submit_maternity_review(doc)
+
+
+def test_maternity_review_establishment_uses_native_branch_history(monkeypatch):
+    import pytest
+    from types import SimpleNamespace
+    from tradex_hr.tradexcel_hr import maternity_welfare as module
+
+    employee = SimpleNamespace(branch="FACTORY-A", internal_work_history=[])
+    employee.get = lambda field: getattr(employee, field)
+    monkeypatch.setattr(module.frappe, "get_doc", lambda *_args: employee)
+    monkeypatch.setattr(module.frappe, "throw", lambda _message, title=None: (_ for _ in ()).throw(ValueError(title)))
+    today = module.getdate(module.today())
+    module._validate_maternity_establishment("EMP-SYNTHETIC", "FACTORY-A", today)
+    with pytest.raises(ValueError, match="MATERNITY_ESTABLISHMENT_SCOPE_MISMATCH"):
+        module._validate_maternity_establishment("EMP-SYNTHETIC", "FACTORY-B", today)
+
+    employee.internal_work_history = [
+        SimpleNamespace(branch="FACTORY-B", from_date="2026-01-01", to_date="2026-08-31"),
+        SimpleNamespace(branch="FACTORY-A", from_date="2026-09-01", to_date=None),
+    ]
+    module._validate_maternity_establishment("EMP-SYNTHETIC", "FACTORY-B", "2026-08-01")
+    employee.internal_work_history = [
+        SimpleNamespace(branch="FACTORY-A", from_date="2026-09-01", to_date=None),
+    ]
+    with pytest.raises(ValueError, match="MATERNITY_ESTABLISHMENT_HISTORY_REVIEW_REQUIRED"):
+        module._validate_maternity_establishment("EMP-SYNTHETIC", "FACTORY-B", "2026-08-01")
+
+
+def test_submitted_maternity_reviews_cannot_have_overlapping_legal_windows(monkeypatch):
+    import pytest
+    from types import SimpleNamespace
+    from tradex_hr.tradexcel_hr import maternity_welfare as module
+
+    current = SimpleNamespace(
+        name="CASE-NEW", employee="EMP-SYNTHETIC", company="Synthetic Company",
+        actual_delivery_date="2026-07-20", expected_delivery_date=None,
+    )
+    existing = SimpleNamespace(
+        name="CASE-OLD", rule_set="RULE-OLD",
+        actual_delivery_date="2026-06-01", expected_delivery_date=None,
+    )
+    rule = SimpleNamespace(pre_delivery_days=60, post_delivery_days=60, post_delivery_work_protection_days=60)
+    monkeypatch.setattr(module.frappe, "get_all", lambda *_args, **_kwargs: [existing])
+    monkeypatch.setattr(module.frappe, "get_doc", lambda *_args: rule)
+    monkeypatch.setattr(module.frappe, "throw", lambda _message, title=None: (_ for _ in ()).throw(ValueError(title)))
+    with pytest.raises(ValueError, match="MATERNITY_REVIEW_CONFLICT"):
+        module._validate_no_overlapping_maternity_review(current, rule)
+
+    non_overlapping = SimpleNamespace(
+        name="CASE-NEW", employee="EMP-SYNTHETIC", company="Synthetic Company",
+        actual_delivery_date="2026-09-30", expected_delivery_date=None,
+    )
+    module._validate_no_overlapping_maternity_review(non_overlapping, rule)
+
+
+def test_work_status_is_protected_even_without_positive_attendance_hours(monkeypatch):
+    import pytest
+    from types import SimpleNamespace
+    from tradex_hr.tradexcel_hr import maternity_welfare as module
+
+    monkeypatch.setattr(module, "_maternity_schema_installed", lambda: True)
+    monkeypatch.setattr(module, "_review_for_protected_period", lambda *_args: (object(), object()))
+    monkeypatch.setattr(module.frappe, "throw", lambda _message, title=None: (_ for _ in ()).throw(ValueError(title)))
+    for status, hours in (("Present", 0), ("Present", None), ("Half Day", 0), ("Work From Home", 0)):
+        attendance = SimpleNamespace(
+            employee="EMP-SYNTHETIC", attendance_date="2026-09-01",
+            status=status, working_hours=hours,
+        )
+        with pytest.raises(ValueError, match="MATERNITY_PROTECTED_WORK_PERIOD"):
+            module.validate_maternity_attendance(attendance)
+
+    calls = []
+    monkeypatch.setattr(module, "validate_maternity_protected_work", lambda *_args: calls.append(True))
+    module.validate_maternity_attendance(SimpleNamespace(status="On Leave", working_hours=0))
+    module.validate_maternity_attendance(SimpleNamespace(status="Absent", working_hours=0))
+    assert calls == []
+
+
+def test_historical_protected_work_check_includes_zero_hour_work_status(monkeypatch):
+    from types import SimpleNamespace
+    from tradex_hr.tradexcel_hr import maternity_welfare as module
+
+    review = SimpleNamespace(employee="EMP-SYNTHETIC", actual_delivery_date="2026-09-01")
+    rule = SimpleNamespace(post_delivery_work_protection_days=60)
+    captured = {}
+    monkeypatch.setattr(module.frappe.db, "exists", lambda doctype, filters: captured.update(
+        doctype=doctype, filters=filters
+    ) or True)
+    assert module._historical_work_evidence(review, rule)
+    assert captured["filters"]["status"] == ["in", tuple(module.WORK_STATUSES)]
+    assert "working_hours" not in captured["filters"]
+
+
+def test_rule_frozen_fields_exist_in_rule_doctype_schema():
+    import json
+    from pathlib import Path
+    from tradex_hr.tradexcel_hr.maternity_welfare import RULE_FROZEN_FIELDS
+
+    schema = Path(__file__).parents[1] / "tradexcel_hr" / "doctype" / "tradexcel_maternity_rule_set" / "tradexcel_maternity_rule_set.json"
+    fieldnames = {field["fieldname"] for field in json.loads(schema.read_text())["fields"]}
+    assert set(RULE_FROZEN_FIELDS) <= fieldnames

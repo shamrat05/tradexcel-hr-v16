@@ -58,7 +58,7 @@ def welfare_query_conditions(user=None):
     return maternity_rule_query_conditions(user)
 
 
-def maternity_sensitive_has_permission(doc, user=None, permission_type=None):
+def maternity_sensitive_has_permission(doc=None, ptype=None, user=None, debug=False, **kwargs):
     user = user or frappe.session.user
     return user == "Administrator" or (
         bool(_roles(user).intersection(SENSITIVE_ROLES))
@@ -66,7 +66,7 @@ def maternity_sensitive_has_permission(doc, user=None, permission_type=None):
     )
 
 
-def maternity_rule_has_permission(doc, user=None, permission_type=None):
+def maternity_rule_has_permission(doc=None, ptype=None, user=None, debug=False, **kwargs):
     user = user or frappe.session.user
     return user == "Administrator" or (
         bool(_roles(user).intersection(WELFARE_READ_ROLES))
@@ -74,8 +74,8 @@ def maternity_rule_has_permission(doc, user=None, permission_type=None):
     )
 
 
-def welfare_has_permission(doc, user=None, permission_type=None):
-    return maternity_rule_has_permission(doc, user, permission_type)
+def welfare_has_permission(doc=None, ptype=None, user=None, debug=False, **kwargs):
+    return maternity_rule_has_permission(doc, ptype=ptype, user=user, debug=debug, **kwargs)
 
 
 def _scope(doc):
@@ -216,6 +216,83 @@ def _approved_rule(rule_name, company, branch, event_date):
     return rule
 
 
+def _validate_maternity_establishment(employee_name, review_branch, event_date):
+    employee = frappe.get_doc("Employee", employee_name)
+    current_branch = employee.branch or ""
+    review_branch = review_branch or ""
+    day = getdate(event_date)
+    work_history = employee.get("internal_work_history") or []
+
+    covering = []
+    for row in work_history:
+        if not row.from_date or getdate(row.from_date) > day:
+            continue
+        if row.to_date and getdate(row.to_date) < day:
+            continue
+        covering.append(row)
+
+    if covering:
+        if len(covering) != 1 or (covering[0].branch or "") != review_branch:
+            frappe.throw(
+                _("The reviewed establishment does not match native Employee work history."),
+                title=_("MATERNITY_ESTABLISHMENT_SCOPE_MISMATCH"),
+            )
+        return
+
+    # With no transfer history, the current Branch is the only available
+    # canonical establishment evidence. A different historical Branch must
+    # never be guessed from the employee's current master.
+    if review_branch == current_branch and not work_history:
+        return
+    if day >= getdate(today()) and review_branch == current_branch:
+        return
+    if day < getdate(today()):
+        frappe.throw(
+            _("Native Employee work history does not establish the reviewed historical Branch."),
+            title=_("MATERNITY_ESTABLISHMENT_HISTORY_REVIEW_REQUIRED"),
+        )
+    frappe.throw(
+        _("The review Branch must match the Employee's current establishment."),
+        title=_("MATERNITY_ESTABLISHMENT_SCOPE_MISMATCH"),
+    )
+
+
+def _maternity_case_window(review, rule):
+    anchor = review.actual_delivery_date or review.expected_delivery_date
+    if not anchor:
+        return None
+    pre_days = int(rule.pre_delivery_days or 0)
+    post_days = int(rule.post_delivery_days or 0)
+    protection_days = int(rule.post_delivery_work_protection_days or 0)
+    end_days = max(post_days, protection_days)
+    return (
+        getdate(anchor) - timedelta(days=pre_days),
+        getdate(anchor) + timedelta(days=end_days - 1),
+    )
+
+
+def _validate_no_overlapping_maternity_review(doc, rule):
+    current_window = _maternity_case_window(doc, rule)
+    if not current_window:
+        return
+    start, end = current_window
+    other_reviews = frappe.get_all(
+        MATERNITY_REVIEW,
+        filters={"employee": doc.employee, "docstatus": 1},
+        fields=["name", "rule_set", "actual_delivery_date", "expected_delivery_date"],
+    )
+    for other in other_reviews:
+        if other.name == doc.name:
+            continue
+        other_rule = frappe.get_doc(MATERNITY_RULE, other.rule_set)
+        other_window = _maternity_case_window(other, other_rule)
+        if other_window and start <= other_window[1] and other_window[0] <= end:
+            frappe.throw(
+                _("Another submitted maternity review overlaps this employee's legal review period."),
+                title=_("MATERNITY_REVIEW_CONFLICT"),
+            )
+
+
 def service_months_result(joining_date, reference_date, minimum_months):
     if not joining_date or not reference_date or int(minimum_months or 0) <= 0:
         return "REVIEW"
@@ -261,8 +338,7 @@ RULE_FROZEN_FIELDS = (
     "separation_protection_after_days", "benefit_rate_method",
     "benefit_daily_rate_divisor", "benefit_reference_period_months",
     "maternity_leave_type", "leave_is_lwp", "leave_is_ppl", "leave_include_holidays",
-    "leave_max_continuous_days", "benefit_payment_child_condition_review_required",
-    "sources", "legal_review_notes",
+    "leave_max_continuous_days", "sources", "legal_review_notes",
 )
 REVIEW_FROZEN_FIELDS = (
     "employee", "company", "branch", "rule_set", "notice_date", "expected_delivery_date",
@@ -319,7 +395,9 @@ def validate_maternity_review(doc, method=None):
     reference_date = doc.actual_delivery_date or doc.expected_delivery_date or doc.notice_date
     if not reference_date:
         frappe.throw(_("Provide a notice, expected delivery, or actual delivery date."))
+    _validate_maternity_establishment(doc.employee, doc.branch, reference_date)
     rule = _approved_rule(doc.rule_set, doc.company, doc.branch, reference_date)
+    _validate_no_overlapping_maternity_review(doc, rule)
     if rule.legal_regime not in ("Bangladesh Labour Act", "Bangladesh EPZ Labour Act", "Other Reviewed Regime"):
         frappe.throw(_("Select an explicit reviewed legal regime."))
     allowed_reason = {
@@ -363,10 +441,10 @@ def before_submit_maternity_review(doc, method=None):
     rule = frappe.get_doc(MATERNITY_RULE, doc.rule_set)
     event_date = doc.actual_delivery_date or doc.expected_delivery_date or doc.notice_date
     service_result = service_months_result(employee.date_of_joining, event_date, rule.minimum_service_months)
-    if service_result == "REVIEW" or frappe.db.exists(
-        "Employee Separation",
-        {"employee": doc.employee, "docstatus": 1, "relieving_date": ["<", event_date]},
-    ):
+    left_before_event = employee.status == "Left" and (
+        not employee.relieving_date or getdate(employee.relieving_date) < getdate(event_date)
+    )
+    if service_result == "REVIEW" or left_before_event:
         frappe.throw(_("Employment history needs legal review."), title=_("MATERNITY_SERVICE_HISTORY_REVIEW_REQUIRED"))
     if service_result == "BELOW" and doc.benefit_eligibility not in (
         "Leave Only — Statutory Benefit Not Payable", "Not Applicable"
@@ -390,7 +468,13 @@ def before_cancel_maternity_review(doc, method=None):
 def validate_maternity_rule_submit(doc, method=None):
     _assert_maker_checker(doc)
     validate_maternity_rule_set(doc)
-    _validate_native_leave_type(doc)
+    findings = _validate_native_leave_type(doc)
+    if findings:
+        code = findings[0]["code"]
+        frappe.throw(
+            _("Mapped native Maternity Leave Type does not match the reviewed rule."),
+            title=_(code),
+        )
     doc.reviewed_by = frappe.session.user
     doc.reviewed_at = now_datetime()
 
@@ -558,7 +642,7 @@ def _historical_work_evidence(review, rule):
     end = start + timedelta(days=int(rule.post_delivery_work_protection_days or 0) - 1)
     return bool(frappe.db.exists("Attendance", {
         "employee": review.employee, "docstatus": 1, "attendance_date": ["between", [start, end]],
-        "status": ["in", tuple(WORK_STATUSES)], "working_hours": [">", 0],
+        "status": ["in", tuple(WORK_STATUSES)],
     }))
 
 
@@ -567,10 +651,13 @@ def validate_maternity_separation_review(doc, method=None):
     _freeze_submitted_fields(doc, SEPARATION_FROZEN_FIELDS)
     separation = frappe.db.get_value(
         "Employee Separation", doc.employee_separation,
-        ["employee", "company", "relieving_date"], as_dict=True,
+        ["employee", "company"], as_dict=True,
     )
     if not separation or separation.employee != doc.employee or separation.company != doc.company:
         frappe.throw(_("The separation review must match the Employee Separation."))
+    relieving_date = frappe.db.get_value("Employee", separation.employee, "relieving_date")
+    if not relieving_date:
+        frappe.throw(_("The linked Employee needs a reviewed relieving date before separation review."))
     review = frappe.get_doc(MATERNITY_REVIEW, doc.maternity_review)
     if review.employee != doc.employee or review.company != doc.company or review.docstatus != 1:
         frappe.throw(_("The linked maternity review must be submitted for this employee."))
@@ -586,7 +673,7 @@ def validate_maternity_separation_review(doc, method=None):
     )
     if duplicates and doc.name not in duplicates:
         frappe.throw(_("Only one immutable legal review may decide this separation and maternity case."))
-    day = getdate(separation.relieving_date)
+    day = getdate(relieving_date)
     anchor = review.actual_delivery_date or review.expected_delivery_date
     start = getdate(anchor) - relativedelta(months=int(rule.separation_protection_before_months or 0)) if anchor else None
     end = getdate(anchor) + timedelta(days=int(rule.separation_protection_after_days or 0)) if anchor else None
@@ -610,9 +697,12 @@ def before_update_after_submit_maternity_separation_review(doc, method=None):
 def _separation_maternity_review(employee_separation):
     row = frappe.db.get_value(
         "Employee Separation", employee_separation,
-        ["employee", "company", "relieving_date"], as_dict=True,
+        ["employee", "company"], as_dict=True,
     )
     if not row:
+        return False
+    relieving_date = frappe.db.get_value("Employee", row.employee, "relieving_date")
+    if not relieving_date:
         return False
     cases = frappe.get_all(MATERNITY_REVIEW, filters={"employee": row.employee, "company": row.company, "docstatus": 1}, pluck="name")
     for name in cases:
@@ -621,7 +711,7 @@ def _separation_maternity_review(employee_separation):
         if not anchor:
             continue
         rule = frappe.get_doc(MATERNITY_RULE, review.rule_set)
-        day = getdate(row.relieving_date)
+        day = getdate(relieving_date)
         protected_from = getdate(anchor) - relativedelta(months=int(rule.separation_protection_before_months or 0))
         protected_to = getdate(anchor) + timedelta(days=int(rule.separation_protection_after_days or 0))
         if protected_from <= day <= protected_to:
@@ -735,7 +825,7 @@ def before_cancel_workplace_welfare_review(doc, method=None):
 
 
 def validate_maternity_attendance(doc, method=None):
-    if doc.status in WORK_STATUSES and flt(doc.working_hours) > 0:
+    if doc.status in WORK_STATUSES:
         validate_maternity_protected_work(doc, method)
 
 
@@ -757,7 +847,10 @@ def validate_maternity_salary_slip(doc, method=None):
 
 
 def validate_maternity_employee_separation(doc, method=None):
-    if not _maternity_schema_installed() or not doc.employee or not doc.company or not doc.relieving_date:
+    if not _maternity_schema_installed() or not doc.employee or not doc.company:
+        return
+    relieving_date = frappe.db.get_value("Employee", doc.employee, "relieving_date")
+    if not relieving_date:
         return
     cases = frappe.get_all(
         MATERNITY_REVIEW,
@@ -770,7 +863,7 @@ def validate_maternity_employee_separation(doc, method=None):
         if not anchor:
             continue
         rule = frappe.get_doc(MATERNITY_RULE, review.rule_set)
-        day = getdate(doc.relieving_date)
+        day = getdate(relieving_date)
         start = getdate(anchor) - relativedelta(months=int(rule.separation_protection_before_months or 0))
         end = getdate(anchor) + timedelta(days=int(rule.separation_protection_after_days or 0))
         if start <= day <= end:
@@ -790,9 +883,9 @@ def validate_maternity_full_and_final(doc, method=None):
     separation = frappe.db.get_value(
         "Employee Separation",
         {"employee": doc.employee, "docstatus": 1},
-        ["name", "relieving_date"],
+        ["name"],
         as_dict=True,
-        order_by="relieving_date desc",
+        order_by="modified desc",
     )
     if separation and _separation_maternity_review(separation.name):
         frappe.throw(_("A protected maternity period requires independent legal settlement review."),

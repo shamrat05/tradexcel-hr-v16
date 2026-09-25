@@ -53,3 +53,15 @@ Full Tradexcel suite: 532 passed, 3 skipped, 36 upstream deprecation warnings.
 Compileall, all-app JSON validation, JavaScript syntax, build, and diff checks are recorded in the completion report.
 
 No migration, site configuration change, production access, real employee maternity data, real Leave mutation, or real payroll mutation was performed. The original local MariaDB on 127.0.0.1:3307 remained the configured site database; the app returned HTTP 200.
+
+## Follow-up verification — 2026-09-25
+
+The initial source-only status above records the state before the authorized v16 staging migration. The standard `bench --site hrms-v16.localhost migrate` and `clear-cache` have since completed. All four requested DocTypes and their tables now exist on staging. The linked `Tradexcel Maternity Leave Application` child DocType was also installed and its controller resolves under Tradexcel HR.
+
+The first migration found stale child-DocType metadata registered under Frappe Core and removed that orphan. A versioned pre-model-sync patch now repairs the module on stale rows or imports the source child DocType when absent, preserving existing child rows. The native Leave link integration passed after the migration retry.
+
+The migrated synthetic integration exercised DocPerm rows, Frappe `has_permission`, `get_list`, document permission checks, explicit Company isolation, maker/checker submission, native Leave Application links, submitted-record immutability, and maternity separation review. Its cleanup assertions verified removal of every synthetic user, Company permission, Employee, Employee Separation, Branch, Leave Type, Leave Period, Allocation, Leave Application, Attendance, and Leave Ledger Entry.
+
+The full-suite run exposed two remaining Employee Separation references to a nonexistent `Employee Separation.relieving_date`. Both the separation submission and Full and Final hooks now read the canonical `Employee.relieving_date`. The native separation and statutory-exit regression cases passed after the fix.
+
+Final verification: focused maternity tests 34 passed; native maternity integration 2 passed; all 59 Tradexcel app JSON files parsed; compileall passed; final full Tradexcel suite 542 passed, 2 skipped, 39 upstream deprecation warnings. No production site, real employee, payroll, or Leave records were changed.
