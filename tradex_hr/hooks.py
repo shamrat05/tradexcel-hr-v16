@@ -30,6 +30,9 @@ add_to_apps_screen = [{
 }]
 
 extend_doctype_class = {
+    "Employee Transfer": [
+        "tradex_hr.tradexcel_hr.employee_lifecycle.EmployeeTransferLifecycleMixin",
+    ],
     "Payroll Entry": [
         "tradex_hr.tradexcel_hr.payroll_finalization.PayrollEntryFinalizationMixin",
     ],
@@ -130,6 +133,12 @@ doc_events = {
         "validate": "tradex_hr.tradexcel_hr.employee_separation.validate_employee_separation",
         "before_submit": "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_employee_separation",
     },
+    "Employee Transfer": {
+        "validate": "tradex_hr.tradexcel_hr.employee_lifecycle.validate_employee_transfer",
+    },
+    "Employee Promotion": {
+        "validate": "tradex_hr.tradexcel_hr.employee_lifecycle.validate_employee_promotion",
+    },
     "Full and Final Statement": {
         "before_submit": [
             "tradex_hr.tradexcel_hr.employee_separation.validate_full_and_final_before_submit",
@@ -186,6 +195,7 @@ doc_events = {
     },
     "Employee": {
         "before_insert": "tradex_hr.tradexcel_hr.joiner_readiness.validate_unique_employee_job_applicant",
+        "validate": "tradex_hr.tradexcel_hr.employee_lifecycle.validate_employee_employment_spell",
     },
     "Employee Checkin": {
         "before_validate": "tradex_hr.tradexcel_hr.field_attendance_service.enrich_mobile_checkin",

@@ -61,6 +61,9 @@ that date — re-read them before trusting them (see *Checking current state*).
 
 ## Checking current state
 
+For starting and stopping the local v16 site, see
+[`tasks/local_v16_start_stop_guide.md`](tasks/local_v16_start_stop_guide.md).
+
 ```bash
 # health and counts
 cd ~/frappe-bench && bench --site hrms.localhost mariadb -e "
