@@ -480,6 +480,33 @@ def _ensure_permission(doctype: str, role: str, allowed: set[str]) -> None:
         )
 
 
+
+def ensure_employee_financial_privacy() -> None:
+    """Native field permissions hide compensation/bank identifiers from operators."""
+    from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
+    for field in ("ctc", "bank_ac_no", "iban"):
+        if not frappe.get_meta("Employee").has_field(field):
+            continue
+        if frappe.get_meta("Employee").get_field(field).permlevel != 1:
+            make_property_setter("Employee", field, "permlevel", 1, "Int")
+    readers = {
+        "HR User", "HR Manager", "System Manager", "Tradexcel Owner/Director",
+        "Tradexcel HR Manager", "Tradexcel Payroll Manager", "Tradexcel Payroll Approver",
+        "Tradexcel Finance/Accounts Officer", "Tradexcel Compliance Auditor",
+    }
+    writers = {"HR User", "HR Manager", "System Manager", "Tradexcel HR Manager"}
+    # Preserve native HR capability. A level-one row never grants Employee
+    # document access on its own. Worker/operational role unions get no level one.
+    setup_custom_perms("Employee")
+    for role in sorted(readers):
+        if not frappe.db.exists("Custom DocPerm", {"parent": "Employee", "role": role, "permlevel": 1}):
+            add_permission("Employee", role, permlevel=1, ptype="read")
+        for field in PERMISSION_FIELDS:
+            allowed = field == "read" or (field == "write" and role in writers)
+            update_permission_property("Employee", role, 1, field, int(allowed), validate=False)
+
+
 def ensure_tradex_roles() -> dict[str, int]:
     """Create the approved roles and permissions without changing user roles."""
     created_or_updated = 0
@@ -505,6 +532,7 @@ def ensure_tradex_roles() -> dict[str, int]:
             "Employee Checkin", "Employee", 0, fieldname, 0, validate=False
         )
 
+    ensure_employee_financial_privacy()
     frappe.clear_cache()
     return {
         "roles_created_or_updated": created_or_updated,

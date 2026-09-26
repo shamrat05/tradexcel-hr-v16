@@ -227,6 +227,21 @@ after_migrate = "tradex_hr.install.after_migrate"
 
 
 permission_query_conditions = {
+    "Tradex Mobile Event": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Leave Policy Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Leave Application": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Full and Final Statement": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Tradexcel Field Duty": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Tradexcel Location Ping": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+
+    "Payroll Entry": "tradex_hr.tradexcel_hr.report_scope.payroll_entry_query_conditions",
+    "Shift Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Shift Schedule Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Shift Request": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Leave Allocation": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Additional Salary": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Overtime Slip": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Tradexcel Employee Biometric": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
     "Attendance Request": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
     "Employee Checkin": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
     "Salary Structure Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
@@ -250,6 +265,21 @@ permission_query_conditions = {
 }
 
 has_permission = {
+    "Tradex Mobile Event": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Leave Policy Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Leave Application": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Full and Final Statement": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Tradexcel Field Duty": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Tradexcel Location Ping": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+
+    "Payroll Entry": "tradex_hr.tradexcel_hr.report_scope.payroll_entry_has_permission",
+    "Shift Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Shift Schedule Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Shift Request": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Leave Allocation": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Additional Salary": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Overtime Slip": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Tradexcel Employee Biometric": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
     "Attendance Request": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
     "Employee Checkin": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
     "Salary Structure Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",

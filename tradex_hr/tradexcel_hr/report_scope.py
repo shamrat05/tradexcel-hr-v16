@@ -27,6 +27,9 @@ def permitted_employee_query(user: str | None = None):
 
 EMPLOYEE_LINK_SCOPED_DOCTYPES = frozenset({
     "Attendance Request", "Employee Checkin", "Salary Structure Assignment",
+    "Shift Assignment", "Shift Schedule Assignment", "Shift Request",
+    'Leave Policy Assignment', 'Leave Application', 'Full and Final Statement', 'Tradexcel Field Duty', 'Tradexcel Location Ping',
+    "Tradex Mobile Event", "Leave Allocation", "Additional Salary", "Overtime Slip", "Tradexcel Employee Biometric",
 })
 
 
@@ -136,3 +139,30 @@ def permitted_salary_slips(company: str, employee_names: tuple[str, ...], *,
             _("You do not have permission to view salary reports."),
             frappe.PermissionError,
         )
+
+
+def payroll_entry_query_conditions(user=None, doctype=None):
+    """A payroll parent cannot expose children outside native Employee scope."""
+    user = user or frappe.session.user
+    if user == "Guest" or not frappe.get_cached_value("User", user, "enabled"):
+        return "1=0"
+    if not frappe.has_permission("Employee", "select", user=user):
+        return "1=0"
+    child = frappe.qb.DocType("Payroll Employee Detail")
+    parent = frappe.qb.DocType("Payroll Entry")
+    hidden_parents = (
+        frappe.qb.from_(child).select(child.parent)
+        .where(child.parenttype == "Payroll Entry")
+        .where(child.employee.notin(permitted_employee_query(user)))
+    )
+    return parent.name.notin(hidden_parents).get_sql(quote_char="`", with_namespace=True)
+
+
+def payroll_entry_has_permission(doc, ptype=None, user=None, **_kwargs):
+    user = user or frappe.session.user
+    if user == "Guest" or not frappe.get_cached_value("User", user, "enabled"):
+        return False
+    return all(
+        frappe.has_permission("Employee", "select", row.employee, user=user)
+        for row in doc.get("employees", []) if row.employee
+    )

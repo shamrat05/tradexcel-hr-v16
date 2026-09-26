@@ -208,6 +208,7 @@ def _approved_duty(employee: frappe._dict, duty_name: str | None, day: str):
 
 def _assert_identity(employee: frappe._dict) -> None:
     if set(frappe.get_roles(frappe.session.user)) & SUPERVISOR_ROLES:
+        frappe.has_permission("Employee", "select", employee.name, throw=True)
         return
     if employee.user_id != frappe.session.user:
         frappe.throw(_("You may only create mobile attendance for your own linked Employee"), frappe.PermissionError)
@@ -612,6 +613,12 @@ def get_live_locations(employee=None, company=None):
     """Return latest active-duty positions to authorized HR/supervisor users."""
     if not (set(frappe.get_roles(frappe.session.user)) & SUPERVISOR_ROLES):
         frappe.throw(_("Live location is restricted to authorized HR and managers"), frappe.PermissionError)
+    from tradex_hr.tradexcel_hr.report_scope import permitted_employee_query
+
+    frappe.has_permission("Employee", "select", throw=True)
+    # Native Query Builder produces the permission predicate; no caller text
+    # is interpolated into SQL. Optional filters only narrow that population.
+    scope_sql = permitted_employee_query().get_sql()
     filters = ""
     values = []
     if employee:
@@ -632,7 +639,7 @@ def get_live_locations(employee=None, company=None):
             FROM `tabTradexcel Location Ping`
             GROUP BY employee
         ) latest ON latest.employee=p.employee AND latest.latest_time=p.ping_time
-        WHERE 1=1 {filters}
+        WHERE e.name IN ({scope_sql}) {filters}
         ORDER BY p.ping_time DESC
         """,
         values,

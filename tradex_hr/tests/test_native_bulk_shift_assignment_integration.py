@@ -238,17 +238,11 @@ def test_native_shift_assignment_tool_scopes_bulk_assignment_and_actions(monkeyp
             ["name", "docstatus"],
             as_dict=True,
         )
-        assert native_bypass and native_bypass.docstatus == 1
-        created_assignments.append(native_bypass.name)
-        frappe.set_user("Administrator")
-        native_bypass_doc = frappe.get_doc("Shift Assignment", native_bypass.name)
-        native_bypass_doc.cancel()
-        frappe.delete_doc("Shift Assignment", native_bypass.name, force=True, ignore_permissions=True)
-        created_assignments.remove(native_bypass.name)
+        # The security follow-up also scopes native Shift Assignment itself.
+        # The historical PR25 bypass is now denied downstream even when the
+        # original HRMS tool class is called without its selection mixin.
+        assert not native_bypass
 
-        # Native Company User Permission matching blocks cross-company rows,
-        # even though the same controller fails to enforce narrower Branch
-        # scope on the client-supplied Employee list.
         frappe.set_user(users["native_hr_user"])
         NativeShiftAssignmentTool.bulk_assign(native_control, [employees["cross_company"]])
         assert not frappe.get_all(
@@ -518,9 +512,9 @@ def test_native_shift_assignment_tool_scopes_bulk_assignment_and_actions(monkeyp
         assert _run_tool_method(
             "bulk_process_shift_requests",
             {**payload, "action": "Process Shift Requests"},
-            args={"shift_requests": [{"shift_request": request.name}], "status": "Rejected"},
+            args={"shift_requests": [{"shift_request": request.name, "employee": employees["in_scope"]}], "status": "Rejected"},
         ) == "native-request-processing"
-        assert native_request_calls == [([{"shift_request": request.name}], "Rejected")]
+        assert native_request_calls == [([{"shift_request": request.name, "employee": employees["in_scope"]}], "Rejected")]
         endpoint_results["native_hr_user"] = "native HR User control"
         print("NATIVE_BULK_SHIFT_PERSONAS=" + json.dumps(endpoint_results, sort_keys=True))
 
