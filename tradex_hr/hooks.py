@@ -72,6 +72,7 @@ doctype_list_js = {
     "Leave Allocation": "public/js/list_scope.js",
     "Additional Salary": "public/js/list_scope.js",
     "Payroll Entry": "public/js/list_scope.js",
+    "Overtime Slip": "public/js/overtime_bulk_list.js",
 }
 
 doc_events = {
@@ -132,6 +133,7 @@ doc_events = {
             "tradex_hr.tradexcel_hr.working_time_compliance.validate_overtime_slip_before_submit",
             "tradex_hr.tradexcel_hr.maternity_welfare.validate_maternity_overtime",
         ],
+        "before_cancel": "tradex_hr.tradexcel_hr.overtime_bulk.prevent_consumed_overtime_cancel",
     },
     "Tradexcel Field Duty": {
         "validate": [

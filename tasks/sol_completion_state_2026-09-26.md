@@ -30,8 +30,8 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 | 0 Attendance acceptance | COMPLETE | feat/bulk-attendance-corrections | fix/converge-shift-bulk-path | #28 | 10 passed | 585 passed, 0 skipped | Previous slice | See `BACKUPS.md` | Browser/volume UAT later |
 | 0-B Repository/runtime audit | COMPLETE | refactor/runtime-portability | feat/bulk-attendance-corrections | — | Source inventory and static scans | Baseline above | NO | — | Threat-oriented adversarial verification belongs to H |
 | A Portability/legacy hazards | COMPLETE | refactor/runtime-portability | feat/bulk-attendance-corrections | #29 open/draft/unmerged | 35 passed | 593 passed, 0 skipped | YES, standard migrate and cache clear | 20260926_012737-hrms-v16_localhost- | Fresh neutral-site install belongs to K |
-| B Native leave bulk | COMPLETE | feat/native-bulk-leave-control | refactor/runtime-portability | Pending draft PR | 40 passed, plus final native integration 1 passed | 594 passed, 0 skipped | YES, standard migrate and cache clear | 20260926_014339-hrms-v16_localhost- | Real entitlement configuration and browser/volume UAT later |
-| C Native overtime bulk | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
+| B Native leave bulk | COMPLETE | feat/native-bulk-leave-control | refactor/runtime-portability | #30 open/draft/unmerged | 40 passed, plus final native integration 1 passed | 594 passed, 0 skipped | YES, standard migrate and cache clear | 20260926_014339-hrms-v16_localhost- | Real entitlement configuration and browser/volume UAT later |
+| C Native overtime bulk | COMPLETE | feat/native-overtime-bulk | feat/native-bulk-leave-control | Pending draft PR | 34 passed | 595 passed, 0 skipped | NO; Python/JS hook only, cache clear/build | — | Browser dialog and live >30 worker UAT later |
 | D Bulk-domain closure | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | E Action Board | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | F Native navigation | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |

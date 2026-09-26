@@ -943,6 +943,14 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         for name in tracked["journal_entries"]:
             assert frappe.db.get_value("Journal Entry", name, "docstatus") == 1
         assert final["journal_entry_count"] == 2
+        # Guard before mutation: Frappe's later dynamic-link check also throws,
+        # but only after it has set docstatus=2 inside the current transaction.
+        frappe.set_user("Administrator")
+        with pytest.raises(frappe.ValidationError, match="salary input"):
+            frappe.get_doc("Overtime Slip", tracked["overtime_slip"]).cancel()
+        assert frappe.db.get_value("Overtime Slip", tracked["overtime_slip"], "docstatus") == 1
+        assert frappe.db.get_value("Additional Salary", tracked["overtime_additional"], "docstatus") == 1
+        frappe.set_user(manager)
 
         # The same native report endpoint exposes only the submitted synthetic
         # payroll, and amounts come from Salary Detail and native Salary Slip
