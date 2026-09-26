@@ -340,7 +340,7 @@ WORKSPACE_SHORTCUTS = [
     ("Leave Balances", "Tradexcel Leave Balance Board", "Report"),
     ("Shift Types", "Shift Type", "DocType"),
     ("Shift Planner", "Shift Schedule", "DocType"),
-    ("Shift Assignments", "Shift Schedule Assignment", "DocType"),
+    ("Shift Assignments", "Shift Assignment", "DocType"),
     ("Shift Coverage", "Tradexcel Shift Coverage", "Report"),
     ("Attendance Policies", "Tradexcel Attendance Policy", "DocType"),
     ("Field Duties", "Tradexcel Field Duty", "DocType"),
@@ -352,6 +352,30 @@ WORKSPACE_SHORTCUTS = [
     ("Employee Biometric IDs", "Tradexcel Employee Biometric", "DocType"),
     ("Face Match Settings", "Tradex Face Match Settings", "DocType"),
     ("Bulk Data Import", "Data Import", "DocType"),
+    ("Employee Promotions", "Employee Promotion", "DocType"),
+    ("Job Openings", "Job Opening", "DocType"),
+    ("Job Applicants", "Job Applicant", "DocType"),
+    ("Job Offers", "Job Offer", "DocType"),
+    ("Onboarding", "Employee Onboarding", "DocType"),
+    ("Overtime Reviews", "Overtime Slip", "DocType"),
+    ("Leave Policies", "Leave Policy", "DocType"),
+    ("Leave Policy Assignments", "Leave Policy Assignment", "DocType"),
+    ("Leave Periods", "Leave Period", "DocType"),
+    ("Holiday Lists", "Holiday List", "DocType"),
+    ("Payroll Corrections", "Payroll Correction", "DocType"),
+    ("Salary Arrears", "Arrear", "DocType"),
+    ("Wage Floor Reviews", "Tradexcel Wage Floor Classification", "DocType"),
+    ("Benefit Enrollments", "Tradexcel Statutory Benefit Enrollment", "DocType"),
+    ("Working Time Reviews", "Tradexcel Working Time Classification", "DocType"),
+    ("Maternity Reviews", "Tradexcel Maternity Review", "DocType"),
+    ("Welfare Reviews", "Tradexcel Workplace Welfare Review", "DocType"),
+    ("Statutory Exit Rules", "Tradexcel Statutory Rule Set", "DocType"),
+    ("Wage Floor Rules", "Tradexcel Wage Floor Rule Set", "DocType"),
+    ("Benefit Rules", "Tradexcel Statutory Benefit Rule Set", "DocType"),
+    ("Working Time Rules", "Tradexcel Working Time Rule Set", "DocType"),
+    ("Maternity Rules", "Tradexcel Maternity Rule Set", "DocType"),
+    ("Income Tax Slabs", "Income Tax Slab", "DocType"),
+    ("Payroll Periods", "Payroll Period", "DocType"),
 ]
 
 BULK_WORKSPACE_SHORTCUTS = [
@@ -416,33 +440,73 @@ WORKSPACE_SHORTCUT_ICONS = {
 }
 
 WORKSPACE_SECTIONS = (
-    ("Every day", "Start here: attendance, missing punches, and corrections.", (
-        "Today's Attendance", "Attendance Summary", "Mobile Attendance", "Live Locations", "Punch Log", "Attendance Records", "Attendance Fix Requests",
+    ("Employees", "Maintain identity and use native records for employment changes.", (
+        "Employee Directory", "Joiners & Leavers", "Employee Transfers", "Employee Promotions", "Missing Employee Data",
     )),
-    ("Field & mobile", "Use GPS, field duties, live positions, and biometric evidence without affecting terminal punches.", (
-        "Attendance Policies", "Field Duties", "Location Pings", "Face Match Settings",
+    ("Attendance", "Review work evidence, corrections and shift coverage.", (
+        "Today's Attendance", "Attendance Summary", "Attendance Fix Requests", "Attendance Records", "Punch Log",
+        "Mobile Attendance", "Field Duties", "Shift Assignments", "Bulk Shift Assignment", "Shift Coverage", "Overtime Reviews",
     )),
-    ("People", "Employees, organization structure, movement, and exits.", (
-        "Employee Directory", "Departments", "Designations", "Branches / Locations",
-        "Joiners & Leavers", "Employee Transfers", "Exits / Separations", "Final Settlements",
+    ("Leave", "Review requests and explicitly configured leave entitlements.", (
+        "Leave Requests", "Leave Balances", "Leave Allocations", "Bulk Leave Allocation", "Leave Policy Assignments",
     )),
-    ("Payroll & salary", "Prepare payroll, maintain pay rules, and review every amount.", (
-        "Run Monthly Payroll", "Payroll Entries (Advanced)", "Salary Slips", "Salary Structures", "Salary Assignments",
-        "Salary Components", "Extra Pay & Deductions", "Payroll Register", "Payroll Variance",
-        "Pay Component Register", "Salary Setup Coverage", "Payroll Rules", "Policy Exceptions",
-        "Bulk Salary Structure Assignment",
+    ("Payroll", "Prepare and review native salary authority and payroll.", (
+        "Run Monthly Payroll", "Salary Setup Coverage", "Bulk Salary Structure Assignment", "Salary Assignments",
+        "Payroll Entries (Advanced)", "Salary Slips", "Extra Pay & Deductions", "Payroll Corrections", "Salary Arrears",
     )),
-    ("Leave & shifts", "Plan shifts, allocate leave, and check coverage before payroll.", (
-        "Leave Requests", "Leave Allocations", "Bulk Leave Allocation", "Leave Balances",
-        "Shift Types", "Shift Planner", "Shift Assignments", "Bulk Shift Assignment", "Shift Coverage",
+    ("Recruitment", "Move reviewed hires through native recruitment and onboarding.", (
+        "Job Openings", "Job Applicants", "Job Offers", "Onboarding",
     )),
-    ("Checks & alerts", "Review exceptions before they become payroll or attendance mistakes.", (
-        "Anomaly Radar", "Missing Employee Data", "Biometric ID Audit",
+    ("Separation", "Review operational exit and settlement separately.", (
+        "Exits / Separations", "Final Settlements",
     )),
-    ("Devices & data", "Connect attendance devices and safely fill verified master data.", (
-        "Biometric Devices", "Employee Biometric IDs", "Bulk Data Import", "Attendance Requests",
+    ("Compliance", "Review explicit applicability without inventing legal values.", (
+        "Wage Floor Reviews", "Benefit Enrollments", "Working Time Reviews", "Maternity Reviews", "Welfare Reviews",
+    )),
+    ("Reports", "Open the reviews allowed for your role and scope.", (
+        "Anomaly Radar", "Payroll Register", "Payroll Variance", "Pay Component Register", "Biometric ID Audit",
+    )),
+    ("Setup", "Reviewed configuration for authorized administrators.", (
+        "Departments", "Designations", "Branches / Locations", "Shift Types", "Shift Planner", "Attendance Policies",
+        "Holiday Lists", "Leave Policies", "Leave Periods", "Salary Structures", "Salary Components", "Payroll Rules",
+        "Policy Exceptions", "Income Tax Slabs", "Payroll Periods", "Statutory Exit Rules", "Wage Floor Rules",
+        "Benefit Rules", "Working Time Rules", "Maternity Rules", "Bulk Data Import",
+    )),
+    ("Devices", "Device and field evidence for authorized support roles.", (
+        "Biometric Devices", "Employee Biometric IDs", "Face Match Settings", "Live Locations", "Location Pings",
     )),
 )
+
+
+def workspace_sidebar_items(shortcuts):
+    """Native metadata only: Frappe filters every target for the current user."""
+    available = {label: (target, kind) for label, target, kind in shortcuts}
+    items = [{"label": "Home / Action Board", "type": "Link", "link_type": "Workspace",
+              "link_to": "tradexcel-hr", "icon": "home", "child": 0}]
+    for title, _description, labels in WORKSPACE_SECTIONS:
+        selected = [label for label in labels if label in available]
+        if not selected:
+            continue
+        items.append({"label": title, "type": "Section Break", "collapsible": 1, "keep_closed": 1})
+        for label in selected:
+            target, kind = available[label]
+            items.append({"label": label, "type": "Link", "link_type": kind, "link_to": target,
+                          "child": 1, "icon": WORKSPACE_SHORTCUT_ICONS.get(label)})
+    return items
+
+
+def ensure_workspace_sidebar(shortcuts):
+    name = "Tradexcel HR"
+    doc = frappe.get_doc("Workspace Sidebar", name) if frappe.db.exists("Workspace Sidebar", name) else frappe.new_doc("Workspace Sidebar")
+    doc.title = name
+    doc.module = "Tradexcel HR"
+    doc.app = "tradex_hr"
+    doc.standard = 0  # Source-owned installer metadata; no developer-mode export.
+    doc.for_user = None
+    doc.header_icon = "users"
+    doc.set("items", workspace_sidebar_items(shortcuts))
+    doc.save(ignore_permissions=True)
+
 
 
 WORKSPACE_NAMES = {
@@ -639,6 +703,8 @@ def ensure_action_board_block() -> None:
 
 
 def ensure_workspace() -> None:
+    from tradex_hr.tradexcel_hr.action_board import BOARD_ROLES
+
     ensure_action_board_block()
     def save_workspace_doc(doc):
         # Frappe normally rejects duplicate workspace slugs during ordinary
@@ -678,6 +744,11 @@ def ensure_workspace() -> None:
             doc.icon = "users"
             doc.indicator_color = "blue"
 
+        # This cross-module home is role-gated, not gated on having a custom
+        # app DocType permission. Native HR-only approvers need their home too.
+        doc.module = None
+        doc.app = "tradex_hr"
+        doc.set("roles", [{"role": role} for role in sorted(BOARD_ROLES)])
         doc.content = content
         doc.type = "Workspace"
         doc.title = workspace_values["title"]
@@ -685,7 +756,7 @@ def ensure_workspace() -> None:
         doc.is_hidden = 0 if workspace_is_visible(name) else 1
         doc.charts = []
         doc.number_cards = []
-        doc.set("custom_blocks", [{"custom_block_name": "Tradexcel Work Needing Attention", "label": "Work needing attention"}])
+        doc.set("custom_blocks", [{"custom_block_name": "Tradexcel Work Needing Attention", "label": "Tradexcel Work Needing Attention"}])
         doc.shortcuts = []
         for label, link_to, link_type in shortcuts:
             doc.append("shortcuts", {
@@ -696,6 +767,8 @@ def ensure_workspace() -> None:
                 "color": "Blue",
             })
         save_workspace_doc(doc)
+    # Validate the Home Link only after fresh-install Workspace creation.
+    ensure_workspace_sidebar(shortcuts)
 
 
 def ensure_property_setters() -> dict[str, int]:

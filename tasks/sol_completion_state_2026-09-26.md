@@ -35,8 +35,8 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 | D Bulk-domain closure | COMPLETE | refactor/native-bulk-closure | feat/native-overtime-bulk | #32 open/draft/unmerged | 28 passed; 12 report/persona and 4 attendance/salary recovery passed | 597 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_070248-hrms-v16_localhost-; synthetic cleanup backup 20260926_092011-hrms-v16_localhost- | Browser UAT and wider import delegation remain gated |
 | D follow-up Older report boundaries | COMPLETE | fix/legacy-report-boundaries | refactor/native-bulk-closure | #33 open/draft/unmerged | 37 focused + 22 post-migration + 36 restart checks passed | 602 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_101050-hrms-v16_localhost- | Browser/export UAT later; synthetic cleanup zero |
 | D follow-up Employee-linked scope | COMPLETE | fix/employee-linked-scope | fix/legacy-report-boundaries | #34 open/draft/unmerged | 23 passed; Request/Checkin/SSA scope regressions | 604 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_173459-hrms-v16_localhost- | Synthetic cleanup zero; browser UAT later |
-| E Action Board | COMPLETE | feat/action-board | fix/employee-linked-scope | — | 25 passed; native block/persona/source checks | 607 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_180505-hrms-v16_localhost-; final script 20260926_181032-hrms-v16_localhost- | Synthetic cleanup zero; draft PR creation pending |
-| F Native navigation | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
+| E Action Board | COMPLETE | feat/action-board | fix/employee-linked-scope | #35 open/draft/unmerged | 25 passed; native block/persona/source checks | 607 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_180505-hrms-v16_localhost-; final script 20260926_181032-hrms-v16_localhost- | Synthetic cleanup zero; browser UAT later |
+| F Native navigation | COMPLETE | refactor/native-workspace-ia | feat/action-board | Pending draft PR creation | 25 passed; 3-persona desktop/phone browser smoke passed | 609 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_183119-, 183319-, 231100-, 233132-hrms-v16_localhost-; full filenames in BACKUPS.md | Wider browser UAT later; cleanup zero |
 | G Operator usability/localization | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | H Security/privacy | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | I Accounting/reconciliation | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
@@ -92,3 +92,14 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
   Employee/form routes; do not add money or duplicate state for that label.
 - K: system Python did not have Playwright; actual browser execution has not
   been claimed. Assess available browser tooling separately from backend tests.
+
+## Security follow-up discovered during F validation
+
+Installed `frappe.realtime.publish_realtime` chooses room `all` when supplied a
+DocType without a document name/user/task. Native Shift and Leave bulk completion
+calls and the app SSA draft completion do exactly this. A no-network test of the
+installed publisher captured `all` with synthetic payload. Before broader UX
+work, reproduce recipient behavior and scope completion events using supported
+transaction callbacks/native per-user rooms; do not patch framework code or copy
+native mutation loops. Also address the previously recorded queued-retry identity
+and mixed native/custom Shift action checks in a bounded current-stack follow-up.

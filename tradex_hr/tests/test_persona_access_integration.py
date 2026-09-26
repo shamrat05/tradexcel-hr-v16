@@ -79,7 +79,9 @@ def test_native_persona_access_report_and_workspace_contract():
     assert len(branches_a) >= 2 and len(departments_a) >= 2 and branches_b and departments_b
 
     workspace_doc = frappe.get_doc("Workspace", "tradexcel-hr")
-    assert workspace_doc.public and not workspace_doc.roles
+    from tradex_hr.tradexcel_hr.action_board import BOARD_ROLES
+    assert workspace_doc.public
+    assert {row.role for row in workspace_doc.roles} == set(BOARD_ROLES)
     payroll_register_roles = {
         "Tradexcel Owner/Director", "Tradexcel HR Manager", "Tradexcel Payroll Manager",
         "Tradexcel Payroll Approver", "Tradexcel Finance/Accounts Officer",

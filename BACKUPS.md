@@ -463,3 +463,55 @@ Gzip and both tar integrity checks passed.
 | `20260926_181032-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
 | `20260926_181032-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
 | `20260926_181032-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## 2026-09-26 native Workspace sidebar convergence
+
+Fresh `bench --site hrms-v16.localhost backup --with-files` before standard migration.
+Purpose: source-owned native sidebar and Workspace target convergence, no business-data changes.
+Database gzip and both public/private tar archives passed integrity checks.
+Prefix: `20260926_183119-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_183119-hrms-v16_localhost-database.sql.gz` | 41,538,585 | `0278e35b5ee4eed532db600080f8d50c40707527eaad92fe637cc558e9287f9a` |
+| `20260926_183119-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_183119-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_183119-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+### Native sidebar migration retry restore point
+
+Fresh `backup --with-files` after the first migration rejected a Home Link before Workspace creation.
+Installer now saves Workspace before sidebar; canonical bundled name matches its route.
+No manual metadata edits. Gzip and both tar archives verified. Prefix `20260926_183319-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_183319-hrms-v16_localhost-database.sql.gz` | 41,545,532 | `048f6b59d5ff02f820a592fda069405a9a828539967a1450339d696dfe99de7d` |
+| `20260926_183319-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_183319-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_183319-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+### Native navigation persona convergence
+
+Verified `backup --with-files` before removing unreachable Device Admin report role and
+using explicit native Workspace roles for a cross-module home. Gzip and both tar archives passed.
+Prefix `20260926_231100-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_231100-hrms-v16_localhost-database.sql.gz` | 41,579,333 | `01f2992c4cc2c11a25cd4687f907dc6f29351d2fe72377bc89f778a4e1b9edeb` |
+| `20260926_231100-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_231100-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_231100-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## 2026-09-26 Action Board native label convergence
+
+Fresh `bench --site hrms-v16.localhost backup --with-files` before standard migration.
+Gzip and public/private tar archives verified. Prefix `20260926_233132-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_233132-hrms-v16_localhost-database.sql.gz` | 42,115,153 | `13fc6167efc0d7b17f44b09217c5903f9bec20c23fcf84b3f2fa9818ad456fe9` |
+| `20260926_233132-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_233132-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_233132-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
