@@ -52,7 +52,12 @@ class SyntheticPersonaHarness:
             "user_type": "System User",
             "send_welcome_email": 0,
             "roles": [{"role": role} for role in roles],
-        }).insert(ignore_permissions=True)
+        })
+        # Native User.on_update creates Contact asynchronously outside tests.
+        # Complete that test-owned work before teardown can delete the User.
+        # Actual authorization assertions run after this setup-only context.
+        with patch.object(frappe, "in_test", True):
+            user.insert(ignore_permissions=True)
         self.users[key] = user.name
         self.user_emails.append(email)
 
@@ -110,14 +115,18 @@ class SyntheticPersonaHarness:
                     frappe.delete_doc("Contact", contact, force=True, ignore_permissions=True)
                 assert not frappe.get_all("Contact", filters={"user": name}, pluck="name")
                 frappe.db.commit()
-                # The standard User.on_trash bulk-updates tabContact; on this
-                # MariaDB staging build that update can raise row-version 1020
-                # even after linked synthetic Contacts were explicitly removed.
-                # Skip only that redundant update during test-only teardown.
-                from frappe.core.doctype.user.user import User
-
-                with patch.object(User, "on_trash", lambda _self: None):
-                    frappe.delete_doc("User", name, force=True, ignore_permissions=True)
+                # Keep native notification/auth cleanup. This MariaDB build
+                # can report a Contact snapshot conflict (1020), which Frappe
+                # classifies as QueryDeadlockError. Retry the entire native
+                # User teardown in a fresh transaction, never skip its hooks.
+                for attempt in range(3):
+                    try:
+                        frappe.delete_doc("User", name, force=True, ignore_permissions=True)
+                        break
+                    except frappe.QueryDeadlockError:
+                        frappe.db.rollback()
+                        if attempt == 2:
+                            raise
                 frappe.db.commit()
         frappe.clear_cache()
         frappe.db.commit()
@@ -129,6 +138,15 @@ class SyntheticPersonaHarness:
             ),
             "permissions": frappe.get_all(
                 "User Permission", filters={"user": ["in", list(self.users.values())]}, pluck="name"
+            ),
+            "contacts": frappe.get_all(
+                "Contact", filters={"user": ["in", self.user_emails]}, pluck="name"
+            ),
+            "roles": frappe.get_all(
+                "Has Role", filters={"parent": ["in", self.user_emails]}, pluck="name"
+            ),
+            "notification_settings": frappe.get_all(
+                "Notification Settings", filters={"name": ["in", self.user_emails]}, pluck="name"
             ),
         }
         assert not any(leftovers.values()), f"synthetic persona cleanup incomplete: {leftovers}"

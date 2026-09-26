@@ -7,20 +7,21 @@ from frappe import _
 from frappe.utils import getdate, today
 
 from tradex_hr.tradexcel_hr.company_context import assert_company_access, resolve_company
+from tradex_hr.tradexcel_hr.pay_basis import CONFLICT, DAILY, MONTHLY, resolve_pay_basis
+from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
 
 
 GAP_DEFINITIONS = (
-    ("no_department", "Missing Department", "High", "Set the employee's Department"),
-    ("no_employee_number", "Missing Employee Number", "High", "Assign an Employee Number"),
-    ("no_active_assignment", "No Active Salary Assignment", "High", "Create a Salary Structure Assignment effective on or before today"),
-    ("no_shift_assignment", "No Shift Assignment", "High", "Create a Shift Assignment for the employee (shift window and grace)"),
-    ("duplicate_active_assignments", "Multiple Active Salary Assignments", "Medium", "Cancel the superseded assignment so one active structure remains"),
-    ("wage_structure_not_worker", "Latest Structure Is a Wage Structure", "High", "Confirm the employment type and pay basis"),
-    ("worker_without_wage_structure", "Worker Without Wage Structure", "High", "Assign a wage Salary Structure or confirm the employment type"),
-    ("future_doj_with_punches", "Future Joining Date With Punches", "High", "Verify Date of Joining and assignment date against device punches"),
-    ("no_designation", "Missing Designation", "Medium", "Set the Designation"),
-    ("no_date_of_birth", "Missing Date of Birth", "Low", "Complete Date of Birth from HR documents"),
-    ("no_holiday_list", "Missing Holiday List", "Low", "Assign a Holiday List"),
+    ("no_department", "Missing Department", "High", "Use native Employee Transfer to set Department"),
+    ("no_employee_number", "Missing Employee Number", "High", "Verify and update Employee Number"),
+    ("no_active_assignment", "No Active Salary Assignment", "High", "Prepare a native Salary Structure Assignment"),
+    ("no_shift_assignment", "No Shift Assignment", "High", "Open native Shift Assignment Tool"),
+    ("conflicting_assignments", "Conflicting Salary Assignments", "High", "Review same-date submitted Salary Structure Assignments"),
+    ("pay_basis_unresolved", "Pay Basis Needs Review", "High", "Review the explicit pay basis on the assigned Salary Structure"),
+    ("future_doj_with_punches", "Future Joining Date With Punches", "High", "Review Date of Joining against Employee Checkin evidence"),
+    ("no_designation", "Missing Designation", "Medium", "Use native Employee Promotion to set Designation"),
+    ("no_date_of_birth", "Missing Date of Birth", "Low", "Verify Date of Birth in Employee"),
+    ("no_holiday_list", "Missing Holiday List", "Low", "Review the Employee Holiday List"),
 )
 GAP_ORDER = {key: index for index, (key, *_rest) in enumerate(GAP_DEFINITIONS)}
 GAP_BY_LABEL = {label: key for key, label, *_rest in GAP_DEFINITIONS}
@@ -33,13 +34,12 @@ def normalize_filters(filters=None):
     values.status = values.get("status") or "Active"
     values.branch = values.get("branch") or ""
     values.department = values.get("department") or ""
-    values.employment_type = values.get("employment_type") or "All"
+    values.employment_type = values.get("employment_type") or ""
+    values.employee = values.get("employee") or ""
     values.gap_type = values.get("gap_type") or "All"
     values.priority = values.get("priority") or "All"
     if values.status not in {"Active", "Inactive", "Left", "All"}:
         raise ValueError(_("Invalid employee status"))
-    if values.employment_type not in {"All", "Worker", "Non Worker"}:
-        raise ValueError(_("Invalid employment type"))
     if values.gap_type != "All" and values.gap_type not in GAP_BY_LABEL:
         raise ValueError(_("Invalid gap"))
     if values.priority not in {"All", "High", "Medium", "Low"}:
@@ -47,7 +47,7 @@ def normalize_filters(filters=None):
     return values
 
 
-def employee_gaps(employee, latest_structure, wage_structures, punches_total, assignment_count=1, as_of=None, has_shift_assignment=True):
+def employee_gaps(employee, latest_structure, pay_basis_status, punches_total, as_of=None, has_shift_assignment=True):
     """Return gap keys for one employee; pure and testable via explicit as_of."""
     gaps = []
     if not employee.get("department"):
@@ -58,14 +58,10 @@ def employee_gaps(employee, latest_structure, wage_structures, punches_total, as
         gaps.append("no_shift_assignment")
     if not latest_structure:
         gaps.append("no_active_assignment")
-    if int(assignment_count or 0) > 1:
-        gaps.append("duplicate_active_assignments")
-    is_worker = employee.get("employment_type") == "Worker"
-    has_wage = bool(latest_structure) and latest_structure in wage_structures
-    if not is_worker and has_wage:
-        gaps.append("wage_structure_not_worker")
-    if is_worker and not has_wage:
-        gaps.append("worker_without_wage_structure")
+    elif pay_basis_status == CONFLICT:
+        gaps.append("conflicting_assignments")
+    elif pay_basis_status not in {MONTHLY, DAILY}:
+        gaps.append("pay_basis_unresolved")
     date_of_joining = employee.get("date_of_joining")
     reference_day = getdate(as_of) if as_of else getdate(today())
     if date_of_joining and getdate(date_of_joining) > reference_day and punches_total:
@@ -91,7 +87,7 @@ def _columns():
         {"label": _("Date of Joining"), "fieldname": "date_of_joining", "fieldtype": "Date", "width": 100},
         {"label": _("Latest Assignment"), "fieldname": "latest_assignment", "fieldtype": "Data", "width": 230},
         {"label": _("Assignment From"), "fieldname": "assignment_from", "fieldtype": "Date", "width": 100},
-        {"label": _("Assignments"), "fieldname": "assignment_count", "fieldtype": "Int", "width": 90},
+        {"label": _("Submitted Assignments"), "fieldname": "assignment_count", "fieldtype": "Int", "width": 120},
         {"label": _("First Punch"), "fieldname": "first_punch", "fieldtype": "Date", "width": 90},
         {"label": _("Last Punch"), "fieldname": "last_punch", "fieldtype": "Date", "width": 90},
         {"label": _("Punches"), "fieldname": "punches_total", "fieldtype": "Int", "width": 80},
@@ -104,17 +100,22 @@ def _columns():
 def execute(filters=None):
     filters = normalize_filters(filters)
     assert_company_access(filters.company)
-    conditions = ["e.company = %(company)s"]
+    employee_names = permitted_employee_names(
+        filters.company, branch=filters.branch, department=filters.department,
+    )
+    if not employee_names:
+        return _columns(), []
+    conditions = ["e.company = %(company)s", "e.name IN %(employee_names)s"]
     if filters.status != "All":
         conditions.append("e.status = %(status)s")
     if filters.branch:
         conditions.append("e.branch = %(branch)s")
     if filters.department:
         conditions.append("e.department = %(department)s")
-    if filters.employment_type == "Worker":
-        conditions.append("e.employment_type = 'Worker'")
-    elif filters.employment_type == "Non Worker":
-        conditions.append("e.employment_type != 'Worker'")
+    if filters.employment_type:
+        conditions.append("e.employment_type = %(employment_type)s")
+    if filters.employee:
+        conditions.append("e.name = %(employee)s")
 
     employees = frappe.db.sql(
         f"""
@@ -125,7 +126,7 @@ def execute(filters=None):
         WHERE {' AND '.join(conditions)}
         ORDER BY e.branch, e.department, e.name
         """,
-        filters, as_dict=True,
+        {**filters, "employee_names": employee_names}, as_dict=True,
     )
     if not employees:
         return _columns(), []
@@ -160,15 +161,13 @@ def execute(filters=None):
             {"names": names}, as_dict=True,
         )
     }
-    shift_assigned = set()
-    if names:
-        shift_assigned = set(frappe.get_all(
-            "Shift Assignment",
-            filters={"docstatus": 1, "employee": ["in", names]},
-            pluck="employee",
-        ))
-    wage_structures = set(frappe.get_all(
-        "Salary Structure", filters={"name": ["like", "%Wage%"]}, pluck="name"
+    as_of_date = today()
+    shift_assigned = set(frappe.db.sql(
+        """SELECT DISTINCT employee FROM `tabShift Assignment`
+           WHERE docstatus=1 AND employee IN %(names)s
+             AND start_date<=%(as_of)s
+             AND (end_date IS NULL OR end_date>=%(as_of)s)""",
+        {"names": names, "as_of": as_of_date}, pluck=True,
     ))
     punches = {
         row.employee: row
@@ -191,9 +190,8 @@ def execute(filters=None):
         gaps = employee_gaps(
             employee,
             assignment.salary_structure if assignment else None,
-            wage_structures,
+            resolve_pay_basis(employee.name, as_of_date).get("status"),
             punch_total,
-            int(assignment_counts.get(employee.name, 0)),
             has_shift_assignment=employee.name in shift_assigned,
         )
         if not gaps:

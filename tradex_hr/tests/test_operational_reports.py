@@ -117,11 +117,14 @@ def test_workspace_links_only_to_installed_doctypes():
             assert label not in rendered
 
 
-def test_gaps_board_opens_employee_update_import():
+def test_gaps_board_has_no_stored_import_shortcut():
     javascript = frappe.db.get_value("Report", "Employee Data Gaps", "javascript")
-    assert 'frappe.new_doc("Data Import"' in javascript
-    assert 'reference_doctype: "Employee"' in javascript
-    assert 'import_type: "Update Existing Records"' in javascript
+    assert not javascript
+    from frappe.desk.query_report import get_script
+
+    bundled = get_script("Employee Data Gaps")["script"]
+    assert 'frappe.set_route("List", "Employee")' in bundled
+    assert 'frappe.new_doc("Data Import"' not in bundled
 
 
 def test_desk_report_endpoint_renders_both_reports():

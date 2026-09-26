@@ -31,8 +31,8 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 | 0-B Repository/runtime audit | COMPLETE | refactor/runtime-portability | feat/bulk-attendance-corrections | — | Source inventory and static scans | Baseline above | NO | — | Threat-oriented adversarial verification belongs to H |
 | A Portability/legacy hazards | COMPLETE | refactor/runtime-portability | feat/bulk-attendance-corrections | #29 open/draft/unmerged | 35 passed | 593 passed, 0 skipped | YES, standard migrate and cache clear | 20260926_012737-hrms-v16_localhost- | Fresh neutral-site install belongs to K |
 | B Native leave bulk | COMPLETE | feat/native-bulk-leave-control | refactor/runtime-portability | #30 open/draft/unmerged | 40 passed, plus final native integration 1 passed | 594 passed, 0 skipped | YES, standard migrate and cache clear | 20260926_014339-hrms-v16_localhost- | Real entitlement configuration and browser/volume UAT later |
-| C Native overtime bulk | COMPLETE | feat/native-overtime-bulk | feat/native-bulk-leave-control | Pending draft PR | 34 passed | 595 passed, 0 skipped | NO; Python/JS hook only, cache clear/build | — | Browser dialog and live >30 worker UAT later |
-| D Bulk-domain closure | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
+| C Native overtime bulk | COMPLETE | feat/native-overtime-bulk | feat/native-bulk-leave-control | #31 open/draft/unmerged | 34 passed, plus cancellation regression | 595 passed, 0 skipped | NO; Python/JS hook only, cache clear/build | — | Browser dialog and live >30 worker UAT later |
+| D Bulk-domain closure | COMPLETE | refactor/native-bulk-closure | feat/native-overtime-bulk | Draft PR creation pending | 28 passed; 12 report/persona and 4 attendance/salary recovery passed | 597 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_070248-hrms-v16_localhost-; synthetic cleanup backup 20260926_092011-hrms-v16_localhost- | Browser UAT and wider import delegation remain gated |
 | E Action Board | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | F Native navigation | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | G Operator usability/localization | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
@@ -58,3 +58,21 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
   configure endpoint, while the app's older bridge contract says it is absent.
 - Codebase-memory and Serena tools were not exposed in this session; `rg`,
   installed source and Frappe v16 Context7 were used for discovery.
+
+## Follow-up audit targets from D
+
+- Frappe background-job deadlock retry omits the original `user` argument.
+  Overtime preparation already fails closed on lost identity. Audit the other
+  native/app queued mutation entry points before broadening import access.
+- `Daily Attendance Summary` and `Workforce Anomaly Radar` still contain
+  Company-filtered SQL without the report Employee-scope helper. The latter
+  also loads salary values while allowing the attendance role. Reproduce and
+  resolve these boundaries before using either as an Action Board data source.
+- `Tradexcel Payroll Register` still reads Salary Slips with Company-only SQL
+  and no cancelled-state boundary. Reproduce record-scope/state behavior before
+  using that older register for financial drill-through.
+- The Shift Assignment Tool's custom action restriction still keys on presence
+  of a Tradexcel role; mixed native/custom-role compatibility requires the
+  dedicated regression identified by the master campaign.
+- Financial report `permitted_salary_slips` should be checked for default
+  pagination during the report accuracy/performance review.

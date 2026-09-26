@@ -24,6 +24,7 @@ def permitted_employee_names(company: str, *, branch: str | None = None,
             filters={"company": company},
             fields=["name", "branch", "department"],
             order_by="name asc",
+            limit_page_length=0,
         )
     except frappe.PermissionError:
         frappe.throw(

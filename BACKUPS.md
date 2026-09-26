@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-26 01:43 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-26 09:20 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -47,6 +47,8 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-26 09:20:27** | `20260926_092011-hrms-v16_localhost-database.sql.gz` | 38,067,024 | `3f01cac70816b9b0` | Before deleting verified orphan synthetic persona Contact/Notification Settings left by older test teardown; no real User/configuration cleanup |
+| **2026-09-26 07:02:58** | `20260926_070248-hrms-v16_localhost-database.sql.gz` | 36,775,178 | `9506a3785f975d76` | Before standard Employee Data Gaps Report JavaScript metadata convergence; gzip and both file archives verified |
 | **2026-09-26 01:43:48** | `20260926_014339-hrms-v16_localhost-database.sql.gz` | 34,392,005 | `6c0ee9336bf383c4` | Before scoped native Leave Control Panel DocPerm/hook migration; gzip and both file archives verified |
 | **2026-09-26 01:27:50** | `20260926_012737-hrms-v16_localhost-database.sql.gz` | 34,020,564 | `349d60b17c00fe09` | Before standard portability/Workspace metadata migration; gzip and both file archives verified |
 | **2026-09-25 22:00:38** | `20260925_220031-hrms-v16_localhost-database.sql.gz` | 29,500,665 | `15d9c3178f37676a` | Before native bulk SSA permissions and Workspace target migration; gzip and both file archives verified |
@@ -68,6 +70,32 @@ Several older files are also mirrored under
 | **2026-09-25 11:14** | `20260925_111432-hrms-v16_localhost-database.sql.gz` | 20,389,261 | `9dcac7c73acbd29e` | Before standard lifecycle-branch migration; gzip and both file archives verified |
 | **2026-09-25 13:57** | `20260925_135751-hrms-v16_localhost-database.sql.gz` | 23,518,137 | `392607c1445ebdb3` | Before synthetic PR #20 lifecycle/payroll compatibility cleanup tests; `--with-files`, gzip and both file archives verified |
 | **2026-09-25 10:26** | `20260925_102545-hrms-v16_localhost-database.sql.gz` | 20,389,491 | `49ed5d561ba4abe4` | Before synthetic Employee Lifecycle integration retry |
+
+The **2026-09-26 09:20:27** backup was taken with `--with-files` before
+cleanup of verified orphan `persona-puat…@example.test` Contact and Notification
+Settings records left by the older synthetic fixture. Files are under
+`/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`.
+`gzip -t` and public/private `tar -tf` passed. Exact sizes and SHA-256:
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_092011-hrms-v16_localhost-database.sql.gz` | 38,067,024 | `3f01cac70816b9b0d5736fd592fb05ae5a34b364fdf495bd910e022431de408d` |
+| `20260926_092011-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_092011-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_092011-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+The **2026-09-26 07:02:58** backup was taken with `--with-files` before
+standard Report metadata migration for Employee Data Gaps. Files are under
+`/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260926_070248-hrms-v16_localhost-`. `gzip -t` and both
+public/private `tar -tf` listings passed. Exact sizes and SHA-256:
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_070248-hrms-v16_localhost-database.sql.gz` | 36,775,178 | `9506a3785f975d76bee5b1aaed18bc84a6c242477bc62d1e7ec4caf465ac12db` |
+| `20260926_070248-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_070248-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_070248-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
 
 The **2026-09-26 01:43:48** backup was taken with `--with-files` before
 standard staging migration for native Leave Control Panel scope and custom
