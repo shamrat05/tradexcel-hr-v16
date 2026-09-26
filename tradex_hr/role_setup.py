@@ -260,6 +260,9 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
     "Employee": {
+        # Device troubleshooting needs scoped Employee identity selection, not
+        # the Employee form, compensation, bank details or HR mutation rights.
+        "Tradexcel Device/IT Administrator": {"select"},
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,

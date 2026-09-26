@@ -227,6 +227,9 @@ after_migrate = "tradex_hr.install.after_migrate"
 
 
 permission_query_conditions = {
+    "Attendance Request": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Employee Checkin": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
+    "Salary Structure Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_query_conditions",
     "Tradexcel Flexible Work Policy": "tradex_hr.tradexcel_hr.flexible_work_records.flexible_policy_query_conditions",
     "Tradexcel Operational Day Override": "tradex_hr.tradexcel_hr.flexible_work_records.operational_override_query_conditions",
     "Tradexcel Working Time Rule Set": "tradex_hr.tradexcel_hr.working_time_compliance.working_time_query_conditions",
@@ -247,6 +250,9 @@ permission_query_conditions = {
 }
 
 has_permission = {
+    "Attendance Request": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Employee Checkin": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
+    "Salary Structure Assignment": "tradex_hr.tradexcel_hr.report_scope.employee_link_has_permission",
     "Tradexcel Flexible Work Policy": "tradex_hr.tradexcel_hr.flexible_work_records.flexible_work_has_permission",
     "Tradexcel Operational Day Override": "tradex_hr.tradexcel_hr.flexible_work_records.flexible_work_has_permission",
     "Salary Slip": "tradex_hr.tradexcel_hr.native_payroll.restrict_salary_slip_delete",

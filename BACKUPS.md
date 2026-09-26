@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-26 10:11 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-26 17:35 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -420,3 +420,17 @@ checks passed. No real payroll/employee configuration is being reconciled.
 | `20260926_101050-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
 | `20260926_101050-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
 | `20260926_101050-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Employee-linked permission convergence — 2026-09-26 17:35:09
+
+Fresh `bench --site hrms-v16.localhost backup --with-files` before standard
+migration for native Employee identity selection and employee-linked permission
+hooks. Database `gzip -t` and both public/private `tar -tf` checks passed.
+Only app permission metadata is converged; real HR/payroll data is not edited.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_173459-hrms-v16_localhost-database.sql.gz` | 40,143,805 | `c27dafd2262348ece28bfcef54c0969f4d37e111c386bd43a8c65c8dfbd35f02` |
+| `20260926_173459-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_173459-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_173459-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |

@@ -1,4 +1,4 @@
-"""Permission-aware Employee scope for Tradexcel reports.
+"""Native Employee scope for Tradexcel reports and Employee-linked records.
 
 Report SQL does not apply Frappe User Permissions. Resolve the caller's
 permitted Employee rows with ``get_list`` first, then bind those names into
@@ -10,6 +10,49 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+
+
+def permitted_employee_query(user: str | None = None):
+    """Native permission-aware Employee identity query, suitable for a subquery.
+
+    Query Builder applies the same native User Permissions, including blank
+    Link semantics, as list queries. Select-only identity access does not grant
+    Employee document read or access to compensation/bank fields.
+    """
+    return frappe.qb.get_query(
+        "Employee", fields=["name"], ignore_permissions=False,
+        user=user or frappe.session.user, db_query_compat=True,
+    )
+
+
+EMPLOYEE_LINK_SCOPED_DOCTYPES = frozenset({
+    "Attendance Request", "Employee Checkin", "Salary Structure Assignment",
+})
+
+
+def employee_link_query_conditions(user=None, doctype=None):
+    """Close native records whose missing Branch/Company fields lose scope."""
+    user = user or frappe.session.user
+    if doctype not in EMPLOYEE_LINK_SCOPED_DOCTYPES:
+        return "1=0"
+    if user == "Guest" or not frappe.get_cached_value("User", user, "enabled"):
+        return "1=0"
+    if not frappe.has_permission("Employee", "select", user=user):
+        return "1=0"
+    table = frappe.qb.DocType(doctype)
+    return table.employee.isin(permitted_employee_query(user)).get_sql(quote_char="`", with_namespace=True)
+
+
+def employee_link_has_permission(doc, ptype=None, user=None, **_kwargs):
+    """Additional restriction only; native target DocPerms still decide rights."""
+    user = user or frappe.session.user
+    if user == "Guest" or not frappe.get_cached_value("User", user, "enabled"):
+        return False
+    if not doc.get("employee"):
+        # A new empty form has no selected identity yet. Normal Link validation
+        # and this check on the populated document still govern insertion.
+        return True
+    return bool(frappe.has_permission("Employee", "select", doc.employee, user=user))
 
 
 def permitted_employee_names(company: str, *, branch: str | None = None,

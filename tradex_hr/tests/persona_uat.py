@@ -89,7 +89,11 @@ class SyntheticPersonaHarness:
             "status": "Active",
             "user_id": user,
             "create_user_permission": 1 if user else 0,
-        }).insert(ignore_permissions=True)
+        })
+        # Linking an Employee saves its User and creates/updates Contact too.
+        # Keep that native fixture side effect synchronous, as in create_user.
+        with patch.object(frappe, "in_test", True):
+            employee.insert(ignore_permissions=True)
         self.employees.append(employee.name)
         if user:
             self.permissions.extend(frappe.get_all(
@@ -132,22 +136,22 @@ class SyntheticPersonaHarness:
         frappe.db.commit()
 
         leftovers = {
-            "users": frappe.get_all("User", filters={"name": ["in", self.user_emails]}, pluck="name"),
+            "users": frappe.get_all("User", filters={"name": ["in", self.user_emails]}, pluck="name") if self.user_emails else [],
             "employees": frappe.get_all(
                 "Employee", filters={"employee_name": ["like", f"{self.employee_marker}%"]}, pluck="name"
             ),
             "permissions": frappe.get_all(
                 "User Permission", filters={"user": ["in", list(self.users.values())]}, pluck="name"
-            ),
+            ) if self.users else [],
             "contacts": frappe.get_all(
                 "Contact", filters={"user": ["in", self.user_emails]}, pluck="name"
-            ),
+            ) if self.user_emails else [],
             "roles": frappe.get_all(
                 "Has Role", filters={"parent": ["in", self.user_emails]}, pluck="name"
-            ),
+            ) if self.user_emails else [],
             "notification_settings": frappe.get_all(
                 "Notification Settings", filters={"name": ["in", self.user_emails]}, pluck="name"
-            ),
+            ) if self.user_emails else [],
         }
         assert not any(leftovers.values()), f"synthetic persona cleanup incomplete: {leftovers}"
 
