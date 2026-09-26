@@ -6,6 +6,7 @@
   const items = root.querySelector(".items");
   const method = "tradex_hr.tradexcel_hr.action_board.";
   let generation = 0;
+  root.setAttribute("aria-label", __("Work needing attention"));
   function element(tag, text, parent) {
     const node = document.createElement(tag);
     if (text !== undefined) node.textContent = text;
@@ -24,11 +25,17 @@
   async function load() {
     const request = ++generation;
     items.replaceChildren();
+    items.setAttribute("aria-busy", "false");
     if (!company.value) {
       notice.textContent = __("Choose a Company to review your work.");
       return;
     }
+    if (!date.value || !date.checkValidity()) {
+      notice.textContent = __("Choose a valid review date.");
+      return;
+    }
     refresh.disabled = true;
+    items.setAttribute("aria-busy", "true");
     notice.textContent = __("Loading work needing attention…");
     try {
       const response = await frappe.call({method: method + "get_action_board", args: {company: company.value, as_of_date: date.value}});
@@ -40,6 +47,7 @@
         card.className = "item";
         element("span", __(item.category), card).className = "category";
         element("h3", item.title + (item.count === null ? "" : " (" + item.count + ")"), card);
+        if (item.context) element("p", item.context, card).className = "context";
         element("p", item.reason, card);
         if (!item.route.length) continue;
         const open = element("button", __("Open review"), card);
@@ -53,11 +61,15 @@
     } catch (_error) {
       if (request === generation) notice.textContent = __("This review could not be loaded. Check your access and try again.");
     } finally {
-      if (request === generation) refresh.disabled = false;
+      if (request === generation) {
+        refresh.disabled = false;
+        items.setAttribute("aria-busy", "false");
+      }
     }
   }
   refresh.addEventListener("click", load);
   company.addEventListener("change", load);
+  date.addEventListener("change", load);
   frappe.call({method: method + "get_board_context"}).then(response => {
     const data = response.message;
     element("option", __("Choose Company"), company).value = "";

@@ -251,6 +251,7 @@ def _payment_items(company, names):
         if state.get("status") != "BANK_RECONCILED":
             items.append(_item("Finance", "Payroll payment needs review", "Open the native Payroll Entry payment readiness and reconciliation review.",
                                1, company, ["Form", "Payroll Entry", row], "inspect_payroll_payment_readiness"))
+            items[-1]["context"] = f"{row} · {entry.start_date} – {entry.end_date}"
     return items
 
 
@@ -267,15 +268,16 @@ def _people_items(company, day, names):
         ("relieving_date", "Settlement needs review", inspect_full_and_final_readiness, lambda r: bool(r.get("blockers"))),
     ):
         for employee in frappe.get_list("Employee", filters={"name": ["in", names], field: ["between", [str(get_first_day(day)), day]]},
-                                        pluck="name", limit_page_length=0):
+                                        fields=["name", "employee_name"], limit_page_length=0):
             try:
-                result = inspector(employee)
+                result = inspector(employee.name)
             except frappe.PermissionError:
                 continue
             if has_problem(result):
                 item = _item("People", title, "Open the Employee readiness review for the selected month's joining or leaving date.",
-                             1, company, ["Form", "Employee", employee], inspector.__name__)
-                item["employee"] = employee
+                             1, company, ["Form", "Employee", employee.name], inspector.__name__)
+                item["employee"] = employee.name
+                item["context"] = f"{employee.employee_name} · {employee.name}"
                 items.append(item)
     return items
 

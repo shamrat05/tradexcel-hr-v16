@@ -82,6 +82,13 @@ def test_action_board_native_scope_roles_and_read_only_sources():
             assert outside not in {item.get("employee") for item in result["items"]}
             assert all(not {"base", "net_pay", "bank_ac_no"} & set(item) for item in result["items"])
         frappe.set_user("Administrator")
+        frappe.set_user(h.users["hr_manager"])
+        with patch("tradex_hr.tradexcel_hr.joiner_readiness.inspect_joiner_readiness", new=lambda _employee: {"findings": ["synthetic"]}):
+            people = board._people_items(company, "2020-01-31", (own, outside))
+        assert [item["employee"] for item in people] == [own]
+        assert people[0]["context"] == f"{h.employee_marker} in · {own}"
+        assert people[0]["route"] == ["Form", "Employee", own]
+        frappe.set_user("Administrator")
         with patch.object(frappe, "in_test", True):
             disabled = frappe.get_doc("User", h.users["hr_manager"])
             disabled.enabled = 0

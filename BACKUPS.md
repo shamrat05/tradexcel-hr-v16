@@ -515,3 +515,15 @@ Gzip and public/private tar archives verified. Prefix `20260926_233132-hrms-v16_
 | `20260926_233132-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
 | `20260926_233132-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
 | `20260926_233132-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## 2026-09-27 Operator guidance and native report preview convergence
+
+Fresh `bench --site hrms-v16.localhost backup --with-files` before standard migration.
+Gzip and public/private tar archives verified. Prefix `20260927_001652-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260927_001652-hrms-v16_localhost-database.sql.gz` | 43,286,459 | `8af3e3aa56f55cfb22046b216369b582682243800cd4b9b42654e7be8a7211db` |
+| `20260927_001652-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260927_001652-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260927_001652-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |

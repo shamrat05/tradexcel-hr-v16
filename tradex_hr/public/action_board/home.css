@@ -10,3 +10,5 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .item h3 { font-size: 1rem; margin: 6px 0; }
 .item p { margin: 6px 0 12px; }
 .category { color: var(--text-muted); font-size: .85rem; }
+
+.context { overflow-wrap: anywhere; font-weight: 600; }
