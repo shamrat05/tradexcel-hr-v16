@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-26 17:35 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-26 18:10 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -434,3 +434,32 @@ Only app permission metadata is converged; real HR/payroll data is not edited.
 | `20260926_173459-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
 | `20260926_173459-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
 | `20260926_173459-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Action Board Workspace convergence — 2026-09-26 18:05:14
+
+Fresh standard `backup --with-files` before installing the native Workspace
+Custom HTML Block and removing overview cards/charts from that Workspace.
+Database `gzip -t` and both archive `tar -tf` checks passed. No business data
+reconciliation or production operation.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_180505-hrms-v16_localhost-database.sql.gz` | 40,866,146 | `7b525415cac3a6e0421ae8933cd8d5789cdf5204d730583690213d0844f9caa6` |
+| `20260926_180505-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_180505-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_180505-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Final Action Board script convergence — 2026-09-26 18:10:41
+
+Fresh standard backup before repeating migration for the final source-backed
+Workspace script. A post-migration parity test caught the newly added suppression
+of denied-source drill-through buttons missing from the installed block. This
+is a required source/metadata update, not a repeated business-data migration.
+Gzip and both tar integrity checks passed.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_181032-hrms-v16_localhost-database.sql.gz` | 40,960,003 | `c5fe28049615e71c2bcc8b1992472c1a5b5fa14b38cf3d0ffe1d4b04f38fc73a` |
+| `20260926_181032-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_181032-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_181032-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |

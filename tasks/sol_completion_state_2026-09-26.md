@@ -34,8 +34,8 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 | C Native overtime bulk | COMPLETE | feat/native-overtime-bulk | feat/native-bulk-leave-control | #31 open/draft/unmerged | 34 passed, plus cancellation regression | 595 passed, 0 skipped | NO; Python/JS hook only, cache clear/build | — | Browser dialog and live >30 worker UAT later |
 | D Bulk-domain closure | COMPLETE | refactor/native-bulk-closure | feat/native-overtime-bulk | #32 open/draft/unmerged | 28 passed; 12 report/persona and 4 attendance/salary recovery passed | 597 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_070248-hrms-v16_localhost-; synthetic cleanup backup 20260926_092011-hrms-v16_localhost- | Browser UAT and wider import delegation remain gated |
 | D follow-up Older report boundaries | COMPLETE | fix/legacy-report-boundaries | refactor/native-bulk-closure | #33 open/draft/unmerged | 37 focused + 22 post-migration + 36 restart checks passed | 602 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_101050-hrms-v16_localhost- | Browser/export UAT later; synthetic cleanup zero |
-| D follow-up Employee-linked scope | COMPLETE | fix/employee-linked-scope | fix/legacy-report-boundaries | — | 23 passed; Request/Checkin/SSA scope regressions | 604 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_173459-hrms-v16_localhost- | Synthetic cleanup zero; draft PR creation pending |
-| E Action Board | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | Employee-linked scope prerequisite accepted; ready to start |
+| D follow-up Employee-linked scope | COMPLETE | fix/employee-linked-scope | fix/legacy-report-boundaries | #34 open/draft/unmerged | 23 passed; Request/Checkin/SSA scope regressions | 604 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_173459-hrms-v16_localhost- | Synthetic cleanup zero; browser UAT later |
+| E Action Board | COMPLETE | feat/action-board | fix/employee-linked-scope | — | 25 passed; native block/persona/source checks | 607 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_180505-hrms-v16_localhost-; final script 20260926_181032-hrms-v16_localhost- | Synthetic cleanup zero; draft PR creation pending |
 | F Native navigation | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | G Operator usability/localization | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | H Security/privacy | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
@@ -66,11 +66,11 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 - Frappe background-job deadlock retry omits the original `user` argument.
   Overtime preparation already fails closed on lost identity. Audit the other
   native/app queued mutation entry points before broadening import access.
-- `Daily Attendance Summary` and `Workforce Anomaly Radar` still contain
+- **Closed by PR #33:** the D audit found `Daily Attendance Summary` and `Workforce Anomaly Radar` contained
   Company-filtered SQL without the report Employee-scope helper. The latter
   also loads salary values while allowing the attendance role. Reproduce and
   resolve these boundaries before using either as an Action Board data source.
-- `Tradexcel Payroll Register` still reads Salary Slips with Company-only SQL
+- **Closed by PR #33:** the D audit found `Tradexcel Payroll Register` read Salary Slips with Company-only SQL
   and no cancelled-state boundary. Reproduce record-scope/state behavior before
   using that older register for financial drill-through.
 - The Shift Assignment Tool's custom action restriction still keys on presence
@@ -79,3 +79,16 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 - Pagination hypothesis checked in the D report follow-up: installed native
   `get_list` returns all 21 synthetic slips without an explicit limit. No
   default-20 truncation defect was reproduced; generic API docs were stale.
+
+## E handoff observations for later phases
+
+- F: installed `boot.get_sidebar_items` and `WorkspaceSidebar` already filter
+  native links using `DeskViews.is_item_allowed`. A source-backed sidebar named
+  for the app Module replaces automatic module enumeration and can link the
+  canonical `tradexcel-hr` home. Inspect native route resolution before removing
+  the existing rail; preserve the separate theme and app-tile IIFEs.
+- G: distinguish per-Employee and per-payroll-entry cards with a readable native
+  identity/period label during the usability pass. API items already retain
+  Employee/form routes; do not add money or duplicate state for that label.
+- K: system Python did not have Playwright; actual browser execution has not
+  been claimed. Assess available browser tooling separately from backend tests.

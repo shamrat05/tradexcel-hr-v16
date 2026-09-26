@@ -469,17 +469,7 @@ def workspace_blocks(shortcuts=None):
     shortcuts = shortcuts if shortcuts is not None else list(WORKSPACE_SHORTCUTS) + list(BULK_WORKSPACE_SHORTCUTS)
     available = {row[0]: row for row in shortcuts}
     blocks = [{"type": "header", "data": {"text": "<h2>Tradexcel HR Action Board</h2>", "col": 12}}]
-    blocks.extend(
-        {"type": "number_card", "data": {"number_card_name": name, "col": 3}}
-        for name in NUMBER_CARDS
-    )
-    blocks.extend([
-        {"type": "header", "data": {"text": "<h3>Overview</h3>", "col": 12}},
-    ])
-    blocks.extend(
-        {"type": "chart", "data": {"chart_name": name, "col": 6}}
-        for name in DASHBOARD_CHARTS
-    )
+    blocks.append({"type": "custom_block", "data": {"custom_block_name": "Tradexcel Work Needing Attention", "col": 12}})
     for title, description, labels in WORKSPACE_SECTIONS:
         blocks.append({"type": "header", "data": {"text": f"<h3>{title}</h3>", "col": 12}})
         blocks.append({"type": "paragraph", "data": {"text": description, "col": 12}})
@@ -632,7 +622,24 @@ def rename_legacy_reports() -> None:
         else:
             frappe.rename_doc("Report", legacy_name, canonical_name, force=True)
 
+def ensure_action_board_block() -> None:
+    from pathlib import Path
+    from tradex_hr.tradexcel_hr.action_board import BOARD_ROLES
+
+    name = "Tradexcel Work Needing Attention"
+    root = Path(__file__).parent / "public" / "action_board"
+    doc = frappe.get_doc("Custom HTML Block", name) if frappe.db.exists("Custom HTML Block", name) else frappe.new_doc("Custom HTML Block")
+    doc.name = name
+    doc.private = 0
+    doc.html = (root / "home.html").read_text()
+    doc.script = (root / "home.js").read_text()
+    doc.style = (root / "home.css").read_text()
+    doc.set("roles", [{"role": role} for role in sorted(BOARD_ROLES)])
+    doc.save(ignore_permissions=True)
+
+
 def ensure_workspace() -> None:
+    ensure_action_board_block()
     def save_workspace_doc(doc):
         # Frappe normally rejects duplicate workspace slugs during ordinary
         # edits.  These legacy aliases are explicitly retired for production.
@@ -677,13 +684,8 @@ def ensure_workspace() -> None:
         doc.public = 1 if workspace_is_visible(name) else 0
         doc.is_hidden = 0 if workspace_is_visible(name) else 1
         doc.charts = []
-        for chart_name in DASHBOARD_CHARTS:
-            if frappe.db.exists("Dashboard Chart", chart_name):
-                doc.append("charts", {"chart_name": chart_name, "label": chart_name})
         doc.number_cards = []
-        for card_name in NUMBER_CARDS:
-            if frappe.db.exists("Number Card", card_name):
-                doc.append("number_cards", {"number_card_name": card_name, "label": card_name})
+        doc.set("custom_blocks", [{"custom_block_name": "Tradexcel Work Needing Attention", "label": "Work needing attention"}])
         doc.shortcuts = []
         for label, link_to, link_type in shortcuts:
             doc.append("shortcuts", {

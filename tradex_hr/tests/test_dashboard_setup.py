@@ -36,25 +36,11 @@ def test_workspace_has_salary_setup_shortcuts():
     assert REPORTS["Tradexcel Salary Coverage Board"].get("query") is None
 
 
-def test_workspace_contains_actionable_number_cards_and_charts():
+def test_workspace_prioritizes_scoped_work_instead_of_overview_cards():
     blocks = workspace_blocks()
-    types = [block["type"] for block in blocks]
-    chart_names = {
-        block["data"]["chart_name"]
-        for block in blocks
-        if block["type"] == "chart"
-    }
-    card_names = {
-        block["data"]["number_card_name"]
-        for block in blocks
-        if block["type"] == "number_card"
-    }
-
-    assert types.count("number_card") >= 4
-    assert types.count("chart") >= 4
-    assert "Tradexcel Employees by Department" in chart_names
-    assert "Tradexcel Payroll by Month" in chart_names
-    assert "Tradexcel Active Employees" in card_names
+    assert not any(block["type"] in {"number_card", "chart"} for block in blocks)
+    assert [block["data"]["custom_block_name"] for block in blocks if block["type"] == "custom_block"] == ["Tradexcel Work Needing Attention"]
+    assert not any("Overview" in block.get("data", {}).get("text", "") for block in blocks)
 
 
 def test_dashboard_chart_definitions_are_serializable():
