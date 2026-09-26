@@ -32,7 +32,8 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 | A Portability/legacy hazards | COMPLETE | refactor/runtime-portability | feat/bulk-attendance-corrections | #29 open/draft/unmerged | 35 passed | 593 passed, 0 skipped | YES, standard migrate and cache clear | 20260926_012737-hrms-v16_localhost- | Fresh neutral-site install belongs to K |
 | B Native leave bulk | COMPLETE | feat/native-bulk-leave-control | refactor/runtime-portability | #30 open/draft/unmerged | 40 passed, plus final native integration 1 passed | 594 passed, 0 skipped | YES, standard migrate and cache clear | 20260926_014339-hrms-v16_localhost- | Real entitlement configuration and browser/volume UAT later |
 | C Native overtime bulk | COMPLETE | feat/native-overtime-bulk | feat/native-bulk-leave-control | #31 open/draft/unmerged | 34 passed, plus cancellation regression | 595 passed, 0 skipped | NO; Python/JS hook only, cache clear/build | — | Browser dialog and live >30 worker UAT later |
-| D Bulk-domain closure | COMPLETE | refactor/native-bulk-closure | feat/native-overtime-bulk | Draft PR creation pending | 28 passed; 12 report/persona and 4 attendance/salary recovery passed | 597 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_070248-hrms-v16_localhost-; synthetic cleanup backup 20260926_092011-hrms-v16_localhost- | Browser UAT and wider import delegation remain gated |
+| D Bulk-domain closure | COMPLETE | refactor/native-bulk-closure | feat/native-overtime-bulk | #32 open/draft/unmerged | 28 passed; 12 report/persona and 4 attendance/salary recovery passed | 597 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_070248-hrms-v16_localhost-; synthetic cleanup backup 20260926_092011-hrms-v16_localhost- | Browser UAT and wider import delegation remain gated |
+| D follow-up Older report boundaries | COMPLETE | fix/legacy-report-boundaries | refactor/native-bulk-closure | Draft PR creation pending | 37 focused + 22 post-migration + 36 restart checks passed | 602 passed, 0 skipped | YES, standard migrate/cache clear | 20260926_101050-hrms-v16_localhost- | Browser/export UAT later; synthetic cleanup zero |
 | E Action Board | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | F Native navigation | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
 | G Operator usability/localization | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
@@ -74,5 +75,6 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 - The Shift Assignment Tool's custom action restriction still keys on presence
   of a Tradexcel role; mixed native/custom-role compatibility requires the
   dedicated regression identified by the master campaign.
-- Financial report `permitted_salary_slips` should be checked for default
-  pagination during the report accuracy/performance review.
+- Pagination hypothesis checked in the D report follow-up: installed native
+  `get_list` returns all 21 synthetic slips without an explicit limit. No
+  default-20 truncation defect was reproduced; generic API docs were stale.

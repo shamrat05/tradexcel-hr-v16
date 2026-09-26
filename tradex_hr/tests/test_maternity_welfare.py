@@ -498,6 +498,9 @@ def test_maternity_review_establishment_uses_native_branch_history(monkeypatch):
     from types import SimpleNamespace
     from tradex_hr.tradexcel_hr import maternity_welfare as module
 
+    # This unit boundary must not depend on a warm System Settings cache while
+    # get_doc is replaced with an Employee fixture below.
+    monkeypatch.setattr(module, "today", lambda: "2026-09-26")
     employee = SimpleNamespace(branch="FACTORY-A", internal_work_history=[])
     employee.get = lambda field: getattr(employee, field)
     monkeypatch.setattr(module.frappe, "get_doc", lambda *_args: employee)

@@ -40,7 +40,7 @@ frappe.query_reports["Daily Attendance Summary"] = {
             fieldname: "status",
             label: __("Status"),
             fieldtype: "Select",
-            options: "\nPresent\nAbsent\nOn Leave\nHalf Day\nHoliday\nNot Started",
+            options: "\nPresent\nAbsent\nOn Leave\nHalf Day\nWork From Home\nNot Marked\nHoliday\nNot Started",
             default: "",
         },
     ],

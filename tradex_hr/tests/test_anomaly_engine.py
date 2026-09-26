@@ -140,3 +140,14 @@ def test_every_check_emits_full_schema():
 def test_validate_finding_rejects_incomplete_rows():
     with pytest.raises(ValueError):
         validate_finding({"category": "Payroll"})
+
+
+@pytest.mark.parametrize("gross,payment_days", [(0, 0), (100, 30)])
+def test_raw_punches_never_establish_payable_days(gross, payment_days):
+    context = {
+        "slips": [slip(gross_pay=gross, net_pay=gross, payment_days=payment_days, salary_structure="Any Name")],
+        "earning_totals": {"S1": gross}, "deduction_totals": {"S1": 0},
+        "slip_punch_any": {"S1": 5}, "slip_paired_days": {"S1": 3},
+        "wage_structures": {"Any Name"},
+    }
+    assert not run_all(context)

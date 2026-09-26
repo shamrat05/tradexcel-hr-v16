@@ -11,7 +11,7 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "javascript": "\nfrappe.query_reports[\"Daily Attendance Summary\"] = {\n  filters: [\n    {fieldname: \"from_date\", label: __(\"From Date\"), fieldtype: \"Date\", default: frappe.datetime.month_start(), reqd: 1},\n    {fieldname: \"to_date\", label: __(\"To Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1},\n    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default(\"Company\")) || \"\", reqd: 1},\n    {fieldname: \"branch\", label: __(\"Branch\"), fieldtype: \"Link\", options: \"Branch\", default: \"\", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},\n    {fieldname: \"department\", label: __(\"Department\"), fieldtype: \"Link\", options: \"Department\", default: \"\", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},\n    {fieldname: \"status\", label: __(\"Status\"), fieldtype: \"Select\", options: \"\\nPresent\\nAbsent\\nOn Leave\\nHalf Day\\nHoliday\\nNot Started\", default: \"\"}\n  ]\n};\n",
+ "javascript": "",
  "letter_head": null,
  "modified": "2026-09-17 08:02:37.855014",
  "modified_by": "Administrator",

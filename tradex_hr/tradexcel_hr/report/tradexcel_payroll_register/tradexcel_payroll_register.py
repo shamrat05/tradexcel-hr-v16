@@ -1,24 +1,4 @@
-"""Tradexcel Payroll Register — file-backed Script Report.
-
-Promoted from a DB-backed Query Report (2026-09-23) for three reasons:
-
-1. **A Query Report cannot defend itself.** Frappe runs
-   `frappe.db.sql(query, filters)` directly, so any missing placeholder raises
-   from the DB driver — `KeyError: b'from_date'` or `ProgrammingError: format
-   requires a mapping` — *before MariaDB sees the query*. A Script Report
-   normalises in Python first, so a direct API call with `{}` resolves defaults
-   instead of producing a traceback.
-
-2. **Deployment reproducibility.** The definition lived only in a `tabReport`
-   row, recreated by `install.py`. As a standard report the JSON/Python/JS are
-   committed and loaded by `bench migrate`.
-
-3. **Permission scoping.** `frappe.db.sql` does not enforce row-level
-   permissions; the company filter is applied explicitly here.
-
-The SQL is unchanged from the original Query Report — only filter handling was
-added. Payroll calculation logic is deliberately untouched.
-"""
+"""Submitted native Salary Slips within both Employee and payroll permissions."""
 
 from __future__ import annotations
 
@@ -26,13 +6,11 @@ import frappe
 from frappe import _
 from frappe.utils import getdate, today
 
+from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names, permitted_salary_slips
+
 
 def _normalise(filters) -> frappe._dict:
-    """Fill and validate the filters this report's SQL requires.
-
-    Every placeholder in the query must exist before `frappe.db.sql` runs, or the
-    driver raises. Defaults mirror the report's declared UI filters.
-    """
+    """Resolve the Company and validate the native payroll period filters."""
     filters = frappe._dict(filters or {})
 
     company = filters.get("company") or frappe.defaults.get_user_default("Company")
@@ -60,6 +38,9 @@ def _normalise(filters) -> frappe._dict:
 
 
 def execute(filters=None):
+    from frappe.desk.query_report import get_report_doc
+
+    get_report_doc("Tradexcel Payroll Register")
     filters = _normalise(filters)
 
     columns = [
@@ -85,19 +66,11 @@ def execute(filters=None):
          "width": 60},
     ]
 
-    data = frappe.db.sql(
-        """
-        SELECT s.name, s.employee, s.employee_name, s.company,
-               s.start_date, s.end_date, s.gross_pay, s.total_deduction,
-               s.net_pay, s.docstatus
-        FROM `tabSalary Slip` s
-        WHERE s.company = %(company)s
-          AND s.start_date >= %(from_date)s
-          AND s.end_date <= %(to_date)s
-        ORDER BY s.start_date, s.employee
-        """,
-        filters,
-        as_dict=True,
+    employees = permitted_employee_names(filters.company)
+    data = permitted_salary_slips(
+        filters.company, employees, from_date=filters.from_date, to_date=filters.to_date,
     )
-
+    # Preserve this register's full-contained-period selection, unlike the
+    # variance report's start-date comparison window.
+    data = [row for row in data if getdate(row.end_date) <= getdate(filters.to_date)]
     return columns, data

@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-26 09:20 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-26 10:11 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -405,3 +405,18 @@ The **2026-09-25 19:49:36** backup was taken with `bench --site hrms-v16.localho
 The **2026-09-25 19:53:09** backup was taken with `bench --site hrms-v16.localhost backup --with-files` before adding explicit financial-role rows to the Payroll Register report after Workspace testing showed it otherwise rendered to an operational persona. `gzip -t` and both public/private `tar -tf` checks passed. SHA-256: database `0d00492b22e2abdb12f19c422730af2c0097dfb20453dd3fbf6c2cdaf735851f`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`. Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/` with prefix `20260925_195302-hrms-v16_localhost-`; sizes: database 27,079,768 bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245 bytes.
 
 The **2026-09-25 20:54:37** backup was taken with `bench --site hrms-v16.localhost backup --with-files` before standard migration for native Shift Assignment Tool permissions. `gzip -t` and both public/private `tar -tf` checks passed. SHA-256: database `c82369eea7a30dc470f8eb5fad525dbd61715723805d15e87a71b446eabcb700`, public files `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532`, private files `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe`, config `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`. Files are under `/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/` with prefix `20260925_205430-hrms-v16_localhost-`; sizes: database 28,547,805 bytes, public files 10,240 bytes, private files 38,932,480 bytes, config 245 bytes.
+
+
+## Older report boundary migration — 2026-09-26 10:11:24
+
+Fresh `bench --site hrms-v16.localhost backup --with-files` before standard
+migration clears stale Daily Attendance Summary/Workforce Anomaly Radar
+JavaScript metadata. Database `gzip -t` and both public/private `tar -tf`
+checks passed. No real payroll/employee configuration is being reconciled.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_101050-hrms-v16_localhost-database.sql.gz` | 39,107,231 | `fe9b9f10667bab84ebc34372f74f4a86b07935af6a6c51f56f76ad47c99af938` |
+| `20260926_101050-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_101050-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_101050-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |

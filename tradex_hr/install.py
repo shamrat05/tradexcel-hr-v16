@@ -7,19 +7,6 @@ import json
 import frappe
 
 
-DAILY_ATTENDANCE_JAVASCRIPT = """
-frappe.query_reports["Daily Attendance Summary"] = {
-  filters: [
-    {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-    {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
-    {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
-    {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},
-    {fieldname: "status", label: __("Status"), fieldtype: "Select", options: "\\nPresent\\nAbsent\\nOn Leave\\nHalf Day\\nHoliday\\nNot Started", default: ""}
-  ]
-};
-"""
-
 BIOMETRIC_ID_AUDIT_JAVASCRIPT = """
 frappe.query_reports["Biometric ID Audit"] = {
   filters: [
@@ -64,22 +51,6 @@ frappe.query_reports["Biometric ID Audit"] = {
 };
 """
 
-WORKFORCE_ANOMALY_RADAR_JAVASCRIPT = """
-frappe.query_reports["Workforce Anomaly Radar"] = {
-  filters: [
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
-    {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-    {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-    {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
-    {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},
-    {fieldname: "category", label: __("Category"), fieldtype: "Select", options: "All\\nCheckin\\nAttendance\\nPayroll\\nLeave\\nTax", default: "All"},
-    {fieldname: "severity", label: __("Severity"), fieldtype: "Select", options: "All\\nHigh\\nMedium\\nLow", default: "All"},
-    {fieldname: "z_threshold", label: __("Outlier Z Threshold"), fieldtype: "Float", default: 3.5, description: __("Modified z-score cutoff for cohort outliers (standard practice: 3.5)")},
-    {fieldname: "min_cohort", label: __("Minimum Cohort Size"), fieldtype: "Int", default: 5, description: __("Groups smaller than this are skipped so statistics stay meaningful")}
-  ]
-};
-"""
-
 REPORTS = {
     "Tradexcel Salary Coverage Board": {
         "ref_doctype": "Employee",
@@ -115,7 +86,6 @@ frappe.query_reports[\"Tradexcel Salary Coverage Board\"] = {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
         "is_standard": "Yes",
-        "javascript": WORKFORCE_ANOMALY_RADAR_JAVASCRIPT,
     },
 }
 
@@ -557,21 +527,6 @@ def _ensure_custom_report(values: dict) -> None:
         doc.insert(ignore_permissions=True)
     else:
         doc.save(ignore_permissions=True)
-
-
-def ensure_daily_attendance_report() -> None:
-    values = {
-        "report_name": "Daily Attendance Summary",
-        "ref_doctype": "Attendance",
-        "report_type": "Script Report",
-        "is_standard": "Yes",
-        "module": "Tradexcel HR",
-        "query": None,
-        "report_script": None,
-        "javascript": DAILY_ATTENDANCE_JAVASCRIPT,
-        "disabled": 0,
-    }
-    _ensure_custom_report(values)
 
 
 def ensure_reports() -> None:

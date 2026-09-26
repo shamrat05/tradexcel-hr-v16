@@ -71,7 +71,7 @@ def check_unpaired_punches(context):
             f"{row['orphan_outs']} OUT without IN, {row['unclosed']} IN without OUT, {row['extra_ins']} extra IN",
             "Every IN should pair with the next OUT",
             f"{row['orphan_outs'] + row['unclosed'] + row['extra_ins']} unpaired",
-            "A day without a matched check-out can drop paid days or overtime.",
+            "Unpaired device evidence needs review; it does not determine payable attendance.",
             "Review the device log and add an attendance correction for the affected day",
         ))
     return findings
@@ -160,28 +160,8 @@ def check_slip_arithmetic(context):
             "Payroll", "High", "Employee", slip.get("employee_name") or slip["employee"],
             slip["employee"], "Salary slip arithmetic",
             "; ".join(problems), "gross = sum(earnings); net = gross - sum(deductions)",
-            "mismatch", f"Draft slip {slip['name']} for {slip.get('start_date')} to {slip.get('end_date')}.",
-            "Recompute and reprice the draft before submission",
-        ))
-    return findings
-
-
-def check_zero_gross_with_punches(context):
-    findings = []
-    for slip in context.get("slips", []):
-        if float(slip.get("gross_pay") or 0) != 0:
-            continue
-        punches = context.get("slip_punch_any", {}).get(slip["name"], 0)
-        if not punches:
-            continue
-        findings.append(_finding(
-            "Payroll", "High", "Employee", slip.get("employee_name") or slip["employee"],
-            slip["employee"], "Zero gross with device punches",
-            f"gross 0.00 with {punches} punch day(s)",
-            "Punch activity should produce payable days",
-            str(punches),
-            f"Slip {slip['name']} covers {slip.get('start_date')} to {slip.get('end_date')}.",
-            "Reprice the draft after resolving attendance pairing and policy coverage",
+            "mismatch", f"Salary Slip {slip['name']} for {slip.get('start_date')} to {slip.get('end_date')}.",
+            "Review the native payroll reconciliation; use a reviewed correction for submitted history",
         ))
     return findings
 
@@ -202,7 +182,7 @@ def check_duplicate_slips(context):
             f"{len(slips)} slips for {start} to {end}", "One active slip per employee and period",
             str(len(slips)),
             f"Slips: {names}.",
-            "Cancel the duplicate before submission",
+            "Review duplicate native slips and their accounting before any approved reversal",
         ))
     return findings
 
@@ -220,36 +200,7 @@ def check_payment_days_out_of_range(context):
             f"{payment_days:g} days", f"period has {period_days} days",
             f"{payment_days - period_days:+g}",
             f"Slip {slip['name']} for {slip.get('start_date')} to {slip.get('end_date')}.",
-            "Correct the payment days before submission",
-        ))
-    return findings
-
-
-def check_paid_vs_punch_days(context):
-    tolerance = float(context.get("day_tolerance") or 1)
-    wage_structures = context.get("wage_structures", set())
-    paired_days = context.get("slip_paired_days", {})
-    period_to = context.get("period_to_date")
-    findings = []
-    for slip in context.get("slips", []):
-        if slip.get("salary_structure") not in wage_structures:
-            continue
-        if period_to and slip["end_date"] > period_to:
-            continue  # only judge periods fully inside the analysed window
-        if float(slip.get("gross_pay") or 0) == 0:
-            continue
-        paid = float(slip.get("payment_days") or 0)
-        worked = float(paired_days.get(slip["name"], 0))
-        if abs(paid - worked) <= tolerance:
-            continue
-        findings.append(_finding(
-            "Payroll", "High", "Employee", slip.get("employee_name") or slip["employee"],
-            slip["employee"], "Paid days vs paired punch days",
-            f"{paid:g} paid", f"{worked:g} paired punch days",
-            f"{paid - worked:+g}",
-            f"Draft slip {slip['name']} for {slip.get('start_date')} to {slip.get('end_date')}; "
-            f"device data {context.get('checkin_span') or 'span unknown'}.",
-            "Reprice the draft from the paired punch evidence or correct attendance first",
+            "Review native payroll evidence; use a reviewed correction for submitted history",
         ))
     return findings
 
@@ -358,10 +309,8 @@ CHECKS = (
     ("Attendance", check_employee_without_shift_assignment),
     ("Attendance", check_attendance_without_shift_link),
     ("Payroll", check_slip_arithmetic),
-    ("Payroll", check_zero_gross_with_punches),
     ("Payroll", check_duplicate_slips),
     ("Payroll", check_payment_days_out_of_range),
-    ("Payroll", check_paid_vs_punch_days),
     ("Payroll", check_base_outliers),
     ("Leave", check_leave_balance_negative),
     ("Leave", check_leave_without_allocation),

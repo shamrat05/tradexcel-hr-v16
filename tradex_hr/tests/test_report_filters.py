@@ -81,3 +81,15 @@ def test_navigation_sequence_reports_declare_only_their_own_filters():
     for name, forbidden in foreign.items():
         declared = _declared_filters(_script(name, "js"))
         assert not (declared & forbidden), f"{name} declares foreign filters: {declared & forbidden}"
+
+
+def test_legacy_reports_do_not_restore_stale_stored_javascript():
+    import inspect
+    from tradex_hr import install
+
+    source = inspect.getsource(install)
+    assert 'DAILY_ATTENDANCE_JAVASCRIPT' not in source
+    assert 'WORKFORCE_ANOMALY_RADAR_JAVASCRIPT' not in source
+    assert 'ensure_daily_attendance_report' not in source
+    assert 'javascript' not in install.REPORTS['Workforce Anomaly Radar']
+    assert 'Not Marked' in _script('Daily Attendance Summary', 'js')

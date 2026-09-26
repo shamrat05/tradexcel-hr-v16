@@ -42,7 +42,7 @@ def permitted_employee_names(company: str, *, branch: str | None = None,
 
 def permitted_salary_slips(company: str, employee_names: tuple[str, ...], *,
                            from_date: str, to_date: str, branch: str = "",
-                           department: str = "") -> list[frappe._dict]:
+                           department: str = "", overlapping_period: bool = False) -> list[frappe._dict]:
     """Return submitted Salary Slips visible through native Employee/Slip permissions.
 
     These financial Script Reports read Salary Detail with SQL after this
@@ -67,6 +67,9 @@ def permitted_salary_slips(company: str, employee_names: tuple[str, ...], *,
         "docstatus": 1,
         "start_date": ["between", [from_date, to_date]],
     }
+    if overlapping_period:
+        filters["start_date"] = ["<=", to_date]
+        filters["end_date"] = [">=", from_date]
     if branch:
         filters["branch"] = branch
     if department:
@@ -80,9 +83,10 @@ def permitted_salary_slips(company: str, employee_names: tuple[str, ...], *,
                 "name", "employee", "employee_name", "company", "branch",
                 "department", "designation", "start_date", "end_date",
                 "posting_date", "gross_pay", "total_deduction", "net_pay",
-                "docstatus",
+                "docstatus", "salary_structure", "payment_days",
             ],
             order_by="start_date asc, employee asc, name asc",
+            limit_page_length=0,
         )
     except frappe.PermissionError:
         frappe.throw(
