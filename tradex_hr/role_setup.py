@@ -350,7 +350,9 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     },
     "Leave Allocation": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
-        "Tradexcel HR Manager": EDIT_PERMS,
+        # Entitlement administration stays with HR; Leave Approver only
+        # decides individual Leave Applications.
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
         # Leave approvers need the native balance evidence that informs their
         # Leave Application decision; Company/Branch/Department scope remains
@@ -363,6 +365,21 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Leave Control Panel": {
+        "Tradexcel HR Manager": {"read"},
+    },
+    "Leave Policy Assignment": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Leave Policy": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Leave Period": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Leave Type": {
+        "Tradexcel HR Manager": {"select", "read"},
     },
     "Salary Component": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,

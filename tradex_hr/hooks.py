@@ -42,6 +42,9 @@ extend_doctype_class = {
     "Shift Assignment Tool": [
         "tradex_hr.tradexcel_hr.shift_assignment_tool.TradexcelShiftAssignmentToolMixin",
     ],
+    "Leave Control Panel": [
+        "tradex_hr.tradexcel_hr.leave_control_panel.TradexcelLeaveControlPanelMixin",
+    ],
     "Bulk Salary Structure Assignment": [
         "tradex_hr.tradexcel_hr.bulk_salary_structure_assignment.TradexcelBulkSalaryStructureAssignmentMixin",
     ],
@@ -72,6 +75,9 @@ doctype_list_js = {
 }
 
 doc_events = {
+    "Leave Policy Assignment": {
+        "before_submit": "tradex_hr.tradexcel_hr.leave_control_panel.require_submitted_leave_policy",
+    },
     "Income Tax Slab": {
         "validate": "tradex_hr.tradexcel_hr.tax_review.validate_income_tax_slab_review",
     },

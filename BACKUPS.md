@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-26 01:27 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-26 01:43 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -47,6 +47,7 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-26 01:43:48** | `20260926_014339-hrms-v16_localhost-database.sql.gz` | 34,392,005 | `6c0ee9336bf383c4` | Before scoped native Leave Control Panel DocPerm/hook migration; gzip and both file archives verified |
 | **2026-09-26 01:27:50** | `20260926_012737-hrms-v16_localhost-database.sql.gz` | 34,020,564 | `349d60b17c00fe09` | Before standard portability/Workspace metadata migration; gzip and both file archives verified |
 | **2026-09-25 22:00:38** | `20260925_220031-hrms-v16_localhost-database.sql.gz` | 29,500,665 | `15d9c3178f37676a` | Before native bulk SSA permissions and Workspace target migration; gzip and both file archives verified |
 | **2026-09-25 23:53:24** | `20260925_235317-hrms-v16_localhost-database.sql.gz` | 31,385,027 | `2db1cf58ec51e498` | Before Attendance Correction Approver Employee read/select DocPerm convergence; gzip and both file archives verified |
@@ -67,6 +68,20 @@ Several older files are also mirrored under
 | **2026-09-25 11:14** | `20260925_111432-hrms-v16_localhost-database.sql.gz` | 20,389,261 | `9dcac7c73acbd29e` | Before standard lifecycle-branch migration; gzip and both file archives verified |
 | **2026-09-25 13:57** | `20260925_135751-hrms-v16_localhost-database.sql.gz` | 23,518,137 | `392607c1445ebdb3` | Before synthetic PR #20 lifecycle/payroll compatibility cleanup tests; `--with-files`, gzip and both file archives verified |
 | **2026-09-25 10:26** | `20260925_102545-hrms-v16_localhost-database.sql.gz` | 20,389,491 | `49ed5d561ba4abe4` | Before synthetic Employee Lifecycle integration retry |
+
+The **2026-09-26 01:43:48** backup was taken with `--with-files` before
+standard staging migration for native Leave Control Panel scope and custom
+HR entitlement permissions. Files are under
+`/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`
+with prefix `20260926_014339-hrms-v16_localhost-`. `gzip -t` and both tar
+listings passed. Exact sizes and SHA-256:
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260926_014339-hrms-v16_localhost-database.sql.gz` | 34,392,005 | `6c0ee9336bf383c4025c024e40141b5483c96344be5ed5692a94f73854cda83d` |
+| `20260926_014339-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260926_014339-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260926_014339-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
 
 The **2026-09-26 01:27:50** backup was taken with `--with-files` before the
 standard staging migration that removes hardcoded company Number Cards and
