@@ -273,3 +273,6 @@ has_permission = {
     "Payroll Correction": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
     "Arrear": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
 }
+
+# Keep native queued retries under their original enabled actor.
+before_job = ["tradex_hr.tradexcel_hr.bulk_execution_safety.validate_job_actor"]

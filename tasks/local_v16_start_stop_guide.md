@@ -77,3 +77,12 @@ The v16 database answered through the site's configured connection,
 the full local bench processes started with the commands above, and the site
 returned HTTP 200. The Redis config emits a Linux memory-overcommit warning;
 it did not prevent startup. No sysctl or site configuration was changed.
+
+## Separate local web process (2026-09-26 verified)
+
+When starting web outside `bench start`, use `DEV_SERVER=1 bench --site
+hrms-v16.localhost serve --port 8001` from the v16 bench. The flag tells the
+Desk client to use Socket.IO port 9001 instead of expecting a reverse proxy
+on port 8001. Use `http://127.0.0.1:8001` when the WSL resolver has no entry
+for `hrms-v16.localhost`; the configured default site remains the v16 site.
+No site/DB credentials or system MariaDB settings need changing.

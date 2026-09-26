@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+from tradex_hr.tradexcel_hr.bulk_execution_safety import private_bulk_results
 
 
 TRADESCEL_SHIFT_OPERATOR_ROLES = {
@@ -63,7 +64,8 @@ class TradexcelShiftAssignmentToolMixin:
             # execution time so User Permission or Employee state changes made
             # after queueing cannot widen the operation.
             self._validate_selected_employees(employees)
-        return super()._bulk_assign(employees)
+        with private_bulk_results():
+            return super()._bulk_assign(employees)
 
     @frappe.whitelist(methods=["POST"])
     def bulk_process_shift_requests(self, shift_requests: list, status: str):
@@ -73,3 +75,7 @@ class TradexcelShiftAssignmentToolMixin:
                 frappe.PermissionError,
             )
         return super().bulk_process_shift_requests(shift_requests=shift_requests, status=status)
+
+    def _bulk_process_shift_requests(self, shift_requests: list, status: str):
+        with private_bulk_results():
+            return super()._bulk_process_shift_requests(shift_requests, status)

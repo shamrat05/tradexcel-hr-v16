@@ -17,6 +17,7 @@ from frappe.utils import cint, get_link_to_form, getdate
 from hrms.hr.utils import validate_bulk_tool_fields
 
 from tradex_hr.tradexcel_hr.pay_basis import DAILY, MONTHLY
+from tradex_hr.tradexcel_hr.bulk_execution_safety import private_bulk_results
 
 
 MAKER_ROLES = {"Tradexcel HR Manager", "Tradexcel Payroll Manager"}
@@ -227,7 +228,8 @@ class TradexcelBulkSalaryStructureAssignmentMixin:
 		previous = getattr(frappe.flags, "tradex_native_bulk_ssa_submission", False)
 		frappe.flags.tradex_native_bulk_ssa_submission = True
 		try:
-			return super()._bulk_assign_structure(employees)
+			with private_bulk_results():
+				return super()._bulk_assign_structure(employees)
 		finally:
 			frappe.flags.tradex_native_bulk_ssa_submission = previous
 
@@ -281,6 +283,6 @@ class TradexcelBulkSalaryStructureAssignmentMixin:
 		frappe.publish_realtime(
 			"completed_bulk_salary_structure_assignment",
 			message={"success": success, "failure": failure},
-			doctype="Bulk Salary Structure Assignment",
+			user=frappe.session.user,
 			after_commit=True,
 		)

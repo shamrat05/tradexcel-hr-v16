@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+from tradex_hr.tradexcel_hr.bulk_execution_safety import private_bulk_results
 from frappe.utils import getdate
 
 from tradex_hr.tradexcel_hr.company_context import assert_company_access
@@ -88,7 +89,8 @@ class TradexcelLeaveControlPanelMixin:
                 _("Refresh the Employee list. A selected Employee is outside your permitted scope or is no longer eligible."),
                 frappe.PermissionError,
             )
-        return super().allocate_leave(employees)
+        with private_bulk_results():
+            return super().allocate_leave(employees)
 
     @frappe.whitelist()
     def get_latest_leave_period(self):
