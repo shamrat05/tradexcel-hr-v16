@@ -45,3 +45,12 @@ or the spending limit needs increasing. This is **BLOCKED BEFORE STEPS**, never
 remote CI PASS. No rerun or account-setting workaround was attempted. Phase K
 remains **BLOCKED** until remote checks execute and the separate framework/source
 and external release gates are resolved.
+
+Correction publication: [PR #44](https://github.com/shamrat05/tradexcel-hr-v16/pull/44)
+is open/draft/mergeable, base `test/release-readiness-contract`, head
+`fix/release-lineage-security-closure`. Eventual order is **#2 → #43 → #4 … #42
+→ #44**; old #3 is superseded by #44, while #1 remains independent docs.
+The first #44 source-contract run is `36304838645` on code commit `fe90092b8757cccbce05111dccefb1d7a9dc43ca`;
+it was queued at publication. No remote PASS is claimed. Current head and check
+state remain authoritative on GitHub, including the documentation-only publication
+follow-up. No merge or force-push occurred.

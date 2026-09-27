@@ -186,3 +186,9 @@ Frappe and HRMS checkouts remain clean. ERPNext's pre-existing banking/yarn.lock
 change remains untouched. Local staging DB/Redis/web/Socket.IO are running;
 HTTP 200 verified. Production, real Users/User Permissions/Employees/Checkins/
 Attendance/payroll/accounting and approved business/legal values remain unchanged.
+
+Correction [PR #44](https://github.com/shamrat05/tradexcel-hr-v16/pull/44) is
+open/draft/mergeable on #42. One atomic code commit is followed only by a small
+documentation commit recording the newly available PR number/run identity.
+The first natural Actions run is 36304838645; remote CI is not claimed passed.
+PR #43 remains the seven-commit historical backfill. Both remain unmerged.

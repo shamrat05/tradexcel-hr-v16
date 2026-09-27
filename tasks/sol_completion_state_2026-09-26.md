@@ -139,8 +139,8 @@ repository security setting or workflow protection was changed to bypass it.
 ## Post-Sol correction resume point
 
 Current branch: `fix/release-lineage-security-closure`, parent #42
-`test/release-readiness-contract`. Status IN_PROGRESS pending final full suite,
-cleanup, atomic commit and draft correction PR. Reuse this branch; do not recreate
+`test/release-readiness-contract`. Status COMPLETE: draft correction PR #44 is open on #42; final validation
+and cleanup passed. Phase K remains BLOCKED by external release gates. Reuse this branch; do not recreate
 #43 or repeat the completed staging metadata migration. Backup prefix:
 `20260927_133159-hrms-v16_localhost-` (verified archives/config; BACKUPS.md).
 
@@ -154,5 +154,7 @@ Post-Sol correction final local validation: **653 passed, 0 skipped** (103 warni
 60 focused + 4 final release regressions; source/compile/build/smoke passed.
 Final narrow permission migration used verified backup
 `20260927_134711-hrms-v16_localhost-`. Synthetic and disposable-site cleanup zero.
-Creation of the new draft correction PR is the only remaining publication step;
+Draft correction PR #44 is published, open and unmerged;
 Phase K remains BLOCKED by external CI/source/business/device gates.
+
+| Post-Sol release correction | COMPLETE | fix/release-lineage-security-closure | test/release-readiness-contract | #44 open/draft/unmerged | 60 focused + 4 final release regressions | 653 passed, 0 skipped | YES, standard migrate/cache | 20260927_133159- and 20260927_134711-hrms-v16_localhost- | Phase K external gates remain BLOCKED |
