@@ -43,7 +43,7 @@ limitations; no automatic legal money has been implemented to hide them.
 | 30 | Measured performance/async | ENGINEERING_COMPLETE_REAL_UAT_REMAINS | #41 | 240-row read measurements/live 31-row worker; real payroll concurrency capacity remains | volume UAT |
 | 31 | Source/deploy reproducibility | PARTIAL | release contract | App neutral source install passed; pre-existing ERPNext banking/yarn.lock drift requires external dependency review and clean target build | external source/release evidence |
 | 32 | Migration/restore contract | ENGINEERING_COMPLETE_REAL_UAT_REMAINS | release contract/BACKUPS.md | Separate 3307 restore passed; off-box production disaster/key restore remains | production recovery |
-| 33 | Synthetic E2E/CI contract | ENGINEERING_COMPLETE_REAL_UAT_REMAINS | release contract | Full native suite/cheap truthful CI; integrated stack/real company rehearsal | release/UAT |
+| 33 | Synthetic E2E/CI contract | PARTIAL | release contract | 629 local native tests and 11 isolated pure tests passed; GitHub runner blocked by account billing before execution | external CI account + release/UAT |
 | 34 | Physical device/browser acceptance | BLOCKED_PHYSICAL_DEVICE_BROWSER | release_uat_2026-09-27.md | 3 synthetic browser personas proven; physical terminals/Android and full staff UAT remain | physical/browser |
 | 35 | Business configuration approval | BLOCKED_OWNER_LEGAL_FINANCE | business_configuration_gate_2026-09-26.md | Owner/HR/Finance/legal approve roster/policies/accounts/scopes | business |
 | 36 | Stack review/merge authorization | PRODUCTION_ONLY | pr_merge_runbook_2026-09-26.md | Human review and explicit merge authorization; no PR merged | release approval |

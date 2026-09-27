@@ -153,3 +153,12 @@ all pre-release aggregate counts/states. No unreviewed business cleanup.
 Phase K is marked BLOCKED solely for unresolved whole-bench external dependency
 pinning; the honest release contract is committed as a draft PR. Device/staff/
 business/production gates remain separately classified, not engineering passes.
+
+## GitHub CI outcome
+
+PR #42 source-contract run **36283160723** reports FAILURE before any step starts.
+GitHub check annotation: “The job was not started because recent account payments
+have failed or your spending limit needs to be increased.” This is an external
+account/billing gate. No runner log exists because no code ran. Do not describe
+the local 11-test equivalent or 629-test site suite as GitHub CI. The workflow
+remains truthful and ready to rerun after the account owner resolves this gate.

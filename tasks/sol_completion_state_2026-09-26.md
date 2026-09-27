@@ -42,7 +42,7 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 | H Security/privacy | COMPLETE | fix/security-privacy-hardening | feat/operator-usability | #39 open/draft/unmerged | 9 passed | 621 passed, 0 skipped | YES, standard migrate/cache clear | 20260927_052730-hrms-v16_localhost- | Cleanup zero; native explicit shares/staff provisioning and wider export/browser UAT remain configuration/evidence gates |
 | I Accounting/reconciliation | COMPLETE | feat/accounting-reconciliation | fix/security-privacy-hardening | #40 open/draft/unmerged | 34 native/payment + 74 broader focused passed | 627 passed, 0 skipped | NO | — | Cleanup zero; real Finance configuration/settlement review remains |
 | J Measured performance/async | COMPLETE | perf/measured-hrms-pass | feat/accounting-reconciliation | #41 open/draft/unmerged | 14 focused + 1 parity + 1 live worker passed | 629 passed, 0 skipped | NO | — | Cleanup zero; real configured-company concurrency/payroll-volume UAT remains |
-| K Release contract | BLOCKED | test/release-readiness-contract | perf/measured-hrms-pass | Release-contract draft PR (GitHub authoritative) | 12 site-focused + 11 isolated pure; neutral install/restore and 3-persona browser passed | 629 passed, 0 skipped | YES, standard migrate/cache clear | 20260927_062331-hrms-v16_localhost- | App release evidence complete; whole-bench pinning blocked by pre-existing ERPNext banking/yarn.lock drift outside authorized app checkout. Real business/device gates remain |
+| K Release contract | BLOCKED | test/release-readiness-contract | perf/measured-hrms-pass | #42 open/draft/unmerged | 12 site-focused + 11 isolated pure; neutral install/restore and 3-persona browser passed | 629 passed, 0 skipped | YES, standard migrate/cache clear | 20260927_062331-hrms-v16_localhost- | App release evidence complete; whole-bench pinning blocked by pre-existing ERPNext banking/yarn.lock drift; GitHub Actions billing prevented job startup. Real business/device gates remain |
 
 ## Initial audit facts to preserve on resume
 
@@ -128,3 +128,10 @@ its proper source context before claiming whole-bench deployment reproducibility
 Do not reset the pre-existing change or touch framework source without authority.
 Step 16 retains the supported-native employer-contribution capability blocker;
 no custom accounting bypass is authorized. See current roadmap and business gate.
+
+GitHub PR #42 is open/draft/unmerged, base `perf/measured-hrms-pass`.
+Source-contract run 36283160723 never started a runner job (zero steps): GitHub
+reported failed account payments or a spending-limit requirement. This is
+**REMOTE CI BLOCKED**, not a test failure or a CI pass. The same source checks
+and 11 pure tests passed locally in an isolated environment. No billing,
+repository security setting or workflow protection was changed to bypass it.
