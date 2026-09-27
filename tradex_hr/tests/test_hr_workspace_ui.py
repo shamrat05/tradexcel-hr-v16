@@ -1,4 +1,4 @@
-"""Tests for native-first HR workspace layout, progressive disclosure, and sidebar curation."""
+"""Tests for native-first HR workspace layout, progressive disclosure, sidebar curation, and Tradexcel-only persona permissions."""
 import json
 from pathlib import Path
 
@@ -15,7 +15,7 @@ from tradex_hr.install import (
     workspace_blocks,
     workspace_sidebar_items,
 )
-from tradex_hr.tests.persona_uat import PERSONA_ROLES, SyntheticPersonaHarness
+from tradex_hr.tests.persona_uat import PERSONA_ROLES, SyntheticPersonaHarness, assert_only_tradexcel_roles
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -92,25 +92,17 @@ def test_curated_sidebar_sections_and_targets_exist():
 
     link_targets = {link.link_to for link in links}
 
-    # Verify newly curated operational and lifecycle surfaces exist in sidebar
     new_features = [
-        # Expenses & Travel
         "Expense Claim", "Employee Advance", "Travel Request",
         "Employee Advance Summary", "Unpaid Expense Claim", "Expense Claim Type", "Purpose of Travel",
-        # Attendance & Shifts
         "Shift Request", "Shift Schedule Assignment", "Shift Location", "Overtime Type",
         "Monthly Attendance Sheet", "Shift Attendance", "Employees working on a holiday",
-        # Leave & Holidays
         "Compensatory Leave Request", "Leave Encashment", "Holiday List Assignment", "Leave Type", "Leave Block List",
-        # Payroll
         "Employee Incentive", "Retention Bonus", "Salary Withholding",
-        # Recruitment
         "Staffing Plan", "Job Requisition", "Interview", "Interview Feedback",
         "Employee Referral", "Appointment Letter", "Interview Type", "Appointment Letter Template", "Recruitment Analytics",
-        # Development & Relations
         "Employee Grievance", "Training Program", "Training Event", "Appraisal", "Goal",
         "Employee Skill Map", "Training Feedback", "Training Result", "Appraisal Cycle", "Grievance Type", "Appraisal Template",
-        # Setup
         "Employee Grade", "Employee Group", "HR Settings", "Payroll Settings",
     ]
     for feat in new_features:
@@ -137,24 +129,65 @@ def test_curated_navigation_does_not_promote_excluded_features():
         assert item not in workspace_targets, f"Excluded item {item} must not be in workspace shortcuts"
 
 
-def test_representative_persona_access_rules():
+def test_tradexcel_only_personas_and_permission_enforcement():
     from frappe.desk.desktop import get_workspaces
-    from frappe.boot import get_sidebar_items
 
     h = SyntheticPersonaHarness("UIUAT" + frappe.generate_hash(8).upper())
     try:
-        # 1. HR Manager has broad operational access
+        # 1. Tradexcel HR Manager (strictly NO native HR Manager role)
         frappe.set_user("Administrator")
-        hr_user = h.create_user("hr_manager", [PERSONA_ROLES["hr_manager"], "HR Manager"], company="Tradexcel Ceramics Ltd.")
+        hr_user = h.create_user("hr_manager", [PERSONA_ROLES["hr_manager"]], company="Tradexcel Ceramics Ltd.")
+        assert_only_tradexcel_roles(hr_user)
         frappe.set_user(hr_user)
+
+        # Approved administrative permissions
         assert frappe.has_permission("Expense Claim", "read")
-        assert frappe.has_permission("Leave Application", "read")
-        assert frappe.has_permission("Shift Request", "read")
+        assert frappe.has_permission("Expense Claim", "create")
+        assert frappe.has_permission("Expense Claim", "write")
+        assert not frappe.has_permission("Expense Claim", "submit"), "Expense Claim submit must not be granted without Expense Approver"
+
+        assert frappe.has_permission("Compensatory Leave Request", "read")
+        assert frappe.has_permission("Compensatory Leave Request", "submit")
+        assert frappe.has_permission("Holiday List Assignment", "read")
+        assert frappe.has_permission("Holiday List Assignment", "submit")
+
         assert frappe.has_permission("Employee Grievance", "read")
+        assert frappe.has_permission("Employee Grievance", "submit")
+        assert frappe.has_permission("Training Program", "read")
+        assert frappe.has_permission("Training Event", "read")
+        assert frappe.has_permission("Training Event", "submit")
+        assert frappe.has_permission("Training Feedback", "read")
+        assert frappe.has_permission("Training Result", "read")
+        assert frappe.has_permission("Training Result", "submit")
+
+        assert frappe.has_permission("Appraisal", "read")
+        assert frappe.has_permission("Appraisal", "submit")
+        assert frappe.has_permission("Appraisal Cycle", "read")
+        assert frappe.has_permission("Goal", "read")
+        assert frappe.has_permission("Employee Skill Map", "read")
+
+        assert frappe.has_permission("Job Requisition", "read")
+        assert frappe.has_permission("Employee Referral", "read")
+        assert frappe.has_permission("Employee Referral", "submit")
+        assert frappe.has_permission("Appointment Letter", "read")
+
+        # Explicitly DECISION_REQUIRED / UNGRANTED features
+        assert not frappe.has_permission("Employee Advance", "read"), "Employee Advance must remain ungranted (DECISION_REQUIRED)"
+        assert not frappe.has_permission("Travel Request", "read"), "Travel Request must remain ungranted (DECISION_REQUIRED)"
+
+        # Explicitly PRESERVE_EXISTING_DENIAL features
+        assert not frappe.has_permission("Shift Request", "read"), "Shift Request must remain denied (PRESERVE_EXISTING_DENIAL)"
+        assert not frappe.has_permission("Shift Schedule Assignment", "read"), "Shift Schedule Assignment must remain denied"
+
+        # Explicitly payroll-affecting extras (no submit authority)
+        assert not frappe.has_permission("Employee Incentive", "submit"), "Employee Incentive submit must not bypass maker/checker"
+        assert not frappe.has_permission("Retention Bonus", "submit"), "Retention Bonus submit must not bypass maker/checker"
+        assert not frappe.has_permission("Salary Withholding", "submit"), "Salary Withholding submit must not bypass maker/checker"
 
         # 2. Branch Manager cannot read sensitive payroll
         frappe.set_user("Administrator")
         bm_user = h.create_user("branch_manager", [PERSONA_ROLES["branch_manager"]], company="Tradexcel Ceramics Ltd.")
+        assert_only_tradexcel_roles(bm_user)
         frappe.set_user(bm_user)
         assert not frappe.has_permission("Salary Slip", "read")
         assert not frappe.has_permission("Salary Structure Assignment", "read")
@@ -163,6 +196,7 @@ def test_representative_persona_access_rules():
         # 3. Worker cannot see administrative Tradexcel HR workspace
         frappe.set_user("Administrator")
         worker_user = h.create_user("worker", [PERSONA_ROLES["worker"]], company="Tradexcel Ceramics Ltd.")
+        assert_only_tradexcel_roles(worker_user)
         frappe.set_user(worker_user)
         visible_workspaces = [p.name for p in get_workspaces()["pages"]]
         assert "tradexcel-hr" not in visible_workspaces, "Worker must not have access to tradexcel-hr workspace"
@@ -170,11 +204,81 @@ def test_representative_persona_access_rules():
         # 4. Attendance Officer has attendance & shift tool access but no payroll access
         frappe.set_user("Administrator")
         att_user = h.create_user("attendance_officer", [PERSONA_ROLES["attendance_officer"]], company="Tradexcel Ceramics Ltd.")
+        assert_only_tradexcel_roles(att_user)
         frappe.set_user(att_user)
         assert frappe.has_permission("Attendance Request", "read")
         assert frappe.has_permission("Attendance", "read")
         assert not frappe.has_permission("Salary Slip", "read")
         assert not frappe.has_permission("Payroll Entry", "read")
+        assert not frappe.has_permission("Expense Claim", "read")
+        assert not frappe.has_permission("Shift Request", "read")
+    finally:
+        frappe.set_user("Administrator")
+        h.cleanup()
+
+
+def test_quick_list_native_permission_filtering():
+    from frappe.desk.desktop import get_desktop_page, get_workspaces
+
+    h = SyntheticPersonaHarness("QLTEST" + frappe.generate_hash(8).upper())
+    try:
+        # Attendance Officer should only see Leave and Attendance quick lists, NOT Expense or Shift quick lists
+        frappe.set_user("Administrator")
+        att_user = h.create_user("attendance_officer", [PERSONA_ROLES["attendance_officer"]], company="Tradexcel Ceramics Ltd.")
+        assert_only_tradexcel_roles(att_user)
+        frappe.set_user(att_user)
+
+        page = next(p for p in get_workspaces()["pages"] if p["name"] == "tradexcel-hr")
+        desktop_page = get_desktop_page(json.dumps(page))
+        ql_labels = [q.label for q in desktop_page.get("quick_lists", {}).get("items", [])]
+        assert "Open Leave Requests" in ql_labels
+        assert "Attendance Requests to Review" in ql_labels
+        assert "Expense Claims to Review" not in ql_labels, "Attendance Officer must not see Expense Claims Quick List"
+        assert "Shift Requests to Review" not in ql_labels, "Attendance Officer must not see Shift Requests Quick List"
+
+        # HR Manager sees Leave, Attendance, and Expense quick lists, but NOT Shift quick list (denied)
+        frappe.set_user("Administrator")
+        hr_user = h.create_user("hr_manager", [PERSONA_ROLES["hr_manager"]], company="Tradexcel Ceramics Ltd.")
+        assert_only_tradexcel_roles(hr_user)
+        frappe.set_user(hr_user)
+
+        desktop_page = get_desktop_page(json.dumps(page))
+        hr_ql_labels = [q.label for q in desktop_page.get("quick_lists", {}).get("items", [])]
+        assert "Open Leave Requests" in hr_ql_labels
+        assert "Attendance Requests to Review" in hr_ql_labels
+        assert "Expense Claims to Review" in hr_ql_labels
+        assert "Shift Requests to Review" not in hr_ql_labels, "HR Manager must not see Shift Requests Quick List (denied)"
+    finally:
+        frappe.set_user("Administrator")
+        h.cleanup()
+
+
+def test_record_scope_user_permission_isolation():
+    from tradex_hr.tests.persona_uat import SyntheticPersonaHarness, PERSONA_ROLES, assert_only_tradexcel_roles
+
+    h = SyntheticPersonaHarness("SCOPETEST" + frappe.generate_hash(8).upper())
+    try:
+        frappe.set_user("Administrator")
+        # Create scoped HR Manager for Branch A
+        hr_user_a = h.create_user(
+            "hr_manager",
+            [PERSONA_ROLES["hr_manager"]],
+            company="Tradexcel Ceramics Ltd.",
+            branch="Tradexcel Headquarters",
+        )
+        assert_only_tradexcel_roles(hr_user_a)
+
+        # Scoped user list query on Employee must only return employees within scope
+        frappe.set_user(hr_user_a)
+        scoped_employees = frappe.get_list("Employee", fields=["name", "company", "branch"], limit=10)
+        for emp in scoped_employees:
+            assert emp["company"] == "Tradexcel Ceramics Ltd."
+            if emp.get("branch"):
+                assert emp["branch"] == "Tradexcel Headquarters"
+
+        # Cross-company attempt: user should not be able to read records from unpermitted company
+        unauthorized = frappe.get_list("Employee", filters={"company": ["!=", "Tradexcel Ceramics Ltd."]}, limit=5)
+        assert len(unauthorized) == 0, "Scoped user must not see cross-company records"
     finally:
         frappe.set_user("Administrator")
         h.cleanup()

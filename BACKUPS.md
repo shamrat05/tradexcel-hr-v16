@@ -47,6 +47,7 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-27 20:26:39** | `20260927_202639-hrms-v16_localhost-database.sql.gz` | 53,584,703 | `03f662e0579cda0c` | Before native feature custom role permission convergence and Home action update; `--with-files`, gzip and both file archives verified |
 | **2026-09-27 19:14:37** | `20260927_191437-hrms-v16_localhost-database.sql.gz` | 52,319,549 | `a973af03a491d5d6` | Before native HR workspace completeness and sidebar information architecture migration; `--with-files`, gzip and both file archives verified |
 | **2026-09-26 09:20:27** | `20260926_092011-hrms-v16_localhost-database.sql.gz` | 38,067,024 | `3f01cac70816b9b0` | Before deleting verified orphan synthetic persona Contact/Notification Settings left by older test teardown; no real User/configuration cleanup |
 | **2026-09-26 07:02:58** | `20260926_070248-hrms-v16_localhost-database.sql.gz` | 36,775,178 | `9506a3785f975d76` | Before standard Employee Data Gaps Report JavaScript metadata convergence; gzip and both file archives verified |
@@ -585,3 +586,14 @@ Fresh staging backup before standard migration adding the source-owned Salary St
 | `20260927_164954-hrms-v16_localhost-files.tar` | 10,240 | `3a9b3fe9559a6466acdff3bd68f6735af3b9f4030f95937a877e9646f7b73b32` |
 | `20260927_164954-hrms-v16_localhost-private-files.tar` | 38,942,720 | `d615c29bf50089e5ee2677247aa4df782ed79258d97de875c34a1d35b26e255b` |
 | `20260927_164954-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Native feature custom role permission convergence — 2026-09-27 20:26:39
+
+Fresh staging backup before standard migration adding minimal justified Custom DocPerms for Tradexcel HR Manager and updating Home common action shortcuts. Database gzip, public/private file archives, and site config verified. Prefix `20260927_202639-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260927_202639-hrms-v16_localhost-database.sql.gz` | 53,584,703 | `03f662e0579cda0c3bd5956d963301e09ec9397f9321287e6cb0c42293fa58b7` |
+| `20260927_202639-hrms-v16_localhost-files.tar` | 10,240 | `f49715451643b96039b30f5528643f6139b1f9b89658922847006c4b0ca79454` |
+| `20260927_202639-hrms-v16_localhost-private-files.tar` | 38,942,720 | `c0940518ed6ddc1dea5301062151264b3ffb173d0e7348e0daec646e55d1d930` |
+| `20260927_202639-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |

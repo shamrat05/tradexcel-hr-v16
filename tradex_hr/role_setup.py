@@ -121,6 +121,65 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Leave Approver": {"read"},
         "Tradexcel Compliance Auditor": {"read"},
     },
+    "Department": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+        "Tradexcel Branch Manager": {"select", "read"},
+        "Tradexcel Department Manager": {"select", "read"},
+        "Tradexcel Factory Supervisor": {"select", "read"},
+        "Tradexcel Payroll Manager": {"select", "read"},
+        "Tradexcel Compliance Auditor": {"select", "read"},
+    },
+    "Branch": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+        "Tradexcel Branch Manager": {"select", "read"},
+        "Tradexcel Department Manager": {"select", "read"},
+        "Tradexcel Factory Supervisor": {"select", "read"},
+        "Tradexcel Payroll Manager": {"select", "read"},
+        "Tradexcel Compliance Auditor": {"select", "read"},
+    },
+    "Designation": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+        "Tradexcel Branch Manager": {"select", "read"},
+        "Tradexcel Department Manager": {"select", "read"},
+        "Tradexcel Factory Supervisor": {"select", "read"},
+        "Tradexcel Payroll Manager": {"select", "read"},
+        "Tradexcel Compliance Auditor": {"select", "read"},
+    },
+    "Employee Grade": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Employee Group": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Holiday List": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+    },
+    "Holiday List Assignment": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Leave Block List": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Overtime Type": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+    },
+    "Expense Claim": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Expense Claim Type": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Purpose of Travel": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Compensatory Leave Request": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
     # The native HRMS bulk SSA form is used only by the two preparation roles.
     # Its own permission is read/write; actual SSA creation remains on the
     # native Salary Structure Assignment DocType and approver submit policy.
@@ -225,11 +284,59 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     "Staffing Plan": {
         "Tradexcel HR Manager": READ_ONLY_PERMS,
     },
+    "Job Requisition": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Interview Type": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Employee Referral": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Appointment Letter": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Appointment Letter Template": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
     # Native Employee BoardingController assigns generated Tasks through
     # Frappe's share API, which requires Task share permission. User Permissions
     # still scope both the Task and the resulting share to the operator's Company.
     "Task": {
         "Tradexcel HR Manager": READ_ONLY_PERMS | {"write", "share"},
+    },
+    "Employee Grievance": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Grievance Type": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Training Program": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Training Event": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Training Feedback": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    },
+    "Training Result": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Appraisal": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Appraisal Cycle": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Appraisal Template": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Goal": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Employee Skill Map": {
+        "Tradexcel HR Manager": EDIT_PERMS,
     },
     "Employee Separation": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,

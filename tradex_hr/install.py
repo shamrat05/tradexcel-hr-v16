@@ -653,11 +653,11 @@ HOME_QUICK_LISTS = [
 COMMON_ACTION_SHORTCUTS = [
     "Employee Directory",
     "Today's Attendance",
+    "Attendance Summary",
     "Attendance Fix Requests",
     "Mobile Attendance",
     "Leave Requests",
     "Expense Claims",
-    "Employee Advances",
     "Run Monthly Payroll",
     "Salary Setup Coverage",
     "Job Applicants",
