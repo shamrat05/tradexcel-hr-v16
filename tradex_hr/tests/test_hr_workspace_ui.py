@@ -236,6 +236,12 @@ def test_quick_list_native_permission_filtering():
         assert "Expense Claims to Review" not in ql_labels, "Attendance Officer must not see Expense Claims Quick List"
         assert "Shift Requests to Review" not in ql_labels, "Attendance Officer must not see Shift Requests Quick List"
 
+        nc_labels = [c.label for c in desktop_page.get("number_cards", {}).get("items", [])]
+        assert "Number of Employees on Leave (Today)" in nc_labels
+        assert "Number of Employees on Leave (This Month)" in nc_labels
+        assert "Expense Claims (This Month)" not in nc_labels, "Attendance Officer must not see Expense Claims Number Card"
+        assert "Holidays in this month" not in nc_labels, "Custom card without docType filtered by core permission"
+
         # HR Manager sees Leave, Attendance, and Expense quick lists, but NOT Shift quick list (denied)
         frappe.set_user("Administrator")
         hr_user = h.create_user("hr_manager", [PERSONA_ROLES["hr_manager"]], company="Tradexcel Ceramics Ltd.")
@@ -248,6 +254,42 @@ def test_quick_list_native_permission_filtering():
         assert "Attendance Requests to Review" in hr_ql_labels
         assert "Expense Claims to Review" in hr_ql_labels
         assert "Shift Requests to Review" not in hr_ql_labels, "HR Manager must not see Shift Requests Quick List (denied)"
+
+        hr_nc_labels = [c.label for c in desktop_page.get("number_cards", {}).get("items", [])]
+        assert "Number of Employees on Leave (Today)" in hr_nc_labels
+        assert "Number of Employees on Leave (This Month)" in hr_nc_labels
+        assert "Expense Claims (This Month)" in hr_nc_labels
+        assert "Holidays in this month" not in hr_nc_labels, "Custom card without docType filtered by core permission"
+    finally:
+        frappe.set_user("Administrator")
+        h.cleanup()
+
+
+def test_expense_claim_maker_checker_boundary():
+    from tradex_hr.role_setup import STANDARD_PERMISSION_MATRIX
+
+    h = SyntheticPersonaHarness("EXPTEST" + frappe.generate_hash(8).upper())
+    try:
+        frappe.set_user("Administrator")
+        hr_user = h.create_user("hr_manager", [PERSONA_ROLES["hr_manager"]], company="Tradexcel Ceramics Ltd.")
+        assert_only_tradexcel_roles(hr_user)
+        frappe.set_user(hr_user)
+
+        # Maker rights: read, write, create
+        assert frappe.has_permission("Expense Claim", "read")
+        assert frappe.has_permission("Expense Claim", "write")
+        assert frappe.has_permission("Expense Claim", "create")
+
+        # Explicitly NO submit, cancel, or delete
+        assert not frappe.has_permission("Expense Claim", "submit"), "HR Manager must not have submit on Expense Claim"
+        assert not frappe.has_permission("Expense Claim", "cancel"), "HR Manager must not have cancel on Expense Claim"
+        assert not frappe.has_permission("Expense Claim", "delete"), "HR Manager must not have delete on Expense Claim"
+
+        # Checker rights unresolved: no Tradexcel role holds submit on Expense Claim
+        ec_matrix = STANDARD_PERMISSION_MATRIX.get("Expense Claim", {})
+        for role, perms in ec_matrix.items():
+            assert "submit" not in perms, f"Role {role} must not have submit on Expense Claim"
+            assert "cancel" not in perms, f"Role {role} must not have cancel on Expense Claim"
     finally:
         frappe.set_user("Administrator")
         h.cleanup()
@@ -281,4 +323,206 @@ def test_record_scope_user_permission_isolation():
         assert len(unauthorized) == 0, "Scoped user must not see cross-company records"
     finally:
         frappe.set_user("Administrator")
+        h.cleanup()
+
+
+def test_new_native_features_scope_and_record_isolation():
+    from tradex_hr.tests.persona_uat import SyntheticPersonaHarness, PERSONA_ROLES, assert_only_tradexcel_roles
+
+    h = SyntheticPersonaHarness("FTSCOPE" + frappe.generate_hash(8).upper())
+    ec_a = ec_b = app_a = app_b = g_a = g_b = clr_a = clr_b = None
+    sect = ac_name = gt = None
+
+    try:
+        frappe.set_user("Administrator")
+        comp_a = "Tradexcel Ceramics Ltd."
+        comp_b = "Elegance Footwear Ltd."
+
+        emp_a_data = frappe.db.get_value("Employee", {"company": comp_a, "status": "Active"}, ["name", "department"], as_dict=True)
+        emp_b_data = frappe.db.get_value("Employee", {"company": comp_b, "status": "Active"}, ["name", "department"], as_dict=True)
+        assert emp_a_data and emp_b_data, "Both active test employees must exist"
+        emp_a = emp_a_data.name
+        emp_b = emp_b_data.name
+        dept_a = emp_a_data.department
+        dept_b = emp_b_data.department
+
+        # Setup synthetic types
+        sect = f"SynthECT_{h.token}"
+        frappe.get_doc({
+            "doctype": "Expense Claim Type",
+            "expense_type": sect,
+            "accounts": [
+                {"company": comp_a, "default_account": "Cash - TCL"},
+                {"company": comp_b, "default_account": "Cash - EFL"},
+            ],
+        }).insert(ignore_permissions=True)
+
+        ac_name = f"SynthAC_{h.token}"
+        frappe.get_doc({
+            "doctype": "Appraisal Cycle",
+            "cycle_name": ac_name,
+            "start_date": "2026-01-01",
+            "end_date": "2026-12-31",
+        }).insert(ignore_permissions=True)
+
+        gt = f"SynthGT_{h.token}"
+        frappe.get_doc({"doctype": "Grievance Type", "name": gt}).insert(ignore_permissions=True)
+
+        # 1. Expense Claim
+        ec_a = frappe.get_doc({
+            "doctype": "Expense Claim",
+            "employee": emp_a,
+            "company": comp_a,
+            "expenses": [{"expense_type": sect, "amount": 100, "expense_date": "2026-04-24"}],
+        }).insert(ignore_permissions=True)
+        ec_b = frappe.get_doc({
+            "doctype": "Expense Claim",
+            "employee": emp_b,
+            "company": comp_b,
+            "expenses": [{"expense_type": sect, "amount": 100, "expense_date": "2026-04-24"}],
+        }).insert(ignore_permissions=True)
+
+        # 2. Appraisal
+        app_a = frappe.get_doc({
+            "doctype": "Appraisal",
+            "employee": emp_a,
+            "company": comp_a,
+            "appraisal_cycle": ac_name,
+            "start_date": "2026-01-01",
+            "end_date": "2026-12-31",
+        }).insert(ignore_permissions=True)
+        app_b = frappe.get_doc({
+            "doctype": "Appraisal",
+            "employee": emp_b,
+            "company": comp_b,
+            "appraisal_cycle": ac_name,
+            "start_date": "2026-01-01",
+            "end_date": "2026-12-31",
+        }).insert(ignore_permissions=True)
+
+        # 3. Employee Grievance
+        g_a = frappe.get_doc({
+            "doctype": "Employee Grievance",
+            "subject": f"Grievance A {h.token}",
+            "raised_by": emp_a,
+            "date": frappe.utils.today(),
+            "status": "Open",
+            "grievance_against_party": "Employee",
+            "grievance_against": emp_a,
+            "grievance_type": gt,
+            "description": "Desc A",
+        }).insert(ignore_permissions=True)
+        g_b = frappe.get_doc({
+            "doctype": "Employee Grievance",
+            "subject": f"Grievance B {h.token}",
+            "raised_by": emp_b,
+            "date": frappe.utils.today(),
+            "status": "Open",
+            "grievance_against_party": "Employee",
+            "grievance_against": emp_b,
+            "grievance_type": gt,
+            "description": "Desc B",
+        }).insert(ignore_permissions=True)
+
+        # 4. Compensatory Leave Request
+        clr_a = frappe.get_doc({
+            "doctype": "Compensatory Leave Request",
+            "employee": emp_a,
+            "department": dept_a,
+            "work_from_date": "2026-04-24",
+            "work_end_date": "2026-04-24",
+            "reason": "Reason A",
+        })
+        clr_a.flags.ignore_validate = True
+        clr_a.insert(ignore_permissions=True)
+
+        clr_b = frappe.get_doc({
+            "doctype": "Compensatory Leave Request",
+            "employee": emp_b,
+            "department": dept_b,
+            "work_from_date": "2026-04-24",
+            "work_end_date": "2026-04-24",
+            "reason": "Reason B",
+        })
+        clr_b.flags.ignore_validate = True
+        clr_b.insert(ignore_permissions=True)
+
+        # Persona 1: Company A scoped HR Manager
+        hr_comp_a = h.create_user("hr_comp_a", [PERSONA_ROLES["hr_manager"]], company=comp_a)
+        assert_only_tradexcel_roles(hr_comp_a)
+        frappe.set_user(hr_comp_a)
+
+        # Expense Claim: Company scope
+        ecs = frappe.get_list("Expense Claim", pluck="name")
+        assert ec_a.name in ecs, "ec_a must be in visible Expense Claims for Company A user"
+        assert ec_b.name not in ecs, "ec_b must NOT be in visible Expense Claims for Company A user"
+        assert frappe.has_permission("Expense Claim", doc=ec_a)
+        assert not frappe.has_permission("Expense Claim", doc=ec_b)
+        with pytest.raises(frappe.PermissionError):
+            frappe.has_permission("Expense Claim", "read", doc=ec_b, throw=True)
+
+        # Appraisal: Company scope
+        apps = frappe.get_list("Appraisal", pluck="name")
+        assert app_a.name in apps, "app_a must be in visible Appraisals for Company A user"
+        assert app_b.name not in apps, "app_b must NOT be in visible Appraisals for Company A user"
+        assert frappe.has_permission("Appraisal", doc=app_a)
+        assert not frappe.has_permission("Appraisal", doc=app_b)
+        with pytest.raises(frappe.PermissionError):
+            frappe.has_permission("Appraisal", "read", doc=app_b, throw=True)
+
+        # Persona 2: Department and Employee scoped HR Manager
+        frappe.set_user("Administrator")
+        hr_dept_emp = h.create_user("hr_dept_emp", [PERSONA_ROLES["hr_manager"]], company=comp_a)
+        assert_only_tradexcel_roles(hr_dept_emp)
+        frappe.get_doc({
+            "doctype": "User Permission",
+            "user": hr_dept_emp,
+            "allow": "Department",
+            "for_value": dept_a,
+        }).insert(ignore_permissions=True)
+        frappe.get_doc({
+            "doctype": "User Permission",
+            "user": hr_dept_emp,
+            "allow": "Employee",
+            "for_value": emp_a,
+        }).insert(ignore_permissions=True)
+
+        frappe.set_user(hr_dept_emp)
+
+        # Employee Grievance: Employee scope (via raised_by/employee_responsible)
+        grievs = frappe.get_list("Employee Grievance", pluck="name")
+        assert g_a.name in grievs, "g_a must be visible to Employee A user"
+        assert g_b.name not in grievs, "g_b must NOT be visible to Employee A user"
+        assert frappe.has_permission("Employee Grievance", doc=g_a)
+        assert not frappe.has_permission("Employee Grievance", doc=g_b)
+        with pytest.raises(frappe.PermissionError):
+            frappe.has_permission("Employee Grievance", "read", doc=g_b, throw=True)
+
+        # Compensatory Leave Request: Department and Employee scope
+        clrs = frappe.get_list("Compensatory Leave Request", pluck="name")
+        assert clr_a.name in clrs, "clr_a must be visible to Dept A/Emp A user"
+        assert clr_b.name not in clrs, "clr_b must NOT be visible to Dept A/Emp A user"
+        assert frappe.has_permission("Compensatory Leave Request", doc=clr_a)
+        assert not frappe.has_permission("Compensatory Leave Request", doc=clr_b)
+        with pytest.raises(frappe.PermissionError):
+            frappe.has_permission("Compensatory Leave Request", "read", doc=clr_b, throw=True)
+
+    finally:
+        frappe.set_user("Administrator")
+        for dt, dn in [
+            ("Expense Claim", ec_a.name if ec_a else None),
+            ("Expense Claim", ec_b.name if ec_b else None),
+            ("Appraisal", app_a.name if app_a else None),
+            ("Appraisal", app_b.name if app_b else None),
+            ("Employee Grievance", g_a.name if g_a else None),
+            ("Employee Grievance", g_b.name if g_b else None),
+            ("Compensatory Leave Request", clr_a.name if clr_a else None),
+            ("Compensatory Leave Request", clr_b.name if clr_b else None),
+            ("Expense Claim Type", sect),
+            ("Appraisal Cycle", ac_name),
+            ("Grievance Type", gt),
+        ]:
+            if dn and frappe.db.exists(dt, dn):
+                frappe.delete_doc(dt, dn, force=True)
+        frappe.db.commit()
         h.cleanup()
