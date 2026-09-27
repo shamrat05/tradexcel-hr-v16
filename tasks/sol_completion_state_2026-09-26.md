@@ -135,3 +135,24 @@ reported failed account payments or a spending-limit requirement. This is
 **REMOTE CI BLOCKED**, not a test failure or a CI pass. The same source checks
 and 11 pure tests passed locally in an isolated environment. No billing,
 repository security setting or workflow protection was changed to bypass it.
+
+## Post-Sol correction resume point
+
+Current branch: `fix/release-lineage-security-closure`, parent #42
+`test/release-readiness-contract`. Status IN_PROGRESS pending final full suite,
+cleanup, atomic commit and draft correction PR. Reuse this branch; do not recreate
+#43 or repeat the completed staging metadata migration. Backup prefix:
+`20260927_133159-hrms-v16_localhost-` (verified archives/config; BACKUPS.md).
+
+Corrected topology: #2 → #43 (existing payroll P0 seven commits) → #4 … #42 →
+this correction. #1 is independent docs; #3 diverged and is superseded by a
+current-source semantic port, not a blind cherry-pick. Phase K remains BLOCKED.
+Both #42 Actions runs (36283160723 and 36283208413) failed before any steps;
+GitHub's annotation confirms account billing/spending limits. No remote CI pass.
+
+Post-Sol correction final local validation: **653 passed, 0 skipped** (103 warnings),
+60 focused + 4 final release regressions; source/compile/build/smoke passed.
+Final narrow permission migration used verified backup
+`20260927_134711-hrms-v16_localhost-`. Synthetic and disposable-site cleanup zero.
+Creation of the new draft correction PR is the only remaining publication step;
+Phase K remains BLOCKED by external CI/source/business/device gates.

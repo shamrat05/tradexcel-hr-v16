@@ -286,6 +286,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     "Employee Checkin": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": READ_ONLY_PERMS,
+        "Tradexcel Attendance Correction Approver": {"read", "select"},
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
         # Linked employees keep HRMS's native Employee-role own-record access.
         # The Tradexcel role must not grant a directory to unlinked users.

@@ -105,6 +105,27 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     await withOfflineStore("readwrite", (store) => store.delete(syncId));
   }
 
+  function offlineEventExpired(item) {
+    const captured = Date.parse(item.time || item.queued_at);
+    const hours = Math.min(720, Math.max(1, Number(context?.offline_max_age_hours ?? 72)));
+    return !Number.isFinite(captured) || Math.abs(Date.now() - captured) > hours * 3600000;
+  }
+
+  async function discardQueuedEvidence(item, message) {
+    // Retain only retry/error metadata, never the photo, location or personal payload.
+    await withOfflineStore("readwrite", store => store.put({
+      sync_id: item.sync_id, queued_at: item.queued_at, retryable: false, last_error: message
+    }));
+  }
+
+  async function cleanupOfflineEvidence() {
+    for (const item of await queuedCheckins()) {
+      if (item.retryable === false || offlineEventExpired(item)) {
+        await discardQueuedEvidence(item, item.last_error || __("Offline event expired; capture a new event."));
+      }
+    }
+  }
+
   function isNetworkError(error) {
     return !navigator.onLine || !error || error.status === 0 || error.readyState === 0 ||
       error.status >= 500 || error.name === "TypeError";
@@ -245,6 +266,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
       },
     });
     const checkin = response.message;
+    await deleteQueuedCheckin(item.sync_id);
     if (selfieUrl && checkin && checkin.name) {
       await frappe.call({
         method: "tradex_hr.tradexcel_hr.field_attendance_service.attach_selfie",
@@ -256,6 +278,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   }
 
   async function flushOfflineQueue() {
+    await cleanupOfflineEvidence();
     if (offlineFlushInProgress || !navigator.onLine) return;
     offlineFlushInProgress = true;
     try {
@@ -265,7 +288,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
           await replayQueuedCheckin(item);
         } catch (error) {
           if (isNetworkError(error)) break;
-          await withOfflineStore("readwrite", (store) => store.put({...item, retryable: false, last_error: error.message || __("Server rejected event") }));
+          await discardQueuedEvidence(item, __("Server rejected event; review before retrying."));
         }
       }
     } finally {
@@ -414,6 +437,8 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     }
   });
   window.addEventListener("online", flushOfflineQueue);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) cleanupOfflineEvidence(); });
+  cleanupOfflineEvidence().catch(() => {});
   loadContext()
     .then(() => Promise.all([updateQueueStatus(), flushOfflineQueue()]))
     .catch((error) => contextEl.addClass("text-danger").text(error.message || __("Employee policy is not configured.")));

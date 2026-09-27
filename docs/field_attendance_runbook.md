@@ -10,8 +10,9 @@
 3. Employee users do not receive direct `Employee Checkin` create/write/delete
    permission. Mobile check-ins use the audited server method and standard
    `Employee Checkin` storage.
-4. Attendance time is server receipt time. Device time is stored separately as
-   evidence and clock skew is visible.
+4. Captured time is retained for event/shift semantics; server receipt time,
+   skew and original integrity reason are separate evidence. The receipt-time
+   policy decides trust. Untrusted evidence is quarantined from Attendance.
 5. Face matching is disabled until OpenCV, pinned models, reference photos,
    and a local validation set are ready. Provider failure is fail-closed for a
    face-match-enabled policy; it never becomes an unreviewed “match”.
@@ -29,7 +30,8 @@
 6. For active tracking, keep the page open while the duty is in progress. The
    browser sends pings at the policy interval; the server enforces the duty
    window and interval.
-7. On mobile OUT, an approved per-km/fixed-area policy queues one draft
+7. Only trusted or explicitly approved mobile OUT evidence under an approved
+   per-km/fixed-area policy may queue one draft
    `Additional Salary`. It is idempotent by field-duty key and remains a draft
    for payroll preparation.
 
@@ -69,11 +71,37 @@
 ## Verification commands
 
 ```bash
-cd ~/frappe-bench
-env/bin/pytest -q apps/tradex_hr/tradex_hr/tests
-bench --site hrms.localhost migrate
-bench --site hrms.localhost clear-cache
+cd /home/sanchita/frappe-bench-v16
+env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q
 ```
 
 Do not expose the Frappe mobile API or live-location page without HTTPS,
 authenticated users, private file storage, backups, and a tested restore.
+
+## Receipt-time integrity and review (release correction, 2026-09-27)
+
+Mobile API timestamp strings require `Z` or an explicit timezone offset. UTC is
+converted to the configured site timezone before storage. Default automatic
+trust window is five minutes around receipt; configurable range 0–1440. Outside
+that window, `Flag` creates Pending evidence and `Block` rejects. Missing capture
+time is never Trusted. The maximum offline age (default 72 hours, range 1–720)
+is a hard rejection boundary in both past and future directions.
+
+Pending evidence keeps `skip_auto_attendance=1`; it cannot create payable native
+Attendance, satisfy bulk correction evidence or settle travel allowance. An
+authorized scoped reviewer opens the native Employee Checkin and chooses Approve
+Evidence or Reject Evidence with a reason. Approval reloads the stored receipt
+policy and separately resolves historical business policy, rerunning all evidence
+checks. Approval releases native auto-attendance; rejection keeps quarantine.
+Final decisions cannot be reversed through these endpoints. Reviewers do not
+receive broad Checkin write permission.
+
+Test delayed replay, missing time, timezone rollover, hard expiry and both final
+review states. Verify Pending blocks Attendance Correction and allowance, while
+approved OUT may queue existing settlement after commit. Offline selfie Blobs
+are removed after replay success, rejection or expiry at the next application
+opportunity; deletion while a closed browser never runs is not guaranteed.
+
+Schema deployment requires BACKUPS.md, a fresh verified `--with-files` backup,
+then standard staging `bench migrate` and `clear-cache`. Never copy these steps
+to production without its separately approved release/cutover procedure.

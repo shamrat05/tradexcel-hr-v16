@@ -49,3 +49,34 @@ Read from GitHub; no merges performed. Head SHA is remote truth.
 Campaign test/migration evidence for each phase is in `sol_completion_state_2026-09-26.md`; backup hashes are in BACKUPS.md. Existing non-draft PRs were not changed. This release PR intentionally does not record its own commit SHA inside itself. GitHub is authoritative for its final head/checks.
 
 Local ancestry verified for 41 PR base/head pairs; failures: []. No branch was retargeted or rewritten.
+
+## Release-lineage correction — 2026-09-27
+
+The prior base/head-pair checks did **not** prove all PR heads belonged to the integrated release.
+PR #1 is independent documentation, not a runtime dependency. PR #3 diverged after
+PR #2: merge-base is `69461cf6c96153a99291ae798f58cbf4d98c15a8`; its head
+`a83ae92c42fb1b9cff4b1dd1fa7721f8b9f84ce9` is **not** an ancestor of #42
+(`9173b5aaa5e9e6cee7daa23ce3c88b7f519138e3`). Its required security behavior is
+ported into `fix/release-lineage-security-closure` on top of #42, preserving later
+scope/privacy/performance work. Do not blindly merge old #3 after accepting this
+correction. It remains open; no historical branch was rewritten or closed.
+
+[PR #43](https://github.com/shamrat05/tradexcel-hr-v16/pull/43) exposes the seven
+already-existing commits from `fix/v16-production-readiness` to
+`fix/payroll-p0-safety` (`e39068819a20569319f0b21a1d81cd7e5ccfd995`). No commit
+was added to that historical branch. #43 is open/draft/mergeable and precedes #4.
+
+Eventual runtime merge dependency: **#2 → #43 → #4 → #5 … #42 → release-lineage
+security correction**. #1 is separately reviewable documentation; old #3 is
+superseded by the integrated semantic port. This is a future runbook, not merge
+authorization. Preserve and recheck every actual base/head at merge time.
+
+Both #42 Actions attempts were blocked before steps:
+- `36283160723`, commit `3ec045d44e254f855984758252150857d7409c5a`: failure, zero steps.
+- `36283208413`, commit `9173b5aaa5e9e6cee7daa23ce3c88b7f519138e3`: failure, zero steps.
+
+The current final-run check annotation explicitly says account payments failed
+or the spending limit needs increasing. This is **BLOCKED BEFORE STEPS**, never
+remote CI PASS. No rerun or account-setting workaround was attempted. Phase K
+remains **BLOCKED** until remote checks execute and the separate framework/source
+and external release gates are resolved.

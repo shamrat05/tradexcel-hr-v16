@@ -51,6 +51,7 @@ extend_doctype_class = {
 }
 
 doctype_js = {
+    "Employee Checkin": "public/js/employee_checkin_review.js",
     "Tradexcel Biometric Device": "public/js/tradexcel_biometric_device.js",
     "Payroll Entry": "public/js/payroll_entry.js",
     "Salary Slip": "public/js/salary_slip_adjustments.js",
@@ -304,5 +305,5 @@ has_permission = {
     "Arrear": "tradex_hr.tradexcel_hr.payroll_adjustments.adjustment_has_permission",
 }
 
-# Keep native queued retries under their original enabled actor.
+# Require original actors only for scoped HR mutation jobs; unrelated retries pass.
 before_job = ["tradex_hr.tradexcel_hr.bulk_execution_safety.validate_job_actor"]

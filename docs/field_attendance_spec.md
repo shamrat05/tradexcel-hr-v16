@@ -35,8 +35,8 @@ Build order: policy -> duty -> mobile/evidence -> travel -> visibility.
 - A roster location and a temporary Field Duty location are both evaluated.
 - Multiple active locations are evaluated; no first-row-only behavior.
 - GPS outside the permitted area creates a visible flag according to policy.
-- GPS quality, stale timestamps, duplicates, and impossible jumps are flagged, not silently discarded.
-- An approved per-km, fixed-zone, or manual allowance produces one idempotent payroll adjustment.
+- GPS quality and timestamp integrity are evaluated server-side. Stale events inside the maximum acceptance age may be quarantined; events beyond it are blocked. Duplicate sync IDs remain idempotent.
+- An approved configured per-km/fixed-area policy and released duty evidence may produce one idempotent draft native Additional Salary; Manual mode does not automatically create money.
 - A user with permission can view the last known location and selfie evidence with timestamp and audit trail.
 - Face-match score/model/threshold are recorded when enabled; a mismatch does not automatically deduct pay.
 - Existing terminal and payroll tests remain green.

@@ -56,6 +56,8 @@ def test_native_retry_cannot_execute_as_administrator(monkeypatch):
     def harmless_job():
         actors.append(frappe.session.user)
         raise frappe.RetryBackgroundJobError
+    harmless_job.__module__ = 'tradex_hr.tradexcel_hr.overtime_bulk'
+    harmless_job.__qualname__ = '_prepare_now'
     try:
         user = h.create_user('maker', [PERSONA_ROLES['hr_manager']], company='Tradexcel Ceramics Ltd.')
         frappe.db.commit()
@@ -79,12 +81,12 @@ def test_disabled_and_missing_job_actor_fail_closed():
             doc.enabled = 0
             doc.save(ignore_permissions=True)
         frappe.set_user(user)
-        frappe.local.job = frappe._dict(user=user)
+        frappe.local.job = frappe._dict(user=user, method="tradex_hr.tradexcel_hr.overtime_bulk._prepare_now")
         with pytest.raises(frappe.PermissionError): validate_job_actor()
         frappe.set_user('Administrator')
-        frappe.local.job = frappe._dict(user=None)
+        frappe.local.job = frappe._dict(user=None, method="tradex_hr.tradexcel_hr.overtime_bulk._prepare_now")
         with pytest.raises(frappe.PermissionError): validate_job_actor()
-        frappe.local.job = frappe._dict(user='Administrator')
+        frappe.local.job = frappe._dict(user='Administrator', method='tradex_hr.tradexcel_hr.overtime_bulk._prepare_now')
         validate_job_actor()
     finally:
         frappe.set_user('Administrator')
@@ -119,3 +121,61 @@ def test_separate_native_calls_keep_separate_recipients_and_unknown_buffer_fails
     finally:
         frappe.set_user('Administrator')
         h.cleanup()
+
+
+def test_unrelated_retry_is_not_blocked_and_sensitive_identity_still_matches(monkeypatch):
+    from tradex_hr.tradexcel_hr.bulk_execution_safety import validate_job_actor, _actor_bound_job
+    from frappe.utils.background_jobs import execute_job
+    # Native retry itself loses outer cleanup context; let that upstream behavior
+    # surface, but prove the second harmless invocation ran without our denial.
+    actors = []
+    def harmless_job():
+        actors.append(frappe.session.user)
+        if len(actors) == 1:
+            raise frappe.RetryBackgroundJobError
+    try:
+        monkeypatch.chdir(SITES)
+        with patch('frappe.utils.background_jobs.time.sleep'):
+            try:
+                execute_job(SITE, harmless_job, None, 'synthetic-harmless-retry', {}, user='Administrator')
+            except AttributeError:
+                assert len(actors) == 2  # installed outer after_job context cleanup
+        assert actors == ['Administrator', 'Administrator']
+    finally:
+        connect()
+    frappe.local.job = frappe._dict(method='frappe.harmless.scheduler', user=None)
+    validate_job_actor()
+    frappe.local.job = frappe._dict(method='tradex_hr.tradexcel_hr.overtime_bulk._prepare_now', user='Guest')
+    with pytest.raises(frappe.PermissionError): validate_job_actor()
+    frappe.local.job.user = 'different-synthetic-user@example.test'
+    with pytest.raises(frappe.PermissionError): validate_job_actor()
+    assert _actor_bound_job('frappe.utils.background_jobs.run_doc_method', {'doctype':'Leave Control Panel'})
+    assert _actor_bound_job('frappe.model.document.execute_action', {'__doctype':'Payroll Entry'})
+    assert _actor_bound_job('frappe.desk.doctype.bulk_update.bulk_update._bulk_action', {'doctype':'Attendance Request'})
+    assert not _actor_bound_job('frappe.model.document.execute_action', {'__doctype':'ToDo'})
+
+
+def test_actor_bound_methods_match_installed_callable_names():
+    import importlib
+    from tradex_hr.tradexcel_hr.bulk_execution_safety import ACTOR_BOUND_METHODS, validate_job_actor
+    for method in ACTOR_BOUND_METHODS:
+        parts = method.split('.')
+        for boundary in range(len(parts)-1, 0, -1):
+            try:
+                obj = importlib.import_module('.'.join(parts[:boundary]))
+            except ModuleNotFoundError:
+                continue
+            for part in parts[boundary:]:
+                obj = getattr(obj, part)
+            assert callable(obj), method
+            break
+        else:
+            pytest.fail('Actor guard refers to a missing installed method: ' + method)
+        frappe.local.job = frappe._dict(method=method, user='Administrator')
+        validate_job_actor(method=method)
+        frappe.local.job.user = None
+        with pytest.raises(frappe.PermissionError):
+            validate_job_actor(method=method)
+    frappe.local.job = frappe._dict(method='frappe.harmless.scheduler', user='Administrator')
+    with pytest.raises(frappe.PermissionError):
+        validate_job_actor(method='tradex_hr.tradexcel_hr.overtime_bulk._prepare_now')

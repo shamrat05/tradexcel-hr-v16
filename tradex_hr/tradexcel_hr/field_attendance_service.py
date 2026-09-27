@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
+from zoneinfo import ZoneInfo
+import re
 from pathlib import Path
 from typing import Any
 
 import frappe
 from frappe import _
 from frappe.exceptions import DuplicateEntryError
-from frappe.utils import getdate, get_datetime, now_datetime, today
+from frappe.utils import getdate, get_datetime, now_datetime, today, get_system_timezone
 from hrms.hr.doctype.shift_assignment.shift_assignment import get_actual_start_end_datetime_of_shift
 
 from tradex_hr.tradexcel_hr.field_attendance import (
@@ -37,43 +39,62 @@ def _category(employee: dict[str, Any]) -> str:
 	return "Worker" if employee.get("employment_type") == "Worker" else "Staff"
 
 
-def _device_datetime(value):
-	"""Normalize browser ISO timestamps before writing MariaDB Datetime fields."""
+def _device_datetime(value, require_timezone=False):
+	"""Convert an ISO instant to the Frappe system timezone for MariaDB."""
 	if not value:
 		return None
 	parsed = get_datetime(value)
-	return parsed.replace(tzinfo=None) if getattr(parsed, "tzinfo", None) else parsed
+	if require_timezone and isinstance(value, str) and (not re.search(r"(?:Z|[+-]\d{2}:\d{2})$", value) or not getattr(parsed, "tzinfo", None)):
+		frappe.throw(_("Mobile timestamp must include a timezone offset (Z or +/-HH:MM)"))
+	if not getattr(parsed, "tzinfo", None):
+		return parsed
+	# Frappe/MariaDB Datetime values are naive, but Frappe interprets them in
+	# the configured system timezone.  Strip tzinfo only after converting the
+	# supplied instant; stripping first shifts every UTC browser punch.
+	return parsed.astimezone(ZoneInfo(get_system_timezone())).replace(tzinfo=None)
 
 
 def _mobile_event_timing(received_at, device_time, policy):
     """Resolve canonical event time while retaining server receipt evidence.
 
     Browser time is not cryptographically trusted. It is nevertheless the only
-    available capture time for an offline event, so it is used for attendance
-    date/shift resolution and checked against the server clock. Suspicious
-    clocks are flagged by default; a policy may block them.
+    available capture time for an offline event, so it is retained as evidence
+    and used for attendance date/shift resolution only after the event passes
+    the current receipt-time security policy.
     """
     received_at = _device_datetime(received_at) or now_datetime()
     device_time = _device_datetime(device_time)
     if not device_time:
+        reason = "No captured device time was supplied."
+        status = "Blocked" if policy.get("offline_time_action") == "Block" else "Flagged"
         return {
             "event_time": received_at,
             "received_at": received_at,
             "clock_skew_seconds": None,
-            "status": "No Device Time",
-            "reason": "No captured device time was supplied.",
+            "status": status,
+            "reason": reason,
         }
 
     clock_skew_seconds = (received_at - device_time).total_seconds()
-    max_age_hours = max(int(policy.get("offline_max_age_hours") or 72), 1)
-    future_tolerance_minutes = max(int(policy.get("offline_future_tolerance_minutes") or 10), 0)
+    max_age_hours = min(max(_policy_int(policy, "offline_max_age_hours", 72), 1), 720)
+    trust_window_minutes = min(max(_policy_int(policy, "offline_trust_window_minutes", 5), 0), 1440)
     reason = ""
-    if clock_skew_seconds > max_age_hours * 3600:
-        reason = f"Captured time is older than the {max_age_hours}-hour offline limit."
-    elif clock_skew_seconds < -(future_tolerance_minutes * 60):
-        reason = f"Captured time is more than {future_tolerance_minutes} minutes in the future."
+    beyond_acceptance_age = abs(clock_skew_seconds) > max_age_hours * 3600
+    if beyond_acceptance_age:
+        direction = "older than" if clock_skew_seconds > 0 else "far in the future beyond"
+        reason = f"Captured time is {direction} the {max_age_hours}-hour offline limit."
+    elif abs(clock_skew_seconds) > trust_window_minutes * 60:
+        if clock_skew_seconds < 0:
+            reason = f"Captured time is more than {trust_window_minutes} minutes in the future."
+        else:
+            reason = f"Captured time is outside the {trust_window_minutes}-minute trust window."
 
-    if not reason:
+    if beyond_acceptance_age:
+        # The acceptance age is a hard ingestion boundary.  `Flag` only
+        # controls review of events inside that age but outside the trust
+        # window; it must not become an unlimited backdating queue.
+        status = "Blocked"
+    elif not reason:
         status = "Trusted"
     elif policy.get("offline_time_action") == "Block":
         status = "Blocked"
@@ -146,14 +167,14 @@ def _policy(employee: frappe._dict, as_of: str | datetime | None = None) -> frap
 
 
 def _policy_for_mobile_event(employee: frappe._dict, received_at, device_time):
-    """Use historical policy for delayed events, current policy for future clocks."""
-    if not device_time:
-        return _policy(employee, received_at)
-    current_policy = _policy(employee, received_at)
-    tolerance = max(int(current_policy.get("offline_future_tolerance_minutes") or 10), 0)
-    if device_time > received_at + timedelta(minutes=tolerance):
-        return current_policy
-    return _policy(employee, device_time)
+	"""Use historical business policy only after current-time integrity passes."""
+	current_policy = _policy(employee, received_at)
+	if not device_time:
+		return current_policy
+	timing = _mobile_event_timing(received_at, device_time, current_policy)
+	if timing["status"] != "Trusted":
+		return current_policy
+	return _policy(employee, device_time)
 
 
 def _assigned_locations(employee: frappe._dict, day: str, duty=None, shift_type: str | None = None) -> list[frappe._dict]:
@@ -319,6 +340,14 @@ def settle_field_duty_allowance(duty_name):
 	"""Create one draft Additional Salary from a completed duty, idempotently."""
 	duty = frappe.get_doc("Tradexcel Field Duty", duty_name)
 	employee = _employee(duty.employee)
+	if "Tradexcel Attendance Correction Approver" in frappe.get_roles():
+		from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
+		if employee.name not in permitted_employee_names(employee.company):
+			frappe.throw(_("This employee is outside your permitted scope."), frappe.PermissionError)
+	else:
+		_assert_identity(employee)
+	if _field_duty_has_unreleased_checkin(duty_name):
+		return {"duty": duty_name, "amount": 0, "status": "Awaiting attendance review"}
 	policy = _policy(employee, duty.duty_date)
 	if policy.allowance_mode in (None, "None", "Manual"):
 		return {"duty": duty.name, "amount": 0, "status": "No automatic allowance"}
@@ -367,77 +396,81 @@ def enrich_mobile_checkin(doc, method=None):
         # same server-side policy cannot be bypassed through the native route.
         doc.custom_tradex_source = "Mobile"
         source = "Mobile"
+    previous = None
+    if callable(getattr(doc, "is_new", None)) and not doc.is_new():
+        previous = doc.get_doc_before_save()
+    if previous and previous.get("custom_tradex_source") == "Mobile":
+        protected = (
+            "employee", "time", "log_type", "custom_tradex_source", "custom_tradex_device_time",
+            "custom_tradex_received_at", "custom_tradex_time_status", "custom_tradex_policy",
+            "custom_tradex_review_status", "skip_auto_attendance", "custom_tradex_time_reason",
+            "latitude", "longitude", "custom_tradex_gps_accuracy_m", "custom_tradex_selfie",
+            "custom_tradex_field_duty", "custom_tradex_reviewed_by", "custom_tradex_reviewed_at",
+            "custom_tradex_review_reason", "custom_tradex_clock_skew_seconds",
+        )
+        if any(doc.get(field) != previous.get(field) for field in protected):
+            frappe.throw(_("Use the mobile evidence review actions to change protected evidence."), frappe.PermissionError)
+        return
     if source != "Mobile":
         return
     employee = _employee(doc.employee)
-    received_at = _device_datetime(doc.get("custom_tradex_received_at")) or now_datetime()
-    device_time = _device_datetime(doc.get("custom_tradex_device_time")) or _device_datetime(doc.time)
-    policy = _policy_for_mobile_event(employee, received_at, device_time)
-    timing = _mobile_event_timing(received_at, device_time, policy)
+    received_at = now_datetime()
+    # Do not infer captured time from the canonical `time` field.  The latter
+    # may already be server receipt time when a client omitted its timestamp;
+    # treating it as device evidence would bypass the missing-time quarantine.
+    device_time = _device_datetime(doc.get("custom_tradex_device_time"))
+    # Timestamp integrity is always judged with the policy active when the
+    # server received the event.  The captured timestamp cannot choose weaker
+    # historical security controls.
+    receipt_policy = _policy(employee, received_at)
+    timing = _mobile_event_timing(received_at, device_time, receipt_policy)
     if timing["status"] == "Blocked":
         frappe.throw(_("Mobile attendance time rejected: {0}").format(timing["reason"]))
     doc.custom_tradex_received_at = timing["received_at"]
     doc.custom_tradex_device_time = device_time
     doc.custom_tradex_time_status = timing["status"]
+    doc.custom_tradex_time_reason = timing["reason"]
     doc.custom_tradex_clock_skew_seconds = timing["clock_skew_seconds"]
     doc.time = timing["event_time"]
-    policy = _policy_for_mobile_event(employee, timing["received_at"], timing["event_time"])
-    duty = _approved_duty(employee, doc.get("custom_tradex_field_duty"), getdate(doc.time))
     has_gps = doc.latitude not in (None, "") and doc.longitude not in (None, "")
-    if policy.require_gps and not has_gps:
-        frappe.throw(_("This attendance policy requires GPS coordinates"))
-    quality = (
-        validate_gps_quality(doc.latitude, doc.longitude, doc.get("custom_tradex_gps_accuracy_m"))
-        if has_gps else {"valid": False, "reason": "missing_coordinates", "accuracy_m": None}
-    )
-    if policy.require_gps and has_gps and doc.get("custom_tradex_gps_accuracy_m") in (None, ""):
-        quality = {"valid": False, "reason": "accuracy_missing", "accuracy_m": None}
-    if (policy.require_gps or policy.outside_action == "Block") and not quality["valid"]:
-        frappe.throw(_("This attendance policy requires a valid GPS fix"))
-    shift_actual = get_actual_start_end_datetime_of_shift(employee.name, get_datetime(doc.time), True)
-    shift_type = shift_actual.shift_type.name if shift_actual else None
-    locations = _assigned_locations(employee, getdate(doc.time), duty, shift_type)
-    evaluation = evaluate_locations(doc.latitude, doc.longitude, locations) if has_gps else {"inside": False, "nearest": None}
-    status = location_status(
-        policy.attendance_mode,
-        has_gps=has_gps and quality["valid"],
-        inside_assigned_zone=evaluation["inside"],
-        outside_action=policy.outside_action,
-        approved_external=bool(duty),
-    )
-    if status == "Outside Blocked":
-        frappe.throw(_("Mobile check-in is outside the permitted area"))
-    matched_location = evaluation.get("matched") or evaluation.get("nearest")
-    doc.custom_tradex_policy = policy.name
-    doc.custom_tradex_field_duty = duty.name if duty else doc.get("custom_tradex_field_duty")
-    doc.custom_tradex_location_status = status if quality["valid"] else "GPS Invalid"
-    doc.custom_tradex_assigned_location = matched_location["name"] if matched_location else None
-    doc.custom_tradex_distance_m = matched_location["distance_m"] if matched_location else None
-    doc.custom_tradex_review_status = "Pending" if timing["status"] == "Flagged" else "Not Required"
-    if timing["status"] == "Flagged":
-        doc.custom_tradex_location_reason = timing["reason"]
-    if policy.face_match_enabled:
+    if receipt_policy.require_selfie or receipt_policy.face_match_enabled:
         if not doc.get("custom_tradex_selfie"):
-            frappe.throw(_("Face matching requires a selfie"))
-        try:
-            face_result = _run_face_match(employee, doc.custom_tradex_selfie)
-        except FaceMatchUnavailable as exc:
-            frappe.throw(_("Face verification could not be completed: {0}").format(exc))
-        rejection = _face_match_rejection_message(face_result)
-        if rejection:
-            frappe.throw(rejection)
-        doc.custom_tradex_face_match_status = face_result["status"]
-        doc.custom_tradex_face_match_score = face_result["score"]
-        doc.custom_tradex_location_reason = (
-            f"Face match {face_result['status']} ({face_result['score']:.3f}; "
-            f"threshold {face_result['threshold']:.3f})."
-        )
-    elif not quality["valid"]:
-        doc.custom_tradex_location_reason = quality["reason"]
-    elif status in {"Outside Flagged", "WFH Review"}:
-        doc.custom_tradex_location_reason = "Outside/WFH attendance accepted according to policy."
-    elif matched_location:
-        doc.custom_tradex_location_reason = f"Matched {matched_location['name']} at {matched_location['distance_m']} m."
+            frappe.throw(_("This attendance policy requires a selfie"))
+    if receipt_policy.require_gps and not has_gps:
+        frappe.throw(_("This attendance policy requires GPS coordinates"))
+
+    if timing["status"] == "Flagged":
+        if receipt_policy.face_match_enabled:
+            try:
+                face_result = _run_face_match(employee, doc.custom_tradex_selfie)
+            except FaceMatchUnavailable as exc:
+                frappe.throw(_("Face verification could not be completed: {0}").format(exc))
+            rejection = _face_match_rejection_message(face_result)
+            if rejection:
+                frappe.throw(rejection)
+            doc.custom_tradex_face_match_status = face_result["status"]
+            doc.custom_tradex_face_match_score = face_result["score"]
+        # Native HRMS auto attendance only understands this field.  The
+        # Tradexcel review label alone is not a quarantine boundary.
+        doc.skip_auto_attendance = 1
+        doc.custom_tradex_policy = receipt_policy.name
+        doc.custom_tradex_review_status = "Pending"
+        doc.custom_tradex_location_status = "Time Review Required"
+        doc.custom_tradex_location_reason = timing["reason"]
+        return
+
+    # Only a trusted timestamp may select historical business rules such as
+    # shift/location/face-match policy.
+    policy = _policy_for_mobile_event(employee, timing["received_at"], timing["event_time"])
+    validate_mobile_event_business_context(
+        doc,
+        employee,
+        doc.time,
+        policy,
+        security_policy=receipt_policy,
+    )
+    doc.skip_auto_attendance = 0
+    doc.custom_tradex_review_status = "Not Required"
 
 
 @frappe.whitelist(methods=["POST"])
@@ -457,8 +490,8 @@ def mobile_checkin(employee, log_type, latitude=None, longitude=None, accuracy_m
             frappe.throw(_("This sync ID belongs to another employee"), frappe.PermissionError)
         return frappe.get_doc("Employee Checkin", existing.name).as_dict()
     received_at = now_datetime()
-    device_time = _device_datetime(time)
-    policy = _policy_for_mobile_event(employee_doc, received_at, device_time)
+    device_time = _device_datetime(time, require_timezone=True)
+    policy = _policy(employee_doc, received_at)
     timing = _mobile_event_timing(received_at, device_time, policy)
     if timing["status"] == "Blocked":
         frappe.throw(_("Mobile attendance time rejected: {0}").format(timing["reason"]))
@@ -495,7 +528,7 @@ def mobile_checkin(employee, log_type, latitude=None, longitude=None, accuracy_m
     frappe.db.set_value("Tradex Mobile Event", sync_id, {
         "target_doctype": "Employee Checkin", "target_name": checkin.name, "status": "Created"
     }, update_modified=False)
-    if log_type == "OUT" and field_duty:
+    if log_type == "OUT" and field_duty and checkin.get("custom_tradex_review_status") == "Not Required":
         frappe.enqueue(
             "tradex_hr.tradexcel_hr.field_attendance_service.settle_field_duty_allowance",
             duty_name=field_duty,
@@ -520,7 +553,7 @@ def location_ping(employee, field_duty, latitude, longitude, accuracy_m=None, pi
             frappe.throw(_("This sync ID belongs to another employee"), frappe.PermissionError)
         return frappe.get_doc("Tradexcel Location Ping", existing.name).as_dict()
     received_at = now_datetime()
-    device_time = _device_datetime(ping_time)
+    device_time = _device_datetime(ping_time, require_timezone=True)
     duty = _approved_duty(employee_doc, field_duty, getdate(received_at))
     policy = _policy(employee_doc, received_at)
     if policy.tracking_mode != "Active Duty Pings" or not duty.tracking_enabled:
@@ -598,7 +631,8 @@ def get_mobile_context():
         "policy": policy.name,
         "attendance_mode": policy.attendance_mode,
         "require_gps": bool(policy.require_gps),
-        "require_selfie": bool(policy.require_selfie),
+        "require_selfie": bool(policy.require_selfie or policy.face_match_enabled),
+        "offline_max_age_hours": _policy_int(policy, "offline_max_age_hours", 72),
         "tracking_mode": policy.tracking_mode,
         "field_duty": duty,
         "tracking_active": bool(duty and duty.tracking_enabled and last and last[0].log_type == "IN"),
@@ -669,3 +703,229 @@ def attach_selfie(checkin, file_url):
     }, update_modified=False)
     doc.db_set("custom_tradex_selfie", file_url)
     return {"checkin": checkin, "file_url": file_url}
+
+
+def _policy_int(policy, fieldname, default):
+	try:
+		return int(default if policy.get(fieldname) in (None, "") else policy.get(fieldname))
+	except (TypeError, ValueError):
+		return default
+
+
+def validate_mobile_event_business_context(
+    doc,
+    employee: frappe._dict,
+    event_time,
+    policy: frappe._dict,
+    security_policy: frappe._dict | None = None,
+):
+    """Validate business rules after timestamp integrity is trusted/released.
+
+    This is deliberately shared by normal trusted inserts and reviewer
+    approval.  A reviewer never releases a quarantined event without rerunning
+    the same duty, GPS, zone, shift and evidence rules.
+    """
+    security_policy = security_policy or policy
+    duty = _approved_duty(employee, doc.get("custom_tradex_field_duty"), getdate(event_time))
+    has_gps = doc.latitude not in (None, "") and doc.longitude not in (None, "")
+    if policy.require_gps or security_policy.require_gps:
+        if not has_gps:
+            frappe.throw(_("This attendance policy requires GPS coordinates"))
+    requires_selfie = any(
+        bool(rule.get(field))
+        for rule in (policy, security_policy)
+        for field in ("require_selfie", "face_match_enabled")
+    )
+    if requires_selfie and not doc.get("custom_tradex_selfie"):
+        frappe.throw(_("This attendance policy requires a selfie"))
+
+    quality = (
+        validate_gps_quality(doc.latitude, doc.longitude, doc.get("custom_tradex_gps_accuracy_m"))
+        if has_gps else {"valid": False, "reason": "missing_coordinates", "accuracy_m": None}
+    )
+    if (policy.require_gps or security_policy.require_gps) and has_gps and doc.get("custom_tradex_gps_accuracy_m") in (None, ""):
+        quality = {"valid": False, "reason": "accuracy_missing", "accuracy_m": None}
+    if ((policy.require_gps or security_policy.require_gps) or "Block" in (policy.outside_action, security_policy.outside_action)) and not quality["valid"]:
+        frappe.throw(_("This attendance policy requires a valid GPS fix"))
+
+    shift_actual = get_actual_start_end_datetime_of_shift(employee.name, get_datetime(event_time), True)
+    shift_type = shift_actual.shift_type.name if shift_actual else None
+    locations = _assigned_locations(employee, getdate(event_time), duty, shift_type)
+    evaluation = evaluate_locations(doc.latitude, doc.longitude, locations) if has_gps else {"inside": False, "nearest": None}
+    status = location_status(
+        policy.attendance_mode,
+        has_gps=has_gps and quality["valid"],
+        inside_assigned_zone=evaluation["inside"],
+        outside_action="Block" if "Block" in (policy.outside_action, security_policy.outside_action) else policy.outside_action,
+        approved_external=bool(duty),
+    )
+    if status == "Outside Blocked":
+        frappe.throw(_("Mobile check-in is outside the permitted area"))
+
+    matched_location = evaluation.get("matched") or evaluation.get("nearest")
+    doc.custom_tradex_policy = policy.name
+    doc.custom_tradex_field_duty = duty.name if duty else doc.get("custom_tradex_field_duty")
+    doc.custom_tradex_location_status = status if quality["valid"] else "GPS Invalid"
+    doc.custom_tradex_assigned_location = matched_location["name"] if matched_location else None
+    doc.custom_tradex_distance_m = matched_location["distance_m"] if matched_location else None
+
+    if policy.face_match_enabled or security_policy.face_match_enabled:
+        try:
+            face_result = _run_face_match(employee, doc.custom_tradex_selfie)
+        except FaceMatchUnavailable as exc:
+            frappe.throw(_("Face verification could not be completed: {0}").format(exc))
+        rejection = _face_match_rejection_message(face_result)
+        if rejection:
+            frappe.throw(rejection)
+        doc.custom_tradex_face_match_status = face_result["status"]
+        doc.custom_tradex_face_match_score = face_result["score"]
+        doc.custom_tradex_location_reason = (
+            f"Face match {face_result['status']} ({face_result['score']:.3f}; "
+            f"threshold {face_result['threshold']:.3f})."
+        )
+    elif not quality["valid"]:
+        doc.custom_tradex_location_reason = quality["reason"]
+    elif status in {"Outside Flagged", "WFH Review"}:
+        doc.custom_tradex_location_reason = "Outside/WFH attendance accepted according to policy."
+    elif matched_location:
+        doc.custom_tradex_location_reason = f"Matched {matched_location['name']} at {matched_location['distance_m']} m."
+    return {"policy": policy, "duty": duty, "shift": shift_actual}
+
+
+def _field_duty_has_unreleased_checkin(duty_name):
+    """Keep allowance effects paused while any duty punch awaits review."""
+    return bool(
+        frappe.db.exists(
+            "Employee Checkin",
+            {
+                "custom_tradex_field_duty": duty_name,
+                "custom_tradex_review_status": ["in", ["Pending", "Rejected"]],
+            },
+        )
+    )
+
+
+def _reviewable_checkin(checkin):
+    doc = frappe.get_doc("Employee Checkin", checkin, for_update=True)
+    _assert_review_permission(doc)
+    if doc.custom_tradex_source != "Mobile":
+        frappe.throw(_("Only mobile attendance evidence can be reviewed"))
+    if doc.custom_tradex_time_status != "Flagged":
+        frappe.throw(_("Only time-integrity flagged check-ins can be reviewed"))
+    return doc
+
+
+@frappe.whitelist(methods=["POST"])
+def approve_mobile_checkin(checkin, review_note=None):
+    """Release one quarantined check-in for native auto attendance."""
+    doc = _reviewable_checkin(checkin)
+    review_note = (review_note or "").strip()
+    if len(review_note) < 3:
+        frappe.throw(_("Enter a reason for this evidence review."))
+    if doc.custom_tradex_review_status == "Approved":
+        return doc.as_dict()
+    if doc.custom_tradex_review_status == "Rejected":
+        frappe.throw(_("A rejected check-in cannot be approved"))
+    if doc.custom_tradex_review_status != "Pending":
+        frappe.throw(_("This check-in is not awaiting review"))
+
+    employee = _employee(doc.employee)
+    # The policy stored on the quarantined check-in is the receipt-time
+    # security policy. Load that exact document before validation: resolving
+    # today's policy here could let a later policy change weaken evidence
+    # requirements that applied when the event was received.
+    receipt_policy_name = doc.custom_tradex_policy
+    if not receipt_policy_name:
+        frappe.throw(_("This check-in has no stored receipt-time policy"))
+    security_policy = frappe.get_doc("Tradexcel Attendance Policy", receipt_policy_name)
+
+    # The event-time policy supplies historical business semantics (duty,
+    # zone, shift and evidence rules). The captured timestamp cannot skip
+    # either policy's security and business validation.
+    event_policy = _policy(employee, doc.time)
+    validate_mobile_event_business_context(
+        doc,
+        employee,
+        doc.time,
+        event_policy,
+        security_policy=security_policy,
+    )
+    doc.custom_tradex_policy = receipt_policy_name
+    reviewed_at = now_datetime()
+    frappe.db.set_value(
+        "Employee Checkin",
+        doc.name,
+        {
+            "custom_tradex_review_status": "Approved",
+            "custom_tradex_reviewed_by": frappe.session.user,
+            "custom_tradex_reviewed_at": reviewed_at,
+            "custom_tradex_review_reason": review_note or "Approved by authorized reviewer.",
+            "custom_tradex_policy": doc.custom_tradex_policy,
+            "custom_tradex_field_duty": doc.custom_tradex_field_duty,
+            "custom_tradex_location_status": doc.custom_tradex_location_status,
+            "custom_tradex_assigned_location": doc.custom_tradex_assigned_location,
+            "custom_tradex_distance_m": doc.custom_tradex_distance_m or 0,
+            "custom_tradex_face_match_status": doc.custom_tradex_face_match_status,
+            "custom_tradex_face_match_score": doc.custom_tradex_face_match_score or 0,
+            "custom_tradex_location_reason": doc.custom_tradex_location_reason,
+            "skip_auto_attendance": 0,
+        },
+        update_modified=True,
+    )
+    frappe.get_doc("Employee Checkin", doc.name).add_comment(
+        "Info", _("Mobile attendance evidence approved by {0}.").format(frappe.session.user)
+    )
+    if doc.log_type == "OUT" and doc.custom_tradex_field_duty:
+        frappe.enqueue(
+            "tradex_hr.tradexcel_hr.field_attendance_service.settle_field_duty_allowance",
+            duty_name=doc.custom_tradex_field_duty,
+            queue="short",
+            enqueue_after_commit=True,
+        )
+    return frappe.get_doc("Employee Checkin", doc.name).as_dict()
+
+
+@frappe.whitelist(methods=["POST"])
+def reject_mobile_checkin(checkin, review_note=None):
+    """Permanently exclude one quarantined check-in from native attendance."""
+    doc = _reviewable_checkin(checkin)
+    review_note = (review_note or "").strip()
+    if len(review_note) < 3:
+        frappe.throw(_("Enter a reason for this evidence review."))
+    if doc.custom_tradex_review_status == "Rejected":
+        return doc.as_dict()
+    if doc.custom_tradex_review_status == "Approved":
+        frappe.throw(_("An approved check-in cannot be rejected"))
+    if doc.custom_tradex_review_status != "Pending":
+        frappe.throw(_("This check-in is not awaiting review"))
+
+    reviewed_at = now_datetime()
+    frappe.db.set_value(
+        "Employee Checkin",
+        doc.name,
+        {
+            "custom_tradex_review_status": "Rejected",
+            "custom_tradex_reviewed_by": frappe.session.user,
+            "custom_tradex_reviewed_at": reviewed_at,
+            "custom_tradex_review_reason": review_note or "Rejected by authorized reviewer.",
+            "skip_auto_attendance": 1,
+        },
+        update_modified=True,
+    )
+    frappe.get_doc("Employee Checkin", doc.name).add_comment(
+        "Info", _("Mobile attendance evidence rejected by {0}.").format(frappe.session.user)
+    )
+    return frappe.get_doc("Employee Checkin", doc.name).as_dict()
+
+
+MOBILE_REVIEW_ROLES = SUPERVISOR_ROLES | {"Tradexcel Attendance Correction Approver"}
+
+
+def _assert_review_permission(doc):
+    if frappe.session.user != "Administrator" and not MOBILE_REVIEW_ROLES.intersection(frappe.get_roles()):
+        frappe.throw(_("You are not permitted to review mobile attendance evidence."), frappe.PermissionError)
+    doc.check_permission("read")
+    from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
+    company = frappe.db.get_value("Employee", doc.employee, "company")
+    if doc.employee not in permitted_employee_names(company):
+        frappe.throw(_("This employee is outside your permitted scope."), frappe.PermissionError)

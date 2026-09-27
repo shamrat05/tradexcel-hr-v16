@@ -551,3 +551,25 @@ Gzip and public/private tar archives verified. Prefix `20260927_062331-hrms-v16_
 | `20260927_062331-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
 | `20260927_062331-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
 | `20260927_062331-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Release lineage/mobile security correction — 2026-09-27 13:31:59
+
+Fresh staging backup before standard metadata migration. Database gzip, both complete tar archives and config JSON verified without exporting their contents. Purpose: versioned trust-window and Checkin review fields, reviewer read permission.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260927_133159-hrms-v16_localhost-database.sql.gz` | 46,866,862 | `ec8f42cc7436c02088cd50a65630579835a989e67418b9082ed7dc29002d1fbf` |
+| `20260927_133159-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260927_133159-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260927_133159-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Release correction final reviewer permission convergence — 2026-09-27
+
+Fresh staging backup before final standard migration restricting the new Checkin reviewer to read/select only. Full database gzip, public/private tar contents and config JSON verified. Prefix `20260927_134711-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260927_134711-hrms-v16_localhost-database.sql.gz` | 47,599,189 | `2a47c556da7d649261a1cdacd8e901ff7c7d901cf763d5f06635c03d0e134925` |
+| `20260927_134711-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
+| `20260927_134711-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
+| `20260927_134711-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |

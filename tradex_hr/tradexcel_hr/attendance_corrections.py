@@ -365,7 +365,7 @@ def validate_attendance_request_before_submit(doc, method=None):
     roles = set(frappe.get_roles())
     _request_employee_scope(doc)
     if frappe.session.user != "Administrator" and APPROVER_ROLE in roles:
-        if roles.intersection(MAKER_ROLES) and doc.owner == frappe.session.user:
+        if doc.owner == frappe.session.user:
             frappe.throw(_("A different Attendance Correction Approver must submit this request."),
                          frappe.PermissionError)
     _validate_existing_attendance_overwrites(doc)

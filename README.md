@@ -4,7 +4,8 @@
 
 The active repository is `/home/sanchita/frappe-bench-v16/apps/tradex_hr`,
 stacked on open draft PRs. The isolated staging site is `hrms-v16.localhost`
-with MariaDB on `127.0.0.1:3307`. The latest accepted full suite passed **629 tests, 0 skipped**. Native bulk
+with MariaDB on `127.0.0.1:3307`. The latest accepted full suite passed **653 tests, 0 skipped**. The integrated mobile/lineage correction is documented in
+[`release security closure`](tasks/release_lineage_security_closure_2026-09-27.md). Native bulk
 workflows, scoped Action Board/native navigation, privacy controls and measured
 report improvements are implemented. Neutral install and isolated restore passed;
 real configuration, device and staff UAT remain gated. The current

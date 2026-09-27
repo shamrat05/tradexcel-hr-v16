@@ -18,6 +18,8 @@ def _fields() -> dict[str, list[dict[str, object]]]:
             },
         ],
         "Employee Checkin": [
+            {"fieldname": "custom_tradex_time_reason", "label": "Original Time Integrity Reason",
+             "fieldtype": "Small Text", "read_only": 1, "insert_after": "custom_tradex_time_status"},
             {
                 "fieldname": "custom_tradex_source",
                 "label": "Tradexcel Source",
@@ -44,7 +46,7 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "fieldname": "custom_tradex_location_status",
                 "label": "Location Status",
                 "fieldtype": "Select",
-                "options": "Inside Zone\u000aOutside Approved\u000aOutside Accepted\u000aOutside Flagged\u000aOutside Blocked\u000aGPS Missing\u000aGPS Invalid\u000aWFH Approved\u000aWFH Review\u000aUnassigned",
+                "options": "Inside Zone\u000aOutside Approved\u000aOutside Accepted\u000aOutside Flagged\u000aOutside Blocked\u000aGPS Missing\u000aGPS Invalid\u000aWFH Approved\u000aWFH Review\u000aUnassigned\u000aTime Review Required",
                 "insert_after": "custom_tradex_field_duty",
                 "read_only": 1,
                 "in_list_view": 1,
@@ -146,6 +148,9 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "fieldtype": "Data",
                 "insert_after": "custom_tradex_device_time",
             },
+            {'fieldname': 'custom_tradex_reviewed_by', 'label': 'Reviewed By', 'fieldtype': 'Link', 'read_only': 1, 'insert_after': 'custom_tradex_review_status', 'options': 'User'},
+            {'fieldname': 'custom_tradex_reviewed_at', 'label': 'Reviewed At', 'fieldtype': 'Datetime', 'read_only': 1, 'insert_after': 'custom_tradex_review_status'},
+            {'fieldname': 'custom_tradex_review_reason', 'label': 'Review Reason', 'fieldtype': 'Small Text', 'read_only': 1, 'insert_after': 'custom_tradex_review_status'},
         ],
         "Additional Salary": [
             {
