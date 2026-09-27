@@ -97,7 +97,9 @@ def execute(filters: dict | None = None) -> tuple[list[dict], list[dict]]:
         return columns, []
 
     rows = frappe.db.sql(query, {**filters, "employee_names": employee_names}, as_dict=True)
-    for row in rows:
-        basis = resolve_pay_basis(row.employee, filters.as_of_date)
-        row.salary_basis = basis.get("status") if basis.get("status") in {MONTHLY, DAILY} else "Pay Basis Missing"
+    from tradex_hr.tradexcel_hr.pay_basis import pay_basis_read_context
+    with pay_basis_read_context(employee_names):
+        for row in rows:
+            basis = resolve_pay_basis(row.employee, filters.as_of_date)
+            row.salary_basis = basis.get("status") if basis.get("status") in {MONTHLY, DAILY} else "Pay Basis Missing"
     return columns, rows

@@ -191,6 +191,12 @@ def get_action_board(company: str, as_of_date: str | None = None):
         frappe.throw(_("You do not have access to this Company's work board."), frappe.PermissionError)
     day = str(getdate(as_of_date or today()))
     names = _employee_names(company) if frappe.has_permission("Employee", "select") else ()
+    from tradex_hr.tradexcel_hr.pay_basis import pay_basis_read_context
+    with pay_basis_read_context(names if roles & FINANCIAL_ROLES else ()):
+        return _build_board(company, day, names, roles)
+
+
+def _build_board(company, day, names, roles):
     items = []
     if roles & OPERATIONS_ROLES:
         items += _attendance_items(company, day, names)

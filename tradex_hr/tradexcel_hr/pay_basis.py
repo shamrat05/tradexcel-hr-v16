@@ -8,6 +8,8 @@ meaning.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import date
 from typing import Any
 
@@ -22,7 +24,55 @@ CONFLICT = "CONFLICT"
 MID_PERIOD_CHANGE = "MID_PERIOD_CHANGE"
 
 
+
+_read_snapshot = ContextVar("tradexcel_pay_basis_read_snapshot", default=None)
+
+
+@contextmanager
+def pay_basis_read_context(employee_names):
+    """Batch facts for an explicitly read-only, already-authorized report call.
+
+    This is not a process/session cache. Reset even on failure; mutation paths
+    never enter this context. The single canonical resolver still decides all
+    dates, conflicts, missing bases and amounts.
+    """
+    names = frozenset(employee_names)
+    previous = _read_snapshot.get()
+    if not names or (previous and names <= previous["names"]):
+        yield
+        return
+    assignments = frappe.get_all(
+        "Salary Structure Assignment", filters={"employee": ["in", sorted(names)], "docstatus": 1},
+        fields=["name", "employee", "salary_structure", "base", "from_date", "company"],
+        order_by="from_date desc, name desc", limit_page_length=0,
+    )
+    rows = {employee: [] for employee in names}
+    for row in assignments:
+        rows[row.employee].append(row)
+    structures = sorted({row.salary_structure for row in assignments if row.salary_structure})
+    bases = {row.name: row.custom_tradex_pay_basis for row in frappe.get_all(
+        "Salary Structure", filters={"name": ["in", structures]},
+        fields=["name", "custom_tradex_pay_basis"], limit_page_length=0,
+    )} if structures else {}
+    joining = {row.name: row.date_of_joining for row in frappe.get_all(
+        "Employee", filters={"name": ["in", sorted(names)]}, fields=["name", "date_of_joining"], limit_page_length=0,
+    )}
+    token = _read_snapshot.set({"names": names, "rows": rows, "bases": bases, "joining": joining})
+    try:
+        yield
+    finally:
+        _read_snapshot.reset(token)
+
 def _assignment_rows(employee: str, as_of: date, period_end: date | None = None) -> list[dict[str, Any]]:
+    snapshot = _read_snapshot.get()
+    if snapshot and employee in snapshot["names"]:
+        rows = snapshot["rows"][employee]
+        earlier = [row for row in rows if getdate(row.from_date) <= as_of]
+        later = sorted(
+            (row for row in rows if period_end and as_of < getdate(row.from_date) <= period_end),
+            key=lambda row: (getdate(row.from_date), row.name),
+        )
+        return earlier + later
     filters: dict[str, Any] = {
         "employee": employee,
         "docstatus": 1,
@@ -57,6 +107,9 @@ def _assignment_rows(employee: str, as_of: date, period_end: date | None = None)
 def _structure_basis(structure: str | None) -> str | None:
     if not structure:
         return None
+    snapshot = _read_snapshot.get()
+    if snapshot and structure in snapshot["bases"]:
+        return snapshot["bases"][structure]
     return frappe.db.get_value("Salary Structure", structure, "custom_tradex_pay_basis")
 
 
@@ -75,7 +128,8 @@ def resolve_pay_basis(
     as_of = getdate(as_of_date)
     end = getdate(period_end) if period_end else None
     if end and as_of and as_of < end:
-        employee_joining_date = frappe.db.get_value(
+        snapshot = _read_snapshot.get()
+        employee_joining_date = snapshot["joining"].get(employee) if snapshot and employee in snapshot["names"] else frappe.db.get_value(
             "Employee", employee, "date_of_joining"
         )
         joining_date = getdate(employee_joining_date) if employee_joining_date else None
