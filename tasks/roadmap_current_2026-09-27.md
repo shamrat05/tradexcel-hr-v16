@@ -13,7 +13,7 @@ limitations; no automatic legal money has been implemented to hide them.
 | --- | --- | --- | --- | --- | --- |
 | 1 | v16 source/runtime | ENGINEERING_COMPLETE_REAL_UAT_REMAINS | #2, #29, release contract | Pinned source installs; production deployment/recovery separate | release/production |
 | 2 | Reports/basic readiness | ENGINEERING_COMPLETE_REAL_UAT_REMAINS | #21–23, #33 | 13 scoped Script Reports; real operator/export UAT | browser/configuration |
-| 3 | Mobile/offline evidence | ENGINEERING_COMPLETE_REAL_UAT_REMAINS | PR #44; #37–39 | Physical clock/offline/replay/device UAT | physical device |
+| 3 | Mobile/offline evidence | ENGINEERING_COMPLETE_REAL_UAT_REMAINS | PR #45 (latest correction), #44; #37–39 | Physical clock/offline/replay/device UAT | physical device |
 | 4 | Attendance/payroll boundary | SCOPED_COMPLETE_CONFIGURATION_REMAINS | #4, #28 | Review/submit real Attendance and finalize periods | configuration/data |
 | 5 | Explicit pay basis | SCOPED_COMPLETE_CONFIGURATION_REMAINS | #5, #21, #26 | Resolve 17 missing effective SSAs; owner-approved amounts | HR/finance |
 | 6 | Native payroll drafts | ENGINEERING_COMPLETE_REAL_UAT_REMAINS | #6 | Real configured-company payroll rehearsal | configuration/UAT |
@@ -52,4 +52,4 @@ limitations; no automatic legal money has been implemented to hide them.
 | 39 | Production cutover | PRODUCTION_ONLY | production_cutover_runbook_2026-09-26.md | Infrastructure, restore, freeze/delta/rollback and signed go-live | production |
 | 40 | Post-go-live controls | PRODUCTION_ONLY | post_go_live_controls_2026-09-26.md | Operate monitoring/backups/access/payroll controls | production |
 
-Step 3 evidence is the integrated correction PR #44 on #42, not divergent old #3. See the corrected release stack. Steps 31–34 retain external source, CI, device, staff and recovery gates; local tests do not clear those gates.
+Step 3's latest correction evidence is draft PR #45 atop #44; it restores the missing offline cleanup, self-service identity, private selfie and reviewer-independence boundaries. PR #3 remains divergent and should not be merged for runtime behavior. Physical clock/offline/replay/device UAT remains open. See the corrected release stack. Steps 31–34 retain external source, CI, device, staff and recovery gates; local tests do not clear those gates.

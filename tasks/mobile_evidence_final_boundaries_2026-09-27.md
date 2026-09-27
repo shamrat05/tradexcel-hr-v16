@@ -2,7 +2,8 @@
 
 Parent: PR #44, `fix/release-lineage-security-closure`,
 `ba403b36a42143a427559b0ee8dd5ec4c77f5687`. Correction branch:
-`fix/mobile-evidence-final-boundaries`.
+`fix/mobile-evidence-final-boundaries`. PR #45 is open, draft, unmerged and
+mergeable on the expected base.
 
 ## Reproduced before correction
 
@@ -78,4 +79,6 @@ synthetic cleanup jobs were completed/removed; unrelated route-index work was
 left queued. No live company data or configuration was changed.
 
 No browser/device UAT was performed. Physical Android/offline behavior remains a
-release gate. GitHub Actions status will be recorded after the draft PR exists.
+release gate. GitHub Actions run `36308028426` for the correction head failed
+before any job steps ran (`source-and-pure-tests`, zero steps); remote CI is not
+claimed passed. Local validation remains the evidence for this correction.
