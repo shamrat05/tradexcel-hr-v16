@@ -72,3 +72,13 @@ The remaining bulk-domain labels above represent intentional native per-record
 workflows or configuration gates, not missing custom bulk engines. Browser UAT
 and real staff provisioning remain separate. Synthetic records only were used
 for the report and Data Import probes and were explicitly cleaned.
+
+## Release convergence follow-up — 2026-09-27
+
+PR #37's installed `before_job` guard now rejects lost/disabled queued actors,
+including the native retry identity loss described above; PR #39 closes native
+record/field scope gaps. General Data Import remains intentionally restricted
+to its authorized administrator; Import Reviewer is not an unrestricted importer.
+This is an explicit per-record/administrative design, not a missing custom bulk
+engine. Future delegation requires a separate target-DocType/scoped import UAT.
+PR #41 proves real 31-row native Shift worker execution and changed-scope rejection.

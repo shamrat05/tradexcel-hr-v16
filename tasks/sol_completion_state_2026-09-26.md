@@ -41,8 +41,8 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 | G Operator usability/localization | COMPLETE | feat/operator-usability | fix/bulk-job-privacy | #38 open/draft/unmerged | 18 passed; Bangla/keyboard/phone-width and native correction-draft browser flow passed | 616 passed, 0 skipped | YES, standard migrate/cache clear | 20260927_001652-hrms-v16_localhost- | Cleanup zero; wider staff/browser/device UAT later |
 | H Security/privacy | COMPLETE | fix/security-privacy-hardening | feat/operator-usability | #39 open/draft/unmerged | 9 passed | 621 passed, 0 skipped | YES, standard migrate/cache clear | 20260927_052730-hrms-v16_localhost- | Cleanup zero; native explicit shares/staff provisioning and wider export/browser UAT remain configuration/evidence gates |
 | I Accounting/reconciliation | COMPLETE | feat/accounting-reconciliation | fix/security-privacy-hardening | #40 open/draft/unmerged | 34 native/payment + 74 broader focused passed | 627 passed, 0 skipped | NO | — | Cleanup zero; real Finance configuration/settlement review remains |
-| J Measured performance/async | COMPLETE | perf/measured-hrms-pass | feat/accounting-reconciliation | Draft PR (GitHub authoritative) | 14 focused + 1 parity + 1 live worker passed | 629 passed, 0 skipped | NO | — | Cleanup zero; real configured-company concurrency/payroll-volume UAT remains |
-| K Release contract | NOT_STARTED | — | Previous accepted branch | — | — | — | Unknown | — | — |
+| J Measured performance/async | COMPLETE | perf/measured-hrms-pass | feat/accounting-reconciliation | #41 open/draft/unmerged | 14 focused + 1 parity + 1 live worker passed | 629 passed, 0 skipped | NO | — | Cleanup zero; real configured-company concurrency/payroll-volume UAT remains |
+| K Release contract | BLOCKED | test/release-readiness-contract | perf/measured-hrms-pass | Release-contract draft PR (GitHub authoritative) | 12 site-focused + 11 isolated pure; neutral install/restore and 3-persona browser passed | 629 passed, 0 skipped | YES, standard migrate/cache clear | 20260927_062331-hrms-v16_localhost- | App release evidence complete; whole-bench pinning blocked by pre-existing ERPNext banking/yarn.lock drift outside authorized app checkout. Real business/device gates remain |
 
 ## Initial audit facts to preserve on resume
 
@@ -104,3 +104,27 @@ work, reproduce recipient behavior and scope completion events using supported
 transaction callbacks/native per-user rooms; do not patch framework code or copy
 native mutation loops. Also address the previously recorded queued-retry identity
 and mixed native/custom Shift action checks in a bounded current-stack follow-up.
+
+## Release evidence superseding earlier handoff cautions — 2026-09-27
+
+PR #37 closed queued retry identity/public completion delivery. PR #39 closed
+the mixed native/custom Shift action caveat with actual scope tamper regression.
+PR #38 and the release repeat executed Chromium through an isolated temporary
+Playwright environment: three synthetic personas, desktop/phone widths and
+Bangla correction-draft flow. Earlier notes saying browser tooling was unavailable
+are historical; wider real staff/device UAT still remains.
+
+## Final handoff / safe resume
+
+Final local suite: **629 passed, 0 skipped**, 97 warnings, 504.97 seconds.
+All audited staging business/configuration aggregates match the pre-release
+read-only snapshot. Synthetic marker counts and disposable databases/sites are
+zero. Final branch: `test/release-readiness-contract`; its Git/GitHub head and
+CI run are authoritative, not a self-referential SHA in this file.
+
+On resume, reuse this branch/PR. Do not rerun migrations or recreate disposable
+sites just to repeat evidence. Resolve the external ERPNext lockfile review in
+its proper source context before claiming whole-bench deployment reproducibility.
+Do not reset the pre-existing change or touch framework source without authority.
+Step 16 retains the supported-native employer-contribution capability blocker;
+no custom accounting bypass is authorized. See current roadmap and business gate.

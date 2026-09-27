@@ -1,11 +1,13 @@
 # Tradexcel HR — start here
 
-## Current v16 engineering status — 2026-09-26
+## Current v16 engineering status — 2026-09-27
 
 The active repository is `/home/sanchita/frappe-bench-v16/apps/tradex_hr`,
 stacked on open draft PRs. The isolated staging site is `hrms-v16.localhost`
-with MariaDB on `127.0.0.1:3307`. The accepted attendance-correction head
-passed **585 tests, 0 skipped** on the full Tradexcel suite. The current
+with MariaDB on `127.0.0.1:3307`. The latest accepted full suite passed **629 tests, 0 skipped**. Native bulk
+workflows, scoped Action Board/native navigation, privacy controls and measured
+report improvements are implemented. Neutral install and isolated restore passed;
+real configuration, device and staff UAT remain gated. The current
 engineering campaign and resume point are in
 [`tasks/sol_completion_state_2026-09-26.md`](tasks/sol_completion_state_2026-09-26.md).
 
@@ -16,7 +18,14 @@ Structure field `custom_tradex_pay_basis`; no Employment Type or Branch
 heuristic may decide pay. The app's payroll and biometric worker source is
 versioned here; the SenseFace listener is a separate repository.
 
-**Production is not approved.** Real staff roles, pay-authority gaps,
+Current evidence: [roadmap](tasks/roadmap_current_2026-09-27.md),
+[release contract](tasks/release_readiness_contract_2026-09-27.md),
+[business configuration gate](tasks/business_configuration_gate_2026-09-26.md).
+
+**Production is not approved.** The release audit also preserves a pre-existing
+ERPNext banking lockfile delta for separate dependency review; whole-bench source
+pinning is not yet complete. PF/Progoti activation stays blocked by the installed
+native accounting capability. Real staff roles, pay-authority gaps,
 company/legal/finance configuration, physical device and browser UAT,
 parallel payroll, and cutover evidence remain gates. The table and counts
 below are the preserved **2026-09-18 historical snapshot**. They are not

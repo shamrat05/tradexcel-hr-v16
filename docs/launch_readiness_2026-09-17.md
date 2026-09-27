@@ -1,3 +1,5 @@
+> Historical 2026-09-17 snapshot. The v16 bench has no `sync/` runtime; do not follow the old sync audit commands below. Current source-backed checks are `scripts/release_smoke.py`, `scripts/run_release_integration.sh` and [the release contract](../tasks/release_readiness_contract_2026-09-27.md). Current configuration counts are in [the Business Configuration Gate](../tasks/business_configuration_gate_2026-09-26.md).
+
 # Tradexcel HR launch gate — 17 September 2026
 
 This is a site-specific audit, not a claim that the system is production-ready.

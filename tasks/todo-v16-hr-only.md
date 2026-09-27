@@ -1,3 +1,5 @@
+> Historical proposal/checklist. Current code and dated evidence supersede unchecked boxes here. See [current roadmap](roadmap_current_2026-09-27.md) and [campaign ledger](sol_completion_state_2026-09-26.md). No new generic bulk engine, competing dashboard or custom rail is required. Old letters/reminder/template proposals outside the current 1–40 contract are OUT_OF_CURRENT_ROADMAP.
+
 # v16 HR-only migration checklist
 
 - [ ] Fresh source backup recorded
