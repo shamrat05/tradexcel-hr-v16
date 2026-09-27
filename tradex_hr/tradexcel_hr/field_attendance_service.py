@@ -227,12 +227,46 @@ def _approved_duty(employee: frappe._dict, duty_name: str | None, day: str):
     return frappe.get_doc("Tradexcel Field Duty", rows[0].name) if rows else None
 
 
-def _assert_identity(employee: frappe._dict) -> None:
-    if set(frappe.get_roles(frappe.session.user)) & SUPERVISOR_ROLES:
-        frappe.has_permission("Employee", "select", employee.name, throw=True)
+def _assert_employee_self(employee: frappe._dict) -> None:
+    """Mobile mutation endpoints are employee self-service, not proxy APIs."""
+    if frappe.session.user == "Administrator":
         return
     if employee.user_id != frappe.session.user:
         frappe.throw(_("You may only create mobile attendance for your own linked Employee"), frappe.PermissionError)
+
+
+def _assert_mobile_selfie_file(file_url: str, *, allow_admin_owner=False):
+    private_prefix = "/private/files/"
+    if not file_url or not file_url.startswith(private_prefix):
+        frappe.throw(_("Attendance selfies must use private file storage"), frappe.PermissionError)
+    path_parts = file_url[len(private_prefix):].split("/")
+    if not path_parts or any(part in {"", ".", ".."} for part in path_parts):
+        frappe.throw(_("Attendance selfies must use private file storage"), frappe.PermissionError)
+    file_doc = frappe.db.get_value(
+        "File", {"file_url": file_url},
+        ["name", "owner", "is_private", "attached_to_doctype", "attached_to_name", "attached_to_field"],
+        as_dict=True,
+    )
+    if not file_doc:
+        frappe.throw(_("The selfie file could not be found"), frappe.PermissionError)
+    is_admin = frappe.session.user == "Administrator"
+    if not file_doc.is_private:
+        frappe.throw(_("Attendance selfies must be private files"), frappe.PermissionError)
+    if file_doc.owner != frappe.session.user and not (is_admin and allow_admin_owner):
+        frappe.throw(_("The selfie file is not owned by the current user"), frappe.PermissionError)
+    return file_doc
+
+
+def _assert_field_duty_settlement_actor(employee: frappe._dict) -> None:
+    """Permit only the linked employee or a scoped evidence approver to settle."""
+    if frappe.session.user == "Administrator":
+        return
+    if "Tradexcel Attendance Correction Approver" in frappe.get_roles():
+        from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
+        if employee.name in permitted_employee_names(employee.company):
+            return
+        frappe.throw(_("This employee is outside your permitted scope."), frappe.PermissionError)
+    _assert_employee_self(employee)
 
 
 def _site_file_path(file_url: str) -> str:
@@ -340,12 +374,7 @@ def settle_field_duty_allowance(duty_name):
 	"""Create one draft Additional Salary from a completed duty, idempotently."""
 	duty = frappe.get_doc("Tradexcel Field Duty", duty_name)
 	employee = _employee(duty.employee)
-	if "Tradexcel Attendance Correction Approver" in frappe.get_roles():
-		from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
-		if employee.name not in permitted_employee_names(employee.company):
-			frappe.throw(_("This employee is outside your permitted scope."), frappe.PermissionError)
-	else:
-		_assert_identity(employee)
+	_assert_field_duty_settlement_actor(employee)
 	if _field_duty_has_unreleased_checkin(duty_name):
 		return {"duty": duty_name, "amount": 0, "status": "Awaiting attendance review"}
 	policy = _policy(employee, duty.duty_date)
@@ -407,6 +436,10 @@ def enrich_mobile_checkin(doc, method=None):
             "latitude", "longitude", "custom_tradex_gps_accuracy_m", "custom_tradex_selfie",
             "custom_tradex_field_duty", "custom_tradex_reviewed_by", "custom_tradex_reviewed_at",
             "custom_tradex_review_reason", "custom_tradex_clock_skew_seconds",
+            "custom_tradex_sync_id", "custom_tradex_gps_source", "custom_tradex_location_status",
+            "custom_tradex_assigned_location", "custom_tradex_distance_m",
+            "custom_tradex_face_match_status", "custom_tradex_face_match_score",
+            "custom_tradex_location_reason",
         )
         if any(doc.get(field) != previous.get(field) for field in protected):
             frappe.throw(_("Use the mobile evidence review actions to change protected evidence."), frappe.PermissionError)
@@ -480,7 +513,7 @@ def mobile_checkin(employee, log_type, latitude=None, longitude=None, accuracy_m
     if not sync_id:
         frappe.throw(_("A mobile sync ID is required"))
     employee_doc = _employee(employee)
-    _assert_identity(employee_doc)
+    _assert_employee_self(employee_doc)
     existing = frappe.db.get_value(
         "Employee Checkin", {"custom_tradex_sync_id": sync_id},
         ["name", "employee"], as_dict=True,
@@ -498,9 +531,7 @@ def mobile_checkin(employee, log_type, latitude=None, longitude=None, accuracy_m
     if (policy.require_selfie or policy.face_match_enabled) and not selfie:
         frappe.throw(_("This attendance policy requires a selfie"))
     if selfie:
-        owner = frappe.db.get_value("File", {"file_url": selfie}, "owner")
-        if owner not in {frappe.session.user, "Administrator"}:
-            frappe.throw(_("The selfie file is not owned by the current user"), frappe.PermissionError)
+        _assert_mobile_selfie_file(selfie, allow_admin_owner=True)
     claimed = _claim_event(sync_id, "Checkin", employee_doc, received_at, device_time)
     if claimed:
         return claimed
@@ -543,7 +574,7 @@ def location_ping(employee, field_duty, latitude, longitude, accuracy_m=None, pi
     if not sync_id:
         frappe.throw(_("A ping sync ID is required"))
     employee_doc = _employee(employee)
-    _assert_identity(employee_doc)
+    _assert_employee_self(employee_doc)
     existing = frappe.db.get_value(
         "Tradexcel Location Ping", {"sync_id": sync_id},
         ["name", "employee"], as_dict=True,
@@ -685,23 +716,23 @@ def get_live_locations(employee=None, company=None):
 def attach_selfie(checkin, file_url):
     doc = frappe.get_doc("Employee Checkin", checkin)
     employee = _employee(doc.employee)
-    _assert_identity(employee)
-    file_doc = frappe.db.get_value(
-        "File", {"file_url": file_url},
-        ["name", "owner", "attached_to_doctype", "attached_to_name"], as_dict=True,
-    )
-    if not file_doc or file_doc.owner != frappe.session.user:
-        frappe.throw(_("The selfie file is not owned by the current user"), frappe.PermissionError)
+    _assert_employee_self(employee)
+    if doc.custom_tradex_source != "Mobile":
+        frappe.throw(_("Selfie metadata can only be attached to mobile attendance"), frappe.PermissionError)
+    if not doc.custom_tradex_selfie or file_url != doc.custom_tradex_selfie:
+        frappe.throw(_("The selfie must match the evidence recorded when attendance was submitted"), frappe.PermissionError)
+    file_doc = _assert_mobile_selfie_file(file_url, allow_admin_owner=True)
     if file_doc.attached_to_name and (
         file_doc.attached_to_doctype != "Employee Checkin" or file_doc.attached_to_name != checkin
     ):
         frappe.throw(_("This file is already attached to another document"), frappe.PermissionError)
+    if file_doc.attached_to_doctype == "Employee Checkin" and file_doc.attached_to_name == checkin:
+        return {"checkin": checkin, "file_url": file_url}
     frappe.db.set_value("File", file_doc.name, {
         "attached_to_doctype": "Employee Checkin",
         "attached_to_name": checkin,
         "attached_to_field": "custom_tradex_selfie",
     }, update_modified=False)
-    doc.db_set("custom_tradex_selfie", file_url)
     return {"checkin": checkin, "file_url": file_url}
 
 
@@ -819,6 +850,8 @@ def _reviewable_checkin(checkin):
 def approve_mobile_checkin(checkin, review_note=None):
     """Release one quarantined check-in for native auto attendance."""
     doc = _reviewable_checkin(checkin)
+    if frappe.session.user != "Administrator" and doc.owner == frappe.session.user:
+        frappe.throw(_("A different reviewer must approve your own check-in"), frappe.PermissionError)
     review_note = (review_note or "").strip()
     if len(review_note) < 3:
         frappe.throw(_("Enter a reason for this evidence review."))

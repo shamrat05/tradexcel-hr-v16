@@ -107,7 +107,9 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
 
   function offlineEventExpired(item) {
     const captured = Date.parse(item.time || item.queued_at);
-    const hours = Math.min(720, Math.max(1, Number(context?.offline_max_age_hours ?? 72)));
+    const configuredHours = Number(context && context.offline_max_age_hours);
+    if (!context || !Number.isFinite(configuredHours) || configuredHours < 1) return false;
+    const hours = Math.min(720, configuredHours);
     return !Number.isFinite(captured) || Math.abs(Date.now() - captured) > hours * 3600000;
   }
 
@@ -118,9 +120,9 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     }));
   }
 
-  async function cleanupOfflineEvidence() {
+  async function cleanupOfflineEvidence({allowAgeExpiry = Boolean(context && context.offline_max_age_hours)} = {}) {
     for (const item of await queuedCheckins()) {
-      if (item.retryable === false || offlineEventExpired(item)) {
+      if (item.retryable === false || (allowAgeExpiry && offlineEventExpired(item))) {
         await discardQueuedEvidence(item, item.last_error || __("Offline event expired; capture a new event."));
       }
     }
@@ -250,6 +252,10 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
         {type: item.selfie_type || "image/jpeg"}
       );
       selfieUrl = await uploadSelfie(file);
+      if (selfieUrl) {
+        item.selfie_url = selfieUrl;
+        await withOfflineStore("readwrite", store => store.put(item));
+      }
     }
     const response = await frappe.call({
       method: "tradex_hr.tradexcel_hr.field_attendance_service.mobile_checkin",
@@ -398,6 +404,9 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
       }
       resultEl.text(file ? __("Uploading selfie and recording attendance...") : __("Recording attendance..."));
       const selfieUrl = file ? await uploadSelfie(file) : null;
+      // If the following request fails offline, replay the already uploaded
+      // private file instead of creating another selfie on each retry.
+      if (selfieUrl) queuedPayload.selfie_url = selfieUrl;
       const requestArgs = {
         employee: queuedPayload.employee,
         log_type: queuedPayload.log_type,

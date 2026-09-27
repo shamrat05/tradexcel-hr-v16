@@ -682,7 +682,7 @@ def test_leave_exit_location_and_mobile_identity_scope():
         frappe.set_user(h.users["hr_manager"])
         from tradex_hr.tradexcel_hr.field_attendance_service import (
             get_live_locations,
-            _assert_identity,
+            _assert_employee_self,
             _employee,
         )
 
@@ -690,7 +690,7 @@ def test_leave_exit_location_and_mobile_identity_scope():
             r.employee == employee for r in get_live_locations(company=company)
         )
         with pytest.raises(frappe.PermissionError):
-            _assert_identity(_employee(employee))
+            _assert_employee_self(_employee(employee))
     finally:
         frappe.set_user("Administrator")
         for dt, name in reversed(tracked):

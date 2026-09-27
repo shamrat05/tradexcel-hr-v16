@@ -38,7 +38,7 @@ def test_live_locations_script_registers_with_frappe_page_name():
     assert f'frappe.pages["{page["page_name"]}"]' in script
 
 
-def test_offline_selfie_cleanup_executes_on_reject_expiry_and_replay():
+def test_offline_selfie_cleanup_waits_for_policy_and_reuses_partial_upload():
     """Execute production functions with a deterministic in-memory IDB boundary."""
     import shutil
     import subprocess
@@ -53,28 +53,55 @@ let context = {offline_max_age_hours: 72};
 const __ = x => x;
 const rows = new Map();
 const navigator = {onLine: true};
-const withOfflineStore = async (_, action) => action({put: x => rows.set(x.sync_id, x)});
+let uploadCount = 0;
+let failNextCall = false;
+const withOfflineStore = async (_, action) => action({put: x => rows.set(x.sync_id, x), delete: id => rows.delete(id)});
 const queuedCheckins = async () => [...rows.values()];
 const deleteQueuedCheckin = async id => rows.delete(id);
-const frappe = {call: async () => ({message: {name: 'synthetic'}})};
+const uploadSelfie = async () => { uploadCount++; return '/private/files/synthetic.jpg'; };
+const frappe = {call: async options => {
+ if (failNextCall) { failNextCall = false; const error = new Error('offline'); error.status = 0; throw error; }
+ if (options.method.endsWith('mobile_checkin')) assert.equal(rows.get(options.args.sync_id).selfie_url, options.args.selfie);
+ return {message: {name: 'synthetic'}};
+}};
 ''' + cleanup + replay + '''
 (async () => {
- const payload = {sync_id:'expired', queued_at:new Date().toISOString(), time:new Date(Date.now()-73*3600000).toISOString(), selfie_blob:'sensitive', employee:'synthetic', latitude:23};
- rows.set(payload.sync_id, payload);
+ const old = {sync_id:'old', queued_at:new Date().toISOString(), time:new Date(Date.now()-80*3600000).toISOString(), selfie_blob:'sensitive', selfie_url:null, latitude:23, longitude:90, retryable:true};
+ context = null;
+ rows.set(old.sync_id, {...old});
  await cleanupOfflineEvidence();
- assert.deepEqual(Object.keys(rows.get('expired')).sort(), ['last_error','queued_at','retryable','sync_id']);
- const rejected = {...payload, sync_id:'rejected', time:new Date().toISOString(), retryable:false};
+ assert.equal(rows.get('old').selfie_blob, 'sensitive');
+ context = {offline_max_age_hours:120};
+ await cleanupOfflineEvidence({allowAgeExpiry:true});
+ assert.equal(rows.get('old').selfie_blob, 'sensitive');
+ context = {offline_max_age_hours:72};
+ await cleanupOfflineEvidence({allowAgeExpiry:true});
+ assert.deepEqual(Object.keys(rows.get('old')).sort(), ['last_error','queued_at','retryable','sync_id']);
+ const rejected = {...old, sync_id:'rejected', time:new Date().toISOString(), retryable:false};
+ context = null;
  rows.set(rejected.sync_id, rejected);
  await cleanupOfflineEvidence();
  assert.equal(rows.get('rejected').selfie_blob, undefined);
- const success = {...payload, sync_id:'success', selfie_blob:null, time:new Date().toISOString()};
- rows.set(success.sync_id, success);
- assert.equal(await replayQueuedCheckin(success), true);
- assert.equal(rows.has('success'), false);
- const retained = {...payload, sync_id:'retry', time:new Date().toISOString(), retryable:true};
+ const malformed = {...old, sync_id:'malformed', time:'not-a-date'};
+ rows.set(malformed.sync_id, malformed);
+ await cleanupOfflineEvidence();
+ assert.equal(rows.get('malformed').selfie_blob, 'sensitive');
+ context = {offline_max_age_hours:120};
+ await cleanupOfflineEvidence({allowAgeExpiry:true});
+ assert.equal(rows.get('malformed').selfie_blob, undefined);
+ const retained = {...old, sync_id:'retry', time:new Date().toISOString(), retryable:true};
  rows.set(retained.sync_id, retained);
  await cleanupOfflineEvidence();
  assert.equal(rows.get('retry').selfie_blob, 'sensitive');
+ failNextCall = true;
+ await assert.rejects(replayQueuedCheckin(rows.get('retry')));
+ assert.equal(rows.get('retry').selfie_url, '/private/files/synthetic.jpg');
+ assert.equal(uploadCount, 1);
+ assert.equal(await replayQueuedCheckin(rows.get('retry')), true);
+ assert.equal(uploadCount, 1);
+ assert.equal(rows.has('retry'), false);
 })().catch(e => {console.error(e); process.exit(1)});
 '''
     subprocess.run([node, '-e', program], check=True, capture_output=True, text=True)
+    click = script[script.index('  actionEl.on("click"'):script.index('  window.addEventListener("online"')]
+    assert click.index("queuedPayload.selfie_url = selfieUrl") < click.index("method: \"tradex_hr.tradexcel_hr.field_attendance_service.mobile_checkin\"")

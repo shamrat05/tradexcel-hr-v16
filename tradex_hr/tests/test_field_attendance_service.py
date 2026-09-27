@@ -178,6 +178,74 @@ def test_missing_device_time_is_quarantined():
     assert "No captured" in result["reason"]
 
 
+@pytest.mark.parametrize("fieldname", [
+    "custom_tradex_sync_id",
+    "custom_tradex_gps_source",
+    "custom_tradex_location_status",
+    "custom_tradex_assigned_location",
+    "custom_tradex_distance_m",
+    "custom_tradex_face_match_status",
+    "custom_tradex_face_match_score",
+    "custom_tradex_location_reason",
+])
+def test_mobile_derived_evidence_fields_are_immutable(fieldname, monkeypatch):
+    class FakeDoc:
+        def __init__(self, values, previous):
+            self.values = values
+            self.previous = previous
+
+        def get(self, key, default=None):
+            return self.values.get(key, default)
+
+        def is_new(self):
+            return False
+
+        def get_doc_before_save(self):
+            return self.previous
+
+        def __getattr__(self, key):
+            return self.values.get(key)
+
+    previous = {
+        "custom_tradex_source": "Mobile",
+        "custom_tradex_sync_id": "original",
+        "custom_tradex_gps_source": "Browser Geolocation API",
+        "custom_tradex_location_status": "Inside Zone",
+        "custom_tradex_assigned_location": "SITE-A",
+        "custom_tradex_distance_m": 10,
+        "custom_tradex_face_match_status": "Matched",
+        "custom_tradex_face_match_score": 0.9,
+        "custom_tradex_location_reason": "Original evidence",
+    }
+    values = dict(previous)
+    values[fieldname] = "forged"
+    doc = FakeDoc(values, previous)
+    fake_frappe = SimpleNamespace(
+        PermissionError=frappe.PermissionError,
+        throw=lambda message, exc=None: (_ for _ in ()).throw((exc or frappe.ValidationError)(message)),
+    )
+    monkeypatch.setattr(service, "frappe", fake_frappe)
+    with pytest.raises(frappe.PermissionError, match="protected evidence"):
+        service.enrich_mobile_checkin(doc)
+
+
+def test_mobile_checkin_allows_native_auto_attendance_linkage_updates(monkeypatch):
+    previous = {"custom_tradex_source": "Mobile", "shift": "SHIFT-A", "attendance": None}
+
+    class FakeDoc:
+        def get(self, key, default=None):
+            return {"custom_tradex_source": "Mobile", "shift": "SHIFT-B", "attendance": "ATT-1"}.get(key, default)
+
+        def is_new(self):
+            return False
+
+        def get_doc_before_save(self):
+            return previous
+
+    monkeypatch.setattr(service, "frappe", SimpleNamespace())
+    assert service.enrich_mobile_checkin(FakeDoc()) is None
+
+
 def test_untrusted_timestamp_cannot_select_historical_security_policy(monkeypatch):
     current = frappe._dict({
         "offline_max_age_hours": 72,
@@ -314,7 +382,7 @@ def test_unreleased_field_duty_cannot_reach_money_creation(monkeypatch):
     monkeypatch.setattr(service.frappe, 'get_doc', lambda *a: duty)
     monkeypatch.setattr(service.frappe, 'get_roles', lambda: [])
     monkeypatch.setattr(service, '_employee', lambda *a: frappe._dict(name='synthetic'))
-    monkeypatch.setattr(service, '_assert_identity', lambda *a: None)
+    monkeypatch.setattr(service, '_assert_field_duty_settlement_actor', lambda *a: None)
     monkeypatch.setattr(service, '_field_duty_has_unreleased_checkin', lambda *a: True)
     monkeypatch.setattr(service, '_policy', lambda *a: pytest.fail('Quarantined evidence reached allowance policy'))
     assert service.settle_field_duty_allowance(duty.name)['status'] == 'Awaiting attendance review'
