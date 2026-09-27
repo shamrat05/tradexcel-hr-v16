@@ -204,7 +204,7 @@ def test_mobile_review_actor_can_execute_its_queued_field_duty_settlement(review
         )
         worker = h.create_user("worker", [PERSONA_ROLES["worker"]], company=company, branch=branches[0])
         employee = h.create_employee("field", company, branches[0], departments[0], user=worker)
-        receipt = now_datetime()
+        receipt = now_datetime().replace(hour=14, minute=0, second=0, microsecond=0)
         captured = receipt - timedelta(hours=6)
         policy = frappe.get_doc(dict(
             doctype="Tradexcel Attendance Policy", policy_name=h.token,

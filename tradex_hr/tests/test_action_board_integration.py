@@ -138,7 +138,7 @@ def test_native_workspace_filters_action_block_by_role_and_has_no_overview_cards
     assert block.style == (source / "home.css").read_text()
     assert {row.role for row in block.roles} == set(BOARD_ROLES)
     assert not workspace.charts and len(workspace.number_cards) == 3
-    assert len(workspace.quick_lists) == 4
+    assert len(workspace.quick_lists) == 3
     assert [row.custom_block_name for row in workspace.custom_blocks] == [block.name]
     h = SyntheticPersonaHarness("SOLBOARDWS" + frappe.generate_hash(8).upper())
     try:

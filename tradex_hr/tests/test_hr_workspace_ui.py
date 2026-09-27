@@ -17,6 +17,21 @@ from tradex_hr.install import (
 )
 from tradex_hr.tests.persona_uat import PERSONA_ROLES, SyntheticPersonaHarness, assert_only_tradexcel_roles
 
+EXPECTED_COMMON_ACTION_ROUTES = {
+    "Employee Directory": ("Employee", "DocType"),
+    "Today's Attendance": ("Tradexcel Daily Attendance Board", "Report"),
+    "Attendance Summary": ("Daily Attendance Summary", "Report"),
+    "Attendance Fix Requests": ("Attendance Request", "DocType"),
+    "Mobile Attendance": ("tradexcel-mobile-attendance", "Page"),
+    "Leave Requests": ("Leave Application", "DocType"),
+    "Expense Claims": ("Expense Claim", "DocType"),
+    "Run Monthly Payroll": ("Tradexcel Payroll Readiness", "Report"),
+    "Salary Setup Coverage": ("Tradexcel Salary Coverage Board", "Report"),
+    "Job Applicants": ("Job Applicant", "DocType"),
+    "Field Duties": ("Tradexcel Field Duty", "DocType"),
+    "Final Settlements": ("Full and Final Statement", "DocType"),
+}
+
 
 @pytest.fixture(scope="module", autouse=True)
 def site():
@@ -44,12 +59,19 @@ def test_workspace_layout_and_progressive_disclosure():
     for card_name in expected_cards:
         assert frappe.db.exists("Number Card", card_name), f"Number Card {card_name} must exist in DB"
 
-    assert len(workspace.quick_lists) == 4, "Pending Work must have exactly 4 Quick Lists"
+    assert len(workspace.quick_lists) == 3, "Pending Work must have exactly 3 Quick Lists"
     quick_lists_by_doctype = {row.document_type: json.loads(row.quick_list_filter) for row in workspace.quick_lists}
     assert quick_lists_by_doctype.get("Leave Application") == {"status": "Open"}
     assert quick_lists_by_doctype.get("Attendance Request") == {"docstatus": 0}
     assert quick_lists_by_doctype.get("Expense Claim") == {"docstatus": 0, "approval_status": "Draft"}
-    assert quick_lists_by_doctype.get("Shift Request") == {"status": "Draft"}
+    assert "Shift Request" not in quick_lists_by_doctype, "Shift Request quick list must not be on Home"
+
+    actual_ql_labels = [row.label for row in workspace.quick_lists]
+    assert actual_ql_labels == [
+        "Open Leave Requests",
+        "Attendance Requests to Review",
+        "Draft Expense Claims",
+    ]
 
     blocks = json.loads(workspace.content)
     block_types = [b["type"] for b in blocks]
@@ -60,6 +82,15 @@ def test_workspace_layout_and_progressive_disclosure():
     assert len(shortcut_blocks) == 12, f"Expected 12 common action shortcuts, got {len(shortcut_blocks)}"
     rendered_shortcut_names = [b["data"]["shortcut_name"] for b in shortcut_blocks]
     assert rendered_shortcut_names == COMMON_ACTION_SHORTCUTS
+
+    ws_shortcuts = {s.label: (s.link_to, s.type) for s in workspace.shortcuts}
+    for label, (target, link_type) in EXPECTED_COMMON_ACTION_ROUTES.items():
+        assert label in ws_shortcuts, f"Common action shortcut {label} missing from workspace shortcuts"
+        assert ws_shortcuts[label] == (target, link_type), (
+            f"Shortcut {label} target/type mismatch: {ws_shortcuts[label]} != {(target, link_type)}"
+        )
+    assert ws_shortcuts["Run Monthly Payroll"] == ("Tradexcel Payroll Readiness", "Report")
+    assert ws_shortcuts["Run Monthly Payroll"][0] != "Payroll Entry", "Run Monthly Payroll must not point to Payroll Entry"
 
     custom_blocks = [b for b in blocks if b["type"] == "custom_block"]
     assert len(custom_blocks) == 1
@@ -232,7 +263,8 @@ def test_quick_list_native_permission_filtering():
         ql_labels = [q.label for q in desktop_page.get("quick_lists", {}).get("items", [])]
         assert "Open Leave Requests" in ql_labels
         assert "Attendance Requests to Review" in ql_labels
-        assert "Expense Claims to Review" not in ql_labels, "Attendance Officer must not see Expense Claims Quick List"
+        assert "Draft Expense Claims" not in ql_labels, "Attendance Officer must not see Expense Claims Quick List"
+        assert "Expense Claims to Review" not in ql_labels
         assert "Shift Requests to Review" not in ql_labels, "Attendance Officer must not see Shift Requests Quick List"
 
         nc_labels = [c.label for c in desktop_page.get("number_cards", {}).get("items", [])]
@@ -253,7 +285,8 @@ def test_quick_list_native_permission_filtering():
         hr_ql_labels = [q.label for q in desktop_page.get("quick_lists", {}).get("items", [])]
         assert "Open Leave Requests" in hr_ql_labels
         assert "Attendance Requests to Review" in hr_ql_labels
-        assert "Expense Claims to Review" in hr_ql_labels
+        assert "Draft Expense Claims" in hr_ql_labels
+        assert "Expense Claims to Review" not in hr_ql_labels
         assert "Shift Requests to Review" not in hr_ql_labels, "HR Manager must not see Shift Requests Quick List (denied)"
 
         hr_nc_labels = [c.label for c in desktop_page.get("number_cards", {}).get("items", [])]
@@ -280,7 +313,7 @@ PERSONA_WORKSPACE_TEST_CASES = [
         [
             "Open Leave Requests",
             "Attendance Requests to Review",
-            "Expense Claims to Review",
+            "Draft Expense Claims",
         ],
         [
             "Employee Directory",
@@ -372,8 +405,6 @@ def test_tradexcel_persona_workspace_and_shortcut_authorization(
 ):
     from frappe.desk.desktop import get_desktop_page, get_workspaces, DeskViews
 
-    shortcut_map = {row[0]: (row[1], row[2]) for row in list(WORKSPACE_SHORTCUTS) + list(BULK_WORKSPACE_SHORTCUTS)}
-
     h = SyntheticPersonaHarness("PWSTEST" + frappe.generate_hash(8).upper())
     try:
         frappe.set_user("Administrator")
@@ -388,8 +419,8 @@ def test_tradexcel_persona_workspace_and_shortcut_authorization(
 
         actual_cards = [c.label for c in desktop_page.get("number_cards", {}).get("items", [])]
         actual_quick_lists = [q.label for q in desktop_page.get("quick_lists", {}).get("items", [])]
-        sc_allowed = {s.label for s in desktop_page.get("shortcuts", {}).get("items", [])}
-        actual_common_actions = [ca for ca in COMMON_ACTION_SHORTCUTS if ca in sc_allowed]
+        shortcuts_by_label = {s.label: s for s in desktop_page.get("shortcuts", {}).get("items", [])}
+        actual_common_actions = [ca for ca in COMMON_ACTION_SHORTCUTS if ca in shortcuts_by_label]
 
         assert actual_cards == expected_cards, f"{role_name} Number Cards mismatch: {actual_cards} != {expected_cards}"
         assert actual_quick_lists == expected_quick_lists, f"{role_name} Quick Lists mismatch: {actual_quick_lists} != {expected_quick_lists}"
@@ -399,13 +430,23 @@ def test_tradexcel_persona_workspace_and_shortcut_authorization(
         allowed_reports = DeskViews.get_allowed_reports()
 
         for label in actual_common_actions:
-            target, link_type = shortcut_map[label]
-            if link_type == "DocType":
-                assert frappe.has_permission(target, "read"), f"{role_name} lacks read on DocType {target} for shortcut {label}"
-            elif link_type == "Report":
-                assert target in allowed_reports, f"{role_name} lacks access to Report {target} for shortcut {label}"
-            elif link_type == "Page":
-                assert target in allowed_pages, f"{role_name} lacks access to Page {target} for shortcut {label}"
+            item = shortcuts_by_label[label]
+            expected_target, expected_type = EXPECTED_COMMON_ACTION_ROUTES[label]
+            assert item.link_to == expected_target, f"{label} target {item.link_to} != expected {expected_target}"
+            assert item.type == expected_type, f"{label} type {item.type} != expected {expected_type}"
+
+            if label == "Run Monthly Payroll":
+                assert item.label == "Run Monthly Payroll"
+                assert item.type == "Report"
+                assert item.link_to == "Tradexcel Payroll Readiness"
+                assert item.link_to != "Payroll Entry", "Run Monthly Payroll must not point to Payroll Entry"
+
+            if item.type == "DocType":
+                assert frappe.has_permission(item.link_to, "read"), f"{role_name} lacks read on DocType {item.link_to} for shortcut {label}"
+            elif item.type == "Report":
+                assert item.link_to in allowed_reports, f"{role_name} lacks access to Report {item.link_to} for shortcut {label}"
+            elif item.type == "Page":
+                assert item.link_to in allowed_pages, f"{role_name} lacks access to Page {item.link_to} for shortcut {label}"
     finally:
         frappe.set_user("Administrator")
         h.cleanup()

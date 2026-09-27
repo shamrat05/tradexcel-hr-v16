@@ -4,9 +4,9 @@
 
 - Base branch: `feat/native-hr-workspace-completeness`
 - Base PR: `#49` (open, draft, unmerged)
-- Starting SHA: `31249677c7c8ba822ca6404747ff312bdf6f53df`
-- Working branch: `fix/native-feature-persona-access`
+- PR #50 branch: `fix/native-feature-persona-access`
 - PR: `#50` (draft, open, unmerged)
+- Current live HEAD: see GitHub PR metadata
 
 ## 2. Root cause of flaw in PR #49 persona proof
 
@@ -140,18 +140,20 @@ PR #50 also provisioned read/select access to organizational master dependencies
   2. `Number of Employees on Leave (This Month)`
   3. `Expense Claims (This Month)`
   (Note: The dead `Holidays in this month` card was removed from `tradex_hr/install.py` and `tradexcel_hr.json` because upstream HRMS defines `type = Custom` with `document_type = null`, causing Frappe core to restrict it from all non-System-Manager personas).
-- **Quick Lists (4)**:
-  1. `Open Leave Requests` (`Leave Application`)
-  2. `Attendance Requests to Review` (`Attendance Request`)
-  3. `Expense Claims to Review` (`Expense Claim`)
-  4. `Shift Requests to Review` (`Shift Request`)
+- **Quick Lists (3)**:
+  1. `Open Leave Requests` (`Leave Application`, filter `{"status": "Open"}`)
+  2. `Attendance Requests to Review` (`Attendance Request`, filter `{"docstatus": 0}`)
+  3. `Draft Expense Claims` (`Expense Claim`, filter `{"docstatus": 0, "approval_status": "Draft"}`)
+  (Note: `Shift Requests to Review` was removed from the Home layout because `Shift Request` read permission is denied for all operational personas; `Expense Claims to Review` was renamed to `Draft Expense Claims` for workflow truth, reflecting that `Tradexcel HR Manager` holds maker rights only and final checker rights remain unresolved/DECISION_REQUIRED).
 - **Common Actions (12)**:
   `Employee Directory`, `Today's Attendance`, `Attendance Summary`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Expense Claims`, `Run Monthly Payroll`, `Salary Setup Coverage`, `Job Applicants`, `Field Duties`, `Final Settlements`.
+- **Custom Blocks (1)**: `Tradexcel Work Needing Attention`.
+- **Charts (0)**.
 
 ### Server Permission-Filtered Desktop Page (`get_desktop_page`):
 - **Tradexcel HR Manager**:
   - Number Cards (3): `Number of Employees on Leave (Today)`, `Number of Employees on Leave (This Month)`, `Expense Claims (This Month)`.
-  - Quick Lists (3): `Open Leave Requests`, `Attendance Requests to Review`, `Expense Claims to Review`. (Filtered: `Shift Requests to Review` due to preserved Shift Request denial).
+  - Quick Lists (3): `Open Leave Requests`, `Attendance Requests to Review`, `Draft Expense Claims`.
   - Common Actions (11): `Employee Directory`, `Today's Attendance`, `Attendance Summary`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Expense Claims`, `Salary Setup Coverage`, `Job Applicants`, `Field Duties`, `Final Settlements`. (`Run Monthly Payroll` filtered).
 - **Tradexcel HR/Attendance Officer**:
   - Number Cards (2): `Number of Employees on Leave (Today)`, `Number of Employees on Leave (This Month)`.
@@ -173,10 +175,23 @@ PR #50 also provisioned read/select access to organizational master dependencies
   - `"tradexcel-hr"` workspace is not visible (`"tradexcel-hr"` not in `get_workspaces()["pages"]`).
 
 ### Route Authorization Verification:
-Every visible Common Action shortcut across all 5 personas is verified to point to an authorized destination:
-- DocType targets (`Employee`, `Attendance Request`, `Leave Application`, `Expense Claim`, `Payroll Entry`, `Job Applicant`, `Tradexcel Field Duty`, `Full and Final Statement`) have `frappe.has_permission(doctype, 'read') == True`.
-- Report targets (`Tradexcel Daily Attendance Board`, `Daily Attendance Summary`, `Tradexcel Salary Coverage Board`) are in `DeskViews.get_allowed_reports()`.
-- Page targets (`tradexcel-mobile-attendance`) are in `DeskViews.get_allowed_pages()`.
+Every visible Common Action shortcut across all 5 personas is verified against actual server-returned shortcut records (`desktop_page["shortcuts"]["items"]`), matching its exact destination:
+- `Employee Directory` -> `Employee` -> `DocType`
+- `Today's Attendance` -> `Tradexcel Daily Attendance Board` -> `Report`
+- `Attendance Summary` -> `Daily Attendance Summary` -> `Report`
+- `Attendance Fix Requests` -> `Attendance Request` -> `DocType`
+- `Mobile Attendance` -> `tradexcel-mobile-attendance` -> `Page`
+- `Leave Requests` -> `Leave Application` -> `DocType`
+- `Expense Claims` -> `Expense Claim` -> `DocType`
+- `Run Monthly Payroll` -> `Tradexcel Payroll Readiness` -> `Report` (Note: Points to Report `Tradexcel Payroll Readiness`, NOT `Payroll Entry`)
+- `Salary Setup Coverage` -> `Tradexcel Salary Coverage Board` -> `Report`
+- `Job Applicants` -> `Job Applicant` -> `DocType`
+- `Field Duties` -> `Tradexcel Field Duty` -> `DocType`
+- `Final Settlements` -> `Full and Final Statement` -> `DocType`
+
+- DocType targets have `frappe.has_permission(doctype, 'read') == True`.
+- Report targets are in `DeskViews.get_allowed_reports()`.
+- Page targets are in `DeskViews.get_allowed_pages()`.
 
 ### Action Board Metrics vs. Native Number Cards:
 The custom block `Tradexcel Work Needing Attention` renders operational metrics (`Active Employees`, `Today Present`, `Unassigned Biometric Users`) and action queue lists (`Attendance Fix Requests`, `Leave Applications`, `Field Duty Applications`). These are custom Action Board elements and must not be conflated with native Workspace Number Cards or Quick Lists.
@@ -206,8 +221,8 @@ Scope dimensions and isolation were verified with synthetic records across `Trad
 
 ## 16. Test results
 
-- **`test_hr_workspace_ui.py`**: 13 passed in 11.40s.
-  - `test_workspace_layout_and_progressive_disclosure`: Passed (verifies 3 Number Cards on Home).
+- **`test_hr_workspace_ui.py`**: 13 passed in 11.39s.
+  - `test_workspace_layout_and_progressive_disclosure`: Passed (verifies 3 Number Cards and 3 Quick Lists on Home).
   - `test_curated_sidebar_sections_and_targets_exist`: Passed.
   - `test_curated_navigation_does_not_promote_excluded_features`: Passed.
   - `test_tradexcel_only_personas_and_permission_enforcement`: Passed.
@@ -222,34 +237,33 @@ Scope dimensions and isolation were verified with synthetic records across `Trad
   - `test_record_scope_user_permission_isolation`: Passed (Employee scope).
   - `test_new_native_features_scope_and_record_isolation`: Passed (Expense Claim, Appraisal, Grievance, Compensatory Leave scope).
 - **Focused Suites**:
-  - `test_action_board_integration.py`: 3 passed in 7.83s.
-  - `test_dashboard_setup.py`: 11 passed in 0.27s.
-- **Full Suite**: 701 passed, 0 skipped, 0 failed in 582.06s.
+  - `test_action_board_integration.py`: 3 passed.
+  - `test_dashboard_setup.py`: 11 passed.
+  - `test_hr_navigation.py`: 2 passed.
+  - `test_native_navigation_integration.py`: 5 passed.
+  - `test_operational_reports.py`: 16 passed.
+  - `test_security_privacy_integration.py`: 7 passed.
+- **Full Suite**: 701 passed, 0 skipped, 0 failed in 563.08s.
 
 ## 17. Remote Actions truth
 
-- Head SHA: `b7f6841e9782d9be2bec82cb6c1ca0d8f9fe7d98`
-- GitHub Actions Run ID: `36333091558`
-- Workflow: `Source contract` (`source-and-pure-tests`)
-- Status: `failure`, `steps: []` (0 steps executed)
-- Failure Reason: Account spending limit / billing condition (`The job was not started because recent account payments have failed or your spending limit needs to be increased`).
-- Root Cause Confirmed: The repository owner account exceeded its monthly 2,000-minute GitHub Actions quota for private repositories.
-- Official Classification: `REMOTE CI: BLOCKED BEFORE STEPS (Run ID 36333091558)`.
+Remote CI is externally blocked before execution while the repository Actions quota/account restriction remains active. See PR #50 for the current-head run.
 
 ## 18. Backup and migration status
 
-- **Pre-Migration Restore Point**: Fresh staging backup taken before migration on 2026-09-27 at 22:01:01 (Asia/Dhaka) with `--with-files`.
-  - Database: `20260927_220101-hrms-v16_localhost-database.sql.gz` (56,079,166 bytes, SHA-256 `33ceef6497c798c62a689ffd40e86ab2d9959dd3ed880c804235ab7019aa09a7`).
-  - Public files: `20260927_220101-hrms-v16_localhost-files.tar` (10,240 bytes, SHA-256 `d4f33a231170e3868813efd04a70b43f30bbf4d5b07985c0de1f205d2b012bf1`).
-  - Private files: `20260927_220101-hrms-v16_localhost-private-files.tar` (38,942,720 bytes, SHA-256 `cf7fae0acf87ee5ec817ebaad257cbedd06852ed4da38291b9cf1ba3f462065d`).
-  - Site config: `20260927_220101-hrms-v16_localhost-site_config_backup.json` (245 bytes, SHA-256 `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`).
-  - Integrity verified with `gzip -t` and `tar -tf`; documented in `BACKUPS.md`.
+- **Pre-Migration Restore Point**: Fresh staging backup taken before migration on 2026-09-28 at 01:14:22 (Asia/Dhaka) with `--with-files`.
+  - Prefix: `20260928_011422-hrms-v16_localhost-`
+  - Database: `20260928_011422-hrms-v16_localhost-database.sql.gz` (56,934,971 bytes, SHA-256 `4083ba08edd55406383b7dacb6d62db23e01259f2272d28bb2aaef6b472819cd`).
+  - Public files: `20260928_011422-hrms-v16_localhost-files.tar` (10,240 bytes, SHA-256 `f19e72269068fcdadb732273e700d23d0e494af3919a17417c3d207b8a9d3414`).
+  - Private files: `20260928_011422-hrms-v16_localhost-private-files.tar` (38,942,720 bytes, SHA-256 `6a74f355d0a2da5f0bbe3c10c6f1bad5f6c401c4911f27ba637f83d58f85325a`).
+  - Site config: `20260928_011422-hrms-v16_localhost-site_config_backup.json` (245 bytes, SHA-256 `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73`).
+  - Archive integrity verified with `gzip -t` and `tar -tf`; documented in `BACKUPS.md`.
 - **Migration & Cache Execution**:
   - `bench --site hrms-v16.localhost migrate` completed with exit code 0, cleanly syncing workspace schema/content without errors.
   - `bench --site hrms-v16.localhost clear-cache` executed.
 - **Current Database State**:
-  - Current staging database reflects this post-migration state with the dead Holiday card removed and 3 operational cards active.
-  - Pre-migration restore point `20260927_220101-hrms-v16_localhost-` stands verified and intact.
+  - Current staging database reflects this post-migration state with 3 Number Cards, 3 Quick Lists, 12 Common Actions, 1 Action Board, 0 Charts.
+  - Pre-migration restore point `20260928_011422-hrms-v16_localhost-` stands verified and intact as pre-migration recovery point.
 
 ## 19. Production readiness status
 

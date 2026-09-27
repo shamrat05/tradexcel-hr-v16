@@ -639,13 +639,8 @@ HOME_QUICK_LISTS = [
     },
     {
         "document_type": "Expense Claim",
-        "label": "Expense Claims to Review",
+        "label": "Draft Expense Claims",
         "quick_list_filter": json.dumps({"docstatus": 0, "approval_status": "Draft"}),
-    },
-    {
-        "document_type": "Shift Request",
-        "label": "Shift Requests to Review",
-        "quick_list_filter": json.dumps({"status": "Draft"}),
     },
 ]
 
@@ -733,7 +728,7 @@ def workspace_blocks(shortcuts=None):
     for ql in HOME_QUICK_LISTS:
         blocks.append({
             "type": "quick_list",
-            "data": {"quick_list_name": ql["label"], "col": 6},
+            "data": {"quick_list_name": ql["label"], "col": 4},
         })
     blocks.append({"type": "header", "data": {"text": "<h3>Common Actions</h3>", "col": 12}})
     for label in COMMON_ACTION_SHORTCUTS:

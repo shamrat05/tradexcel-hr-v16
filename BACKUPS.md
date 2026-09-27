@@ -47,6 +47,7 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-28 01:14:22** | `20260928_011422-hrms-v16_localhost-database.sql.gz` | 56,934,971 | `4083ba08edd55406` | Before removing dead Shift Request Quick List and renaming Expense Claims to Draft Expense Claims on Home Workspace; `--with-files`, gzip and both file archives verified |
 | **2026-09-27 22:01:01** | `20260927_220101-hrms-v16_localhost-database.sql.gz` | 56,079,166 | `33ceef6497c798c6` | Before removing dead Holiday Number Card from Home and updating Workspace metadata; `--with-files`, gzip and both file archives verified |
 | **2026-09-27 20:26:39** | `20260927_202639-hrms-v16_localhost-database.sql.gz` | 53,584,703 | `03f662e0579cda0c` | Before native feature custom role permission convergence and Home action update; `--with-files`, gzip and both file archives verified |
 | **2026-09-27 19:14:37** | `20260927_191437-hrms-v16_localhost-database.sql.gz` | 52,319,549 | `a973af03a491d5d6` | Before native HR workspace completeness and sidebar information architecture migration; `--with-files`, gzip and both file archives verified |
@@ -609,4 +610,15 @@ Fresh staging backup before standard migration removing the unreadable custom "H
 | `20260927_220101-hrms-v16_localhost-files.tar` | 10,240 | `d4f33a231170e3868813efd04a70b43f30bbf4d5b07985c0de1f205d2b012bf1` |
 | `20260927_220101-hrms-v16_localhost-private-files.tar` | 38,942,720 | `cf7fae0acf87ee5ec817ebaad257cbedd06852ed4da38291b9cf1ba3f462065d` |
 | `20260927_220101-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Home Pending Work Quick List convergence — 2026-09-28 01:14:22
+
+Fresh staging backup before standard migration removing the unpermitted "Shift Requests to Review" Quick List from Home and renaming "Expense Claims to Review" to "Draft Expense Claims" for workflow truth. Database gzip, public/private file archives, and site config verified. Prefix `20260928_011422-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260928_011422-hrms-v16_localhost-database.sql.gz` | 56,934,971 | `4083ba08edd55406383b7dacb6d62db23e01259f2272d28bb2aaef6b472819cd` |
+| `20260928_011422-hrms-v16_localhost-files.tar` | 10,240 | `f19e72269068fcdadb732273e700d23d0e494af3919a17417c3d207b8a9d3414` |
+| `20260928_011422-hrms-v16_localhost-private-files.tar` | 38,942,720 | `6a74f355d0a2da5f0bbe3c10c6f1bad5f6c401c4911f27ba637f83d58f85325a` |
+| `20260928_011422-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
 
