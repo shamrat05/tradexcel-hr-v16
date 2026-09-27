@@ -161,6 +161,7 @@ def test_payment_readiness_stops_when_accrual_is_not_ready(monkeypatch):
     })
     entry.check_permission = lambda *_args: None
     monkeypatch.setattr(payment_readiness, "assert_company_access", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(frappe, "get_precision", lambda *_args, **_kwargs: 2)
     monkeypatch.setattr(payment_readiness, "inspect_payroll_accrual_reconciliation", lambda *_args: {
         "status": "PARTIAL_SUBMISSION",
     })
@@ -185,6 +186,7 @@ def _payment_result(monkeypatch, *, mode, slips=None, employee=None, bank_accoun
     entry.check_permission = lambda *_args: None
 
     monkeypatch.setattr(payment_readiness, "assert_company_access", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(frappe, "get_precision", lambda *_args, **_kwargs: 2)
     monkeypatch.setattr(payment_readiness, "inspect_payroll_accrual_reconciliation", lambda *_args: {
         "status": "READY",
         "submitted_slip_count": len(slips or []),
@@ -192,10 +194,14 @@ def _payment_result(monkeypatch, *, mode, slips=None, employee=None, bank_accoun
 
     def get_all(doctype, **_kwargs):
         if doctype == "Salary Slip":
-            return slips or []
+            return [dict(row, journal_entry="ACCRUAL-TEST") for row in slips or []]
         if doctype == "Employee":
             return [employee] if employee else []
         if doctype == "Journal Entry Account":
+            if "parent" in _kwargs.get("filters", {}):
+                return [frappe._dict(parent="ACCRUAL-TEST", debit=0,
+                    credit=sum(row.get("net_pay", 0) for row in slips or []),
+                    party_type=None, party=None)]
             return []
         raise AssertionError(f"unexpected doctype {doctype}")
 
@@ -573,3 +579,58 @@ def test_cancelled_payment_entry_blocks_duplicate_recreation(monkeypatch):
     )
     assert result["status"] == "PAYMENT_ENTRY_CANCELLED"
     assert result["blockers"][0]["code"] == "PAYMENT_ENTRY_CANCELLED"
+
+
+@pytest.mark.parametrize("paid, expected_status", [(100, "MATCH"), (50, "MISMATCH"), (125, "MISMATCH")])
+def test_payment_amount_compares_native_payable_rows(monkeypatch, paid, expected_status):
+    source = [frappe._dict(parent="ACCRUAL", debit=0, credit=100, party_type=None, party=None)]
+    monkeypatch.setattr(frappe, "get_all", lambda *_args, **_kwargs: source)
+    payment = _native_payment_entry("Cash", payable_rows=[{
+        "account": "PAYROLL-PAYABLE", "debit": paid, "credit": 0,
+        "debit_in_account_currency": paid / 2,
+        "reference_type": "Payroll Entry", "reference_name": "PE-PAYMENT-TEST",
+    }])
+    result = payment_readiness._payment_amount_reconciliation(
+        _payment_entry_source(), payment, [{"journal_entry": "ACCRUAL", "employee": "EMP-1"}]
+    )
+    assert result["status"] == expected_status
+    assert result["expected_payable"] == 100
+    assert result["payment_payable"] == paid  # native company-currency amount
+    assert result["difference"] == paid - 100
+
+
+def test_payment_amount_requires_every_native_accrual_reference(monkeypatch):
+    monkeypatch.setattr(frappe, "get_all", lambda *_args, **_kwargs: [
+        frappe._dict(parent="ACCRUAL-A", debit=0, credit=100, party_type=None, party=None),
+    ])
+    result = payment_readiness._payment_amount_reconciliation(
+        _payment_entry_source(), _native_payment_entry("Cash"),
+        [{"journal_entry": "ACCRUAL-A"}, {"journal_entry": "ACCRUAL-B"}],
+    )
+    assert result["status"] == "REVIEW_REQUIRED"
+    assert result["expected_payable"] is None
+
+
+def test_withheld_pooled_accrual_is_not_guessed_from_net_pay(monkeypatch):
+    monkeypatch.setattr(frappe, "get_all", lambda *_args, **_kwargs: [
+        frappe._dict(parent="ACCRUAL", debit=0, credit=200, party_type=None, party=None),
+    ])
+    result = payment_readiness._payment_amount_reconciliation(
+        _payment_entry_source(), _native_payment_entry("Cash"),
+        [{"journal_entry": "ACCRUAL", "employee": "EMP-1", "net_pay": 100}], has_withheld=True,
+    )
+    assert result["status"] == "REVIEW_REQUIRED"
+    assert result["expected_payable"] is None
+
+
+def test_native_employee_payable_rows_identify_withheld_split(monkeypatch):
+    monkeypatch.setattr(frappe, "get_all", lambda *_args, **_kwargs: [
+        frappe._dict(parent="ACCRUAL", debit=0, credit=100, party_type="Employee", party="EMP-1"),
+        frappe._dict(parent="ACCRUAL", debit=0, credit=200, party_type="Employee", party="EMP-WITHHELD"),
+    ])
+    result = payment_readiness._payment_amount_reconciliation(
+        _payment_entry_source(), _native_payment_entry("Cash"),
+        [{"journal_entry": "ACCRUAL", "employee": "EMP-1"}], has_withheld=True,
+    )
+    assert result["status"] == "MATCH"
+    assert result["expected_payable"] == 100

@@ -161,6 +161,45 @@ def _payment_entry_identity_issue(entry, journal_entry, expected_mode: str) -> s
     return None
 
 
+
+def _payment_amount_reconciliation(entry, payment_entry, slips, *, has_withheld=False):
+    """Compare native payable ledger rows in company currency, not salary formulas.
+
+    Payroll Entry may produce several accruals after partial submission/retry.
+    Pooling withheld and payable employees cannot be split without native party
+    evidence: report review rather than estimating from net pay.
+    """
+    source_names = sorted({slip.get("journal_entry") for slip in slips if slip.get("journal_entry")})
+    rows = frappe.get_all(
+        "Journal Entry Account",
+        filters={"parent": ["in", source_names], "parenttype": "Journal Entry",
+                 "account": entry.payroll_payable_account,
+                 "reference_type": "Payroll Entry", "reference_name": entry.name},
+        fields=["parent", "debit", "credit", "party_type", "party"],
+    ) if source_names else []
+    result = {"source_journal_entries": source_names, "expected_payable": None,
+              "payment_payable": None, "difference": None, "status": "REVIEW_REQUIRED"}
+    if not rows or set(source_names) != {row.parent for row in rows}:
+        return {**result, "reason": _("The submitted accrual is missing payroll-payable references. Finance must review the source vouchers.")}
+    if has_withheld:
+        if any(row.party_type != "Employee" or not row.party for row in rows):
+            return {**result, "reason": _("This accrual combines withheld and payable salaries. Finance must review the payment split.")}
+        employees = {slip.get("employee") for slip in slips}
+        rows = [row for row in rows if row.party in employees]
+    precision = int(frappe.get_precision("Journal Entry Account", "debit") or 2)
+    expected = flt(sum(flt(row.credit) - flt(row.debit) for row in rows), precision)
+    actual = flt(sum(
+        flt(row.get("debit")) - flt(row.get("credit"))
+        for row in payment_entry.get("accounts", [])
+        if row.get("account") == entry.payroll_payable_account
+        and row.get("reference_type") == "Payroll Entry"
+        and row.get("reference_name") == entry.name
+    ), precision)
+    difference = flt(actual - expected, precision)
+    return {**result, "expected_payable": expected, "payment_payable": actual,
+            "difference": difference, "status": "MISMATCH" if difference else "MATCH",
+            "reason": _("The payment amount differs from the submitted payroll accrual. Finance must review the payment and source vouchers.") if difference else None}
+
 def _bank_reconciled(je) -> tuple[bool, list[dict]]:
     allocations = frappe.get_all(
         "Bank Transaction Payments",
@@ -226,7 +265,7 @@ def inspect_payroll_payment_readiness(payroll_entry, *, for_withheld_salaries: b
             "warnings": [],
         }
 
-    fields = ["name", "employee", "net_pay", "mode_of_payment", "bank_name", "bank_account_no", "status"]
+    fields = ["name", "employee", "net_pay", "mode_of_payment", "bank_name", "bank_account_no", "status", "journal_entry"]
     slips = frappe.get_all(
         "Salary Slip",
         filters={"payroll_entry": entry.name, "docstatus": 1},
@@ -282,6 +321,7 @@ def inspect_payroll_payment_readiness(payroll_entry, *, for_withheld_salaries: b
     active_entries, cancelled_entries = _linked_payment_entries(entry.name)
     payment_entry = None
     bank_transactions = []
+    amount_reconciliation = None
     if len(active_entries) > 1:
         blockers.append({
             "code": "PAYMENT_ENTRY_AMBIGUOUS",
@@ -303,13 +343,20 @@ def inspect_payroll_payment_readiness(payroll_entry, *, for_withheld_salaries: b
                 "reason": _("A linked Journal Entry is not a valid native payroll payment: {0}").format(identity_issue),
             })
             status = "PAYMENT_ENTRY_INVALID"
-        elif payment_entry.docstatus == 0:
-            status = "PAYMENT_ENTRY_DRAFT"
-        elif payment_entry.voucher_type == "Cash Entry":
-            status = "CASH_PAYMENT_ACCOUNTING_POSTED"
         else:
-            reconciled, bank_transactions = _bank_reconciled(payment_entry)
-            status = "BANK_RECONCILED" if reconciled else "AWAITING_BANK_RECONCILIATION"
+            amount_reconciliation = _payment_amount_reconciliation(
+                entry, payment_entry, payment_slips, has_withheld=bool(withheld_slips)
+            )
+            if amount_reconciliation["status"] != "MATCH":
+                status = "PAYMENT_AMOUNT_REVIEW_REQUIRED"
+                blockers.append({"code": status, "reason": amount_reconciliation["reason"]})
+            elif payment_entry.docstatus == 0:
+                status = "PAYMENT_ENTRY_DRAFT"
+            elif payment_entry.voucher_type == "Cash Entry":
+                status = "CASH_PAYMENT_ACCOUNTING_POSTED"
+            else:
+                reconciled, bank_transactions = _bank_reconciled(payment_entry)
+                status = "BANK_RECONCILED" if reconciled else "AWAITING_BANK_RECONCILIATION"
     else:
         status = "READY_TO_PREPARE_PAYMENT" if not blockers else blockers[0]["code"]
 
@@ -333,6 +380,7 @@ def inspect_payroll_payment_readiness(payroll_entry, *, for_withheld_salaries: b
         "clearance_date": payment_entry.clearance_date if payment_entry else None,
         "bank_transactions": bank_transactions,
         "payment_status": status,
+        "amount_reconciliation": amount_reconciliation,
         "blockers": blockers,
         "warnings": warnings,
         "net_pay_reference_total": sum(flt(slip.get("net_pay")) for slip in payment_slips),

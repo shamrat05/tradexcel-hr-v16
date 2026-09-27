@@ -1158,6 +1158,26 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         assert retry_entry.name == payment_entry.name
         draft_payment_readiness = inspect_payroll_payment_readiness(entry)
         assert draft_payment_readiness["status"] == "PAYMENT_ENTRY_DRAFT", draft_payment_readiness
+        # Controlled synthetic draft only: a balanced half payment must not
+        # be mistaken for the complete native payable settlement.
+        frappe.set_user("Administrator")
+        original_amounts = [(r.debit_in_account_currency, r.credit_in_account_currency) for r in payment_entry.accounts]
+        for row in payment_entry.accounts:
+            row.debit_in_account_currency /= 2
+            row.credit_in_account_currency /= 2
+        payment_entry.save(ignore_permissions=True)
+        frappe.set_user(manager)
+        wrong_amount_state = inspect_payroll_payment_readiness(entry)
+        assert wrong_amount_state["status"] == "PAYMENT_AMOUNT_REVIEW_REQUIRED"
+        assert wrong_amount_state["amount_reconciliation"]["status"] == "MISMATCH"
+        assert wrong_amount_state["amount_reconciliation"]["difference"] < 0
+        with pytest.raises(frappe.ValidationError, match="payment amount differs"):
+            entry.make_bank_entry()
+        frappe.set_user("Administrator")
+        for row, (debit, credit) in zip(payment_entry.accounts, original_amounts):
+            row.debit_in_account_currency, row.credit_in_account_currency = debit, credit
+        payment_entry.save(ignore_permissions=True)
+        frappe.set_user(manager)
         assert frappe.db.count(
             "Journal Entry Account",
             {"reference_type": "Payroll Entry", "reference_name": entry.name},
