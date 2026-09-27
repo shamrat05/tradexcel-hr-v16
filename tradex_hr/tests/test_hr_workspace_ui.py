@@ -31,12 +31,11 @@ def site():
 def test_workspace_layout_and_progressive_disclosure():
     workspace = frappe.get_doc("Workspace", "tradexcel-hr")
     assert not workspace.charts, "Workspace must have 0 charts"
-    assert len(workspace.number_cards) == 4, "Operational Snapshot must have exactly 4 Number Cards"
+    assert len(workspace.number_cards) == 3, "Operational Snapshot must have exactly 3 Number Cards"
 
     expected_cards = [
         "Number of Employees on Leave (Today)",
         "Number of Employees on Leave (This Month)",
-        "Holidays in this month",
         "Expense Claims (This Month)",
     ]
     actual_cards = [row.number_card_name for row in workspace.number_cards]
@@ -237,10 +236,12 @@ def test_quick_list_native_permission_filtering():
         assert "Shift Requests to Review" not in ql_labels, "Attendance Officer must not see Shift Requests Quick List"
 
         nc_labels = [c.label for c in desktop_page.get("number_cards", {}).get("items", [])]
-        assert "Number of Employees on Leave (Today)" in nc_labels
-        assert "Number of Employees on Leave (This Month)" in nc_labels
+        assert nc_labels == [
+            "Number of Employees on Leave (Today)",
+            "Number of Employees on Leave (This Month)",
+        ]
         assert "Expense Claims (This Month)" not in nc_labels, "Attendance Officer must not see Expense Claims Number Card"
-        assert "Holidays in this month" not in nc_labels, "Custom card without docType filtered by core permission"
+        assert "Holidays in this month" not in nc_labels, "Dead Holiday card removed from Home layout"
 
         # HR Manager sees Leave, Attendance, and Expense quick lists, but NOT Shift quick list (denied)
         frappe.set_user("Administrator")
@@ -256,10 +257,155 @@ def test_quick_list_native_permission_filtering():
         assert "Shift Requests to Review" not in hr_ql_labels, "HR Manager must not see Shift Requests Quick List (denied)"
 
         hr_nc_labels = [c.label for c in desktop_page.get("number_cards", {}).get("items", [])]
-        assert "Number of Employees on Leave (Today)" in hr_nc_labels
-        assert "Number of Employees on Leave (This Month)" in hr_nc_labels
-        assert "Expense Claims (This Month)" in hr_nc_labels
-        assert "Holidays in this month" not in hr_nc_labels, "Custom card without docType filtered by core permission"
+        assert hr_nc_labels == [
+            "Number of Employees on Leave (Today)",
+            "Number of Employees on Leave (This Month)",
+            "Expense Claims (This Month)",
+        ]
+        assert "Holidays in this month" not in hr_nc_labels, "Dead Holiday card removed from Home layout"
+    finally:
+        frappe.set_user("Administrator")
+        h.cleanup()
+
+
+PERSONA_WORKSPACE_TEST_CASES = [
+    (
+        "hr_manager",
+        PERSONA_ROLES["hr_manager"],
+        [
+            "Number of Employees on Leave (Today)",
+            "Number of Employees on Leave (This Month)",
+            "Expense Claims (This Month)",
+        ],
+        [
+            "Open Leave Requests",
+            "Attendance Requests to Review",
+            "Expense Claims to Review",
+        ],
+        [
+            "Employee Directory",
+            "Today's Attendance",
+            "Attendance Summary",
+            "Attendance Fix Requests",
+            "Mobile Attendance",
+            "Leave Requests",
+            "Expense Claims",
+            "Salary Setup Coverage",
+            "Job Applicants",
+            "Field Duties",
+            "Final Settlements",
+        ],
+    ),
+    (
+        "attendance_officer",
+        PERSONA_ROLES["attendance_officer"],
+        [
+            "Number of Employees on Leave (Today)",
+            "Number of Employees on Leave (This Month)",
+        ],
+        [
+            "Open Leave Requests",
+            "Attendance Requests to Review",
+        ],
+        [
+            "Employee Directory",
+            "Today's Attendance",
+            "Attendance Summary",
+            "Attendance Fix Requests",
+            "Mobile Attendance",
+            "Leave Requests",
+            "Field Duties",
+        ],
+    ),
+    (
+        "payroll_manager",
+        PERSONA_ROLES["payroll_manager"],
+        [],
+        [],
+        [
+            "Employee Directory",
+            "Run Monthly Payroll",
+            "Salary Setup Coverage",
+            "Final Settlements",
+        ],
+    ),
+    (
+        "finance",
+        PERSONA_ROLES["finance"],
+        [],
+        [],
+        [
+            "Employee Directory",
+            "Salary Setup Coverage",
+            "Final Settlements",
+        ],
+    ),
+    (
+        "branch_manager",
+        PERSONA_ROLES["branch_manager"],
+        [
+            "Number of Employees on Leave (Today)",
+            "Number of Employees on Leave (This Month)",
+        ],
+        [
+            "Open Leave Requests",
+            "Attendance Requests to Review",
+        ],
+        [
+            "Employee Directory",
+            "Today's Attendance",
+            "Attendance Fix Requests",
+            "Mobile Attendance",
+            "Leave Requests",
+            "Field Duties",
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "persona_key,role_name,expected_cards,expected_quick_lists,expected_common_actions",
+    PERSONA_WORKSPACE_TEST_CASES,
+)
+def test_tradexcel_persona_workspace_and_shortcut_authorization(
+    persona_key, role_name, expected_cards, expected_quick_lists, expected_common_actions
+):
+    from frappe.desk.desktop import get_desktop_page, get_workspaces, DeskViews
+
+    shortcut_map = {row[0]: (row[1], row[2]) for row in list(WORKSPACE_SHORTCUTS) + list(BULK_WORKSPACE_SHORTCUTS)}
+
+    h = SyntheticPersonaHarness("PWSTEST" + frappe.generate_hash(8).upper())
+    try:
+        frappe.set_user("Administrator")
+        user = h.create_user(persona_key, [role_name], company="Tradexcel Ceramics Ltd.")
+        assert_only_tradexcel_roles(user)
+        frappe.set_user(user)
+
+        ws_list = [p for p in get_workspaces()["pages"] if p["name"] == "tradexcel-hr"]
+        assert len(ws_list) == 1, f"Persona {role_name} must have access to tradexcel-hr workspace"
+        page = ws_list[0]
+        desktop_page = get_desktop_page(json.dumps(page))
+
+        actual_cards = [c.label for c in desktop_page.get("number_cards", {}).get("items", [])]
+        actual_quick_lists = [q.label for q in desktop_page.get("quick_lists", {}).get("items", [])]
+        sc_allowed = {s.label for s in desktop_page.get("shortcuts", {}).get("items", [])}
+        actual_common_actions = [ca for ca in COMMON_ACTION_SHORTCUTS if ca in sc_allowed]
+
+        assert actual_cards == expected_cards, f"{role_name} Number Cards mismatch: {actual_cards} != {expected_cards}"
+        assert actual_quick_lists == expected_quick_lists, f"{role_name} Quick Lists mismatch: {actual_quick_lists} != {expected_quick_lists}"
+        assert actual_common_actions == expected_common_actions, f"{role_name} Common Actions mismatch: {actual_common_actions} != {expected_common_actions}"
+
+        allowed_pages = DeskViews.get_allowed_pages()
+        allowed_reports = DeskViews.get_allowed_reports()
+
+        for label in actual_common_actions:
+            target, link_type = shortcut_map[label]
+            if link_type == "DocType":
+                assert frappe.has_permission(target, "read"), f"{role_name} lacks read on DocType {target} for shortcut {label}"
+            elif link_type == "Report":
+                assert target in allowed_reports, f"{role_name} lacks access to Report {target} for shortcut {label}"
+            elif link_type == "Page":
+                assert target in allowed_pages, f"{role_name} lacks access to Page {target} for shortcut {label}"
     finally:
         frappe.set_user("Administrator")
         h.cleanup()

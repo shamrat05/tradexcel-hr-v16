@@ -623,7 +623,6 @@ WORKSPACE_SECTIONS = (
 HOME_NUMBER_CARDS = [
     {"number_card_name": "Number of Employees on Leave (Today)", "label": "Number of Employees on Leave (Today)"},
     {"number_card_name": "Number of Employees on Leave (This Month)", "label": "Number of Employees on Leave (This Month)"},
-    {"number_card_name": "Holidays in this month", "label": "Holidays in this month"},
     {"number_card_name": "Expense Claims (This Month)", "label": "Expense Claims (This Month)"},
 ]
 
@@ -728,7 +727,7 @@ def workspace_blocks(shortcuts=None):
     for card in HOME_NUMBER_CARDS:
         blocks.append({
             "type": "number_card",
-            "data": {"number_card_name": card["label"], "col": 3},
+            "data": {"number_card_name": card["label"], "col": 4},
         })
     blocks.append({"type": "header", "data": {"text": "<h3>Pending Work</h3>", "col": 12}})
     for ql in HOME_QUICK_LISTS:

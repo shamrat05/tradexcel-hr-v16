@@ -47,6 +47,7 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-27 22:01:01** | `20260927_220101-hrms-v16_localhost-database.sql.gz` | 56,079,166 | `33ceef6497c798c6` | Before removing dead Holiday Number Card from Home and updating Workspace metadata; `--with-files`, gzip and both file archives verified |
 | **2026-09-27 20:26:39** | `20260927_202639-hrms-v16_localhost-database.sql.gz` | 53,584,703 | `03f662e0579cda0c` | Before native feature custom role permission convergence and Home action update; `--with-files`, gzip and both file archives verified |
 | **2026-09-27 19:14:37** | `20260927_191437-hrms-v16_localhost-database.sql.gz` | 52,319,549 | `a973af03a491d5d6` | Before native HR workspace completeness and sidebar information architecture migration; `--with-files`, gzip and both file archives verified |
 | **2026-09-26 09:20:27** | `20260926_092011-hrms-v16_localhost-database.sql.gz` | 38,067,024 | `3f01cac70816b9b0` | Before deleting verified orphan synthetic persona Contact/Notification Settings left by older test teardown; no real User/configuration cleanup |
@@ -597,3 +598,15 @@ Fresh staging backup before standard migration adding minimal justified Custom D
 | `20260927_202639-hrms-v16_localhost-files.tar` | 10,240 | `f49715451643b96039b30f5528643f6139b1f9b89658922847006c4b0ca79454` |
 | `20260927_202639-hrms-v16_localhost-private-files.tar` | 38,942,720 | `c0940518ed6ddc1dea5301062151264b3ffb173d0e7348e0daec646e55d1d930` |
 | `20260927_202639-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Home Operational Snapshot Number Card convergence — 2026-09-27 22:01:01
+
+Fresh staging backup before standard migration removing the unreadable custom "Holidays in this month" Number Card and syncing Workspace metadata. Database gzip, public/private file archives, and site config verified. Prefix `20260927_220101-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260927_220101-hrms-v16_localhost-database.sql.gz` | 56,079,166 | `33ceef6497c798c62a689ffd40e86ab2d9959dd3ed880c804235ab7019aa09a7` |
+| `20260927_220101-hrms-v16_localhost-files.tar` | 10,240 | `d4f33a231170e3868813efd04a70b43f30bbf4d5b07985c0de1f205d2b012bf1` |
+| `20260927_220101-hrms-v16_localhost-private-files.tar` | 38,942,720 | `cf7fae0acf87ee5ec817ebaad257cbedd06852ed4da38291b9cf1ba3f462065d` |
+| `20260927_220101-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
