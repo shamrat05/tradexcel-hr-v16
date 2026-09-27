@@ -104,10 +104,37 @@ def _inspect_daily_wage_structure(basis: dict[str, Any]) -> dict[str, Any]:
         },
         fields=["parent", "salary_component", "formula", "amount", "amount_based_on_formula", "depends_on_payment_days"],
     )
-    component_type = frappe.db.get_value("Salary Component", component, "type")
+    component_master = frappe.db.get_value(
+        "Salary Component",
+        component,
+        ["type", "disabled"],
+        as_dict=True,
+    )
+    if isinstance(component_master, str):
+        component_master = {"type": component_master, "disabled": 0}
+    if not component_master:
+        return {
+            "status": "BLOCKED_UNSAFE_STRUCTURE",
+            "employee": basis.get("employee"),
+            "salary_structure": basis.get("salary_structure"),
+            "reason": "The configured Daily Wage Salary Component does not exist.",
+        }
+    if cint(component_master.get("disabled", 0)):
+        return {
+            "status": "BLOCKED_UNSAFE_STRUCTURE",
+            "employee": basis.get("employee"),
+            "salary_structure": basis.get("salary_structure"),
+            "reason": "The configured Daily Wage Salary Component is disabled.",
+        }
+    if component_master.get("type") != "Earning":
+        return {
+            "status": "BLOCKED_UNSAFE_STRUCTURE",
+            "employee": basis.get("employee"),
+            "salary_structure": basis.get("salary_structure"),
+            "reason": "The configured Daily Wage Salary Component must be an Earning.",
+        }
     if (
-        component_type != "Earning"
-        or len(structure_rows) != 1
+        len(structure_rows) != 1
         or structure_rows[0].get("depends_on_payment_days")
         or structure_rows[0].get("amount_based_on_formula")
         or (structure_rows[0].get("formula") or "").strip()
@@ -115,8 +142,8 @@ def _inspect_daily_wage_structure(basis: dict[str, Any]) -> dict[str, Any]:
     ):
         return {
             "status": "BLOCKED_UNSAFE_STRUCTURE",
-            "employee": basis["employee"],
-            "salary_structure": basis["salary_structure"],
+            "employee": basis.get("employee"),
+            "salary_structure": basis.get("salary_structure"),
             "reason": "The configured Daily Wage Salary Component must be one neutral, zero-valued Earning row with no formula or payment-day proration.",
         }
     return {

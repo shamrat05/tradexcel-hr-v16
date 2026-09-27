@@ -161,3 +161,34 @@ def test_daily_rate_comes_from_resolved_assignment_not_policy(monkeypatch):
 
     assert result["amount"] == 4250
     assert result["salary_component"] == "Factory Day Rate"
+
+
+def test_disabled_daily_component_blocks_daily_wage_input(monkeypatch):
+    monkeypatch.setattr(daily_wage_input, "resolve_pay_basis", lambda *_args: {
+        "status": "Daily Wage", "employee": "EMP-1", "assignment": "SSA-1",
+        "salary_structure": "Safe Daily", "base": 425,
+        "daily_wage_component": "Factory Day Rate",
+    })
+    monkeypatch.setattr(daily_wage_input, "resolve_daily_rate", lambda result: {
+        "status": "READY", "employee": "EMP-1", "rate": result["base"], "assignment": "SSA-1",
+    })
+    fake_db = SimpleNamespace(get_value=lambda doctype, *args, **kwargs: (
+        {"date_of_joining": None, "relieving_date": None}
+        if doctype == "Employee" and kwargs.get("as_dict")
+        else {"type": "Earning", "disabled": 1} if doctype == "Salary Component" else None
+    ))
+    monkeypatch.setattr(daily_wage_input, "frappe", SimpleNamespace(
+        get_all=lambda doctype, *args, **kwargs: ([{
+            "salary_component": "Factory Day Rate", "formula": "", "amount": 0,
+            "amount_based_on_formula": 0, "depends_on_payment_days": 0,
+        }] if doctype == "Salary Detail" else []), db=fake_db,
+    ))
+    monkeypatch.setattr(daily_wage_input, "_native_attendance_units", lambda *_args, **_kwargs: {
+        "status": "READY", "payable_units": 10, "native": True,
+    })
+
+    result = daily_wage_input.calculate_daily_wage_input("EMP-1", "2026-09-01", "2026-09-30")
+
+    assert result["status"] == "BLOCKED_UNSAFE_STRUCTURE"
+    assert "amount" not in result
+    assert "disabled" in result["reason"]

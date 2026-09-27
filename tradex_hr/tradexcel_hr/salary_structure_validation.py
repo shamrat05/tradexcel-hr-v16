@@ -25,6 +25,8 @@ def validate_salary_structure(doc, method=None):
     )
     if not master:
         frappe.throw(_("The configured Daily Wage Salary Component does not exist."))
+    if master.disabled:
+        frappe.throw(_("The configured Daily Wage Salary Component must be enabled."))
     if master.type != "Earning":
         frappe.throw(_("The configured Daily Wage Salary Component must be an Earning."))
 
