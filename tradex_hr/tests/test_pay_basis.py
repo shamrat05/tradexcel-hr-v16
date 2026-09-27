@@ -17,12 +17,12 @@ def _resolver(monkeypatch, rows, bases):
 
     FakeFrappe.get_all = staticmethod(get_all)
     monkeypatch.setattr(pay_basis, "frappe", FakeFrappe)
-    monkeypatch.setattr(pay_basis, "_structure_basis", lambda name: bases.get(name))
+    monkeypatch.setattr(pay_basis, "_structure_configuration", lambda name: bases.get(name, {}))
 
 
 def test_worker_employment_type_does_not_override_monthly_structure(monkeypatch):
     rows = [{"name": "SSA-1", "from_date": date(2026, 1, 1), "salary_structure": "Monthly", "base": 20000}]
-    _resolver(monkeypatch, rows, {"Monthly": "Monthly Salary"})
+    _resolver(monkeypatch, rows, {"Monthly": {"pay_basis": "Monthly Salary"}})
 
     result = pay_basis.resolve_pay_basis("EMP-1", date(2026, 9, 1), date(2026, 9, 30))
 
@@ -31,19 +31,30 @@ def test_worker_employment_type_does_not_override_monthly_structure(monkeypatch)
 
 def test_staff_can_have_explicit_daily_structure(monkeypatch):
     rows = [{"name": "SSA-2", "from_date": date(2026, 1, 1), "salary_structure": "Daily", "base": 350}]
-    _resolver(monkeypatch, rows, {"Daily": "Daily Wage"})
+    _resolver(monkeypatch, rows, {"Daily": {"pay_basis": "Daily Wage", "daily_wage_component": "Factory Day Rate"}})
 
     result = pay_basis.resolve_pay_basis("EMP-2", date(2026, 9, 1), date(2026, 9, 30))
 
     assert result["status"] == pay_basis.DAILY
+    assert result["daily_wage_component"] == "Factory Day Rate"
     assert pay_basis.resolve_daily_rate(result) == {
         "status": "READY", "employee": "EMP-2", "rate": 350.0, "assignment": "SSA-2"
     }
 
 
+def test_daily_structure_without_configured_component_fails_closed(monkeypatch):
+    rows = [{"name": "SSA-2A", "from_date": date(2026, 1, 1), "salary_structure": "Daily", "base": 425}]
+    _resolver(monkeypatch, rows, {"Daily": {"pay_basis": "Daily Wage", "daily_wage_component": None}})
+
+    result = pay_basis.resolve_pay_basis("EMP-2A", date(2026, 9, 1), date(2026, 9, 30))
+
+    assert result["status"] == pay_basis.UNRESOLVED
+    assert "no configured Daily Wage Salary Component" in result["reason"]
+
+
 def test_missing_structure_metadata_is_unresolved(monkeypatch):
     rows = [{"name": "SSA-3", "from_date": date(2026, 1, 1), "salary_structure": "Unlabelled", "base": 350}]
-    _resolver(monkeypatch, rows, {"Unlabelled": None})
+    _resolver(monkeypatch, rows, {"Unlabelled": {"pay_basis": None}})
 
     result = pay_basis.resolve_pay_basis("EMP-3", date(2026, 9, 1), date(2026, 9, 30))
 
@@ -56,7 +67,10 @@ def test_mid_period_assignment_is_explicit_not_silently_selected(monkeypatch):
         {"name": "SSA-JAN", "from_date": date(2026, 1, 1), "salary_structure": "Monthly", "base": 20000},
         {"name": "SSA-SEP", "from_date": date(2026, 9, 15), "salary_structure": "Daily", "base": 350},
     ]
-    _resolver(monkeypatch, rows, {"Monthly": "Monthly Salary", "Daily": "Daily Wage"})
+    _resolver(monkeypatch, rows, {
+        "Monthly": {"pay_basis": "Monthly Salary"},
+        "Daily": {"pay_basis": "Daily Wage", "daily_wage_component": "Factory Day Rate"},
+    })
 
     result = pay_basis.resolve_pay_basis("EMP-4", date(2026, 9, 1), date(2026, 9, 30))
 
@@ -69,7 +83,10 @@ def test_same_effective_date_is_conflict(monkeypatch):
         {"name": "SSA-A", "from_date": date(2026, 1, 1), "salary_structure": "Monthly", "base": 20000},
         {"name": "SSA-B", "from_date": date(2026, 1, 1), "salary_structure": "Daily", "base": 350},
     ]
-    _resolver(monkeypatch, rows, {"Monthly": "Monthly Salary", "Daily": "Daily Wage"})
+    _resolver(monkeypatch, rows, {
+        "Monthly": {"pay_basis": "Monthly Salary"},
+        "Daily": {"pay_basis": "Daily Wage", "daily_wage_component": "Factory Day Rate"},
+    })
 
     result = pay_basis.resolve_pay_basis("EMP-5", date(2026, 9, 1), date(2026, 9, 30))
 
@@ -78,7 +95,7 @@ def test_same_effective_date_is_conflict(monkeypatch):
 
 def test_daily_rate_requires_positive_assignment_base(monkeypatch):
     rows = [{"name": "SSA-6", "from_date": date(2026, 1, 1), "salary_structure": "Daily", "base": 0}]
-    _resolver(monkeypatch, rows, {"Daily": "Daily Wage"})
+    _resolver(monkeypatch, rows, {"Daily": {"pay_basis": "Daily Wage", "daily_wage_component": "Factory Day Rate"}})
 
     result = pay_basis.resolve_pay_basis("EMP-6", date(2026, 9, 1), date(2026, 9, 30))
 
@@ -109,7 +126,7 @@ def test_first_assignment_on_joining_date_is_applicable_to_partial_month(monkeyp
 
     FakeFrappe.get_all = staticmethod(get_all)
     monkeypatch.setattr(pay_basis, "frappe", FakeFrappe)
-    monkeypatch.setattr(pay_basis, "_structure_basis", lambda name: "Monthly Salary")
+    monkeypatch.setattr(pay_basis, "_structure_configuration", lambda name: {"pay_basis": "Monthly Salary"})
 
     result = pay_basis.resolve_pay_basis(
         "EMP-JOIN", date(2026, 9, 1), date(2026, 9, 30)

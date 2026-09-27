@@ -98,7 +98,7 @@ def test_duplicate_insert_recovery_returns_existing(monkeypatch):
         "name": "AS-1",
         "employee": "EMP-1",
         "company": "TCL",
-        "salary_component": "Daily Wage",
+        "salary_component": "Factory Day Rate",
         "amount": 3500,
         "payroll_date": "2026-09-30",
         "ref_doctype": "Tradexcel Attendance Period",
@@ -109,11 +109,11 @@ def test_duplicate_insert_recovery_returns_existing(monkeypatch):
     monkeypatch.setattr(daily_wage_input, "_get_existing_input", lambda _key: existing)
 
     result = daily_wage_input._recover_duplicate_input(
-        "DAILY-WAGE:ATT-PER-1:r1:EMP-1:Daily Wage",
+        "DAILY-WAGE:ATT-PER-1:r1:EMP-1:Factory Day Rate",
         {
             "employee": "EMP-1",
             "company": "TCL",
-            "salary_component": "Daily Wage",
+            "salary_component": "Factory Day Rate",
             "amount": 3500,
             "payroll_date": "2026-09-30",
             "ref_doctype": "Tradexcel Attendance Period",
@@ -136,22 +136,28 @@ def test_daily_input_has_no_raw_checkin_dependency():
 def test_daily_rate_comes_from_resolved_assignment_not_policy(monkeypatch):
     monkeypatch.setattr(daily_wage_input, "resolve_pay_basis", lambda *_args: {
         "status": "Daily Wage", "employee": "EMP-1", "assignment": "SSA-1",
-        "salary_structure": "Safe Daily", "base": 350,
+        "salary_structure": "Safe Daily", "base": 425,
+        "daily_wage_component": "Factory Day Rate",
     })
     monkeypatch.setattr(daily_wage_input, "resolve_daily_rate", lambda result: {
         "status": "READY", "employee": "EMP-1", "rate": result["base"], "assignment": "SSA-1",
     })
-    fake_db = SimpleNamespace(get_value=lambda *args, **kwargs: {
-        "date_of_joining": None, "relieving_date": None,
-    } if kwargs.get("as_dict") else None)
-    monkeypatch.setattr(daily_wage_input, "frappe", SimpleNamespace(
-        get_all=lambda *args, **kwargs: [], db=fake_db,
+    fake_db = SimpleNamespace(get_value=lambda doctype, *args, **kwargs: (
+        {"date_of_joining": None, "relieving_date": None}
+        if doctype == "Employee" and kwargs.get("as_dict")
+        else "Earning" if doctype == "Salary Component" else None
     ))
-    monkeypatch.setattr(daily_wage_input, "payment_day_component_findings", lambda _rows: [])
+    monkeypatch.setattr(daily_wage_input, "frappe", SimpleNamespace(
+        get_all=lambda doctype, *args, **kwargs: ([{
+            "salary_component": "Factory Day Rate", "formula": "", "amount": 0,
+            "amount_based_on_formula": 0, "depends_on_payment_days": 0,
+        }] if doctype == "Salary Detail" else []), db=fake_db,
+    ))
     monkeypatch.setattr(daily_wage_input, "_native_attendance_units", lambda *_args, **_kwargs: {
         "status": "READY", "payable_units": 10, "native": True,
     })
 
     result = daily_wage_input.calculate_daily_wage_input("EMP-1", "2026-09-01", "2026-09-30")
 
-    assert result["amount"] == 3500
+    assert result["amount"] == 4250
+    assert result["salary_component"] == "Factory Day Rate"

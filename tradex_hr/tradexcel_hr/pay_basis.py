@@ -50,14 +50,17 @@ def pay_basis_read_context(employee_names):
     for row in assignments:
         rows[row.employee].append(row)
     structures = sorted({row.salary_structure for row in assignments if row.salary_structure})
-    bases = {row.name: row.custom_tradex_pay_basis for row in frappe.get_all(
+    structures_config = {row.name: {
+        "pay_basis": row.custom_tradex_pay_basis,
+        "daily_wage_component": row.custom_tradex_daily_wage_component,
+    } for row in frappe.get_all(
         "Salary Structure", filters={"name": ["in", structures]},
-        fields=["name", "custom_tradex_pay_basis"], limit_page_length=0,
+        fields=["name", "custom_tradex_pay_basis", "custom_tradex_daily_wage_component"], limit_page_length=0,
     )} if structures else {}
     joining = {row.name: row.date_of_joining for row in frappe.get_all(
         "Employee", filters={"name": ["in", sorted(names)]}, fields=["name", "date_of_joining"], limit_page_length=0,
     )}
-    token = _read_snapshot.set({"names": names, "rows": rows, "bases": bases, "joining": joining})
+    token = _read_snapshot.set({"names": names, "rows": rows, "structures": structures_config, "joining": joining})
     try:
         yield
     finally:
@@ -104,13 +107,17 @@ def _assignment_rows(employee: str, as_of: date, period_end: date | None = None)
     return rows
 
 
-def _structure_basis(structure: str | None) -> str | None:
+def _structure_configuration(structure: str | None) -> dict[str, Any]:
     if not structure:
-        return None
+        return {}
     snapshot = _read_snapshot.get()
-    if snapshot and structure in snapshot["bases"]:
-        return snapshot["bases"][structure]
-    return frappe.db.get_value("Salary Structure", structure, "custom_tradex_pay_basis")
+    if snapshot and structure in snapshot["structures"]:
+        return snapshot["structures"][structure]
+    values = frappe.db.get_value(
+        "Salary Structure", structure,
+        ["custom_tradex_pay_basis", "custom_tradex_daily_wage_component"], as_dict=True,
+    )
+    return dict(values or {})
 
 
 def resolve_pay_basis(
@@ -172,24 +179,36 @@ def resolve_pay_basis(
         }
 
     assignment = same_date[0]
-    basis = _structure_basis(assignment.get("salary_structure"))
+    structure = assignment.get("salary_structure")
+    configuration = _structure_configuration(structure)
+    basis = configuration.get("custom_tradex_pay_basis") or configuration.get("pay_basis")
+    component = configuration.get("custom_tradex_daily_wage_component") or configuration.get("daily_wage_component")
     if basis not in {MONTHLY, DAILY}:
         return {
             "status": UNRESOLVED,
             "employee": employee,
             "assignment": assignment.get("name"),
-            "salary_structure": assignment.get("salary_structure"),
+            "salary_structure": structure,
             "reason": "The assigned Salary Structure has no explicit Tradexcel pay basis",
+        }
+    if basis == DAILY and not component:
+        return {
+            "status": UNRESOLVED,
+            "employee": employee,
+            "assignment": assignment.get("name"),
+            "salary_structure": structure,
+            "reason": "The assigned Daily Wage Salary Structure has no configured Daily Wage Salary Component.",
         }
 
     return {
         "status": basis,
         "employee": employee,
         "assignment": assignment.get("name"),
-        "salary_structure": assignment.get("salary_structure"),
+        "salary_structure": structure,
         "base": flt(assignment.get("base")),
         "from_date": latest_date,
         "source": "Salary Structure Assignment + Salary Structure.custom_tradex_pay_basis",
+        **({"daily_wage_component": component} if basis == DAILY else {}),
     }
 
 

@@ -228,6 +228,19 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "insert_after": "payroll_frequency",
                 "description": "Explicit financial pay basis. Never inferred from Employment Type.",
             },
+            {
+                "fieldname": "custom_tradex_daily_wage_component",
+                "label": "Daily Wage Salary Component",
+                "fieldtype": "Link",
+                "options": "Salary Component",
+                "insert_after": "custom_tradex_pay_basis",
+                "depends_on": 'eval:doc.custom_tradex_pay_basis=="Daily Wage"',
+                "mandatory_depends_on": 'eval:doc.custom_tradex_pay_basis=="Daily Wage"',
+                "description": (
+                    "For Daily Wage structures, the native Salary Component that receives the regular wage "
+                    "amount derived from finalized Attendance and the effective Salary Structure Assignment base rate."
+                ),
+            },
         ],
     }
 

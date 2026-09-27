@@ -21,8 +21,8 @@ from tradex_hr.tradexcel_hr.attendance_payroll_boundary import (
     inspect_attendance_integrity,
 )
 from tradex_hr.tradexcel_hr.daily_wage_input import (
-    DEFAULT_COMPONENT,
     _get_existing_input,
+    _find_period_daily_wage_inputs,
     calculate_daily_wage_input,
     create_daily_wage_input,
     inspect_daily_wage_structure,
@@ -260,19 +260,28 @@ def _daily_inputs_for_readiness(company: str, start: date, end: date, readiness:
         return [], []
     period = frappe.get_doc("Tradexcel Attendance Period", _finalized_period_name(company, start, end))
     planned, blockers = [], []
+    period_inputs = _find_period_daily_wage_inputs([row["employee"] for row in daily], period)
     for outcome in daily:
         employee = outcome["employee"]
         result = outcome.get("daily_wage_input") or calculate_daily_wage_input(employee, start, end)
         if result.get("status") != "READY":
             blockers.append({"employee": employee, "code": "BLOCKED_DAILY_WAGE_INPUT", "reason": result.get("reason", result.get("status"))})
             continue
-        key = f"DAILY-WAGE:{period.name}:r{period.revision}:{employee}:{DEFAULT_COMPONENT}"
+        component = result.get("salary_component")
+        if not component:
+            blockers.append({
+                "employee": employee,
+                "code": "BLOCKED_DAILY_WAGE_INPUT",
+                "reason": "The assigned Daily Wage Salary Structure has no configured Daily Wage Salary Component.",
+            })
+            continue
+        key = f"DAILY-WAGE:{period.name}:r{period.revision}:{employee}:{component}"
         existing = _get_existing_input(key)
         company_for_employee = _row_value(outcome["employee_data"], "company")
         if existing and (
             existing.docstatus == 2 or existing.disabled
             or existing.employee != employee or existing.company != company_for_employee
-            or existing.salary_component != DEFAULT_COMPONENT
+            or existing.salary_component != component
             or existing.ref_doctype != "Tradexcel Attendance Period"
             or existing.ref_docname != period.name or getdate(existing.payroll_date) != getdate(result["payroll_date"])
             or flt(existing.amount) != flt(result["amount"])
@@ -283,9 +292,19 @@ def _daily_inputs_for_readiness(company: str, start: date, end: date, readiness:
                 "reason": "An existing derived Daily Wage input differs from current finalized Attendance or pay rate.",
             })
             continue
+        if not existing:
+            prior = period_inputs.get(employee)
+            if prior:
+                blockers.append({
+                    "employee": employee,
+                    "code": "BLOCKED_DAILY_WAGE_INPUT_MISMATCH",
+                    "reason": "An existing derived Daily Wage input uses a different configured Salary Component. Review and reconcile it.",
+                })
+                continue
         planned.append({
             "employee": employee,
             "amount": result["amount"],
+            "salary_component": component,
             "key": key,
             "period": period.name,
             "existing_name": existing.name if existing else None,
@@ -296,11 +315,16 @@ def _daily_inputs_for_readiness(company: str, start: date, end: date, readiness:
 
 def _population_fingerprint(readiness: dict, daily_inputs: list[dict]) -> str:
     daily_amounts = {item["employee"]: item.get("amount") for item in daily_inputs}
+    daily_components = {item["employee"]: item.get("salary_component") for item in daily_inputs}
     basis = [
         {
             "employee": row["employee"],
             "pay_basis": row.get("pay_basis"),
             "daily_amount": daily_amounts.get(row["employee"]),
+            "daily_wage_component": daily_components.get(
+                row["employee"],
+                row.get("pay_basis", {}).get("daily_wage_component") if isinstance(row.get("pay_basis"), dict) else None,
+            ),
         }
         for row in readiness["outcomes"]
     ]

@@ -1,7 +1,8 @@
-# Tradexcel salary configuration — single source of truth.
+# Historical Tradexcel salary migration specification. This is not generic
+# install/runtime configuration and is never called by install.after_migrate.
 #
-# Consumed by `tradex_hr.tradexcel_hr.salary_setup.ensure_salary_setup()`.
-# Declarative: change this file, re-run the installer, the site converges.
+# Consumed only when an operator explicitly invokes
+# `tradex_hr.tradexcel_hr.salary_setup.ensure_salary_setup()` for the historical migration.
 # Nothing is hardcoded in Python.
 #
 # Derived from the Tradexcel data in the VPS backup
@@ -118,6 +119,7 @@ structures:
     description: >-
       Factory workers. Gross daily rate x attendance days; no percentage split.
     pay_basis: Daily Wage
+    daily_wage_component: Daily Wage
     earnings:
       - component: Daily Wage
         amount: 0

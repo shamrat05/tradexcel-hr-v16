@@ -91,6 +91,9 @@ def _cleanup(tracked):
             if doc.docstatus == 1:
                 doc.cancel()
             frappe.delete_doc("Salary Structure", name, force=True, ignore_permissions=True)
+    for name in reversed(tracked.get("Salary Component", [])):
+        if frappe.db.exists("Salary Component", name):
+            frappe.delete_doc("Salary Component", name, force=True, ignore_permissions=True)
     for doctype in ("Leave Application", "Leave Allocation", "Employee Checkin", "Attendance"):
         for name in reversed(tracked[doctype]):
             if frappe.db.exists(doctype, name):
@@ -414,8 +417,18 @@ def test_salary_coverage_matches_canonical_explicit_pay_basis():
     tracked = {key: [] for key in (
         "User", "User Permission", "Employee", "Attendance", "Employee Checkin",
         "Leave Allocation", "Leave Application", "Salary Structure", "Salary Structure Assignment",
+        "Salary Component",
     )}
     try:
+        daily_component = frappe.get_doc({
+            "doctype": "Salary Component",
+            "salary_component": f"Factory Day Rate {token}",
+            "salary_component_abbr": f"FDR{token[:3]}",
+            "type": "Earning",
+            "depends_on_payment_days": 0,
+            "is_tax_applicable": 0,
+        }).insert(ignore_permissions=True)
+        tracked["Salary Component"].append(daily_component.name)
         employee_map = {
             "monthly": _employee(company, branch, department, token + "M", employment_type="Worker"),
             "daily": _employee(company, branch, department, token + "D", employment_type="Intern"),
@@ -426,6 +439,7 @@ def test_salary_coverage_matches_canonical_explicit_pay_basis():
         from_date = (date.today() - timedelta(days=1)).isoformat()
         basis_values = {"monthly": MONTHLY, "daily": DAILY, "missing": ""}
         for key, basis in basis_values.items():
+            structure_component = daily_component.name if basis == DAILY else component
             structure = frappe.get_doc({
                 "doctype": "Salary Structure",
                 "name": f"TEST Report Basis {token} {key}",
@@ -434,7 +448,12 @@ def test_salary_coverage_matches_canonical_explicit_pay_basis():
                 "payroll_frequency": "Monthly",
                 "is_active": "Yes",
                 "custom_tradex_pay_basis": basis,
-                "earnings": [{"salary_component": component, "amount": 1000}],
+                "custom_tradex_daily_wage_component": daily_component.name if basis == DAILY else None,
+                "earnings": [{
+                    "salary_component": structure_component,
+                    "amount": 0 if basis == DAILY else 1000,
+                    "depends_on_payment_days": 0 if basis == DAILY else 1,
+                }],
             }).insert(ignore_permissions=True)
             structure.submit()
             tracked["Salary Structure"].append(structure.name)

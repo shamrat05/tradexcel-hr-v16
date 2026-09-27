@@ -86,7 +86,8 @@ function show_daily_wage_migration_preview(report) {
                         "<p role=\"status\">" + status + "</p>" +
                         "<p>" + __("Employees") + ": " + result.employee_count + " · " +
                         __("Conflicts or missing data") + ": " + result.conflict_count + "</p>" +
-                        "<p>" + escape(result.proposed_structure.name) + "<br>" + components + "</p>" +
+                        "<p>" + escape(result.proposed_structure.name) + "<br>" +
+                        (components ? components + "<br>" : "") + escape(result.proposed_structure.guidance || "") + "</p>" +
                         "<div style=\"max-height: 50vh; overflow: auto\" tabindex=\"0\" aria-label=\"" +
                         __("Daily Wage migration preview rows") + "\">" +
                         "<table class=\"table table-bordered\"><thead><tr>" +

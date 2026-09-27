@@ -187,7 +187,7 @@ def _create_synthetic_cash_account(company, token):
     }).insert(ignore_permissions=True).name
 
 
-def _create_structure(name, company, currency, pay_basis, component, amount, *, depends_on_payment_days=0):
+def _create_structure(name, company, currency, pay_basis, component, amount, *, depends_on_payment_days=0, daily_wage_component=None):
     structure = frappe.get_doc({
         "doctype": "Salary Structure",
         "name": name,
@@ -196,6 +196,7 @@ def _create_structure(name, company, currency, pay_basis, component, amount, *, 
         "payroll_frequency": "Monthly",
         "is_active": "Yes",
         "custom_tradex_pay_basis": pay_basis,
+        "custom_tradex_daily_wage_component": daily_wage_component,
         "earnings": [{
             "salary_component": component,
             "amount": amount,
@@ -442,7 +443,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
     synthetic_branches = []
     original_in_test = frappe.in_test
     original_user = frappe.session.user
-    component_names = (f"Test Basic {token}", f"Test Daily {token}", f"Test Overtime {token}")
+    component_names = (f"Test Basic {token}", f"Synthetic Day Rate {token}", f"Test Overtime {token}")
     workflow_users = {}
 
     try:
@@ -505,7 +506,8 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
             depends_on_payment_days=1,
         )
         daily_structure = _create_structure(
-            f"Test Daily {token}", company, "BDT", "Daily Wage", daily_component.name, 0
+            f"Test Daily {token}", company, "BDT", "Daily Wage", daily_component.name, 0,
+            daily_wage_component=daily_component.name,
         )
         tracked["structures"] = [monthly_structure.name, daily_structure.name]
 
@@ -594,6 +596,9 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         # Refresh the app-owned custom permission set as migrate would, so the
         # Payroll Manager's authorized native batch submission is realistic.
         role_setup.ensure_tradex_roles()
+        # Keep synthetic User post-save work independent of the staging Redis
+        # queue; this test exercises payroll logic in-process.
+        monkeypatch.setattr(frappe, "enqueue", lambda *_args, **_kwargs: None)
         manager = _create_scoped_user("Tradexcel Payroll Manager", company, token)
         approver = _create_scoped_user("Tradexcel Payroll Approver", company, token)
         hr_manager = _create_scoped_user("Tradexcel HR Manager", company, token)
@@ -709,18 +714,6 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
         with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
             inspect_payroll_payment_readiness(out_of_scope_entry)
 
-        # Inject only the synthetic component for the daily input adapter.
-        original_create_daily_input = daily_wage_input.create_daily_wage_input
-        monkeypatch.setattr(daily_wage_input, "DEFAULT_COMPONENT", daily_component.name)
-        monkeypatch.setattr(native_payroll, "DEFAULT_COMPONENT", daily_component.name)
-        monkeypatch.setattr(
-            native_payroll,
-            "create_daily_wage_input",
-            lambda employee, period_name: original_create_daily_input(
-                employee, period_name, salary_component=daily_component.name
-            ),
-        )
-
         frappe.set_user(manager)
         prepared = native_payroll.prepare_native_payroll(company, start, end)
         assert prepared["status"] == "PREPARED", prepared
@@ -755,7 +748,7 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
                 "ref_docname": actual_input.ref_docname == period.name,
                 "date": frappe.utils.getdate(actual_input.payroll_date) == frappe.utils.getdate(period.to_date),
                 "amount": frappe.utils.flt(actual_input.amount) == frappe.utils.flt(calculated["amount"]),
-                "module_component": (native_payroll.DEFAULT_COMPONENT, daily_component.name),
+                "resolved_component": (calculated.get("salary_component"), daily_component.name),
             }
             pytest.fail(f"{daily_blockers}; checks={checks}; existing={actual_input}; calculated={calculated}")
         assert len(planned) == 1 and planned[0]["existing_docstatus"] == 1, planned
@@ -837,12 +830,17 @@ def test_synthetic_managed_payroll_native_partial_failure_retry_and_accrual(frap
             "Additional Salary",
             filters={"employee": employees[1].name, "ref_doctype": "Tradexcel Attendance Period",
                      "ref_docname": period.name, "docstatus": 1},
-            fields=["name", "amount"],
+            fields=["name", "amount", "salary_component"],
             limit=1,
         )[0]
         assert employees[1].status == "Left"
         assert frappe.utils.getdate(daily_leaver_slip.actual_end_date) == date(2026, 8, 20)
         assert daily_input.amount == 400 * 20
+        assert daily_input.salary_component == daily_component.name
+        assert any(
+            row.salary_component == daily_component.name and row.amount == daily_input.amount
+            for row in daily_leaver_slip.earnings
+        )
         assert daily_leaver_slip.gross_pay == daily_input.amount
         assert daily_leaver_slip.net_pay == daily_leaver_slip.gross_pay
 

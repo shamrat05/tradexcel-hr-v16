@@ -70,7 +70,11 @@ def test_read_snapshot_parity_conflicts_dates_missing_basis_and_reset(monkeypatc
         )
     )
     joining = lambda name: date(2026, 9, 15) if name == "JOINER" else date(2020, 1, 1)
-    bases = {"MONTHLY": pay.MONTHLY, "DAILY": pay.DAILY, "UNSET": None}
+    bases = {
+        "MONTHLY": {"pay_basis": pay.MONTHLY, "daily_wage_component": None},
+        "DAILY": {"pay_basis": pay.DAILY, "daily_wage_component": "Factory Day Rate"},
+        "UNSET": {"pay_basis": None, "daily_wage_component": None},
+    }
     names = ["MONTH", "DAY", "CHANGE", "CONFLICT", "UNSET", "MISSING", "JOINER"]
     calls = []
 
@@ -98,7 +102,11 @@ def test_read_snapshot_parity_conflicts_dates_missing_basis_and_reset(monkeypatc
             )
         if dt == "Salary Structure":
             return [
-                frappe._dict(name=n, custom_tradex_pay_basis=bases[n])
+                frappe._dict(
+                    name=n,
+                    custom_tradex_pay_basis=bases[n]["pay_basis"],
+                    custom_tradex_daily_wage_component=bases[n]["daily_wage_component"],
+                )
                 for n in filters["name"][1]
             ]
         if dt == "Employee":
@@ -108,7 +116,7 @@ def test_read_snapshot_parity_conflicts_dates_missing_basis_and_reset(monkeypatc
             ]
         raise AssertionError(dt)
 
-    def get_value(dt, name, field):
+    def get_value(dt, name, *fields, **kwargs):
         calls.append(dt)
         return bases.get(name) if dt == "Salary Structure" else joining(name)
 
@@ -129,6 +137,7 @@ def test_read_snapshot_parity_conflicts_dates_missing_basis_and_reset(monkeypatc
             assert resolve() == expected
         assert calls == ["Salary Structure Assignment", "Salary Structure", "Employee"]
     assert pay._read_snapshot.get() is None
+    assert expected["DAY"]["daily_wage_component"] == "Factory Day Rate"
     rows[0].base = 200
     assert pay.resolve_pay_basis("MONTH", "2026-09-01")["base"] == 200
     with pytest.raises(RuntimeError):

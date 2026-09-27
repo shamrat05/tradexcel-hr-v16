@@ -12,33 +12,6 @@ from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
-# FALLBACK ONLY — not the source of truth.
-#
-# The salary split belongs to the Salary Structure (TCL Standard declares
-# `base * 0.6` etc.), which is configuration an HR user can see and edit. These
-# constants exist only as a last resort when no structure is supplied.
-#
-# Values verified against the Selevo VPS backup on 2026-09-18: of 67 Tradexcel
-# employees' latest compensation rows, 66 used exactly this 60/30/5/5 set, and
-# the measured averages were Basic 59.92%, HRA 29.96%, Medical 4.99%,
-# Conveyance 4.99%, Entertainment 0.13%.
-#
-# The previous values here (50/25/10/10/5 with Food Allowance) matched NOTHING in
-# the VPS. They were fabricated and have been corrected.
-DEFAULT_COMPONENTS = {
-    "Basic Salary": Decimal(60),
-    "House Rent Allowance": Decimal(30),
-    "Medical Allowance": Decimal(5),
-    "Conveyance Allowance": Decimal(5),
-}
-# Abbreviations must match the Salary Components, or the generated rows will not
-# link to the structure. MED/CON — not MA/CA.
-ABBR = {
-    "Basic Salary": "BS",
-    "House Rent Allowance": "HRA",
-    "Medical Allowance": "MED",
-    "Conveyance Allowance": "CON",
-}
 MONEY = Decimal("0.01")
 
 
@@ -59,56 +32,15 @@ def as_money(value: Any) -> Decimal:
     return amount.quantize(MONEY, rounding=ROUND_HALF_UP)
 
 
-def validate_components(components: Mapping[str, Any]) -> dict[str, Decimal]:
-    if not components:
-        raise ValueError("At least one salary component is required")
-    parsed = {str(name): as_money(percent) for name, percent in components.items()}
-    total = sum(parsed.values(), Decimal(0))
-    if total != Decimal("100.00"):
-        raise ValueError(f"Salary component percentages must total 100.00, got {total}")
-    return parsed
-
-
-def calculate_wage(gross: Any, components: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """Split a source gross wage into configured earnings without rounding drift."""
-    gross_amount = as_money(gross)
-    percentages = validate_components(components or DEFAULT_COMPONENTS)
-    earnings: list[dict[str, Any]] = []
-    running = Decimal(0)
-    names = list(percentages)
-    for name in names[:-1]:
-        amount = (gross_amount * percentages[name] / Decimal(100)).quantize(
-            MONEY, rounding=ROUND_HALF_UP
-        )
-        running += amount
-        earnings.append({"salary_component": name, "abbr": ABBR.get(name, name[:3].upper()),
-                         "amount": amount})
-    last = names[-1]
-    final_amount = gross_amount - running
-    earnings.append({"salary_component": last, "abbr": ABBR.get(last, last[:3].upper()),
-                     "amount": final_amount})
-    return {
-        "gross": gross_amount,
-        "earnings": earnings,
-        "deductions": [],
-        "net": gross_amount,
-    }
-
-
 def calculate_overtime_hours(
     worked_hours: Any,
-    standard_hours: Any = 8,
-    grace_minutes: Any = 10,
-    rounding_minutes: Any = 60,
-    max_daily_hours: Any | None = None,
+    *,
+    standard_hours: Any,
+    grace_minutes: Any,
+    rounding_minutes: Any,
+    max_daily_hours: Any | None,
 ) -> Decimal:
-    """Return whole billable overtime hours using the configured grace period.
-
-    Ten minutes of grace means 50 minutes beyond the standard day becomes one
-    hour, while 49 minutes remains zero. Partial billable hours are never
-    returned. The optional daily cap keeps the result within the configured
-    operating policy.
-    """
+    """Return whole billable overtime hours using explicit policy inputs."""
     worked = Decimal(str(worked_hours))
     standard = Decimal(str(standard_hours))
     grace = Decimal(str(grace_minutes))
@@ -134,9 +66,10 @@ def calculate_overtime_hours(
 def calculate_daily_worker_wage(
     paid_days: Any,
     daily_rate: Any,
-    overtime_hours: Any = 0,
-    hours_per_day: Any = 8,
-    overtime_multiplier: Any = 2,
+    overtime_hours: Any,
+    *,
+    hours_per_day: Any,
+    overtime_multiplier: Any,
 ) -> dict[str, Decimal]:
     """Calculate a daily worker's regular and overtime pay without drift."""
     days = Decimal(str(paid_days))
@@ -155,11 +88,11 @@ def calculate_daily_worker_wage(
 def calculate_attendance_pay(
     records: list[Mapping[str, Any]],
     *,
-    standard_hours: Any = 8,
-    break_minutes: Any = 0,
-    grace_minutes: Any = 10,
-    rounding_minutes: Any = 60,
-    max_daily_overtime_hours: Any | None = 2,
+    standard_hours: Any,
+    break_minutes: Any,
+    grace_minutes: Any,
+    rounding_minutes: Any,
+    max_daily_overtime_hours: Any | None,
 ) -> dict[str, Any]:
     """Aggregate one employee's payable source attendance into paid days and OT.
 
@@ -208,45 +141,6 @@ def calculate_attendance_pay(
         "worked_hours": worked_hours.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
         "overtime_hours": overtime_hours,
         "days": days,
-    }
-
-
-def calculate_dated_worker_pay(records, policy_for_day):
-    """Price each attendance day under the rule effective on that day."""
-    grouped = {}
-    for record in records:
-        grouped.setdefault(str(record["date"]), []).append(record)
-    regular = overtime = worked = overtime_hours = Decimal(0)
-    paid_days = 0
-    rates = set()
-    for day, day_records in sorted(grouped.items()):
-        policy = policy_for_day(day)
-        if not policy or policy.get("pay_basis", "Daily Wage") != "Daily Wage":
-            raise ValueError(f"No daily-wage policy on {day}")
-        attendance = calculate_attendance_pay(
-            day_records,
-            standard_hours=policy.get("overtime_after_hours") or policy["standard_hours_per_day"],
-            break_minutes=policy["break_minutes"],
-            grace_minutes=policy["overtime_grace_minutes"],
-            rounding_minutes=policy["overtime_rounding_minutes"],
-            max_daily_overtime_hours=policy["max_daily_overtime_hours"],
-        )
-        billable_ot = attendance["overtime_hours"] if policy["overtime_enabled"] else Decimal(0)
-        pay = calculate_daily_worker_wage(
-            attendance["paid_days"], policy["daily_wage"], billable_ot,
-            policy["standard_hours_per_day"], policy["overtime_multiplier"],
-        )
-        regular += pay["regular"]
-        overtime += pay["overtime"]
-        worked += attendance["worked_hours"]
-        overtime_hours += billable_ot
-        paid_days += attendance["paid_days"]
-        if attendance["paid_days"]:
-            rates.add(Decimal(str(policy["daily_wage"])) / Decimal(str(policy["standard_hours_per_day"])))
-    return {
-        "regular": regular, "overtime": overtime, "gross": regular + overtime,
-        "paid_days": paid_days, "worked_hours": worked, "overtime_hours": overtime_hours,
-        "single_hour_rate": next(iter(rates)) if len(rates) == 1 else Decimal(0),
     }
 
 

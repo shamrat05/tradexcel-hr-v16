@@ -121,8 +121,8 @@ def test_native_bulk_salary_structure_assignment_maker_checker_and_scope(monkeyp
 	assert len(branches_a) >= 2 and len(departments_a) >= 2 and branches_b and departments_b
 
 	monthly = _structure(company_a, MONTHLY)
-	daily = _structure(company_a, DAILY)
-	assert monthly and daily, "Site-backed test requires explicit submitted monthly and daily structures"
+	daily = None
+	assert monthly, "Site-backed test requires an explicit submitted monthly structure"
 	assert frappe.db.get_value("Company", company_a, "default_payroll_payable_account")
 	date = add_days(getdate(), 2)
 	frappe.clear_cache(doctype="Bulk Salary Structure Assignment")
@@ -140,6 +140,8 @@ def test_native_bulk_salary_structure_assignment_maker_checker_and_scope(monkeyp
 	token = f"BULKSSA{frappe.generate_hash(9).upper()}"
 	personas = SyntheticPersonaHarness(token)
 	tracked_ssas: list[str] = []
+	tracked_daily_structure = None
+	tracked_daily_component = None
 	error_log_before = set(frappe.get_all("Error Log", pluck="name"))
 	logs = []
 	events = []
@@ -149,6 +151,33 @@ def test_native_bulk_salary_structure_assignment_maker_checker_and_scope(monkeyp
 
 	try:
 		frappe.set_user("Administrator")
+		tracked_daily_component = frappe.get_doc({
+			"doctype": "Salary Component",
+			"salary_component": f"Factory Day Rate {token}",
+			"salary_component_abbr": f"FDR{token[:3]}",
+			"type": "Earning",
+			"depends_on_payment_days": 0,
+			"is_tax_applicable": 0,
+		}).insert(ignore_permissions=True)
+		daily = frappe.get_doc({
+			"doctype": "Salary Structure",
+			"name": f"TEST Daily Authority {token}",
+			"company": company_a,
+			"currency": monthly.currency,
+			"payroll_frequency": "Monthly",
+			"is_active": "Yes",
+			"custom_tradex_pay_basis": DAILY,
+			"custom_tradex_daily_wage_component": tracked_daily_component.name,
+			"earnings": [{
+				"salary_component": tracked_daily_component.name, "amount": 0,
+				"depends_on_payment_days": 0,
+			}],
+		}).insert(ignore_permissions=True)
+		tracked_daily_structure = daily
+		daily.submit()
+		# User creation queues unrelated welcome/gravatar work; do not depend on the
+		# local Redis queue for this in-process authorization integration.
+		frappe.enqueue = lambda *_args, **_kwargs: None
 		users = {
 			"hr_manager": personas.create_user(
 				"hr-manager", [PERSONA_ROLES["hr_manager"]], company=company_a,
@@ -578,7 +607,7 @@ def test_native_bulk_salary_structure_assignment_maker_checker_and_scope(monkeyp
 	finally:
 		frappe.log_error = original_log_error
 		frappe.publish_realtime = original_publish
-		frappe.enqueue = original_enqueue
+		frappe.enqueue = lambda *_args, **_kwargs: None
 		frappe.set_user("Administrator")
 		frappe.db.set_single_value("Bulk Salary Structure Assignment", tool_state_before)
 		frappe.db.commit()
@@ -590,6 +619,12 @@ def test_native_bulk_salary_structure_assignment_maker_checker_and_scope(monkeyp
 			if doc.docstatus == 1:
 				doc.cancel()
 			frappe.delete_doc("Salary Structure Assignment", name, force=True, ignore_permissions=True)
+		if tracked_daily_structure and frappe.db.exists("Salary Structure", tracked_daily_structure.name):
+			if tracked_daily_structure.docstatus == 1:
+				tracked_daily_structure.cancel()
+			frappe.delete_doc("Salary Structure", tracked_daily_structure.name, force=True, ignore_permissions=True)
+		if tracked_daily_component and frappe.db.exists("Salary Component", tracked_daily_component.name):
+			frappe.delete_doc("Salary Component", tracked_daily_component.name, force=True, ignore_permissions=True)
 		personas.cleanup()
 		created_error_logs = set(frappe.get_all("Error Log", pluck="name")) - error_log_before
 		# Only test-owned Error Logs may be removed; these were created while the
@@ -599,6 +634,7 @@ def test_native_bulk_salary_structure_assignment_maker_checker_and_scope(monkeyp
 			message = frappe.db.get_value("Error Log", name, ["error", "method"], as_dict=True)
 			if message and token in (message.error or ""):
 				frappe.delete_doc("Error Log", name, force=True, ignore_permissions=True)
+		frappe.enqueue = original_enqueue
 		frappe.clear_cache()
 
 	assert not any(frappe.db.exists("Salary Structure Assignment", name) for name in tracked_ssas)

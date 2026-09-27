@@ -573,3 +573,14 @@ Fresh staging backup before final standard migration restricting the new Checkin
 | `20260927_134711-hrms-v16_localhost-files.tar` | 10,240 | `407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532` |
 | `20260927_134711-hrms-v16_localhost-private-files.tar` | 38,932,480 | `7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe` |
 | `20260927_134711-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
+
+## Salary Structure Daily Wage component authority — 2026-09-27 16:49:54
+
+Fresh staging backup before standard migration adding the source-owned Salary Structure Daily Wage component field and validation hook. Database gzip and public/private tar contents verified; config JSON checksum recorded without displaying its contents. Prefix `20260927_164954-hrms-v16_localhost-`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260927_164954-hrms-v16_localhost-database.sql.gz` | 50,365,679 | `4464c32690f5968e5097f6e50dd5320e17b65d9ac639f5a4a2112d16ecbcf2ee` |
+| `20260927_164954-hrms-v16_localhost-files.tar` | 10,240 | `3a9b3fe9559a6466acdff3bd68f6735af3b9f4030f95937a877e9646f7b73b32` |
+| `20260927_164954-hrms-v16_localhost-private-files.tar` | 38,942,720 | `d615c29bf50089e5ee2677247aa4df782ed79258d97de875c34a1d35b26e255b` |
+| `20260927_164954-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |

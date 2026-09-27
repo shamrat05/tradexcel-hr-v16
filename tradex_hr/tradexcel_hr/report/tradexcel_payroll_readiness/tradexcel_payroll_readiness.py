@@ -394,10 +394,11 @@ def get_daily_wage_migration_preview(company: str, payroll_month: str, effective
         "proposed_structure": {
             "name": _("New effective-dated Daily Wage structure (name to be approved)"),
             "pay_basis": DAILY,
-            "components": [
-                {"component": "Daily Wage", "amount": 0, "depends_on_payment_days": 0},
-                {"component": "Overtime Pay", "amount": 0, "depends_on_payment_days": 0},
-            ],
+            "components": [],
+            "guidance": _(
+                "Choose the regular earning component in the native Salary Structure and configure it as the "
+                "Daily Wage Salary Component. Add overtime and other earnings only from approved company configuration."
+            ),
         },
         "rows": rows,
     }

@@ -53,6 +53,14 @@ def _active_tcl_employee_without_december_shift():
 
 def _safe_structure(employee, suffix):
     company = frappe.db.get_value("Employee", employee, "company")
+    component = frappe.get_doc({
+        "doctype": "Salary Component",
+        "salary_component": f"Factory Day Rate {suffix}",
+        "salary_component_abbr": f"FDR{suffix[:3]}",
+        "type": "Earning",
+        "depends_on_payment_days": 0,
+        "is_tax_applicable": 0,
+    }).insert(ignore_permissions=True)
     structure = frappe.get_doc({
         "doctype": "Salary Structure",
         "name": f"TEST Flexible Daily {suffix}",
@@ -61,7 +69,8 @@ def _safe_structure(employee, suffix):
         "payroll_frequency": "Monthly",
         "is_active": "Yes",
         "custom_tradex_pay_basis": "Daily Wage",
-        "earnings": [{"salary_component": "Daily Wage", "amount": 0, "depends_on_payment_days": 0}],
+        "custom_tradex_daily_wage_component": component.name,
+        "earnings": [{"salary_component": component.name, "amount": 0, "depends_on_payment_days": 0}],
     })
     structure.insert(ignore_permissions=True)
     structure.submit()
@@ -218,7 +227,8 @@ def test_native_daily_wage_policy_changes_only_work_day_units():
     try:
         structure, assignment = _safe_structure(employee, frappe.generate_hash(6))
         created.extend([("Salary Structure", structure.name),
-                        ("Salary Structure Assignment", assignment.name)])
+                        ("Salary Structure Assignment", assignment.name),
+                        ("Salary Component", structure.custom_tradex_daily_wage_component)])
         slip = SalarySlip({"doctype": "Salary Slip"})
         slip.employee = employee
         slip.start_date = date(2026, 12, 1)
@@ -303,6 +313,7 @@ def test_native_daily_wage_policy_changes_only_work_day_units():
 
         result = daily_wage_input.calculate_daily_wage_input(employee, "2026-12-01", "2026-12-31")
         assert result["status"] == "READY"
+        assert result["salary_component"] == structure.custom_tradex_daily_wage_component
         assert result["payable_units"] == 2.5
         assert result["rate"] == 350
         assert result["amount"] == 875
@@ -329,7 +340,7 @@ def test_native_daily_wage_policy_changes_only_work_day_units():
             daily_wage_input.require_finalized_attendance = original
         assert additional["status"] == "CREATED"
         native_slip = make_salary_slip(structure.name, employee=employee, posting_date="2026-12-31")
-        wage_rows = [row for row in native_slip.earnings if row.salary_component == "Daily Wage"]
+        wage_rows = [row for row in native_slip.earnings if row.salary_component == structure.custom_tradex_daily_wage_component]
         assert sum(row.amount for row in wage_rows) == 875
     finally:
         frappe.db.rollback(save_point=savepoint)

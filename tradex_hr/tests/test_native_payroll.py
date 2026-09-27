@@ -230,6 +230,37 @@ def test_prepare_checks_payroll_entry_permission_before_insert(monkeypatch):
         native_payroll.prepare_native_payroll("TCL", date(2026, 9, 1), date(2026, 9, 30))
 
 
+def test_daily_component_change_changes_fingerprint_and_blocks_old_derived_input(monkeypatch):
+    readiness = {"outcomes": [{
+        "employee": "EMP-DAILY",
+        "pay_basis": {"status": "Daily Wage", "daily_wage_component": "Factory Day Rate"},
+    }]}
+    first = native_payroll._population_fingerprint(readiness, [])
+    changed = {"outcomes": [{
+        "employee": "EMP-DAILY",
+        "pay_basis": {"status": "Daily Wage", "daily_wage_component": "Piecework Day Pay"},
+    }]}
+    assert native_payroll._population_fingerprint(changed, []) != first
+
+    period = frappe._dict(name="ATT-PERIOD-SYNTHETIC", revision=3)
+    monkeypatch.setattr(native_payroll, "_finalized_period_name", lambda *_args: period.name)
+    monkeypatch.setattr(native_payroll.frappe, "get_doc", lambda *_args: period)
+    monkeypatch.setattr(native_payroll, "_find_period_daily_wage_inputs", lambda *_args: {
+        "EMP-DAILY": frappe._dict(employee="EMP-DAILY", salary_component="Factory Day Rate"),
+    })
+    monkeypatch.setattr(native_payroll, "_get_existing_input", lambda *_args: None)
+    monkeypatch.setattr(native_payroll, "calculate_daily_wage_input", lambda *_args: {
+        "status": "READY", "amount": 4250, "salary_component": "Piecework Day Pay",
+        "payroll_date": date(2026, 9, 30),
+    })
+    planned, blockers = native_payroll._daily_inputs_for_readiness("Company A", date(2026, 9, 1), date(2026, 9, 30), {
+        "outcomes": [{"employee": "EMP-DAILY", "pay_basis": {"status": "Daily Wage"},
+                      "employee_data": {"company": "Company A"}}],
+    })
+    assert planned == []
+    assert blockers[0]["code"] == "BLOCKED_DAILY_WAGE_INPUT_MISMATCH"
+
+
 def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attendance(monkeypatch):
     employee = frappe.db.get_value(
         "Employee",
@@ -245,6 +276,7 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
         "period": None,
         "assignment": None,
         "structure": None,
+        "component": None,
         "additional_salary": [],
         "payroll_entry": None,
         "salary_slips": [],
@@ -265,6 +297,8 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
             _delete_test_doc("Salary Structure Assignment", created["assignment"])
         if created["structure"]:
             _delete_test_doc("Salary Structure", created["structure"])
+        if created["component"] and frappe.db.exists("Salary Component", created["component"]):
+            frappe.delete_doc("Salary Component", created["component"], force=True, ignore_permissions=True)
         if created["period"]:
             _delete_test_doc("Tradexcel Attendance Period", created["period"])
         for permission_name in created["user_permissions"]:
@@ -280,6 +314,15 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
         frappe.db.commit()
 
     try:
+        component = frappe.get_doc({
+            "doctype": "Salary Component",
+            "salary_component": f"Synthetic Day Rate {frappe.generate_hash(6)}",
+            "salary_component_abbr": f"SDR{frappe.generate_hash(3).upper()}",
+            "type": "Earning",
+            "depends_on_payment_days": 0,
+            "is_tax_applicable": 0,
+        }).insert(ignore_permissions=True)
+        created["component"] = component.name
         structure = frappe.get_doc({
             "doctype": "Salary Structure",
             "name": f"TEST Native Daily {frappe.generate_hash(6)}",
@@ -288,7 +331,8 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
             "payroll_frequency": "Monthly",
             "is_active": "Yes",
             "custom_tradex_pay_basis": "Daily Wage",
-            "earnings": [{"salary_component": "Daily Wage", "amount": 0, "depends_on_payment_days": 0}],
+            "custom_tradex_daily_wage_component": component.name,
+            "earnings": [{"salary_component": component.name, "amount": 0, "depends_on_payment_days": 0}],
         })
         structure.insert(ignore_permissions=True)
         created["structure"] = structure.name
@@ -490,8 +534,9 @@ def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attend
         assert len(slips) == 1
         created["salary_slips"] = [row.name for row in slips]
         slip = frappe.get_doc("Salary Slip", slips[0].name)
-        wage_rows = [row for row in slip.earnings if row.salary_component == "Daily Wage"]
+        wage_rows = [row for row in slip.earnings if row.salary_component == component.name]
         assert sum(row.amount for row in wage_rows) == 3500
+        assert not any(row.salary_component == "Daily Wage" for row in slip.earnings)
         with pytest.raises(frappe.ValidationError, match="Submit managed Salary Slips from the approved Payroll Entry"):
             slip.submit()
         slip.reload()

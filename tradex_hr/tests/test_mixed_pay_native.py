@@ -34,6 +34,14 @@ def _employee():
 
 
 def _safe_structure(employee, name):
+    component = frappe.get_doc({
+        "doctype": "Salary Component",
+        "salary_component": f"Factory Day Rate {frappe.generate_hash(6)}",
+        "salary_component_abbr": f"FDR{frappe.generate_hash(3).upper()}",
+        "type": "Earning",
+        "depends_on_payment_days": 0,
+        "is_tax_applicable": 0,
+    }).insert(ignore_permissions=True)
     structure = frappe.get_doc({
         "doctype": "Salary Structure",
         "name": name,
@@ -42,7 +50,8 @@ def _safe_structure(employee, name):
         "payroll_frequency": "Monthly",
         "is_active": "Yes",
         "custom_tradex_pay_basis": "Daily Wage",
-        "earnings": [{"salary_component": "Daily Wage", "amount": 0, "depends_on_payment_days": 0}],
+        "custom_tradex_daily_wage_component": component.name,
+        "earnings": [{"salary_component": component.name, "amount": 0, "depends_on_payment_days": 0}],
     })
     structure.insert(ignore_permissions=True)
     structure.submit()
@@ -115,7 +124,7 @@ def test_daily_wage_native_chain_is_exact_and_idempotent(monkeypatch):
         assert first["amount"] == 3500
 
         slip = make_salary_slip(structure.name, employee=employee.name, posting_date="2026-12-31")
-        wage_rows = [row for row in slip.earnings if row.salary_component == "Daily Wage"]
+        wage_rows = [row for row in slip.earnings if row.salary_component == structure.custom_tradex_daily_wage_component]
         assert sum(row.amount for row in wage_rows) == 3500
     finally:
         frappe.db.rollback(save_point=savepoint)
@@ -137,7 +146,8 @@ def test_legacy_staging_daily_structure_remains_blocked():
     result = calculate_daily_wage_input("HR-EMP-00225", "2026-09-01", "2026-09-30")
     if not frappe.db.exists("Salary Structure", "TCL Daily Wage"):
         pytest.skip("TCL Daily Wage is not configured on staging")
-    assert result["status"] == "BLOCKED_UNSAFE_STRUCTURE"
+    assert result["status"] == "UNRESOLVED"
+    assert "no configured Daily Wage Salary Component" in result["reason"]
 
 
 def test_native_attendance_status_and_holiday_semantics(monkeypatch):

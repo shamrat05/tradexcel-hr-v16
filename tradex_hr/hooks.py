@@ -77,6 +77,9 @@ doctype_list_js = {
 }
 
 doc_events = {
+    "Salary Structure": {
+        "validate": "tradex_hr.tradexcel_hr.salary_structure_validation.validate_salary_structure",
+    },
     "Leave Policy Assignment": {
         "before_submit": "tradex_hr.tradexcel_hr.leave_control_panel.require_submitted_leave_policy",
     },

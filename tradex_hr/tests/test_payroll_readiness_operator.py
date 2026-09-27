@@ -133,10 +133,8 @@ def test_structure_migration_preview_requires_an_explicit_effective_date(monkeyp
     assert result["effective_date"] is None
     assert result["rows"][0]["current_assignment"] == "SSA-1"
     assert "3 attendance days need review" in result["rows"][0]["conflicts"]
-    assert result["proposed_structure"]["components"] == [
-        {"component": "Daily Wage", "amount": 0, "depends_on_payment_days": 0},
-        {"component": "Overtime Pay", "amount": 0, "depends_on_payment_days": 0},
-    ]
+    assert result["proposed_structure"]["components"] == []
+    assert "native Salary Structure" in result["proposed_structure"]["guidance"]
 
 
 def test_workspace_primary_shortcut_routes_to_readiness_and_keeps_native_entries():

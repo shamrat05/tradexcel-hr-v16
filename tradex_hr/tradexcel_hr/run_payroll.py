@@ -162,7 +162,7 @@ def structure_earnings(salary_structure: str, gross) -> list[dict[str, Any]]:
         formula = (row.formula or "").strip()
         if formula and "payment_days" in formula:
             # Daily-wage structures are paid per attendance day and are handled
-            # by calculate_dated_worker_pay(), not the monthly gross split.
+            # by native Salary Structure Assignment authority, not a payroll-policy split.
             raise ValueError(
                 f"{salary_structure} is attendance-based (formula {formula!r}); "
                 f"monthly gross splitting does not apply."

@@ -16,14 +16,10 @@ from frappe import _
 from frappe.utils import cint, flt, getdate
 
 from tradex_hr.tradexcel_hr.attendance_payroll_boundary import (
-    payment_day_component_findings,
     require_finalized_attendance,
 )
 from tradex_hr.tradexcel_hr.pay_basis import DAILY, resolve_daily_rate, resolve_pay_basis
 from tradex_hr.tradexcel_hr.flexible_work import apply_policy_to_daily_wage
-
-
-DEFAULT_COMPONENT = "Daily Wage"
 
 
 def _attendance_rows(employee: str, start: date, end: date) -> list[dict[str, Any]]:
@@ -92,23 +88,42 @@ def _native_attendance_units(
 def _inspect_daily_wage_structure(basis: dict[str, Any]) -> dict[str, Any]:
     if basis.get("status") != DAILY:
         return {"status": basis.get("status"), "reason": basis.get("reason")}
+    component = basis.get("daily_wage_component")
+    if not component:
+        return {
+            "status": "UNRESOLVED",
+            "employee": basis.get("employee"),
+            "salary_structure": basis.get("salary_structure"),
+            "reason": "The assigned Daily Wage Salary Structure has no configured Daily Wage Salary Component.",
+        }
     structure_rows = frappe.get_all(
         "Salary Detail",
-        filters={"parent": basis["salary_structure"], "parenttype": "Salary Structure"},
-        fields=["parent", "salary_component", "formula", "depends_on_payment_days"],
+        filters={
+            "parent": basis["salary_structure"], "parenttype": "Salary Structure",
+            "salary_component": component,
+        },
+        fields=["parent", "salary_component", "formula", "amount", "amount_based_on_formula", "depends_on_payment_days"],
     )
-    unsafe = payment_day_component_findings(structure_rows)
-    if unsafe:
+    component_type = frappe.db.get_value("Salary Component", component, "type")
+    if (
+        component_type != "Earning"
+        or len(structure_rows) != 1
+        or structure_rows[0].get("depends_on_payment_days")
+        or structure_rows[0].get("amount_based_on_formula")
+        or (structure_rows[0].get("formula") or "").strip()
+        or flt(structure_rows[0].get("amount")) != 0
+    ):
         return {
             "status": "BLOCKED_UNSAFE_STRUCTURE",
             "employee": basis["employee"],
             "salary_structure": basis["salary_structure"],
-            "reason": "Daily Wage structure still calculates payment_days; converge it to a zero/non-prorated wage row before creating native inputs",
+            "reason": "The configured Daily Wage Salary Component must be one neutral, zero-valued Earning row with no formula or payment-day proration.",
         }
     return {
         "status": "READY",
         "employee": basis["employee"],
         "salary_structure": basis["salary_structure"],
+        "salary_component": component,
     }
 
 
@@ -170,6 +185,7 @@ def calculate_daily_wage_input(employee: str, start_date: str | date, end_date: 
         "employee": employee,
         "assignment": basis["assignment"],
         "salary_structure": basis["salary_structure"],
+        "salary_component": basis["daily_wage_component"],
         "rate": rate["rate"],
         "payable_units": units["payable_units"],
         "attendance_count": units["attendance_count"],
@@ -197,6 +213,7 @@ def _submit_derived_daily_wage(doc, period, expected: dict[str, Any]) -> None:
     if (
         recalculated.get("status") != "READY"
         or recalculated.get("amount") != expected["amount"]
+        or recalculated.get("salary_component") != expected["salary_component"]
         or doc.company != expected["company"]
         or doc.salary_component != expected["salary_component"]
         or doc.amount != expected["amount"]
@@ -220,7 +237,6 @@ def create_daily_wage_input(
     employee: str,
     attendance_period: str,
     *,
-    salary_component: str = DEFAULT_COMPONENT,
     submit: bool = True,
 ) -> dict[str, Any]:
     """Create/reuse one native Additional Salary for a finalized period."""
@@ -238,6 +254,7 @@ def create_daily_wage_input(
     if result["amount"] <= 0:
         return {**result, "status": "NO_PAYABLE_UNITS"}
 
+    salary_component = result["salary_component"]
     key = f"DAILY-WAGE:{period.name}:r{period.revision}:{employee}:{salary_component}"
     company = frappe.db.get_value("Employee", employee, "company")
     expected = {
@@ -255,6 +272,11 @@ def create_daily_wage_input(
         if submit and existing.docstatus == 0:
             _submit_derived_daily_wage(frappe.get_doc("Additional Salary", existing.name), period, expected)
         return reused
+    prior = _find_period_daily_wage_input(employee, period)
+    if prior:
+        frappe.throw(
+            _("Existing Daily Wage input {0} uses a different configured Salary Component. Review and reconcile it before retrying.").format(prior.name)
+        )
 
     doc = frappe.get_doc({
         "doctype": "Additional Salary",
@@ -305,6 +327,36 @@ def _get_existing_input(key: str):
         ],
         as_dict=True,
     )
+
+
+def _find_period_daily_wage_input(employee: str, period):
+    """Find a prior derived input for this employee/revision under old component authority."""
+    return _find_period_daily_wage_inputs([employee], period).get(employee)
+
+
+def _find_period_daily_wage_inputs(employees: list[str], period):
+    """Batch prior period inputs so managed payroll does not add an N+1 query."""
+    if not employees:
+        return {}
+    prefixes = {
+        employee: f"DAILY-WAGE:{period.name}:r{period.revision}:{employee}:"
+        for employee in employees
+    }
+    found = {}
+    rows = frappe.get_all(
+        "Additional Salary",
+        filters={
+            "employee": ["in", employees],
+            "ref_doctype": "Tradexcel Attendance Period",
+            "ref_docname": period.name,
+        },
+        fields=["name", "employee", "salary_component", "custom_tradex_payroll_input_key", "docstatus", "disabled"],
+    )
+    for row in rows:
+        key = row.custom_tradex_payroll_input_key or ""
+        if key.startswith(prefixes.get(row.employee, "\0")):
+            found[row.employee] = row
+    return found
 
 
 def _recover_duplicate_input(key: str, expected: dict[str, Any], *, submit: bool, result: dict[str, Any]):
