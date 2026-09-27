@@ -108,10 +108,14 @@ def test_workspace_links_only_to_installed_doctypes():
         for block in blocks
         if block["type"] == "shortcut"
     }
+    from tradex_hr.install import COMMON_ACTION_SHORTCUTS
     for label, doctype, _ in BULK_WORKSPACE_SHORTCUTS:
         if frappe.db.exists("DocType", doctype):
             assert shortcuts[label] == doctype
-            assert label in rendered
+            if label in COMMON_ACTION_SHORTCUTS:
+                assert label in rendered
+            else:
+                assert label not in rendered
         else:
             assert label not in shortcuts
             assert label not in rendered

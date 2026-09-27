@@ -376,6 +376,59 @@ WORKSPACE_SHORTCUTS = [
     ("Maternity Rules", "Tradexcel Maternity Rule Set", "DocType"),
     ("Income Tax Slabs", "Income Tax Slab", "DocType"),
     ("Payroll Periods", "Payroll Period", "DocType"),
+    # Expenses & Travel
+    ("Expense Claims", "Expense Claim", "DocType"),
+    ("Employee Advances", "Employee Advance", "DocType"),
+    ("Travel Requests", "Travel Request", "DocType"),
+    ("Employee Advance Summary", "Employee Advance Summary", "Report"),
+    ("Unpaid Expense Claims", "Unpaid Expense Claim", "Report"),
+    ("Expense Claim Types", "Expense Claim Type", "DocType"),
+    ("Purpose of Travel", "Purpose of Travel", "DocType"),
+    # Leave & Holidays
+    ("Compensatory Leave Requests", "Compensatory Leave Request", "DocType"),
+    ("Leave Encashment", "Leave Encashment", "DocType"),
+    ("Holiday List Assignments", "Holiday List Assignment", "DocType"),
+    ("Leave Types", "Leave Type", "DocType"),
+    ("Leave Block Lists", "Leave Block List", "DocType"),
+    # Attendance & Shifts
+    ("Shift Requests", "Shift Request", "DocType"),
+    ("Shift Schedule Assignments", "Shift Schedule Assignment", "DocType"),
+    ("Shift Locations", "Shift Location", "DocType"),
+    ("Overtime Types", "Overtime Type", "DocType"),
+    ("Monthly Attendance Sheet", "Monthly Attendance Sheet", "Report"),
+    ("Shift Attendance", "Shift Attendance", "Report"),
+    ("Employees Working on a Holiday", "Employees working on a holiday", "Report"),
+    # Payroll
+    ("Employee Incentive", "Employee Incentive", "DocType"),
+    ("Retention Bonus", "Retention Bonus", "DocType"),
+    ("Salary Withholding", "Salary Withholding", "DocType"),
+    # Recruitment
+    ("Staffing Plans", "Staffing Plan", "DocType"),
+    ("Job Requisitions", "Job Requisition", "DocType"),
+    ("Interviews", "Interview", "DocType"),
+    ("Interview Feedback", "Interview Feedback", "DocType"),
+    ("Employee Referrals", "Employee Referral", "DocType"),
+    ("Appointment Letters", "Appointment Letter", "DocType"),
+    ("Interview Types", "Interview Type", "DocType"),
+    ("Appointment Letter Templates", "Appointment Letter Template", "DocType"),
+    ("Recruitment Analytics", "Recruitment Analytics", "Report"),
+    # Development & Relations
+    ("Employee Grievances", "Employee Grievance", "DocType"),
+    ("Training Programs", "Training Program", "DocType"),
+    ("Training Events", "Training Event", "DocType"),
+    ("Appraisals", "Appraisal", "DocType"),
+    ("Goals", "Goal", "DocType"),
+    ("Employee Skill Map", "Employee Skill Map", "DocType"),
+    ("Training Feedback", "Training Feedback", "DocType"),
+    ("Training Results", "Training Result", "DocType"),
+    ("Appraisal Cycles", "Appraisal Cycle", "DocType"),
+    ("Grievance Types", "Grievance Type", "DocType"),
+    ("Appraisal Templates", "Appraisal Template", "DocType"),
+    # Setup
+    ("Employee Grades", "Employee Grade", "DocType"),
+    ("Employee Groups", "Employee Group", "DocType"),
+    ("HR Settings", "HR Settings", "DocType"),
+    ("Payroll Settings", "Payroll Settings", "DocType"),
 ]
 
 BULK_WORKSPACE_SHORTCUTS = [
@@ -436,26 +489,114 @@ WORKSPACE_SHORTCUT_ICONS = {
     "Employee Biometric IDs": "users",
     "Face Match Settings": "setting-gear",
     "Bulk Data Import": "upload",
-    "Attendance Fix Requests": "clipboard",
+    "Employee Promotions": "change",
+    "Job Openings": "hr",
+    "Job Applicants": "users",
+    "Job Offers": "clipboard",
+    "Onboarding": "users",
+    "Overtime Reviews": "calendar",
+    "Leave Policies": "setting-gear",
+    "Leave Policy Assignments": "assign",
+    "Leave Periods": "calendar",
+    "Holiday Lists": "calendar",
+    "Payroll Corrections": "change",
+    "Salary Arrears": "money-coins-1",
+    "Wage Floor Reviews": "clipboard",
+    "Benefit Enrollments": "users",
+    "Working Time Reviews": "calendar",
+    "Maternity Reviews": "clipboard",
+    "Welfare Reviews": "clipboard",
+    "Statutory Exit Rules": "setting-gear",
+    "Wage Floor Rules": "setting-gear",
+    "Benefit Rules": "setting-gear",
+    "Working Time Rules": "setting-gear",
+    "Maternity Rules": "setting-gear",
+    "Income Tax Slabs": "setting-gear",
+    "Payroll Periods": "calendar",
+    # New icons
+    "Expense Claims": "money-coins-1",
+    "Employee Advances": "money-coins-1",
+    "Travel Requests": "map",
+    "Employee Advance Summary": "list-alt",
+    "Unpaid Expense Claims": "list-alt",
+    "Expense Claim Types": "setting-gear",
+    "Purpose of Travel": "setting-gear",
+    "Compensatory Leave Requests": "clipboard",
+    "Leave Encashment": "money-coins-1",
+    "Holiday List Assignments": "assign",
+    "Leave Types": "setting-gear",
+    "Leave Block Lists": "setting-gear",
+    "Shift Requests": "clipboard",
+    "Shift Schedule Assignments": "assign",
+    "Shift Locations": "location",
+    "Overtime Types": "setting-gear",
+    "Monthly Attendance Sheet": "calendar",
+    "Shift Attendance": "calendar",
+    "Employees Working on a Holiday": "calendar",
+    "Employee Incentive": "money-coins-1",
+    "Retention Bonus": "money-coins-1",
+    "Salary Withholding": "money-coins-1",
+    "Staffing Plans": "users",
+    "Job Requisitions": "clipboard",
+    "Interviews": "users",
+    "Interview Feedback": "clipboard",
+    "Employee Referrals": "users",
+    "Appointment Letters": "file",
+    "Interview Types": "setting-gear",
+    "Appointment Letter Templates": "setting-gear",
+    "Recruitment Analytics": "chart",
+    "Employee Grievances": "solid-warning",
+    "Training Programs": "hr",
+    "Training Events": "calendar",
+    "Appraisals": "clipboard",
+    "Goals": "check",
+    "Employee Skill Map": "users",
+    "Training Feedback": "clipboard",
+    "Training Results": "list-alt",
+    "Appraisal Cycles": "calendar",
+    "Grievance Types": "setting-gear",
+    "Appraisal Templates": "setting-gear",
+    "Employee Grades": "setting-gear",
+    "Employee Groups": "users",
+    "HR Settings": "setting-gear",
+    "Payroll Settings": "setting-gear",
 }
 
 WORKSPACE_SECTIONS = (
     ("Employees", "Maintain identity and use native records for employment changes.", (
         "Employee Directory", "Joiners & Leavers", "Employee Transfers", "Employee Promotions", "Missing Employee Data",
     )),
-    ("Attendance", "Review work evidence, corrections and shift coverage.", (
+    ("Attendance & Shifts", "Review work evidence, attendance requests, and shift coverage.", (
         "Today's Attendance", "Attendance Summary", "Attendance Fix Requests", "Attendance Records", "Punch Log",
-        "Mobile Attendance", "Field Duties", "Shift Assignments", "Bulk Shift Assignment", "Shift Coverage", "Overtime Reviews",
+        "Mobile Attendance", "Field Duties", "Overtime Reviews",
+        "Shift Assignments", "Bulk Shift Assignment", "Shift Requests", "Shift Schedule Assignments", "Shift Planner", "Shift Coverage",
+        "Shift Locations", "Overtime Types",
+        "Monthly Attendance Sheet", "Shift Attendance", "Employees Working on a Holiday",
     )),
-    ("Leave", "Review requests and explicitly configured leave entitlements.", (
-        "Leave Requests", "Leave Balances", "Leave Allocations", "Bulk Leave Allocation", "Leave Policy Assignments",
+    ("Leave & Holidays", "Review requests and explicitly configured leave entitlements.", (
+        "Leave Requests", "Compensatory Leave Requests", "Leave Balances", "Leave Allocations", "Bulk Leave Allocation",
+        "Leave Encashment",
+        "Leave Policy Assignments", "Holiday List Assignments", "Holiday Lists", "Leave Types", "Leave Policies", "Leave Periods", "Leave Block Lists",
+    )),
+    ("Expenses & Travel", "Submit and review native employee expenses, advances and travel.", (
+        "Expense Claims", "Employee Advances", "Travel Requests",
+        "Employee Advance Summary", "Unpaid Expense Claims",
+        "Expense Claim Types", "Purpose of Travel",
     )),
     ("Payroll", "Prepare and review native salary authority and payroll.", (
         "Run Monthly Payroll", "Salary Setup Coverage", "Bulk Salary Structure Assignment", "Salary Assignments",
         "Payroll Entries (Advanced)", "Salary Slips", "Extra Pay & Deductions", "Payroll Corrections", "Salary Arrears",
+        "Employee Incentive", "Retention Bonus", "Salary Withholding",
     )),
     ("Recruitment", "Move reviewed hires through native recruitment and onboarding.", (
-        "Job Openings", "Job Applicants", "Job Offers", "Onboarding",
+        "Staffing Plans", "Job Requisitions", "Job Openings", "Job Applicants", "Interviews", "Interview Feedback",
+        "Employee Referrals", "Job Offers", "Appointment Letters", "Onboarding",
+        "Interview Types", "Appointment Letter Templates", "Recruitment Analytics",
+    )),
+    ("Development & Relations", "Manage employee grievances, training events and appraisals.", (
+        "Employee Grievances", "Training Programs", "Training Events", "Appraisals", "Goals", "Employee Skill Map",
+        "Training Feedback", "Training Results", "Appraisal Cycles",
+        "Grievance Types", "Appraisal Templates",
     )),
     ("Separation", "Review operational exit and settlement separately.", (
         "Exits / Separations", "Final Settlements",
@@ -467,15 +608,62 @@ WORKSPACE_SECTIONS = (
         "Anomaly Radar", "Payroll Register", "Payroll Variance", "Pay Component Register", "Biometric ID Audit",
     )),
     ("Setup", "Reviewed configuration for authorized administrators.", (
-        "Departments", "Designations", "Branches / Locations", "Shift Types", "Shift Planner", "Attendance Policies",
-        "Holiday Lists", "Leave Policies", "Leave Periods", "Salary Structures", "Salary Components", "Payroll Rules",
-        "Policy Exceptions", "Income Tax Slabs", "Payroll Periods", "Statutory Exit Rules", "Wage Floor Rules",
-        "Benefit Rules", "Working Time Rules", "Maternity Rules", "Bulk Data Import",
+        "Departments", "Designations", "Branches / Locations", "Employee Grades", "Employee Groups",
+        "HR Settings", "Payroll Settings",
+        "Shift Types", "Attendance Policies",
+        "Salary Structures", "Salary Components", "Payroll Rules", "Income Tax Slabs", "Payroll Periods",
+        "Statutory Exit Rules", "Wage Floor Rules", "Benefit Rules", "Working Time Rules", "Maternity Rules",
+        "Policy Exceptions", "Bulk Data Import",
     )),
     ("Devices", "Device and field evidence for authorized support roles.", (
         "Biometric Devices", "Employee Biometric IDs", "Face Match Settings", "Live Locations", "Location Pings",
     )),
 )
+
+HOME_NUMBER_CARDS = [
+    {"number_card_name": "Number of Employees on Leave (Today)", "label": "Number of Employees on Leave (Today)"},
+    {"number_card_name": "Number of Employees on Leave (This Month)", "label": "Number of Employees on Leave (This Month)"},
+    {"number_card_name": "Holidays in this month", "label": "Holidays in this month"},
+    {"number_card_name": "Expense Claims (This Month)", "label": "Expense Claims (This Month)"},
+]
+
+HOME_QUICK_LISTS = [
+    {
+        "document_type": "Leave Application",
+        "label": "Open Leave Requests",
+        "quick_list_filter": json.dumps({"status": "Open"}),
+    },
+    {
+        "document_type": "Attendance Request",
+        "label": "Attendance Requests to Review",
+        "quick_list_filter": json.dumps({"docstatus": 0}),
+    },
+    {
+        "document_type": "Expense Claim",
+        "label": "Expense Claims to Review",
+        "quick_list_filter": json.dumps({"docstatus": 0, "approval_status": "Draft"}),
+    },
+    {
+        "document_type": "Shift Request",
+        "label": "Shift Requests to Review",
+        "quick_list_filter": json.dumps({"status": "Draft"}),
+    },
+]
+
+COMMON_ACTION_SHORTCUTS = [
+    "Employee Directory",
+    "Today's Attendance",
+    "Attendance Fix Requests",
+    "Mobile Attendance",
+    "Leave Requests",
+    "Expense Claims",
+    "Employee Advances",
+    "Run Monthly Payroll",
+    "Salary Setup Coverage",
+    "Job Applicants",
+    "Field Duties",
+    "Final Settlements",
+]
 
 
 def workspace_sidebar_items(shortcuts):
@@ -529,19 +717,32 @@ def workspace_is_visible(name: str) -> bool:
 
 
 def workspace_blocks(shortcuts=None):
-    """Return the dashboard layout used by both fresh installs and migrations."""
+    """Return the native-first home layout with progressive disclosure."""
     shortcuts = shortcuts if shortcuts is not None else list(WORKSPACE_SHORTCUTS) + list(BULK_WORKSPACE_SHORTCUTS)
     available = {row[0]: row for row in shortcuts}
-    blocks = [{"type": "header", "data": {"text": "<h2>Tradexcel HR Action Board</h2>", "col": 12}}]
-    blocks.append({"type": "custom_block", "data": {"custom_block_name": "Tradexcel Work Needing Attention", "col": 12}})
-    for title, description, labels in WORKSPACE_SECTIONS:
-        blocks.append({"type": "header", "data": {"text": f"<h3>{title}</h3>", "col": 12}})
-        blocks.append({"type": "paragraph", "data": {"text": description, "col": 12}})
-        blocks.extend(
-            {"type": "shortcut", "data": {"shortcut_name": label, "col": 3}}
-            for label in labels
-            if label in available
-        )
+    blocks = [
+        {"type": "header", "data": {"text": "<h2>Tradexcel HR Action Board</h2>", "col": 12}},
+        {"type": "custom_block", "data": {"custom_block_name": "Tradexcel Work Needing Attention", "col": 12}},
+        {"type": "header", "data": {"text": "<h3>Operational Snapshot</h3>", "col": 12}},
+    ]
+    for card in HOME_NUMBER_CARDS:
+        blocks.append({
+            "type": "number_card",
+            "data": {"number_card_name": card["label"], "col": 3},
+        })
+    blocks.append({"type": "header", "data": {"text": "<h3>Pending Work</h3>", "col": 12}})
+    for ql in HOME_QUICK_LISTS:
+        blocks.append({
+            "type": "quick_list",
+            "data": {"quick_list_name": ql["label"], "col": 6},
+        })
+    blocks.append({"type": "header", "data": {"text": "<h3>Common Actions</h3>", "col": 12}})
+    for label in COMMON_ACTION_SHORTCUTS:
+        if label in available:
+            blocks.append({
+                "type": "shortcut",
+                "data": {"shortcut_name": label, "col": 3},
+            })
     return blocks
 
 
@@ -756,6 +957,20 @@ def ensure_workspace() -> None:
         doc.is_hidden = 0 if workspace_is_visible(name) else 1
         doc.charts = []
         doc.number_cards = []
+        for card in HOME_NUMBER_CARDS:
+            if frappe.db.exists("Number Card", card["number_card_name"]):
+                doc.append("number_cards", {
+                    "number_card_name": card["number_card_name"],
+                    "label": card["label"],
+                })
+        doc.quick_lists = []
+        for ql in HOME_QUICK_LISTS:
+            if frappe.db.exists("DocType", ql["document_type"]):
+                doc.append("quick_lists", {
+                    "document_type": ql["document_type"],
+                    "label": ql["label"],
+                    "quick_list_filter": ql["quick_list_filter"],
+                })
         doc.set("custom_blocks", [{"custom_block_name": "Tradexcel Work Needing Attention", "label": "Tradexcel Work Needing Attention"}])
         doc.shortcuts = []
         for label, link_to, link_type in shortcuts:

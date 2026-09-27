@@ -9,7 +9,8 @@ CSS = (APP_ROOT / 'tradex_hr/public/css/tradex_hr.bundle.css').read_text()
 
 def test_native_hr_navigation_has_job_groups():
     assert [row[0] for row in WORKSPACE_SECTIONS] == [
-        'Employees', 'Attendance', 'Leave', 'Payroll', 'Recruitment', 'Separation',
+        'Employees', 'Attendance & Shifts', 'Leave & Holidays', 'Expenses & Travel',
+        'Payroll', 'Recruitment', 'Development & Relations', 'Separation',
         'Compliance', 'Reports', 'Setup', 'Devices',
     ]
 

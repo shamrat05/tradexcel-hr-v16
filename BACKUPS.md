@@ -47,6 +47,7 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-27 19:14:37** | `20260927_191437-hrms-v16_localhost-database.sql.gz` | 52,319,549 | `a973af03a491d5d6` | Before native HR workspace completeness and sidebar information architecture migration; `--with-files`, gzip and both file archives verified |
 | **2026-09-26 09:20:27** | `20260926_092011-hrms-v16_localhost-database.sql.gz` | 38,067,024 | `3f01cac70816b9b0` | Before deleting verified orphan synthetic persona Contact/Notification Settings left by older test teardown; no real User/configuration cleanup |
 | **2026-09-26 07:02:58** | `20260926_070248-hrms-v16_localhost-database.sql.gz` | 36,775,178 | `9506a3785f975d76` | Before standard Employee Data Gaps Report JavaScript metadata convergence; gzip and both file archives verified |
 | **2026-09-26 01:43:48** | `20260926_014339-hrms-v16_localhost-database.sql.gz` | 34,392,005 | `6c0ee9336bf383c4` | Before scoped native Leave Control Panel DocPerm/hook migration; gzip and both file archives verified |
