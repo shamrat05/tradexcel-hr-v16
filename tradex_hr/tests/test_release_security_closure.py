@@ -182,3 +182,127 @@ def test_flagged_out_api_defers_allowance_until_scoped_approval():
         h.cleanup()
         frappe.db.commit()
         assert not any(frappe.db.exists(dt, name) for dt, name in created)
+
+
+@pytest.mark.parametrize("reviewer_role_key", [
+    "hr_manager", "attendance_officer", "branch_manager",
+])
+def test_mobile_review_actor_can_execute_its_queued_field_duty_settlement(reviewer_role_key):
+    """A reviewer remains authorized for the queued job, subject to current scope."""
+    from zoneinfo import ZoneInfo
+    from frappe.utils import get_system_timezone
+
+    frappe.set_user("Administrator")
+    h = SyntheticPersonaHarness("SETTLEACT" + frappe.generate_hash(7).upper())
+    created = []
+    try:
+        company = "Tradexcel Ceramics Ltd."
+        branches, departments = _masters(company)
+        reviewer = h.create_user(
+            "reviewer", [PERSONA_ROLES[reviewer_role_key]],
+            company=company, branch=branches[0], department=departments[0],
+        )
+        worker = h.create_user("worker", [PERSONA_ROLES["worker"]], company=company, branch=branches[0])
+        employee = h.create_employee("field", company, branches[0], departments[0], user=worker)
+        receipt = now_datetime()
+        captured = receipt - timedelta(hours=6)
+        policy = frappe.get_doc(dict(
+            doctype="Tradexcel Attendance Policy", policy_name=h.token,
+            company=company, effective_from="2020-01-01", attendance_mode="Hybrid",
+            outside_action="Accept", allowance_mode="None", offline_time_action="Flag",
+            offline_max_age_hours=72, offline_trust_window_minutes=5, retention_days=90,
+        )).insert(ignore_permissions=True)
+        created.append((policy.doctype, policy.name))
+        policy.submit()
+        duty = frappe.get_doc(dict(
+            doctype="Tradexcel Field Duty", duty_id=h.token, employee=employee,
+            company=company, duty_date=captured.date(), duty_type="Field Work",
+            purpose="Synthetic queued settlement authorization", allowance_mode="None",
+        )).insert(ignore_permissions=True)
+        created.append((duty.doctype, duty.name))
+        duty.submit()
+
+        # Reproduce the real mobile OUT -> quarantine -> reviewer approval path;
+        # capture enqueue but execute its target explicitly under the same actor.
+        frappe.set_user(worker)
+        with patch.object(mobile, "_policy", return_value=policy), \
+             patch.object(mobile, "now_datetime", return_value=receipt), \
+             patch.object(mobile, "get_actual_start_end_datetime_of_shift", return_value=None), \
+             patch.object(frappe, "enqueue") as enqueue:
+            result = mobile.mobile_checkin(
+                employee, "OUT",
+                time=captured.replace(tzinfo=ZoneInfo(get_system_timezone())).isoformat(),
+                field_duty=duty.name, sync_id=h.token,
+            )
+            created.extend([("Tradex Mobile Event", h.token), ("Employee Checkin", result["name"] )])
+            assert result["custom_tradex_review_status"] == "Pending"
+            assert result["skip_auto_attendance"] == 1
+            assert not enqueue.called
+
+            frappe.set_user(reviewer)
+            mobile.approve_mobile_checkin(result["name"], "Synthetic scoped review")
+            enqueue.assert_called_once()
+            assert enqueue.call_args.args == (
+                "tradex_hr.tradexcel_hr.field_attendance_service.settle_field_duty_allowance",
+            )
+            assert enqueue.call_args.kwargs["duty_name"] == duty.name
+            assert enqueue.call_args.kwargs["enqueue_after_commit"] is True
+            assert mobile.settle_field_duty_allowance(duty.name)["status"] == "No automatic allowance"
+
+        # A trusted OUT by the linked Employee retains its own settlement path.
+        frappe.set_user(worker)
+        with patch.object(mobile, "_policy", return_value=policy), \
+             patch.object(mobile, "now_datetime", return_value=receipt), \
+             patch.object(mobile, "get_actual_start_end_datetime_of_shift", return_value=None), \
+             patch.object(frappe, "enqueue") as trusted_enqueue:
+            trusted = mobile.mobile_checkin(
+                employee, "OUT",
+                time=receipt.replace(tzinfo=ZoneInfo(get_system_timezone())).isoformat(),
+                field_duty=duty.name, sync_id=f"TRUST{h.token[-10:]}",
+            )
+            trusted_sync_id = f"TRUST{h.token[-10:]}"
+            created.extend([("Tradex Mobile Event", trusted_sync_id), ("Employee Checkin", trusted["name"])])
+            assert trusted["custom_tradex_review_status"] == "Not Required"
+            trusted_enqueue.assert_called_once()
+            assert mobile.settle_field_duty_allowance(duty.name)["status"] == "No automatic allowance"
+
+        # An otherwise authorized reviewer in another Branch cannot execute
+        # the queued mutation for this Employee.
+        out_of_scope = h.create_user(
+            "out-of-scope", [PERSONA_ROLES[reviewer_role_key]],
+            company=company, branch=branches[1], department=departments[1],
+        )
+        frappe.set_user(out_of_scope)
+        with pytest.raises(frappe.PermissionError):
+            mobile.settle_field_duty_allowance(duty.name)
+
+        # A different role without review authority cannot execute the job.
+        unrelated = h.create_user("unrelated", [PERSONA_ROLES["payroll_manager"]], company=company)
+        frappe.set_user(unrelated)
+        with pytest.raises(frappe.PermissionError):
+            mobile.settle_field_duty_allowance(duty.name)
+
+        # Revoking the reviewer's current Branch scope before worker execution
+        # must invalidate the queued operation, even though approval succeeded.
+        frappe.set_user("Administrator")
+        branch_permission = frappe.db.get_value(
+            "User Permission", {"user": reviewer, "allow": "Branch", "for_value": branches[0]}, "name"
+        )
+        assert branch_permission
+        frappe.db.set_value("User Permission", branch_permission, "for_value", branches[1])
+        frappe.clear_cache(user=reviewer)
+        frappe.set_user(reviewer)
+        with pytest.raises(frappe.PermissionError):
+            mobile.settle_field_duty_allowance(duty.name)
+    finally:
+        frappe.set_user("Administrator")
+        for dt, name in reversed(created):
+            if frappe.db.exists(dt, name):
+                doc = frappe.get_doc(dt, name)
+                if doc.docstatus == 1:
+                    doc.cancel()
+                frappe.delete_doc(dt, name, force=True, ignore_permissions=True)
+        with patch.object(frappe, "enqueue"):
+            h.cleanup()
+        frappe.db.commit()
+        assert not any(frappe.db.exists(dt, name) for dt, name in created)

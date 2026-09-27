@@ -33,6 +33,7 @@ SUPERVISOR_ROLES = {
     "Tradexcel Branch Manager",
     "Tradexcel Department Manager",
 }
+MOBILE_REVIEW_ROLES = SUPERVISOR_ROLES | {"Tradexcel Attendance Correction Approver"}
 
 
 def _category(employee: dict[str, Any]) -> str:
@@ -258,15 +259,17 @@ def _assert_mobile_selfie_file(file_url: str, *, allow_admin_owner=False):
 
 
 def _assert_field_duty_settlement_actor(employee: frappe._dict) -> None:
-    """Permit only the linked employee or a scoped evidence approver to settle."""
+    """Permit the originating employee or a currently scoped evidence reviewer."""
     if frappe.session.user == "Administrator":
         return
-    if "Tradexcel Attendance Correction Approver" in frappe.get_roles():
+    if employee.user_id == frappe.session.user:
+        return
+    if MOBILE_REVIEW_ROLES.intersection(frappe.get_roles()):
         from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
         if employee.name in permitted_employee_names(employee.company):
             return
         frappe.throw(_("This employee is outside your permitted scope."), frappe.PermissionError)
-    _assert_employee_self(employee)
+    frappe.throw(_("Only the linked employee or a scoped mobile evidence reviewer may settle this duty."), frappe.PermissionError)
 
 
 def _site_file_path(file_url: str) -> str:
@@ -949,9 +952,6 @@ def reject_mobile_checkin(checkin, review_note=None):
         "Info", _("Mobile attendance evidence rejected by {0}.").format(frappe.session.user)
     )
     return frappe.get_doc("Employee Checkin", doc.name).as_dict()
-
-
-MOBILE_REVIEW_ROLES = SUPERVISOR_ROLES | {"Tradexcel Attendance Correction Approver"}
 
 
 def _assert_review_permission(doc):
