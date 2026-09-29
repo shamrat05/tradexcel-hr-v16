@@ -76,3 +76,13 @@ html {
 header.navbar .navbar-brand {
 	display: none !important;
 }
+
+/* These custom Desk pages use Bootstrap cards and tables. Bootstrap's default
+   light surfaces do not follow Frappe's dark theme, so bind their surfaces and
+   text to the native Desk theme tokens. Keep this scoped to the two pages. */
+.tradex-live-locations .card,
+.tradex-mobile-attendance .card {
+	color: var(--text-color);
+	background-color: var(--card-bg);
+	border-color: var(--border-color);
+}
