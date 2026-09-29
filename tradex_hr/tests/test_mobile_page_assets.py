@@ -38,6 +38,18 @@ def test_live_locations_script_registers_with_frappe_page_name():
     assert f'frappe.pages["{page["page_name"]}"]' in script
 
 
+def test_custom_field_pages_use_native_desk_theme_tokens():
+    css = (ROOT.parents[2] / "tradex_hr" / "public" / "css" / "tradex_hr.bundle.css").read_text()
+    mobile_script = (ROOT / "tradexcel_mobile_attendance" / "tradexcel_mobile_attendance.js").read_text()
+    assert 'class="tradex-mobile-attendance' in mobile_script
+    for page_root in ("tradex-live-locations", "tradex-mobile-attendance"):
+        assert f".{page_root} .card" in css
+        assert f".{page_root} .table" in css
+    assert "background-color: var(--card-bg)" in css
+    assert "color: var(--text-color)" in css
+    assert "border-color: var(--border-color)" in css
+
+
 def test_offline_selfie_cleanup_waits_for_policy_and_reuses_partial_upload():
     """Execute production functions with a deterministic in-memory IDB boundary."""
     import shutil
