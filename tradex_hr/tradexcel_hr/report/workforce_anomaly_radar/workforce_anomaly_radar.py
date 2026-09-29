@@ -9,6 +9,11 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, getdate, today
 
+from tradex_hr.tradexcel_hr.company_context import assert_company_access, resolve_company
+
+from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names, permitted_salary_slips
+from tradex_hr.tradexcel_hr.pay_basis import DAILY, MONTHLY, resolve_pay_basis
+
 from tradex_hr.tradexcel_hr.anomaly_checks import SEVERITY_RANK, pair_punches, run_all
 
 
@@ -23,7 +28,7 @@ SEVERITIES = ("All", "High", "Medium", "Low")
 
 def normalize_filters(filters=None):
     values = frappe._dict(filters or {})
-    values.company = values.get("company") or "Tradexcel Ceramics Ltd."
+    values.company = resolve_company(values)
     values.branch = values.get("branch") or ""
     values.department = values.get("department") or ""
     values.category = values.get("category") or "All"
@@ -62,23 +67,22 @@ def _columns():
 
 
 def _employee_rows(filters):
-    conditions = ["company = %(company)s", "status = 'Active'"]
-    if filters.branch:
-        conditions.append("branch = %(branch)s")
-    if filters.department:
-        conditions.append("department = %(department)s")
-    return frappe.db.sql(
-        f"""
-        SELECT name, employee_name, branch, department, employment_type, date_of_joining
-        FROM `tabEmployee` WHERE {' AND '.join(conditions)}
-        ORDER BY name
-        """,
-        filters, as_dict=True,
+    names = permitted_employee_names(filters.company, branch=filters.branch, department=filters.department)
+    if not names:
+        return []
+    return frappe.get_list(
+        "Employee", filters={"name": ["in", names], "status": "Active"},
+        fields=["name", "employee_name", "branch", "department", "date_of_joining"],
+        order_by="name", limit_page_length=0,
     )
 
 
 def execute(filters=None):
+    from frappe.desk.query_report import get_report_doc
+
+    get_report_doc("Workforce Anomaly Radar")
     filters = normalize_filters(filters)
+    assert_company_access(filters.company)
     columns = _columns()
     employees = _employee_rows(filters)
     names = [row.name for row in employees]
@@ -92,15 +96,13 @@ def execute(filters=None):
     previous_start = f"{add_days(filters.from_date, -period_days)} 00:00:00"
     previous_end = start
 
-    slips = frappe.get_all(
-        "Salary Slip",
-        filters={
-            "company": filters.company, "docstatus": ["<", 2],
-            "start_date": ["<=", filters.to_date], "end_date": [">=", filters.from_date],
-        },
-        fields=["name", "employee", "employee_name", "salary_structure", "start_date",
-                "end_date", "gross_pay", "net_pay", "total_deduction", "payment_days"],
-    )
+    salary_allowed = frappe.has_permission("Salary Slip", "read") and frappe.has_permission("Salary Slip", "report")
+    if filters.category in {"Payroll", "Tax"} and not salary_allowed:
+        frappe.throw(_("You do not have permission to view payroll findings."), frappe.PermissionError)
+    slips = permitted_salary_slips(
+        filters.company, tuple(names), from_date=filters.from_date, to_date=filters.to_date,
+        overlapping_period=True,
+    ) if salary_allowed else []
     pair_start = min([filters.from_date] + [getdate(slip.start_date) for slip in slips]) - timedelta(days=1)
     pair_end = max([filters.to_date] + [getdate(slip.end_date) for slip in slips]) + timedelta(days=2)
 
@@ -202,12 +204,6 @@ def execute(filters=None):
                    if filters.from_date <= inn.date() <= filters.to_date}
         for employee, pairs in pairs_by_employee.items()
     }
-    punch_dates = {
-        employee: {moment.date() for moment, _log_type in events
-                   if filters.from_date <= moment.date() <= filters.to_date}
-        for employee, events in events_by_employee.items()
-    }
-
     allocations_all = frappe.get_all(
         "Leave Allocation", filters={"docstatus": 1, "employee": ["in", names]},
         fields=["name", "employee", "leave_type", "from_date", "to_date", "total_leaves_allocated"],
@@ -264,54 +260,36 @@ def execute(filters=None):
                     """
                     SELECT parent, SUM(amount) AS total FROM `tabSalary Detail`
                     WHERE parenttype = 'Salary Slip' AND parentfield = %(field)s
-                      AND parent IN %(names)s
+                      AND parent IN %(names)s AND IFNULL(do_not_include_in_total, 0)=0
                     GROUP BY parent
                     """,
                     {"field": parentfield, "names": slip_names}, as_dict=True,
                 )
             })
 
-    slip_paired_days, slip_punch_any = {}, {}
-    for slip in slips:
-        slip_start, slip_end = getdate(slip.start_date), getdate(slip.end_date)
-        slip_paired_days[slip.name] = len({
-            inn.date() for inn, _out in pairs_by_employee.get(slip.employee, [])
-            if slip_start <= inn.date() <= slip_end
-        })
-        slip_punch_any[slip.name] = len({
-            day for day in punch_dates.get(slip.employee, set())
-            if slip_start <= day <= slip_end
-        })
-
-    wage_structures = set(frappe.get_all(
-        "Salary Structure", filters={"name": ["like", "%Wage%"]}, pluck="name"
-    ))
-    base_observations = [
-        {
-            "key": row.employee,
-            "cohort": row.salary_structure,
-            "value": float(row.base or 0),
-            "employee": row.employee,
-            "employee_name": employee_by_name[row.employee].employee_name,
-        }
-        for row in frappe.db.sql(
-            """
-            WITH ranked AS (
-                SELECT employee, salary_structure, base,
-                       ROW_NUMBER() OVER (
-                           PARTITION BY employee ORDER BY from_date DESC, creation DESC
-                       ) AS rn
-                FROM `tabSalary Structure Assignment`
-                WHERE docstatus = 1 AND from_date <= %(as_of)s AND employee IN %(names)s
-            )
-            SELECT employee, salary_structure, base FROM ranked WHERE rn = 1
-            """,
-            {"as_of": filters.to_date, "names": names}, as_dict=True,
-        )
-        if float(row.base or 0) > 0
-    ]
-
-    tax_slab_count = frappe.db.count("Income Tax Slab", {"company": filters.company, "docstatus": 1})
+    base_observations = []
+    if salary_allowed and frappe.has_permission("Salary Structure Assignment", "read"):
+        visible_assignments = set(frappe.get_list(
+            "Salary Structure Assignment",
+            filters={"company": filters.company, "employee": ["in", names], "docstatus": 1,
+                     "from_date": ["<=", filters.to_date]},
+            pluck="name", limit_page_length=0,
+        ))
+        for employee in names:
+            authority = resolve_pay_basis(employee, filters.to_date)
+            if (authority.get("status") in {MONTHLY, DAILY}
+                    and authority.get("assignment") in visible_assignments
+                    and float(authority.get("base") or 0) > 0):
+                base_observations.append({
+                    "key": employee, "cohort": authority["salary_structure"],
+                    "value": float(authority["base"]), "employee": employee,
+                    "employee_name": employee_by_name[employee].employee_name,
+                })
+    tax_allowed = salary_allowed and frappe.has_permission("Income Tax Slab", "read")
+    tax_slab_count = len(frappe.get_list(
+        "Income Tax Slab", filters={"company": filters.company, "docstatus": 1},
+        pluck="name", limit_page_length=0,
+    )) if tax_allowed else 0
 
     assigned_employees = {
         row["employee"]
@@ -355,13 +333,10 @@ def execute(filters=None):
         "slips": slips,
         "earning_totals": earning_totals,
         "deduction_totals": deduction_totals,
-        "slip_paired_days": slip_paired_days,
-        "slip_punch_any": slip_punch_any,
-        "wage_structures": wage_structures,
         "base_observations": base_observations,
         "leave_balances": leave_balances,
         "leave_without_allocation": leave_without_allocation,
-        "active_slip_count": len(slips),
+        "active_slip_count": len(slips) if tax_allowed else 0,
         "tax_slab_count": tax_slab_count,
         "company_name": filters.company,
         "period_to_date": filters.to_date,

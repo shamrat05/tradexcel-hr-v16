@@ -102,25 +102,302 @@ CUSTOM_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
 # separately with Frappe User Permissions (company, branch, or department), so
 # this matrix describes what a role may do, not which records it may see.
 STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
+    # Company context validation performs a permission-aware Company lookup
+    # before report SQL. User Permissions restrict these read-only rows to the
+    # user's assigned Company; no Company maintenance rights are added.
+    "Company": {
+        "Tradexcel Owner/Director": {"read"},
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel HR/Attendance Officer": {"read"},
+        "Tradexcel Payroll Manager": {"read"},
+        # Payroll approvers run scoped Payroll Entry and salary reports; they
+        # need Company read for the existing permission-aware company guard.
+        "Tradexcel Payroll Approver": {"read"},
+        "Tradexcel Finance/Accounts Officer": {"read"},
+        "Tradexcel Factory Supervisor": {"read"},
+        "Tradexcel Branch Manager": {"read"},
+        "Tradexcel Department Manager": {"read"},
+        "Tradexcel Attendance Correction Approver": {"read"},
+        "Tradexcel Leave Approver": {"read"},
+        "Tradexcel Compliance Auditor": {"read"},
+    },
+    "Department": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+        "Tradexcel Branch Manager": {"select", "read"},
+        "Tradexcel Department Manager": {"select", "read"},
+        "Tradexcel Factory Supervisor": {"select", "read"},
+        "Tradexcel Payroll Manager": {"select", "read"},
+        "Tradexcel Compliance Auditor": {"select", "read"},
+    },
+    "Branch": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+        "Tradexcel Branch Manager": {"select", "read"},
+        "Tradexcel Department Manager": {"select", "read"},
+        "Tradexcel Factory Supervisor": {"select", "read"},
+        "Tradexcel Payroll Manager": {"select", "read"},
+        "Tradexcel Compliance Auditor": {"select", "read"},
+    },
+    "Designation": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+        "Tradexcel Branch Manager": {"select", "read"},
+        "Tradexcel Department Manager": {"select", "read"},
+        "Tradexcel Factory Supervisor": {"select", "read"},
+        "Tradexcel Payroll Manager": {"select", "read"},
+        "Tradexcel Compliance Auditor": {"select", "read"},
+    },
+    "Employee Grade": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Employee Group": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Holiday List": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+    },
+    "Holiday List Assignment": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Leave Block List": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Overtime Type": {
+        "Tradexcel HR Manager": {"select", "read"},
+        "Tradexcel HR/Attendance Officer": {"select", "read"},
+    },
+    "Expense Claim": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Expense Claim Type": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Purpose of Travel": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Compensatory Leave Request": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    # The native HRMS bulk SSA form is used only by the two preparation roles.
+    # Its own permission is read/write; actual SSA creation remains on the
+    # native Salary Structure Assignment DocType and approver submit policy.
+    "Bulk Salary Structure Assignment": {
+        "Tradexcel HR Manager": {"read", "write", "create"},
+        "Tradexcel Payroll Manager": {"read", "write", "create"},
+    },
+    # Makers may select a reviewed slab when a Salary Structure requires one;
+    # they do not receive slab maintenance or submission permissions here.
+    "Income Tax Slab": {
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel Payroll Manager": {"read"},
+    },
+    "Tradexcel Flexible Work Policy": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel HR/Attendance Officer": EDIT_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit", "cancel"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Operational Day Override": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel HR/Attendance Officer": EDIT_PERMS,
+        "Tradexcel Factory Supervisor": EDIT_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS | {"write", "submit", "cancel"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Working Time Rule Set": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Working Time Classification": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Overtime Slip": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Statutory Benefit Rule Set": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Statutory Benefit Enrollment": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Wage Floor Rule Set": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Tradexcel Wage Floor Classification": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Job Opening": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Job Applicant": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Interview": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Interview Feedback": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    },
+    "Job Offer": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Employee Onboarding": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Employee Onboarding Template": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    },
+    # Native Job Opening validation checks Staffing Plan read permission when
+    # enforcing vacancy limits; HR does not receive Staffing Plan write access.
+    "Staffing Plan": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    },
+    "Job Requisition": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Interview Type": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Employee Referral": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Appointment Letter": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Appointment Letter Template": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    # Native Employee BoardingController assigns generated Tasks through
+    # Frappe's share API, which requires Task share permission. User Permissions
+    # still scope both the Task and the resulting share to the operator's Company.
+    "Task": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS | {"write", "share"},
+    },
+    "Employee Grievance": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Grievance Type": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Training Program": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Training Event": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Training Feedback": {
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    },
+    "Training Result": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Appraisal": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Appraisal Cycle": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Appraisal Template": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Goal": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Employee Skill Map": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+    },
+    "Employee Separation": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit", "cancel"},
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Employee Separation Template": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Employee Transfer": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit", "cancel"},
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Employee Promotion": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit", "cancel"},
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Full and Final Statement": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS,
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS | {"write", "submit", "cancel"},
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
     "Employee": {
+        # Device troubleshooting needs scoped Employee identity selection, not
+        # the Employee form, compensation, bank details or HR mutation rights.
+        "Tradexcel Device/IT Administrator": {"select"},
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
         "Tradexcel Payroll Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+        # Attendance Request approvers need a permission-aware Employee list
+        # solely to revalidate Company/Branch/Department scope at submit time.
+        "Tradexcel Attendance Correction Approver": {"select", "read"},
         # Explicitly revoke any previously provisioned broad directory access.
         # Add own-record access only after a tested row-level rule exists.
         "Tradexcel Employee/Worker": set(),
+        # A leave approver must identify and scope the Employee whose native
+        # leave balance is being reviewed; User Permissions bound the rows.
+        "Tradexcel Leave Approver": {"read"},
     },
     "Employee Checkin": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": READ_ONLY_PERMS,
+        "Tradexcel Attendance Correction Approver": {"read", "select"},
         "Tradexcel HR/Attendance Officer": READ_ONLY_PERMS,
-        "Tradexcel Employee/Worker": READ_ONLY_PERMS,
+        # Linked employees keep HRMS's native Employee-role own-record access.
+        # The Tradexcel role must not grant a directory to unlinked users.
+        "Tradexcel Employee/Worker": set(),
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
@@ -137,20 +414,45 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Attendance Correction Approver": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
+    # The native Shift Assignment Tool exposes several bulk actions. The
+    # Tradexcel operator action list is narrowed to Assign Shift; read on the
+    # singleton is enough to open it and call its read-only preview method.
+    "Shift Assignment Tool": {
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel HR/Attendance Officer": {"read"},
+    },
+    # Native bulk assignment creates and submits each Shift Assignment under
+    # the caller. Keep this to the two scheduling operators and omit cancel,
+    # delete, export, print, and import.
+    "Shift Assignment": {
+        "Tradexcel HR Manager": {"read", "create", "write", "submit"},
+        "Tradexcel HR/Attendance Officer": {"read", "create", "write", "submit"},
+    },
+    "Shift Type": {
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel HR/Attendance Officer": {"read"},
+    },
+    "Shift Location": {
+        "Tradexcel HR Manager": {"read"},
+        "Tradexcel HR/Attendance Officer": {"read"},
+    },
     "Attendance Request": {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
-        "Tradexcel Employee/Worker": EDIT_PERMS,
+        "Tradexcel Employee/Worker": set(),
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
-        "Tradexcel Attendance Correction Approver": APPROVE_PERMS,
+        # Native Attendance Request cancellation also cancels linked submitted
+        # Attendance and therefore requires broad Attendance write permission.
+        # Keep custom approvers on submit-only; native HR roles retain HRMS cancel.
+        "Tradexcel Attendance Correction Approver": APPROVE_PERMS - {"cancel"},
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
     "Leave Application": {
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
-        "Tradexcel Employee/Worker": EDIT_PERMS,
+        "Tradexcel Employee/Worker": set(),
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
@@ -159,13 +461,36 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
     },
     "Leave Allocation": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
-        "Tradexcel HR Manager": EDIT_PERMS,
+        # Entitlement administration stays with HR; Leave Approver only
+        # decides individual Leave Applications.
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
         "Tradexcel HR/Attendance Officer": EDIT_PERMS,
-        "Tradexcel Employee/Worker": READ_ONLY_PERMS,
+        # Leave approvers need the native balance evidence that informs their
+        # Leave Application decision; Company/Branch/Department scope remains
+        # the native User Permission boundary.
+        "Tradexcel Leave Approver": {"read", "report"},
+        # HRMS does not grant its native Employee role direct allocation
+        # browsing; balance checks remain in native Leave Application flows.
+        "Tradexcel Employee/Worker": set(),
         "Tradexcel Factory Supervisor": READ_ONLY_PERMS,
         "Tradexcel Branch Manager": READ_ONLY_PERMS,
         "Tradexcel Department Manager": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Leave Control Panel": {
+        "Tradexcel HR Manager": {"read"},
+    },
+    "Leave Policy Assignment": {
+        "Tradexcel HR Manager": EDIT_PERMS | {"submit"},
+    },
+    "Leave Policy": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Leave Period": {
+        "Tradexcel HR Manager": {"select", "read"},
+    },
+    "Leave Type": {
+        "Tradexcel HR Manager": {"select", "read"},
     },
     "Salary Component": {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
@@ -178,6 +503,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel Payroll Manager": EDIT_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS,
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
@@ -185,6 +511,7 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Owner/Director": READ_ONLY_PERMS,
         "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel Payroll Manager": EDIT_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS | {"write", "submit", "cancel"},
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
@@ -195,18 +522,35 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
-    "Salary Slip": {
-        "Tradexcel Owner/Director": READ_ONLY_PERMS,
-        "Tradexcel HR Manager": READ_ONLY_PERMS,
+    "Payroll Correction": {
+        "Tradexcel HR Manager": EDIT_PERMS,
         "Tradexcel Payroll Manager": EDIT_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"cancel"},
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Arrear": {
+        "Tradexcel HR Manager": EDIT_PERMS,
+        "Tradexcel Payroll Manager": EDIT_PERMS,
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS | {"write", "submit"},
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"cancel"},
+        "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
+    },
+    "Salary Slip": {
+        "Tradexcel Owner/Director": READ_ONLY_PERMS | {"delete"},
+        "Tradexcel HR Manager": READ_ONLY_PERMS,
+        "Tradexcel Payroll Manager": EDIT_PERMS | {"submit"},
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
-        "Tradexcel Payroll Approver": APPROVE_PERMS,
+        # Native Arrear approval recalculates a Salary Slip preview through
+        # HRMS make_salary_slip(), whose mapper checks Salary Slip create
+        # permission. No mutation or final submission is granted.
+        "Tradexcel Payroll Approver": READ_ONLY_PERMS | {"create"},
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
     },
     "Payroll Entry": {
         "Tradexcel Owner/Director": APPROVE_PERMS,
         "Tradexcel HR Manager": READ_ONLY_PERMS,
-        "Tradexcel Payroll Manager": EDIT_PERMS,
+        "Tradexcel Payroll Manager": EDIT_PERMS | {"submit"},
         "Tradexcel Finance/Accounts Officer": READ_ONLY_PERMS,
         "Tradexcel Payroll Approver": APPROVE_PERMS,
         "Tradexcel Compliance Auditor": READ_ONLY_PERMS,
@@ -244,6 +588,33 @@ def _ensure_permission(doctype: str, role: str, allowed: set[str]) -> None:
         )
 
 
+
+def ensure_employee_financial_privacy() -> None:
+    """Native field permissions hide compensation/bank identifiers from operators."""
+    from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
+    for field in ("ctc", "bank_ac_no", "iban"):
+        if not frappe.get_meta("Employee").has_field(field):
+            continue
+        if frappe.get_meta("Employee").get_field(field).permlevel != 1:
+            make_property_setter("Employee", field, "permlevel", 1, "Int")
+    readers = {
+        "HR User", "HR Manager", "System Manager", "Tradexcel Owner/Director",
+        "Tradexcel HR Manager", "Tradexcel Payroll Manager", "Tradexcel Payroll Approver",
+        "Tradexcel Finance/Accounts Officer", "Tradexcel Compliance Auditor",
+    }
+    writers = {"HR User", "HR Manager", "System Manager", "Tradexcel HR Manager"}
+    # Preserve native HR capability. A level-one row never grants Employee
+    # document access on its own. Worker/operational role unions get no level one.
+    setup_custom_perms("Employee")
+    for role in sorted(readers):
+        if not frappe.db.exists("Custom DocPerm", {"parent": "Employee", "role": role, "permlevel": 1}):
+            add_permission("Employee", role, permlevel=1, ptype="read")
+        for field in PERMISSION_FIELDS:
+            allowed = field == "read" or (field == "write" and role in writers)
+            update_permission_property("Employee", role, 1, field, int(allowed), validate=False)
+
+
 def ensure_tradex_roles() -> dict[str, int]:
     """Create the approved roles and permissions without changing user roles."""
     created_or_updated = 0
@@ -269,6 +640,7 @@ def ensure_tradex_roles() -> dict[str, int]:
             "Employee Checkin", "Employee", 0, fieldname, 0, validate=False
         )
 
+    ensure_employee_financial_privacy()
     frappe.clear_cache()
     return {
         "roles_created_or_updated": created_or_updated,

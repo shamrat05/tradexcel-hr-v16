@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["naming_series", "title", "company", "branch", "jurisdiction", "legal_regime", "effective_from", "effective_to", "service_calculation_method", "applicability_date_basis", "settlement_deadline_working_days", "holiday_list", "legal_review_notes", "sources", "entitlements", "workflow_state", "reviewed_by", "reviewed_at"],
+ "fields": [
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Series","options":"TRS-.YYYY.-.#####","default":"TRS-.YYYY.-.#####","reqd":1},
+  {"fieldname":"title","fieldtype":"Data","label":"Title","reqd":1,"in_list_view":1},
+  {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
+  {"fieldname":"branch","fieldtype":"Link","label":"Branch / Establishment","options":"Branch","in_list_view":1},
+  {"fieldname":"jurisdiction","fieldtype":"Select","label":"Jurisdiction","options":"Bangladesh\nOther","default":"Bangladesh","reqd":1},
+  {"fieldname":"legal_regime","fieldtype":"Select","label":"Legal Regime","options":"Bangladesh Labour Act\nBangladesh EPZ Labour Act\nApproved Company Service Rules\nOther / Legal Review","reqd":1,"in_list_view":1},
+  {"fieldname":"effective_from","fieldtype":"Date","label":"Effective From","reqd":1,"in_list_view":1},
+  {"fieldname":"effective_to","fieldtype":"Date","label":"Effective To"},
+  {"fieldname":"service_calculation_method","fieldtype":"Select","label":"Service Calculation Method","options":"Native Calendar Tenure\nReviewed Labour Act Service\nManual Legal Review","reqd":1},
+  {"fieldname":"applicability_date_basis","fieldtype":"Select","label":"Applicability Date Basis","options":"Employee Relieving Date (Legal Review)\nManual Legal Review Required","reqd":1,"description":"Select relieving date only when legal review confirms it is the applicable event date."},
+  {"fieldname":"settlement_deadline_working_days","fieldtype":"Int","label":"Settlement Deadline (Working Days)","default":"0"},
+  {"fieldname":"holiday_list","fieldtype":"Link","label":"Holiday List for Deadline","options":"Holiday List"},
+  {"fieldname":"legal_review_notes","fieldtype":"Small Text","label":"Legal Review Notes","reqd":1},
+  {"fieldname":"sources","fieldtype":"Table","label":"Official Sources","options":"Tradexcel Statutory Source","reqd":1},
+  {"fieldname":"entitlements","fieldtype":"Table","label":"Entitlement Applicability","options":"Tradexcel Statutory Entitlement","reqd":1},
+  {"fieldname":"workflow_state","fieldtype":"Link","label":"Workflow State","options":"Workflow State","default":"Tradexcel Statutory Draft","read_only":1,"no_copy":1},
+  {"fieldname":"reviewed_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1,"no_copy":1,"allow_on_submit":0},
+  {"fieldname":"reviewed_at","fieldtype":"Datetime","label":"Approved At","read_only":1,"no_copy":1,"allow_on_submit":0}
+ ],
+ "is_submittable":1,
+ "module":"Tradexcel HR",
+ "name":"Tradexcel Statutory Rule Set",
+ "naming_series":"TRS-.YYYY.-.#####",
+ "permissions":[
+  {"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"submit":1,"cancel":1,"amend":1,"report":1,"export":1,"print":1},
+  {"role":"Tradexcel HR Manager","read":1,"write":1,"create":1,"report":1,"export":1,"print":1},
+  {"role":"Tradexcel Owner/Director","read":1,"write":1,"submit":1,"report":1,"export":1,"print":1},
+  {"role":"Tradexcel Compliance Auditor","read":1,"report":1,"export":1,"print":1}
+ ],
+ "sort_field":"effective_from",
+ "sort_order":"DESC",
+ "track_changes":1
+}

@@ -137,7 +137,7 @@ def assign_employee_biometric(
         raise frappe.ValidationError("Unsupported biometric assignment source")
 
     employee_doc = frappe.get_doc("Employee", employee_name)
-    employee_doc.check_permission("read")
+    employee_doc.check_permission("select")
     device_doc = frappe.get_doc("Tradexcel Biometric Device", device_name)
     device_doc.check_permission("read")
     if not str(device_doc.device_serial or "").strip():
@@ -213,7 +213,7 @@ def transfer_employee_biometric(
         raise frappe.ValidationError("Source and target devices must be different")
 
     employee_doc = frappe.get_doc("Employee", employee_name)
-    employee_doc.check_permission("read")
+    employee_doc.check_permission("select")
     source_doc = frappe.get_doc("Tradexcel Biometric Device", source_name)
     target_doc = frappe.get_doc("Tradexcel Biometric Device", target_name)
     source_doc.check_permission("read")

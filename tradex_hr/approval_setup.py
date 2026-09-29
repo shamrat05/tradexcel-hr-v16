@@ -8,6 +8,21 @@ import frappe
 
 
 WORKFLOWS = {
+    "Tradexcel Statutory Rule Set Approval": {
+        "document_type": "Tradexcel Statutory Rule Set",
+        "states": (
+            ("Tradexcel Statutory Draft", "0", "Tradexcel HR Manager"),
+            ("Tradexcel Statutory Pending Approval", "0", "Tradexcel Owner/Director"),
+            ("Tradexcel Statutory Approved", "1", "Tradexcel Compliance Auditor"),
+            ("Tradexcel Statutory Rejected", "0", "Tradexcel HR Manager"),
+        ),
+        "transitions": (
+            ("Tradexcel Statutory Draft", "Submit for Legal Review", "Tradexcel Statutory Pending Approval", "Tradexcel HR Manager", None, 1),
+            ("Tradexcel Statutory Pending Approval", "Approve Rule Set", "Tradexcel Statutory Approved", "Tradexcel Owner/Director"),
+            ("Tradexcel Statutory Pending Approval", "Reject Rule Set", "Tradexcel Statutory Rejected", "Tradexcel Owner/Director"),
+            ("Tradexcel Statutory Rejected", "Return to Draft", "Tradexcel Statutory Draft", "Tradexcel HR Manager"),
+        ),
+    },
     "Tradexcel Attendance Correction": {
         "document_type": "Attendance Request",
         "states": (
@@ -47,19 +62,74 @@ WORKFLOWS = {
         "document_type": "Payroll Entry",
         "states": (
             ("Tradexcel Payroll Draft", "0", "Tradexcel Payroll Manager"),
-            ("Tradexcel Payroll Pending Review", "0", "Tradexcel Payroll Approver"),
-            ("Tradexcel Payroll Pending Director Approval", "0", "Tradexcel Owner/Director"),
+            ("Tradexcel Payroll Pending Review", "1", "Tradexcel Payroll Approver"),
+            ("Tradexcel Payroll Pending Director Approval", "1", "Tradexcel Owner/Director"),
             ("Tradexcel Payroll Approved", "1", "Tradexcel Owner/Director"),
-            ("Tradexcel Payroll Rejected", "0", "Tradexcel Payroll Approver"),
+            ("Tradexcel Payroll Rejected", "2", "Tradexcel Payroll Approver"),
             ("Tradexcel Payroll Cancelled", "2", "Tradexcel Owner/Director"),
         ),
         "transitions": (
-            ("Tradexcel Payroll Draft", "Submit for Review", "Tradexcel Payroll Pending Review", "Tradexcel Payroll Manager"),
-            ("Tradexcel Payroll Pending Review", "Review Complete", "Tradexcel Payroll Pending Director Approval", "Tradexcel Payroll Approver"),
-            ("Tradexcel Payroll Pending Review", "Reject", "Tradexcel Payroll Rejected", "Tradexcel Payroll Approver"),
-            ("Tradexcel Payroll Pending Director Approval", "Approve", "Tradexcel Payroll Approved", "Tradexcel Owner/Director"),
-            ("Tradexcel Payroll Pending Director Approval", "Reject", "Tradexcel Payroll Rejected", "Tradexcel Owner/Director"),
+            ("Tradexcel Payroll Draft", "Submit for Review", "Tradexcel Payroll Pending Review", "Tradexcel Payroll Manager", None, 1),
+            ("Tradexcel Payroll Pending Review", "Review Complete", "Tradexcel Payroll Pending Director Approval", "Tradexcel Payroll Approver", 'doc.salary_slips_created and doc.status not in ("Queued", "Failed")'),
+            ("Tradexcel Payroll Pending Review", "Reject", "Tradexcel Payroll Rejected", "Tradexcel Payroll Approver", 'doc.status != "Queued"'),
+            ("Tradexcel Payroll Pending Director Approval", "Approve", "Tradexcel Payroll Approved", "Tradexcel Owner/Director", 'doc.salary_slips_created and doc.status not in ("Queued", "Failed")'),
+            ("Tradexcel Payroll Pending Director Approval", "Reject", "Tradexcel Payroll Rejected", "Tradexcel Owner/Director", 'doc.status != "Queued"'),
             ("Tradexcel Payroll Approved", "Cancel", "Tradexcel Payroll Cancelled", "Tradexcel Owner/Director"),
+        ),
+    },
+    "Tradexcel Payroll Correction Approval": {
+        "document_type": "Payroll Correction",
+        "states": (
+            ("Tradexcel Adjustment Draft", "0", "All"),
+            ("Tradexcel Adjustment Pending Approval", "0", "All"),
+            ("Tradexcel Adjustment Approved", "1", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Rejected", "0", "All"),
+            ("Tradexcel Adjustment Cancelled", "2", "Tradexcel Owner/Director"),
+        ),
+        "transitions": (
+            ("Tradexcel Adjustment Draft", "Submit for Approval", "Tradexcel Adjustment Pending Approval", "Tradexcel Payroll Manager", None, 1),
+            ("Tradexcel Adjustment Draft", "Submit for Approval", "Tradexcel Adjustment Pending Approval", "Tradexcel HR Manager", None, 1),
+            ("Tradexcel Adjustment Pending Approval", "Approve", "Tradexcel Adjustment Approved", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Pending Approval", "Reject", "Tradexcel Adjustment Rejected", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Rejected", "Return to Draft", "Tradexcel Adjustment Draft", "Tradexcel Payroll Manager"),
+            ("Tradexcel Adjustment Rejected", "Return to Draft", "Tradexcel Adjustment Draft", "Tradexcel HR Manager"),
+            ("Tradexcel Adjustment Approved", "Cancel", "Tradexcel Adjustment Cancelled", "Tradexcel Owner/Director"),
+        ),
+    },
+    "Tradexcel Full & Final Approval": {
+        "document_type": "Full and Final Statement",
+        "states": (
+            ("Tradexcel F&F Draft", "0", "Tradexcel HR Manager"),
+            ("Tradexcel F&F Pending Finance", "0", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Approved", "1", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Rejected", "0", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Cancelled", "2", "Tradexcel Finance/Accounts Officer"),
+        ),
+        "transitions": (
+            ("Tradexcel F&F Draft", "Submit for Finance Review", "Tradexcel F&F Pending Finance", "Tradexcel HR Manager", None, 1),
+            ("Tradexcel F&F Pending Finance", "Approve and Submit", "Tradexcel F&F Approved", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Pending Finance", "Reject", "Tradexcel F&F Rejected", "Tradexcel Finance/Accounts Officer"),
+            ("Tradexcel F&F Rejected", "Return to Draft", "Tradexcel F&F Draft", "Tradexcel HR Manager"),
+            ("Tradexcel F&F Approved", "Cancel", "Tradexcel F&F Cancelled", "Tradexcel Finance/Accounts Officer"),
+        ),
+    },
+    "Tradexcel Arrear Approval": {
+        "document_type": "Arrear",
+        "states": (
+            ("Tradexcel Adjustment Draft", "0", "All"),
+            ("Tradexcel Adjustment Pending Approval", "0", "All"),
+            ("Tradexcel Adjustment Approved", "1", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Rejected", "0", "All"),
+            ("Tradexcel Adjustment Cancelled", "2", "Tradexcel Owner/Director"),
+        ),
+        "transitions": (
+            ("Tradexcel Adjustment Draft", "Submit for Approval", "Tradexcel Adjustment Pending Approval", "Tradexcel Payroll Manager", None, 1),
+            ("Tradexcel Adjustment Draft", "Submit for Approval", "Tradexcel Adjustment Pending Approval", "Tradexcel HR Manager", None, 1),
+            ("Tradexcel Adjustment Pending Approval", "Approve", "Tradexcel Adjustment Approved", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Pending Approval", "Reject", "Tradexcel Adjustment Rejected", "Tradexcel Payroll Approver"),
+            ("Tradexcel Adjustment Rejected", "Return to Draft", "Tradexcel Adjustment Draft", "Tradexcel Payroll Manager"),
+            ("Tradexcel Adjustment Rejected", "Return to Draft", "Tradexcel Adjustment Draft", "Tradexcel HR Manager"),
+            ("Tradexcel Adjustment Approved", "Cancel", "Tradexcel Adjustment Cancelled", "Tradexcel Owner/Director"),
         ),
     },
 }
@@ -90,6 +160,22 @@ def _replace_rows(doc, fieldname: str, rows: Iterable[dict]) -> None:
         doc.append(fieldname, row)
 
 
+def _transition_row(transition: tuple) -> dict:
+    state, action, next_state, allowed, *options = transition
+    condition = options[0] if options else None
+    allow_self_approval = options[1] if len(options) > 1 else 0
+    row = {
+        "state": state,
+        "action": action,
+        "next_state": next_state,
+        "allowed": allowed,
+        "allow_self_approval": allow_self_approval,
+    }
+    if condition:
+        row["condition"] = condition
+    return row
+
+
 def ensure_tradex_workflows() -> dict[str, int]:
     """Create or converge the four-eyes approval workflows idempotently."""
     created_or_updated = 0
@@ -98,8 +184,8 @@ def ensure_tradex_workflows() -> dict[str, int]:
             continue
         for state_name, _doc_status, _allow_edit in definition["states"]:
             _ensure_state(state_name)
-        for _state, action_name, _next_state, _allowed in definition["transitions"]:
-            _ensure_action(action_name)
+        for transition in definition["transitions"]:
+            _ensure_action(transition[1])
 
         if frappe.db.exists("Workflow", workflow_name):
             workflow = frappe.get_doc("Workflow", workflow_name)
@@ -128,16 +214,7 @@ def ensure_tradex_workflows() -> dict[str, int]:
         _replace_rows(
             workflow,
             "transitions",
-            (
-                {
-                    "state": state,
-                    "action": action,
-                    "next_state": next_state,
-                    "allowed": allowed,
-                    "allow_self_approval": 0,
-                }
-                for state, action, next_state, allowed in definition["transitions"]
-            ),
+            (_transition_row(transition) for transition in definition["transitions"]),
         )
         workflow.save(ignore_permissions=True)
         created_or_updated += 1

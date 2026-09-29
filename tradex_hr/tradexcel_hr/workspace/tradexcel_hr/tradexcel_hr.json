@@ -1,37 +1,14 @@
 {
- "charts": [
+ "app": "tradex_hr",
+ "charts": [],
+ "content": "[{\"type\": \"header\", \"data\": {\"text\": \"<h2>Tradexcel HR Action Board</h2>\", \"col\": 12}}, {\"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Tradexcel Work Needing Attention\", \"col\": 12}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Operational Snapshot</h3>\", \"col\": 12}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Number of Employees on Leave (Today)\", \"col\": 4}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Number of Employees on Leave (This Month)\", \"col\": 4}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Expense Claims (This Month)\", \"col\": 4}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Pending Work</h3>\", \"col\": 12}}, {\"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Open Leave Requests\", \"col\": 4}}, {\"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Attendance Requests to Review\", \"col\": 4}}, {\"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Draft Expense Claims\", \"col\": 4}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Common Actions</h3>\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employee Directory\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Today's Attendance\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance Summary\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance Fix Requests\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Mobile Attendance\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Leave Requests\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Expense Claims\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Run Monthly Payroll\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Salary Setup Coverage\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Job Applicants\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Field Duties\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Final Settlements\", \"col\": 3}}]",
+ "creation": "2026-09-17 02:50:51.215570",
+ "custom_blocks": [
   {
-   "chart_name": "Tradexcel Employees by Department",
-   "label": "Tradexcel Employees by Department"
-  },
-  {
-   "chart_name": "Tradexcel Employees by Branch",
-   "label": "Tradexcel Employees by Branch"
-  },
-  {
-   "chart_name": "Tradexcel Headcount by Company",
-   "label": "Tradexcel Headcount by Company"
-  },
-  {
-   "chart_name": "Tradexcel Attendance Status",
-   "label": "Tradexcel Attendance Status"
-  },
-  {
-   "chart_name": "Tradexcel Leave Allocated by Type",
-   "label": "Tradexcel Leave Allocated by Type"
-  },
-  {
-   "chart_name": "Tradexcel Payroll by Month",
-   "label": "Tradexcel Payroll by Month"
-  },
-  {
-   "chart_name": "Tradexcel Checkins by Day",
-   "label": "Tradexcel Checkins by Day"
+   "custom_block_name": "Tradexcel Work Needing Attention",
+   "label": "Tradexcel Work Needing Attention"
   }
  ],
- "content": "[{\"type\": \"header\", \"data\": {\"text\": \"<h2>Tradexcel HR Action Board</h2>\", \"col\": 12}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Tradexcel Active Employees\", \"col\": 3}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Tradexcel TCL Active Employees\", \"col\": 3}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Tradexcel EFL Active Employees\", \"col\": 3}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Tradexcel Punches Logged\", \"col\": 3}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Tradexcel Present Records\", \"col\": 3}}, {\"type\": \"number_card\", \"data\": {\"number_card_name\": \"Tradexcel Absent Records\", \"col\": 3}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Overview</h3>\", \"col\": 12}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Tradexcel Employees by Department\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Tradexcel Employees by Branch\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Tradexcel Headcount by Company\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Tradexcel Attendance Status\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Tradexcel Leave Allocated by Type\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Tradexcel Payroll by Month\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Tradexcel Checkins by Day\", \"col\": 6}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Every day</h3>\", \"col\": 12}}, {\"type\": \"paragraph\", \"data\": {\"text\": \"Start here: attendance, missing punches, and corrections.\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Today's Attendance\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance Summary\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Punch Log\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance Records\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance Fix Requests\", \"col\": 3}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>People</h3>\", \"col\": 12}}, {\"type\": \"paragraph\", \"data\": {\"text\": \"Employees, organization structure, movement, and exits.\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employee Directory\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Departments\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Designations\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Branches / Locations\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Joiners & Leavers\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employee Transfers\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Exits / Separations\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Final Settlements\", \"col\": 3}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Payroll & salary</h3>\", \"col\": 12}}, {\"type\": \"paragraph\", \"data\": {\"text\": \"Prepare payroll, maintain pay rules, and review every amount.\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Run Monthly Payroll\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Salary Slips\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Salary Structures\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Salary Assignments\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Salary Components\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Extra Pay & Deductions\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Payroll Register\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Payroll Variance\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pay Component Register\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Salary Setup Coverage\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Payroll Rules\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Policy Exceptions\", \"col\": 3}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Leave & shifts</h3>\", \"col\": 12}}, {\"type\": \"paragraph\", \"data\": {\"text\": \"Plan shifts, allocate leave, and check coverage before payroll.\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Leave Requests\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Leave Allocations\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bulk Leave Allocation\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Leave Balances\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Shift Types\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Shift Planner\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Shift Assignments\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bulk Shift Assignment\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Shift Coverage\", \"col\": 3}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Checks & alerts</h3>\", \"col\": 12}}, {\"type\": \"paragraph\", \"data\": {\"text\": \"Review exceptions before they become payroll or attendance mistakes.\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Anomaly Radar\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Missing Employee Data\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Biometric ID Audit\", \"col\": 3}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Devices & data</h3>\", \"col\": 12}}, {\"type\": \"paragraph\", \"data\": {\"text\": \"Connect attendance devices and safely fill verified master data.\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Biometric Devices\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employee Biometric IDs\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bulk Data Import\", \"col\": 3}}]",
- "creation": "2026-09-17 02:50:51.215570",
- "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "hide_custom": 0,
@@ -41,40 +18,87 @@
  "is_hidden": 0,
  "label": "Tradexcel HR",
  "links": [],
- "modified": "2026-09-17 19:31:09.982339",
+ "modified": "2026-09-27 20:28:24.265550",
  "modified_by": "Administrator",
  "module": "Tradexcel HR",
  "name": "Tradexcel HR",
  "number_cards": [
   {
-   "label": "Tradexcel Active Employees",
-   "number_card_name": "Tradexcel Active Employees"
+   "label": "Number of Employees on Leave (Today)",
+   "number_card_name": "Number of Employees on Leave (Today)"
   },
   {
-   "label": "Tradexcel TCL Active Employees",
-   "number_card_name": "Tradexcel TCL Active Employees"
+   "label": "Number of Employees on Leave (This Month)",
+   "number_card_name": "Number of Employees on Leave (This Month)"
   },
   {
-   "label": "Tradexcel EFL Active Employees",
-   "number_card_name": "Tradexcel EFL Active Employees"
-  },
-  {
-   "label": "Tradexcel Punches Logged",
-   "number_card_name": "Tradexcel Punches Logged"
-  },
-  {
-   "label": "Tradexcel Present Records",
-   "number_card_name": "Tradexcel Present Records"
-  },
-  {
-   "label": "Tradexcel Absent Records",
-   "number_card_name": "Tradexcel Absent Records"
+   "label": "Expense Claims (This Month)",
+   "number_card_name": "Expense Claims (This Month)"
   }
  ],
  "owner": "Administrator",
  "public": 1,
- "quick_lists": [],
- "roles": [],
+ "quick_lists": [
+  {
+   "document_type": "Leave Application",
+   "label": "Open Leave Requests",
+   "quick_list_filter": "{\"status\": \"Open\"}"
+  },
+  {
+   "document_type": "Attendance Request",
+   "label": "Attendance Requests to Review",
+   "quick_list_filter": "{\"docstatus\": 0}"
+  },
+  {
+   "document_type": "Expense Claim",
+   "label": "Draft Expense Claims",
+   "quick_list_filter": "{\"docstatus\": 0, \"approval_status\": \"Draft\"}"
+  }
+ ],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Tradexcel Attendance Correction Approver"
+  },
+  {
+   "role": "Tradexcel Branch Manager"
+  },
+  {
+   "role": "Tradexcel Compliance Auditor"
+  },
+  {
+   "role": "Tradexcel Department Manager"
+  },
+  {
+   "role": "Tradexcel Device/IT Administrator"
+  },
+  {
+   "role": "Tradexcel Factory Supervisor"
+  },
+  {
+   "role": "Tradexcel Finance/Accounts Officer"
+  },
+  {
+   "role": "Tradexcel HR Manager"
+  },
+  {
+   "role": "Tradexcel HR/Attendance Officer"
+  },
+  {
+   "role": "Tradexcel Leave Approver"
+  },
+  {
+   "role": "Tradexcel Owner/Director"
+  },
+  {
+   "role": "Tradexcel Payroll Approver"
+  },
+  {
+   "role": "Tradexcel Payroll Manager"
+  }
+ ],
  "sequence_id": 0.0,
  "shortcuts": [
   {
@@ -94,6 +118,22 @@
    "link_to": "Daily Attendance Summary",
    "report_ref_doctype": "Attendance",
    "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "location",
+   "label": "Mobile Attendance",
+   "link_to": "tradexcel-mobile-attendance",
+   "type": "Page"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "map",
+   "label": "Live Locations",
+   "link_to": "tradex-live-locations",
+   "type": "Page"
   },
   {
    "color": "Blue",
@@ -181,6 +221,15 @@
    "doc_view": "",
    "icon": "accounting",
    "label": "Run Monthly Payroll",
+   "link_to": "Tradexcel Payroll Readiness",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "file",
+   "label": "Payroll Entries (Advanced)",
    "link_to": "Payroll Entry",
    "type": "DocType"
   },
@@ -322,7 +371,7 @@
    "doc_view": "",
    "icon": "assign",
    "label": "Shift Assignments",
-   "link_to": "Shift Schedule Assignment",
+   "link_to": "Shift Assignment",
    "type": "DocType"
   },
   {
@@ -331,8 +380,32 @@
    "icon": "check",
    "label": "Shift Coverage",
    "link_to": "Tradexcel Shift Coverage",
-   "report_ref_doctype": "Shift Assignment",
+   "report_ref_doctype": "Employee",
    "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Attendance Policies",
+   "link_to": "Tradexcel Attendance Policy",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "location",
+   "label": "Field Duties",
+   "link_to": "Tradexcel Field Duty",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "map",
+   "label": "Location Pings",
+   "link_to": "Tradexcel Location Ping",
+   "type": "DocType"
   },
   {
    "color": "Blue",
@@ -380,9 +453,599 @@
   {
    "color": "Blue",
    "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Face Match Settings",
+   "link_to": "Tradex Face Match Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
    "icon": "upload",
    "label": "Bulk Data Import",
    "link_to": "Data Import",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "change",
+   "label": "Employee Promotions",
+   "link_to": "Employee Promotion",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "hr",
+   "label": "Job Openings",
+   "link_to": "Job Opening",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Job Applicants",
+   "link_to": "Job Applicant",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Job Offers",
+   "link_to": "Job Offer",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Onboarding",
+   "link_to": "Employee Onboarding",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Overtime Reviews",
+   "link_to": "Overtime Slip",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Leave Policies",
+   "link_to": "Leave Policy",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Leave Policy Assignments",
+   "link_to": "Leave Policy Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Leave Periods",
+   "link_to": "Leave Period",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Holiday Lists",
+   "link_to": "Holiday List",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "change",
+   "label": "Payroll Corrections",
+   "link_to": "Payroll Correction",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Salary Arrears",
+   "link_to": "Arrear",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Wage Floor Reviews",
+   "link_to": "Tradexcel Wage Floor Classification",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Benefit Enrollments",
+   "link_to": "Tradexcel Statutory Benefit Enrollment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Working Time Reviews",
+   "link_to": "Tradexcel Working Time Classification",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Maternity Reviews",
+   "link_to": "Tradexcel Maternity Review",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Welfare Reviews",
+   "link_to": "Tradexcel Workplace Welfare Review",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Statutory Exit Rules",
+   "link_to": "Tradexcel Statutory Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Wage Floor Rules",
+   "link_to": "Tradexcel Wage Floor Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Benefit Rules",
+   "link_to": "Tradexcel Statutory Benefit Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Working Time Rules",
+   "link_to": "Tradexcel Working Time Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Maternity Rules",
+   "link_to": "Tradexcel Maternity Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Income Tax Slabs",
+   "link_to": "Income Tax Slab",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Payroll Periods",
+   "link_to": "Payroll Period",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Expense Claims",
+   "link_to": "Expense Claim",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Employee Advances",
+   "link_to": "Employee Advance",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "map",
+   "label": "Travel Requests",
+   "link_to": "Travel Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "list-alt",
+   "label": "Employee Advance Summary",
+   "link_to": "Employee Advance Summary",
+   "report_ref_doctype": "Employee Advance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "list-alt",
+   "label": "Unpaid Expense Claims",
+   "link_to": "Unpaid Expense Claim",
+   "report_ref_doctype": "Expense Claim",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Expense Claim Types",
+   "link_to": "Expense Claim Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Purpose of Travel",
+   "link_to": "Purpose of Travel",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Compensatory Leave Requests",
+   "link_to": "Compensatory Leave Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Leave Encashment",
+   "link_to": "Leave Encashment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Holiday List Assignments",
+   "link_to": "Holiday List Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Leave Types",
+   "link_to": "Leave Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Leave Block Lists",
+   "link_to": "Leave Block List",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Shift Requests",
+   "link_to": "Shift Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Shift Schedule Assignments",
+   "link_to": "Shift Schedule Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "location",
+   "label": "Shift Locations",
+   "link_to": "Shift Location",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Overtime Types",
+   "link_to": "Overtime Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Attendance Periods",
+   "link_to": "Tradexcel Attendance Period",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Monthly Attendance Sheet",
+   "link_to": "Monthly Attendance Sheet",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Shift Attendance",
+   "link_to": "Shift Attendance",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Employees Working on a Holiday",
+   "link_to": "Employees working on a holiday",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Employee Incentive",
+   "link_to": "Employee Incentive",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Retention Bonus",
+   "link_to": "Retention Bonus",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Salary Withholding",
+   "link_to": "Salary Withholding",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Staffing Plans",
+   "link_to": "Staffing Plan",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Job Requisitions",
+   "link_to": "Job Requisition",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Interviews",
+   "link_to": "Interview",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Interview Feedback",
+   "link_to": "Interview Feedback",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Employee Referrals",
+   "link_to": "Employee Referral",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "file",
+   "label": "Appointment Letters",
+   "link_to": "Appointment Letter",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Interview Types",
+   "link_to": "Interview Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Appointment Letter Templates",
+   "link_to": "Appointment Letter Template",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "chart",
+   "label": "Recruitment Analytics",
+   "link_to": "Recruitment Analytics",
+   "report_ref_doctype": "Staffing Plan",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "solid-warning",
+   "label": "Employee Grievances",
+   "link_to": "Employee Grievance",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "hr",
+   "label": "Training Programs",
+   "link_to": "Training Program",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Training Events",
+   "link_to": "Training Event",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Appraisals",
+   "link_to": "Appraisal",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "check",
+   "label": "Goals",
+   "link_to": "Goal",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Employee Skill Map",
+   "link_to": "Employee Skill Map",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Training Feedback",
+   "link_to": "Training Feedback",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "list-alt",
+   "label": "Training Results",
+   "link_to": "Training Result",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Appraisal Cycles",
+   "link_to": "Appraisal Cycle",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Grievance Types",
+   "link_to": "Grievance Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Appraisal Templates",
+   "link_to": "Appraisal Template",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Employee Grades",
+   "link_to": "Employee Grade",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Employee Groups",
+   "link_to": "Employee Group",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "HR Settings",
+   "link_to": "HR Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Payroll Settings",
+   "link_to": "Payroll Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Bulk Salary Structure Assignment",
+   "link_to": "Bulk Salary Structure Assignment",
    "type": "DocType"
   },
   {
@@ -410,5 +1073,6 @@
    "type": "DocType"
   }
  ],
- "title": "Tradexcel HR"
+ "title": "Tradexcel HR",
+ "type": "Workspace"
 }

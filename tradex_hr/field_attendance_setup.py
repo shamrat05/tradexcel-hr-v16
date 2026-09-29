@@ -18,6 +18,8 @@ def _fields() -> dict[str, list[dict[str, object]]]:
             },
         ],
         "Employee Checkin": [
+            {"fieldname": "custom_tradex_time_reason", "label": "Original Time Integrity Reason",
+             "fieldtype": "Small Text", "read_only": 1, "insert_after": "custom_tradex_time_status"},
             {
                 "fieldname": "custom_tradex_source",
                 "label": "Tradexcel Source",
@@ -44,7 +46,7 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "fieldname": "custom_tradex_location_status",
                 "label": "Location Status",
                 "fieldtype": "Select",
-                "options": "Inside Zone\u000aOutside Approved\u000aOutside Accepted\u000aOutside Flagged\u000aOutside Blocked\u000aGPS Missing\u000aGPS Invalid\u000aWFH Approved\u000aWFH Review\u000aUnassigned",
+                "options": "Inside Zone\u000aOutside Approved\u000aOutside Accepted\u000aOutside Flagged\u000aOutside Blocked\u000aGPS Missing\u000aGPS Invalid\u000aWFH Approved\u000aWFH Review\u000aUnassigned\u000aTime Review Required",
                 "insert_after": "custom_tradex_field_duty",
                 "read_only": 1,
                 "in_list_view": 1,
@@ -118,6 +120,22 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "insert_after": "custom_tradex_location_reason",
             },
             {
+                "fieldname": "custom_tradex_received_at",
+                "label": "Server Received At",
+                "fieldtype": "Datetime",
+                "insert_after": "custom_tradex_device_time",
+                "read_only": 1,
+            },
+            {
+                "fieldname": "custom_tradex_time_status",
+                "label": "Time Integrity",
+                "fieldtype": "Select",
+                "options": "Trusted\u000aFlagged\u000aNo Device Time\u000aBlocked",
+                "insert_after": "custom_tradex_received_at",
+                "read_only": 1,
+                "in_list_view": 1,
+            },
+            {
                 "fieldname": "custom_tradex_clock_skew_seconds",
                 "label": "Device Clock Skew (seconds)",
                 "fieldtype": "Float",
@@ -130,8 +148,20 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "fieldtype": "Data",
                 "insert_after": "custom_tradex_device_time",
             },
+            {'fieldname': 'custom_tradex_reviewed_by', 'label': 'Reviewed By', 'fieldtype': 'Link', 'read_only': 1, 'insert_after': 'custom_tradex_review_status', 'options': 'User'},
+            {'fieldname': 'custom_tradex_reviewed_at', 'label': 'Reviewed At', 'fieldtype': 'Datetime', 'read_only': 1, 'insert_after': 'custom_tradex_review_status'},
+            {'fieldname': 'custom_tradex_review_reason', 'label': 'Review Reason', 'fieldtype': 'Small Text', 'read_only': 1, 'insert_after': 'custom_tradex_review_status'},
         ],
         "Additional Salary": [
+            {
+                "fieldname": "custom_tradex_payroll_input_key",
+                "label": "Tradexcel Payroll Input Key",
+                "fieldtype": "Data",
+                "insert_after": "ref_docname",
+                "read_only": 1,
+                "unique": 1,
+                "description": "Stable key for an idempotent derived payroll input.",
+            },
             {
                 "fieldname": "custom_tradex_field_duty",
                 "label": "Field Duty",
@@ -160,6 +190,56 @@ def _fields() -> dict[str, list[dict[str, object]]]:
                 "fieldtype": "Small Text",
                 "insert_after": "custom_tradex_distance_km",
                 "read_only": 1,
+            },
+        ],
+        "Payroll Entry": [
+            {
+                "fieldname": "custom_tradex_run_key",
+                "label": "Tradexcel Managed Run Key",
+                "fieldtype": "Data",
+                "insert_after": "payroll_frequency",
+                "read_only": 1,
+                "permlevel": 1,
+                "unique": 1,
+            },
+            {
+                "fieldname": "custom_tradex_population_hash",
+                "label": "Tradexcel Payroll Population Fingerprint",
+                "fieldtype": "Data",
+                "insert_after": "custom_tradex_run_key",
+                "read_only": 1,
+                "permlevel": 1,
+            },
+            {
+                "fieldname": "custom_tradex_attendance_revision",
+                "label": "Tradexcel Attendance Revision",
+                "fieldtype": "Data",
+                "insert_after": "custom_tradex_population_hash",
+                "read_only": 1,
+                "permlevel": 1,
+            },
+        ],
+        "Salary Structure": [
+            {
+                "fieldname": "custom_tradex_pay_basis",
+                "label": "Tradexcel Pay Basis",
+                "fieldtype": "Select",
+                "options": "Monthly Salary\nDaily Wage",
+                "insert_after": "payroll_frequency",
+                "description": "Explicit financial pay basis. Never inferred from Employment Type.",
+            },
+            {
+                "fieldname": "custom_tradex_daily_wage_component",
+                "label": "Daily Wage Salary Component",
+                "fieldtype": "Link",
+                "options": "Salary Component",
+                "insert_after": "custom_tradex_pay_basis",
+                "depends_on": 'eval:doc.custom_tradex_pay_basis=="Daily Wage"',
+                "mandatory_depends_on": 'eval:doc.custom_tradex_pay_basis=="Daily Wage"',
+                "description": (
+                    "For Daily Wage structures, the native Salary Component that receives the regular wage "
+                    "amount derived from finalized Attendance and the effective Salary Structure Assignment base rate."
+                ),
             },
         ],
     }

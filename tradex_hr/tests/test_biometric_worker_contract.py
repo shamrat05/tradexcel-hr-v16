@@ -24,6 +24,7 @@ import ast
 import pathlib
 import re
 import tempfile
+from types import SimpleNamespace
 
 import pytest
 
@@ -104,12 +105,12 @@ def site_worker():
     import os
     import sys
 
-    bench = pathlib.Path(os.environ.get("FRAPPE_TEST_BENCH", pathlib.Path.home() / "frappe-bench"))
+    bench = pathlib.Path(os.environ.get("FRAPPE_TEST_BENCH", pathlib.Path.home() / "frappe-bench-v16"))
     if not (bench / "sites").is_dir():
         pytest.skip("no bench sites directory")
     try:
         frappe.init(
-            site=os.environ.get("FRAPPE_TEST_SITE", "hrms.localhost"),
+            site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
             sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", str(bench / "sites")),
         )
         frappe.connect()
@@ -158,3 +159,27 @@ def test_resolver_and_writer_agree_at_runtime(site_worker) -> None:
 class _FakeDoc:
     def insert(self, **kwargs) -> None:
         return None
+
+
+def test_worker_requires_explicit_persistent_state_path():
+    from tradex_hr.tradexcel_hr.biometric.worker import ReliableBiometricWorker
+
+    with pytest.raises(ValueError, match="TRADEX_SYNC_STATE_FILE"):
+        ReliableBiometricWorker(state_path=None, frappe_module=SimpleNamespace())
+
+
+def test_worker_without_local_bridge_database_uses_http(tmp_path, monkeypatch):
+    from tradex_hr.tradexcel_hr.biometric import worker as worker_module
+
+    monkeypatch.setattr(worker_module, "DEFAULT_BRIDGE_DB", None)
+    worker = worker_module.ReliableBiometricWorker(
+        state_path=str(tmp_path / "state.sqlite3"), frappe_module=SimpleNamespace(),
+    )
+    try:
+        monkeypatch.setattr(worker, "_fetch_http", lambda _device: [{"id": 1}])
+        assert worker._fetch("SYNTHETIC-DEVICE") == [{"id": 1}]
+        monkeypatch.setattr(worker_module.urllib.request, "urlopen", lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError()))
+        with pytest.raises(RuntimeError, match="No devices were returned"):
+            worker._discover_devices()
+    finally:
+        worker.close()

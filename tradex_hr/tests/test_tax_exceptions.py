@@ -1,45 +1,16 @@
-from types import SimpleNamespace
-
-from tradex_hr.tradexcel_hr.tax_exceptions import is_tax_exempt, strip_tax_deductions
-
-
-def rule(name="R1", employee="E1", action="Mark Tax Exempt", **overrides):
-    base = {
-        "name": name, "company": "TCL", "employee": employee,
-        "tax_action": action, "effective_from": "2026-09-01",
-    }
-    base.update(overrides)
-    return base
+from tradex_hr import hooks
+from tradex_hr.tradexcel_hr import tax_exceptions
 
 
-class Slip:
-    def __init__(self, deductions):
-        self.deductions = [SimpleNamespace(**row) for row in deductions]
-
-    def append(self, fieldname, row):
-        getattr(self, fieldname).append(SimpleNamespace(**row))
-
-
-def test_is_tax_exempt_scope_window_and_company():
-    rules = [rule(), rule("R2", action="No Action")]
-    assert is_tax_exempt("E1", "TCL", "2026-09-10", rules) is True
-    assert is_tax_exempt("E2", "TCL", "2026-09-10", rules) is False
-    assert is_tax_exempt("E1", "EFL", "2026-09-10", rules) is False
-    expired = [rule(effective_to="2026-09-05")]
-    assert is_tax_exempt("E1", "TCL", "2026-09-10", expired) is False
+def test_legacy_tax_action_is_preserved_but_not_attached_to_salary_slip_calculation():
+    assert tax_exceptions.TAX_ACTIONS == ("Mark Tax Exempt",)
+    salary_slip_events = hooks.doc_events["Salary Slip"]
+    assert "tax_exceptions.apply_tax_exemption" not in str(salary_slip_events)
+    assert salary_slip_events["before_validate"] == (
+        "tradex_hr.tradexcel_hr.component_exceptions.apply_to_salary_slip"
+    )
 
 
-def test_strip_removes_only_tax_components():
-    slip = Slip([
-        {"salary_component": "Income Tax", "abbr": "IT", "amount": 500},
-        {"salary_component": "Provident Fund", "abbr": "PF", "amount": 200},
-    ])
-    assert strip_tax_deductions(slip, {"Income Tax"}) is True
-    assert [row.salary_component for row in slip.deductions] == ["Provident Fund"]
-    assert slip.deductions[0].amount == 200
-
-
-def test_strip_is_noop_when_nothing_to_remove():
-    slip = Slip([{"salary_component": "Provident Fund", "abbr": "PF", "amount": 200}])
-    assert strip_tax_deductions(slip, {"Income Tax"}) is False
-    assert strip_tax_deductions(slip, set()) is False
+def test_legacy_tax_module_has_no_salary_slip_mutation_api():
+    assert not hasattr(tax_exceptions, "apply_tax_exemption")
+    assert not hasattr(tax_exceptions, "strip_tax_deductions")

@@ -90,3 +90,42 @@ did not invent or recreate payroll slips.
 4. Reconcile payroll/leave business rules and test a draft-only payroll cycle in
    staging before production cutover.
 5. Take a new production backup immediately before any eventual v16 cutover.
+
+## Addendum — PR #7 migration and queue proof, 2026-09-23
+
+### Deployment preflight
+
+Before a staging migration:
+
+1. Confirm the exact site is hrms-v16.localhost and the bench is /home/sanchita/frappe-bench-v16.
+2. Record the app branch and commit; confirm the production site is not selected.
+3. Take a fresh backup with files and record archive checksums.
+4. Verify the database gzip and both file archives before relying on the backup.
+5. Inspect the default/short/long queues by site and job type; confirm a healthy normal worker before migration.
+6. Check free disk space and keep the source commit recorded with the migration result.
+
+Frappe v16 queues delete_dynamic_links jobs during document cleanup. Do not patch Frappe, make cleanup synchronous in Tradexcel, or clear Redis queues to force migration success. Worker availability is an operational prerequisite.
+
+### Queue diagnosis
+
+The earlier staging backlog contained 567 queued jobs: 556 default-queue delete_dynamic_links jobs and 11 long-queue search-index jobs, all attributed to hrms-v16.localhost. No other site was represented. A normal bench worker processed them; no Redis jobs were deleted manually. Subsequent migrations also queued the expected site-scoped search-index work. At final inspection bench show-pending-jobs reported no pending jobs.
+
+### Final PR #7 staging migration
+
+- Branch: feat/payroll-readiness-operator-flow, based on PR #7 head 8aff25f325756aee116aa7a89d6385b478e3893a before these changes.
+- Fresh pre-migration backup: 20260923_081458-hrms-v16_localhost.
+- Database SHA-256: f6b47e03a7a78b0796e5c81d5ca5ef8423e1580e6748bc2daedb87425fe62a44.
+- Public files SHA-256: 407aa11be1920d8b2022cb054d30fb7526d8a40fd28b560744a5f4df7fef0532.
+- Private files SHA-256: 7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe.
+- Config SHA-256: 904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73.
+- gzip -t and tar archive listings passed.
+- Standard bench migrate exited 0 and executed after_migrate. No direct ensure_* calls or manual metadata convergence were used.
+- clear-cache exited 0. bench build --app tradex_hr passed with Node 24.15.0.
+
+### Restore rehearsal
+
+A disposable site, payroll-migration-check-20260923.localhost, was restored from the verified staging backup using the bench restore path and migrated with standard bench migrate. Workers were running during migration. The app metadata smoke check passed: the three promoted reports load as Standard Script Reports in Tradexcel HR; the remaining four stay custom Query Reports. The report API smoke checks are recorded in ui_report_runtime_audit_2026-09-22.md. No production site was touched, and no salary slip or accounting entry was submitted or created by this rehearsal.
+
+Status: STANDARD BENCH MIGRATE = PROVEN on staging and the disposable restored site. This is deployment rehearsal evidence, not production approval.
+
+\r\n

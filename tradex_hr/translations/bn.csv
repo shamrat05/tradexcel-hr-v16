@@ -1,0 +1,28 @@
+Work needing attention,যেসব কাজে নজর দেওয়া দরকার
+Review date,পর্যালোচনার তারিখ
+Review work,কাজ পর্যালোচনা করুন
+Choose Company,কোম্পানি নির্বাচন করুন
+Choose a Company to review your work.,কাজ পর্যালোচনা করতে একটি কোম্পানি নির্বাচন করুন।
+Choose a valid review date.,পর্যালোচনার জন্য একটি সঠিক তারিখ নির্বাচন করুন।
+Loading work needing attention…,পর্যালোচনার কাজ লোড হচ্ছে…
+Open review,পর্যালোচনা খুলুন
+This review could not be loaded. Check your access and try again.,পর্যালোচনা লোড করা যায়নি। আপনার প্রবেশাধিকার যাচাই করে আবার চেষ্টা করুন।
+No outstanding items were found in the available reviews for your scope.,আপনার আওতায় উপলব্ধ পর্যালোচনায় কোনো বাকি কাজ পাওয়া যায়নি।
+Your role does not use this management work board.,আপনার ভূমিকার জন্য এই ব্যবস্থাপনা বোর্ড প্রযোজ্য নয়।
+Prepare Attendance Corrections,হাজিরা সংশোধনের খসড়া তৈরি করুন
+Select one or more Employees in the report first.,প্রথমে প্রতিবেদনে এক বা একাধিক কর্মী নির্বাচন করুন।
+Create draft requests,খসড়া অনুরোধ তৈরি করুন
+Draft correction results,সংশোধনের খসড়ার ফলাফল
+Draft requests created: {0}. Skipped or blocked: {1}.,খসড়া অনুরোধ তৈরি হয়েছে: {0}। বাদ পড়েছে বা আটকে আছে: {1}।
+Review draft requests,খসড়া অনুরোধ পর্যালোচনা করুন
+Punches are evidence only. No Attendance changes until an approver submits the native request.,পাঞ্চ কেবল প্রমাণ। অনুমোদনকারী মূল অনুরোধ সাবমিট না করা পর্যন্ত হাজিরা বদলাবে না।
+Not Marked,হাজিরা দেওয়া হয়নি
+Draft Attendance,খসড়া হাজিরা
+Submitted Attendance,সাবমিট করা হাজিরা
+Existing request,বিদ্যমান অনুরোধ
+Will create,তৈরি হবে
+Will overwrite after approval,অনুমোদনের পরে বদলাবে
+Skipped — approved leave,বাদ — অনুমোদিত ছুটি
+Skipped — holiday,বাদ — ছুটির দিন
+Blocked — outside permitted scope,আটকে আছে — অনুমোদিত আওতার বাইরে
+Blocked — payroll already processed,আটকে আছে — বেতন ইতিমধ্যে প্রক্রিয়া করা হয়েছে

@@ -9,7 +9,8 @@ git-ignored, so they were invisible to version control yet importable as
   purge_cancelled_salary_slips.py     purged cancelled slips
 
 Anyone (or any agent) with a bench python shell could have triggered a data
-rewrite by importing them. They now live in `sync/quarantine/`, outside the app.
+rewrite by importing them. That was historical quarantine evidence; the current v16 bench has no sync/
+runtime directory. These scripts remain excluded from the app.
 
 This test fails if a similar script reappears in the package.
 """
@@ -26,6 +27,8 @@ FORBIDDEN_STEMS = {
     "cleanup_false_import_employees",
     "source_staff_salary",
     "purge_cancelled_salary_slips",
+    "payroll_setup",
+    "salary_excel",
 }
 
 # A module is treated as a destructive one-off if it calls any of these at module

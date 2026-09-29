@@ -1,0 +1,196 @@
+{
+ "doctype": "DocType",
+ "name": "Tradexcel Operational Day Override",
+ "module": "Tradexcel HR",
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "operational_date",
+   "fieldtype": "Date",
+   "label": "Operational Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch / Establishment",
+   "options": "Branch"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "reason_category",
+   "fieldtype": "Select",
+   "label": "Reason",
+   "options": "No Work / Production Stop\nPower / Utility Failure\nMachine / Maintenance\nEmergency / Safety\nManagement Release\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason and Evidence",
+   "reqd": 1
+  },
+  {
+   "fieldname": "release_time",
+   "fieldtype": "Time",
+   "label": "Release Time"
+  },
+  {
+   "fieldname": "pay_treatment",
+   "fieldtype": "Data",
+   "label": "Pay Treatment",
+   "default": "Full Day Pay for Present Employees",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preview_status",
+   "fieldtype": "Select",
+   "label": "Preview Status",
+   "options": "READY\nNEEDS_ATTENTION",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preview_present_count",
+   "fieldtype": "Int",
+   "label": "Present Employees",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preview_affected_count",
+   "fieldtype": "Int",
+   "label": "Employees Whose Units Change",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preview_normal_units",
+   "fieldtype": "Float",
+   "label": "Normal Pay Units",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preview_override_units",
+   "fieldtype": "Float",
+   "label": "Override Pay Units",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preview_amount_impact",
+   "fieldtype": "Currency",
+   "label": "Estimated Daily Wage Impact",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preview_hash",
+   "fieldtype": "Data",
+   "label": "Preview Version",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1,
+   "allow_on_submit": 0
+  },
+  {
+   "fieldname": "approved_at",
+   "fieldtype": "Datetime",
+   "label": "Approved At",
+   "read_only": 1,
+   "allow_on_submit": 0
+  }
+ ],
+ "field_order": [
+  "company",
+  "operational_date",
+  "branch",
+  "department",
+  "reason_category",
+  "reason",
+  "release_time",
+  "pay_treatment",
+  "preview_status",
+  "preview_present_count",
+  "preview_affected_count",
+  "preview_normal_units",
+  "preview_override_units",
+  "preview_amount_impact",
+  "preview_hash",
+  "approved_by",
+  "approved_at"
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Tradexcel HR Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "Tradexcel HR/Attendance Officer",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "Tradexcel Factory Supervisor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1
+  },
+  {
+   "role": "Tradexcel Payroll Approver",
+   "read": 1,
+   "write": 1,
+   "submit": 1,
+   "cancel": 1,
+   "report": 1
+  },
+  {
+   "role": "Tradexcel Payroll Manager",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "Tradexcel Compliance Auditor",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "track_changes": 1,
+ "is_submittable": 1,
+ "autoname": "ODO-.YYYY.-.#####"
+}

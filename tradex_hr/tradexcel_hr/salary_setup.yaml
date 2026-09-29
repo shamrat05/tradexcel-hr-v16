@@ -1,7 +1,8 @@
-# Tradexcel salary configuration — single source of truth.
+# Historical Tradexcel salary migration specification. This is not generic
+# install/runtime configuration and is never called by install.after_migrate.
 #
-# Consumed by `tradex_hr.tradexcel_hr.salary_setup.ensure_salary_setup()`.
-# Declarative: change this file, re-run the installer, the site converges.
+# Consumed only when an operator explicitly invokes
+# `tradex_hr.tradexcel_hr.salary_setup.ensure_salary_setup()` for the historical migration.
 # Nothing is hardcoded in Python.
 #
 # Derived from the Tradexcel data in the VPS backup
@@ -78,7 +79,9 @@ components:
       Factory workers only: gross daily rate x attendance days. The rate is a
       gross per day (Tk 350), not a split.
     fields:
-      depends_on_payment_days: true
+      # Daily wages are derived from finalized Attendance into native
+      # Additional Salary.  The component itself must not be prorated again.
+      depends_on_payment_days: false
 
   - name: Overtime Pay
     abbr: OT
@@ -86,6 +89,9 @@ components:
     description: Paid overtime; rate and thresholds come from the Payroll Policy.
     fields:
       remove_if_zero_valued: true
+      # Native Overtime Slip emits an Additional Salary amount; do not prorate
+      # that already-final amount against Salary Slip payment_days.
+      depends_on_payment_days: false
 
 # ---------------------------------------------------------------------------
 # SALARY STRUCTURES — templates, NOT per person.
@@ -113,9 +119,10 @@ structures:
     description: >-
       Factory workers. Gross daily rate x attendance days; no percentage split.
     pay_basis: Daily Wage
+    daily_wage_component: Daily Wage
     earnings:
       - component: Daily Wage
-        formula: base * payment_days
+        amount: 0
       - component: Overtime Pay
         amount: 0
 

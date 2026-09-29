@@ -1,0 +1,19 @@
+{
+ "doctype":"DocType",
+ "name":"Tradexcel Wage Floor Rate",
+ "module":"Tradexcel HR",
+ "istable":1,
+ "editable_grid":1,
+ "field_order":["worker_category","gazette_grade","location_category","rate_basis","floor_type","component_key","salary_component","include_in_total_floor","minimum_amount"],
+ "fields":[
+  {"fieldname":"worker_category","fieldtype":"Data","label":"Legal Worker Category","reqd":1,"in_list_view":1},
+  {"fieldname":"gazette_grade","fieldtype":"Data","label":"Gazette Grade / Level","reqd":1,"in_list_view":1},
+  {"fieldname":"location_category","fieldtype":"Data","label":"Gazette Location Category","reqd":1,"in_list_view":1},
+  {"fieldname":"rate_basis","fieldtype":"Select","label":"Published Rate Basis","options":"Monthly\nDaily\nHourly","reqd":1,"in_list_view":1},
+  {"fieldname":"floor_type","fieldtype":"Select","label":"Floor Row Type","options":"Component\nTotal","reqd":1,"in_list_view":1},
+  {"fieldname":"component_key","fieldtype":"Data","label":"Legal Component Key","reqd":1,"in_list_view":1},
+  {"fieldname":"salary_component","fieldtype":"Link","label":"Native Salary Component","options":"Salary Component","in_list_view":1},
+  {"fieldname":"include_in_total_floor","fieldtype":"Check","label":"Included in Total Floor Package","default":0},
+  {"fieldname":"minimum_amount","fieldtype":"Currency","label":"Minimum Amount","reqd":1,"in_list_view":1}
+ ]
+}

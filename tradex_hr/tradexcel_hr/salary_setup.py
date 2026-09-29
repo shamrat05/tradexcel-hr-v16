@@ -94,8 +94,15 @@ def ensure_structures(spec: dict, *, commit: bool) -> list[str]:
     """Create or converge each Salary Structure, including its earnings rows."""
     log = []
     company = spec["company"]
-    currency = spec.get("currency", "BDT")
-
+    currency = spec.get("currency")
+    if not currency:
+        raise frappe.ValidationError("The explicit salary setup specification needs a currency")
+    meta = frappe.get_meta("Salary Structure")
+    for fieldname in ("custom_tradex_pay_basis", "custom_tradex_daily_wage_component"):
+        if not meta.has_field(fieldname):
+            raise frappe.ValidationError(
+                f"Salary Structure is missing {fieldname}; run the Tradexcel HR migration first"
+            )
     for st in spec["structures"]:
         name = st["name"]
         # a structure may override the company (e.g. EFL Standard); Frappe
@@ -106,6 +113,7 @@ def ensure_structures(spec: dict, *, commit: bool) -> list[str]:
             row = {"salary_component": e["component"]}
             comp = frappe.get_doc("Salary Component", e["component"])
             row["abbr"] = comp.salary_component_abbr
+            row["depends_on_payment_days"] = int(comp.depends_on_payment_days or 0)
             if "formula" in e:
                 row["amount_based_on_formula"] = 1
                 row["formula"] = e["formula"]
@@ -116,17 +124,40 @@ def ensure_structures(spec: dict, *, commit: bool) -> list[str]:
 
         if frappe.db.exists("Salary Structure", name):
             doc = frappe.get_doc("Salary Structure", name)
-            if doc.docstatus == 1:
-                doc.flags.ignore_permissions = True
-                doc.cancel()
-            before = [(r.salary_component, r.formula or "", float(r.amount or 0)) for r in doc.earnings]
-            after = [(r["salary_component"], r.get("formula", ""), float(r.get("amount") or 0)) for r in rows]
-            if before == after:
+            if not frappe.get_meta("Salary Structure").has_field("custom_tradex_pay_basis"):
+                raise frappe.ValidationError(
+                    "Salary Structure is missing custom_tradex_pay_basis; run the Tradexcel HR migration first"
+                )
+            before = [
+                (r.salary_component, r.formula or "", float(r.amount or 0), int(r.depends_on_payment_days or 0))
+                for r in doc.earnings
+            ]
+            after = [
+                (r["salary_component"], r.get("formula", ""), float(r.get("amount") or 0), int(r.get("depends_on_payment_days") or 0))
+                for r in rows
+            ]
+            basis_changed = doc.custom_tradex_pay_basis != st["pay_basis"]
+            daily_component = st.get("daily_wage_component")
+            daily_component_changed = doc.get("custom_tradex_daily_wage_component") != daily_component
+            if before == after and not basis_changed and not daily_component_changed:
                 log.append(f"  ok     structure {name} (earnings already match)")
                 continue
+            if doc.docstatus == 1:
+                linked = frappe.db.count(
+                    "Salary Structure Assignment", {"salary_structure": name, "docstatus": 1}
+                )
+                if linked:
+                    raise frappe.ValidationError(
+                        f"Cannot rewrite submitted Salary Structure {name}: {linked} submitted assignment(s) link to it. "
+                        "Create a new effective-dated structure/assignment instead."
+                    )
+                doc.flags.ignore_permissions = True
+                doc.cancel()
             doc.earnings = []
             for r in rows:
                 doc.append("earnings", r)
+            doc.custom_tradex_pay_basis = st["pay_basis"]
+            doc.custom_tradex_daily_wage_component = daily_component
             doc.flags.ignore_permissions = True
             doc.save()
             if doc.docstatus == 0:
@@ -140,12 +171,76 @@ def ensure_structures(spec: dict, *, commit: bool) -> list[str]:
                 "currency": currency,
                 "payroll_frequency": "Monthly",
                 "is_active": "Yes",
+                "custom_tradex_pay_basis": st["pay_basis"],
+                "custom_tradex_daily_wage_component": st.get("daily_wage_component"),
                 "earnings": rows,
             })
             doc.flags.ignore_permissions = True
             doc.insert()
             doc.submit()
             log.append(f"  CREATE structure {name} ({len(rows)} earnings)")
+    if commit:
+        frappe.db.commit()
+    return log
+
+
+def ensure_pay_basis_metadata(spec: dict | None = None, *, commit: bool = False) -> list[str]:
+    """Persist only declarative pay-basis metadata on existing structures.
+
+    This deliberately does not infer from structure names or employee type.
+    It is the safe migration step for sites where structures already exist;
+    earnings convergence remains an explicit ``ensure_salary_setup`` action.
+    """
+    spec = spec or load_spec()
+    if not frappe.get_meta("Salary Structure").has_field("custom_tradex_pay_basis"):
+        raise frappe.ValidationError(
+            "Salary Structure is missing custom_tradex_pay_basis; run the Tradexcel HR migration first"
+        )
+    if not frappe.get_meta("Salary Structure").has_field("custom_tradex_daily_wage_component"):
+        raise frappe.ValidationError(
+            "Salary Structure is missing custom_tradex_daily_wage_component; run the Tradexcel HR migration first"
+        )
+    log = []
+    for structure in spec["structures"]:
+        name = structure["name"]
+        if not frappe.db.exists("Salary Structure", name):
+            log.append(f"  SKIP   structure {name} (not found)")
+            continue
+        doc = frappe.get_doc("Salary Structure", name)
+        wanted = structure["pay_basis"]
+        wanted_component = structure.get("daily_wage_component")
+        current_component = doc.get("custom_tradex_daily_wage_component")
+        component_changed = current_component != wanted_component
+        submitted_assignments = frappe.db.count(
+            "Salary Structure Assignment", {"salary_structure": name, "docstatus": 1}
+        )
+        if component_changed and submitted_assignments:
+            raise frappe.ValidationError(
+                f"Cannot change Daily Wage Salary Component for {name}: it has {submitted_assignments} "
+                "submitted Salary Structure Assignment(s). Create a new Salary Structure and effective-dated assignment instead."
+            )
+        if doc.custom_tradex_pay_basis == wanted and not component_changed:
+            log.append(f"  ok     pay basis {name} = {wanted}")
+            continue
+        if doc.custom_tradex_pay_basis and submitted_assignments:
+            raise frappe.ValidationError(
+                f"Cannot change pay basis for {name}: it has {submitted_assignments} "
+                "submitted Salary Structure Assignment(s). Create a new Salary "
+                "Structure and effective-dated assignment instead."
+            )
+        # A blank field is a one-time migration seed, even when the existing
+        # structure is historically assigned. Once populated, changing the
+        # financial meaning requires a new native structure/assignment pair.
+        frappe.db.set_value(
+            "Salary Structure", name, "custom_tradex_pay_basis", wanted, update_modified=False
+        )
+        log.append(f"  UPDATE pay basis {name}: {wanted}")
+        if component_changed:
+            frappe.db.set_value(
+                "Salary Structure", name, "custom_tradex_daily_wage_component", wanted_component,
+                update_modified=False,
+            )
+            log.append(f"  UPDATE Daily Wage component {name}: {wanted_component or '(blank)'}")
     if commit:
         frappe.db.commit()
     return log
@@ -181,7 +276,8 @@ def ensure_retired(spec: dict, *, commit: bool) -> list[str]:
 def ensure_salary_setup(*, commit: bool = False) -> dict:
     """Converge components, structures and retirements to match the spec."""
     spec = load_spec()
-    log = {"components": ensure_components(spec, commit=commit),
+    log = {"pay_basis": ensure_pay_basis_metadata(spec, commit=commit),
+           "components": ensure_components(spec, commit=commit),
            "structures": ensure_structures(spec, commit=commit),
            "retired": ensure_retired(spec, commit=commit)}
     if commit:

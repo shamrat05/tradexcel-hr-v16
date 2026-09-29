@@ -7,12 +7,14 @@ from frappe import _
 from frappe.utils import getdate, today
 
 
-COMPANY = "Tradexcel Ceramics Ltd."
+from tradex_hr.tradexcel_hr.company_context import assert_company_access, resolve_company
+from tradex_hr.tradexcel_hr.pay_basis import DAILY, MONTHLY, resolve_pay_basis
+from tradex_hr.tradexcel_hr.report_scope import permitted_employee_names
 
 
 def normalize_filters(filters: dict | None = None) -> frappe._dict:
     values = frappe._dict(filters or {})
-    values.company = values.get("company") or COMPANY
+    values.company = resolve_company(values)
     values.as_of_date = getdate(values.get("as_of_date") or today()).isoformat()
     values.employee_status = values.get("employee_status") or "Active"
     values.assignment_status = values.get("assignment_status") or "All"
@@ -28,6 +30,12 @@ def normalize_filters(filters: dict | None = None) -> frappe._dict:
 
 def execute(filters: dict | None = None) -> tuple[list[dict], list[dict]]:
     filters = normalize_filters(filters)
+    assert_company_access(filters.company)
+    employee_names = permitted_employee_names(
+        filters.company,
+        branch=filters.branch,
+        department=filters.department,
+    )
     columns = [
         {"label": _("Employee"), "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "width": 120},
         {"label": _("Employee ID"), "fieldname": "employee_id", "fieldtype": "Data", "width": 100},
@@ -39,7 +47,7 @@ def execute(filters: dict | None = None) -> tuple[list[dict], list[dict]]:
         {"label": _("Employee Status"), "fieldname": "employee_status", "fieldtype": "Data", "width": 100},
         {"label": _("Assignment Status"), "fieldname": "assignment_status", "fieldtype": "Data", "width": 110},
         {"label": _("Salary Structure"), "fieldname": "salary_structure", "fieldtype": "Data", "width": 230},
-        {"label": _("Salary Basis / Source Status"), "fieldname": "salary_basis", "fieldtype": "Data", "width": 170},
+        {"label": _("Pay Basis"), "fieldname": "salary_basis", "fieldtype": "Data", "width": 170},
         {"label": _("Structure Company"), "fieldname": "structure_company", "fieldtype": "Link", "options": "Company", "width": 160},
         {"label": _("Effective From"), "fieldname": "effective_from", "fieldtype": "Date", "width": 100},
         {"label": _("Base"), "fieldname": "base", "fieldtype": "Currency", "width": 110},
@@ -66,16 +74,7 @@ def execute(filters: dict | None = None) -> tuple[list[dict], list[dict]]:
                        ELSE 'Assigned'
                    END AS assignment_status,
                    COALESCE(ra.salary_structure, '') AS salary_structure,
-                   CASE
-                       WHEN e.employment_type = 'Worker' AND e.branch = 'TCL Factory'
-                           AND ra.salary_structure = 'TCL Factory Daily Wage Worker Structure'
-                           THEN 'Daily Wage Policy'
-                       WHEN ra.salary_structure IN ('TCL Source Staff Monthly Salary Structure',
-                                                     'EFL Source Staff Monthly Salary Structure')
-                           THEN 'Selevo Source Salary'
-                       WHEN e.employment_type <> 'Worker' THEN 'Source Salary Pending'
-                       ELSE 'Review'
-                   END AS salary_basis,
+                   '' AS salary_basis,
                    COALESCE(ra.structure_company, '') AS structure_company,
                    COALESCE(ra.base, 0) AS base,
                    COALESCE(ra.variable, 0) AS variable,
@@ -84,9 +83,8 @@ def execute(filters: dict | None = None) -> tuple[list[dict], list[dict]]:
             LEFT JOIN ranked_assignments ra
                 ON ra.employee=e.name AND ra.rank_no=1
             WHERE e.company=%(company)s
+              AND e.name IN %(employee_names)s
               AND (%(employee_status)s='All' OR e.status=%(employee_status)s)
-              AND (%(branch)s='' OR e.branch=%(branch)s)
-              AND (%(department)s='' OR e.department=%(department)s)
         )
         SELECT employee, employee_id, employee_name, company, branch, department, designation,
                employee_status, assignment_status, salary_structure, salary_basis, structure_company,
@@ -95,4 +93,13 @@ def execute(filters: dict | None = None) -> tuple[list[dict], list[dict]]:
         WHERE %(assignment_status)s='All' OR assignment_status=%(assignment_status)s
         ORDER BY assignment_status DESC, branch, department, employee
     """
-    return columns, frappe.db.sql(query, filters, as_dict=True)
+    if not employee_names:
+        return columns, []
+
+    rows = frappe.db.sql(query, {**filters, "employee_names": employee_names}, as_dict=True)
+    from tradex_hr.tradexcel_hr.pay_basis import pay_basis_read_context
+    with pay_basis_read_context(employee_names):
+        for row in rows:
+            basis = resolve_pay_basis(row.employee, filters.as_of_date)
+            row.salary_basis = basis.get("status") if basis.get("status") in {MONTHLY, DAILY} else "Pay Basis Missing"
+    return columns, rows

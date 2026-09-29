@@ -7,25 +7,6 @@ import json
 import frappe
 
 
-COMPANY = "Tradexcel Ceramics Ltd."
-# Query Reports execute raw SQL and do not apply Employee/Company user-permission
-# filters. Keep these cross-company reports global-admin-only until replaced by
-# explicitly scoped Script Reports.
-GLOBAL_REPORT_ROLES = ("System Manager",)
-
-DAILY_ATTENDANCE_JAVASCRIPT = """
-frappe.query_reports["Daily Attendance Summary"] = {
-  filters: [
-    {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-    {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
-    {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
-    {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},
-    {fieldname: "status", label: __("Status"), fieldtype: "Select", options: "\\nPresent\\nAbsent\\nOn Leave\\nHalf Day\\nHoliday\\nNot Started", default: ""}
-  ]
-};
-"""
-
 BIOMETRIC_ID_AUDIT_JAVASCRIPT = """
 frappe.query_reports["Biometric ID Audit"] = {
   filters: [
@@ -70,276 +51,7 @@ frappe.query_reports["Biometric ID Audit"] = {
 };
 """
 
-EMPLOYEE_DATA_GAPS_JAVASCRIPT = """
-frappe.query_reports["Employee Data Gaps"] = {
-  filters: [
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
-    {fieldname: "status", label: __("Employee Status"), fieldtype: "Select", options: "Active\\nInactive\\nLeft\\nAll", default: "Active"},
-    {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
-    {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},
-    {fieldname: "employment_type", label: __("Employment Type"), fieldtype: "Select", options: "All\\nWorker\\nNon Worker", default: "All"},
-    {fieldname: "gap_type", label: __("Gap"), fieldtype: "Select", options: "All\\nMissing Department\\nMissing Employee Number\\nNo Active Salary Assignment\\nMultiple Active Salary Assignments\\nLatest Structure Is a Wage Structure\\nWorker Without Wage Structure\\nFuture Joining Date With Punches\\nMissing Designation\\nMissing Date of Birth\\nMissing Holiday List", default: "All"},
-    {fieldname: "priority", label: __("Priority"), fieldtype: "Select", options: "All\\nHigh\\nMedium\\nLow", default: "All"}
-  ],
-  onload: function(report) {
-    report.page.add_inner_button(__("Open Employee List for Bulk Fix"), function() {
-      frappe.route_options = {
-        company: report.get_filter_value("company"),
-        status: report.get_filter_value("status")
-      };
-      frappe.set_route("List", "Employee");
-    });
-    report.page.add_inner_button(__("Fill Missing Fields (Export / Upload)"), function() {
-      frappe.msgprint({
-        title: __("Employee data update"),
-        message: __("In Data Import, download an Update Existing Records template, select only the fields you need, fill verified values, then upload and review the preview/errors before starting import. Leave unknown values blank; do not create employee users until their emails are verified."),
-        indicator: "blue"
-      });
-      frappe.new_doc("Data Import", {
-        reference_doctype: "Employee",
-        import_type: "Update Existing Records"
-      });
-    });
-  }
-};
-"""
-
-WORKFORCE_ANOMALY_RADAR_JAVASCRIPT = """
-frappe.query_reports["Workforce Anomaly Radar"] = {
-  filters: [
-    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
-    {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-    {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-    {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
-    {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }},
-    {fieldname: "category", label: __("Category"), fieldtype: "Select", options: "All\\nCheckin\\nAttendance\\nPayroll\\nLeave\\nTax", default: "All"},
-    {fieldname: "severity", label: __("Severity"), fieldtype: "Select", options: "All\\nHigh\\nMedium\\nLow", default: "All"},
-    {fieldname: "z_threshold", label: __("Outlier Z Threshold"), fieldtype: "Float", default: 3.5, description: __("Modified z-score cutoff for cohort outliers (standard practice: 3.5)")},
-    {fieldname: "min_cohort", label: __("Minimum Cohort Size"), fieldtype: "Int", default: 5, description: __("Groups smaller than this are skipped so statistics stay meaningful")}
-  ]
-};
-"""
-
 REPORTS = {
-    "Tradexcel Shift Coverage": {
-        "ref_doctype": "Shift Assignment",
-        "roles": GLOBAL_REPORT_ROLES,
-        "query": """
-WITH active_assignments AS (
-    SELECT employee, COUNT(*) assignment_count,
-           GROUP_CONCAT(DISTINCT shift_type ORDER BY shift_type SEPARATOR ', ') shifts,
-           MIN(start_date) first_start, MAX(end_date) last_end
-    FROM `tabShift Assignment`
-    WHERE docstatus=1 AND start_date<=%(as_of_date)s
-      AND (end_date IS NULL OR end_date>=%(as_of_date)s)
-    GROUP BY employee
-)
-SELECT e.name AS "Employee:Link/Employee:120",
-       e.employee_name AS "Employee Name:Data:180",
-       e.company AS "Company:Link/Company:160",
-       e.branch AS "Branch:Link/Branch:130",
-       e.department AS "Department:Link/Department:150",
-       COALESCE(a.assignment_count,0) AS "Assignments:Int:90",
-       COALESCE(a.shifts,'') AS "Assigned Shifts:Data:170",
-       COALESCE(e.default_shift,'') AS "Default Shift:Link/Shift Type:140",
-       CASE WHEN a.assignment_count>1 THEN 'Overlap - review'
-            WHEN a.assignment_count=1 THEN 'Assigned'
-            WHEN e.default_shift IS NOT NULL AND e.default_shift<>'' THEN 'Default only'
-            ELSE 'Missing - review' END AS "Coverage:Data:130"
-FROM `tabEmployee` e
-LEFT JOIN active_assignments a ON a.employee=e.name
-WHERE e.company=%(company)s AND e.status='Active'
-  AND (e.date_of_joining IS NULL OR e.date_of_joining<=%(as_of_date)s)
-  AND (e.relieving_date IS NULL OR e.relieving_date>=%(as_of_date)s)
-  AND (%(branch)s='' OR e.branch=%(branch)s)
-  AND (%(department)s='' OR e.department=%(department)s)
-  AND (%(coverage)s='All' OR
-       (%(coverage)s='Overlap' AND a.assignment_count>1) OR
-       (%(coverage)s='Assigned' AND a.assignment_count=1) OR
-       (%(coverage)s='Missing' AND a.assignment_count IS NULL AND
-        (e.default_shift IS NULL OR e.default_shift='')) OR
-       (%(coverage)s='Default only' AND a.assignment_count IS NULL AND e.default_shift IS NOT NULL AND e.default_shift<>''))
-ORDER BY CASE WHEN a.assignment_count>1 THEN 0
-              WHEN a.assignment_count IS NULL AND (e.default_shift IS NULL OR e.default_shift='') THEN 1
-              ELSE 2 END, e.branch, e.department, e.name
-""",
-        "javascript": """
-frappe.query_reports["Tradexcel Shift Coverage"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
-  {fieldname: "as_of_date", label: __("As Of Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-  {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
-  {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: ""},
-  {fieldname: "coverage", label: __("Coverage"), fieldtype: "Select", options: "All\\nOverlap\\nMissing\\nAssigned\\nDefault only", default: "All"}
-]};
-""",
-    },
-    "Tradexcel Pay Component Register": {
-        "ref_doctype": "Salary Slip",
-        "roles": GLOBAL_REPORT_ROLES,
-        "query": """
-SELECT s.name AS "Salary Slip:Link/Salary Slip:150",
-       s.employee AS "Employee:Link/Employee:120",
-       s.employee_name AS "Employee Name:Data:180",
-       e.branch AS "Branch:Link/Branch:130",
-       e.department AS "Department:Link/Department:150",
-       s.start_date AS "Period From:Date:100",
-       s.end_date AS "Period To:Date:100",
-       CASE WHEN d.parentfield='earnings' THEN 'Earning' ELSE 'Deduction' END AS "Type:Data:95",
-       d.salary_component AS "Component:Link/Salary Component:180",
-       d.amount AS "Amount:Currency:110",
-       CASE WHEN s.docstatus=0 THEN 'Draft' ELSE 'Submitted' END AS "Slip Status:Data:90"
-FROM `tabSalary Detail` d
-JOIN `tabSalary Slip` s ON s.name=d.parent AND d.parenttype='Salary Slip'
-JOIN `tabEmployee` e ON e.name=s.employee
-WHERE s.company=%(company)s AND s.docstatus<2
-  AND s.start_date>=%(from_date)s AND s.start_date<=%(to_date)s
-  AND d.parentfield IN ('earnings', 'deductions')
-  AND (%(branch)s='' OR e.branch=%(branch)s)
-  AND (%(department)s='' OR e.department=%(department)s)
-  AND (%(component)s='' OR d.salary_component=%(component)s)
-  AND (%(component_type)s='All' OR
-       (%(component_type)s='Earning' AND d.parentfield='earnings') OR
-       (%(component_type)s='Deduction' AND d.parentfield='deductions'))
-ORDER BY s.start_date, e.branch, e.department, s.employee, d.parentfield, d.idx
-""",
-        "javascript": """
-frappe.query_reports["Tradexcel Pay Component Register"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
-  {fieldname: "from_date", label: __("Period From"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-  {fieldname: "to_date", label: __("Period To"), fieldtype: "Date", default: frappe.datetime.month_end(), reqd: 1},
-  {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
-  {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: ""},
-  {fieldname: "component_type", label: __("Type"), fieldtype: "Select", options: "All\\nEarning\\nDeduction", default: "All"},
-  {fieldname: "component", label: __("Component"), fieldtype: "Link", options: "Salary Component", default: ""}
-]};
-""",
-    },
-    "Tradexcel Payroll Variance": {
-        "ref_doctype": "Salary Slip",
-        "roles": GLOBAL_REPORT_ROLES,
-        "query": """
-WITH current_pay AS (
-    SELECT employee, MAX(employee_name) employee_name, MAX(company) company,
-           COUNT(*) slips, SUM(gross_pay) gross, SUM(total_deduction) deductions,
-           SUM(net_pay) net, SUM(docstatus=0) drafts, SUM(docstatus=1) submitted
-    FROM `tabSalary Slip`
-    WHERE company=%(company)s AND docstatus<2
-      AND start_date>=%(from_date)s AND start_date<=%(to_date)s
-    GROUP BY employee
-), previous_pay AS (
-    SELECT employee, SUM(net_pay) net
-    FROM `tabSalary Slip`
-    WHERE company=%(company)s AND docstatus<2
-      AND start_date>=DATE_SUB(%(from_date)s, INTERVAL 1 MONTH)
-      AND start_date<%(from_date)s
-    GROUP BY employee
-)
-SELECT c.employee AS "Employee:Link/Employee:120",
-       c.employee_name AS "Employee Name:Data:180",
-       e.branch AS "Branch:Link/Branch:130",
-       e.department AS "Department:Link/Department:150",
-       c.slips AS "Slip Count:Int:90", c.drafts AS "Drafts:Int:75",
-       c.submitted AS "Submitted:Int:90", c.gross AS "Gross:Currency:110",
-       c.deductions AS "Deductions:Currency:110",
-       c.net AS "Current Net:Currency:120",
-       p.net AS "Previous Net:Currency:120",
-       c.net-COALESCE(p.net,0) AS "Change:Currency:110",
-       CASE WHEN c.net=0 THEN 'Zero pay - review'
-            WHEN p.net IS NULL THEN 'No previous slip'
-            WHEN c.slips>1 THEN 'Multiple slips - review'
-            ELSE 'Compare' END AS "Review:Data:170"
-FROM current_pay c
-JOIN `tabEmployee` e ON e.name=c.employee
-LEFT JOIN previous_pay p ON p.employee=c.employee
-WHERE (%(branch)s='' OR e.branch=%(branch)s)
-  AND (%(department)s='' OR e.department=%(department)s)
-ORDER BY e.branch, e.department, c.employee
-""",
-        "javascript": """
-frappe.query_reports["Tradexcel Payroll Variance"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
-  {fieldname: "from_date", label: __("Period From"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-  {fieldname: "to_date", label: __("Period To"), fieldtype: "Date", default: frappe.datetime.month_end(), reqd: 1},
-  {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""},
-  {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: ""}
-]};
-""",
-    },
-    "Tradexcel Joiners and Leavers": {
-        "ref_doctype": "Employee",
-        "roles": GLOBAL_REPORT_ROLES,
-        "query": """
-SELECT e.name AS "Employee:Link/Employee:120",
-       e.employee_name AS "Employee Name:Data:180",
-       e.company AS "Company:Link/Company:160",
-       e.branch AS "Branch:Link/Branch:130",
-       e.department AS "Department:Link/Department:150",
-       'Joined' AS "Movement:Data:90", e.date_of_joining AS "Date:Date:100"
-FROM `tabEmployee` e
-WHERE e.company=%(company)s AND e.date_of_joining BETWEEN %(from_date)s AND %(to_date)s
-  AND (%(branch)s='' OR e.branch=%(branch)s)
-UNION ALL
-SELECT e.name, e.employee_name, e.company, e.branch, e.department,
-       'Left', e.relieving_date
-FROM `tabEmployee` e
-WHERE e.company=%(company)s AND e.relieving_date BETWEEN %(from_date)s AND %(to_date)s
-  AND (%(branch)s='' OR e.branch=%(branch)s)
-ORDER BY 7, 6, 1
-""",
-        "javascript": """
-frappe.query_reports["Tradexcel Joiners and Leavers"] = {filters: [
-  {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: "Tradexcel Ceramics Ltd.", reqd: 1},
-  {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: frappe.datetime.month_start(), reqd: 1},
-  {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1},
-  {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: ""}
-]};
-""",
-    },
-    "Tradexcel Daily Attendance Board": {
-        "ref_doctype": "Attendance",
-        "query": """
-SELECT e.name AS \"Employee:Link/Employee:120\", e.employee_number AS \"Employee ID:Data:100\",
-e.employee_name AS \"Employee Name:Data:180\", e.company AS \"Company:Link/Company:160\",
-e.branch AS \"Branch:Link/Branch:130\", e.department AS \"Department:Link/Department:160\",
-COALESCE(a.status, 'Absent') AS \"Status:Data:90\", a.in_time AS \"In Time:Datetime:140\",
-a.out_time AS \"Out Time:Datetime:140\", COALESCE(a.late_entry, 0) AS \"Late:Check:60\",
-COALESCE(a.early_exit, 0) AS \"Early Exit:Check:80\", COUNT(c.name) AS \"Punches:Int:70\"
-FROM `tabEmployee` e
-LEFT JOIN `tabAttendance` a ON a.employee=e.name AND a.attendance_date=%(attendance_date)s AND a.docstatus<2
-LEFT JOIN `tabEmployee Checkin` c ON c.employee=e.name AND DATE(c.time)=%(attendance_date)s
-WHERE e.company=%(company)s AND (e.status='Active' OR e.relieving_date >= %(attendance_date)s)
-GROUP BY e.name, a.name ORDER BY e.branch, e.department, e.name
-""",
-        "javascript": """
-frappe.query_reports[\"Tradexcel Daily Attendance Board\"] = {
-  filters: [
-    {fieldname: \"attendance_date\", label: __(\"Attendance Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1},
-    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", reqd: 1}
-  ]
-};
-""",
-    },
-    "Tradexcel Payroll Register": {
-        "ref_doctype": "Salary Slip",
-        "query": """
-SELECT s.name AS \"Salary Slip:Link/Salary Slip:140\", s.employee AS \"Employee:Link/Employee:120\",
-s.employee_name AS \"Employee Name:Data:180\", s.company AS \"Company:Link/Company:160\",
-s.start_date AS \"From Date:Date:90\", s.end_date AS \"To Date:Date:90\",
-s.gross_pay AS \"Gross Pay:Currency:110\", s.total_deduction AS \"Deductions:Currency:110\",
-s.net_pay AS \"Net Pay:Currency:110\", s.docstatus AS \"Status:Int:60\"
-FROM `tabSalary Slip` s WHERE s.company=%(company)s AND s.start_date >= %(from_date)s
-AND s.end_date <= %(to_date)s ORDER BY s.start_date, s.employee
-""",
-        "javascript": """
-frappe.query_reports[\"Tradexcel Payroll Register\"] = {
-  filters: [
-    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", reqd: 1},
-    {fieldname: \"from_date\", label: __(\"From Date\"), fieldtype: \"Date\", reqd: 1},
-    {fieldname: \"to_date\", label: __(\"To Date\"), fieldtype: \"Date\", reqd: 1}
-  ]
-};
-""",
-    },
     "Tradexcel Salary Coverage Board": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
@@ -349,33 +61,12 @@ frappe.query_reports[\"Tradexcel Payroll Register\"] = {
         "javascript": """
 frappe.query_reports[\"Tradexcel Salary Coverage Board\"] = {
   filters: [
-    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", default: \"Tradexcel Ceramics Ltd.\", reqd: 1},
+    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default(\"Company\")) || \"\", reqd: 1},
     {fieldname: \"as_of_date\", label: __(\"As Of Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1},
     {fieldname: \"employee_status\", label: __(\"Employee Status\"), fieldtype: \"Select\", options: \"All\\nActive\\nInactive\\nLeft\", default: \"Active\"},
     {fieldname: "assignment_status", label: __("Assignment Status"), fieldtype: "Select", options: "All\\nAssigned\\nMissing\\nCompany Mismatch", default: "All"},
     {fieldname: "branch", label: __("Branch"), fieldtype: "Link", options: "Branch", default: "", get_query: function() { var c = frappe.query_report.get_filter_value('company'); return c ? {filters: {company: c}} : {}; }},
     {fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department", default: "", get_query: function() { var company = frappe.query_report.get_filter_value('company'); var branch = frappe.query_report.get_filter_value('branch'); if (!branch) { return company ? {filters: {company: company}} : {}; } return {query: 'tradex_hr.link_filters.departments_used_by_branch', filters: {company: company, branch: branch}}; }}
-  ]
-};
-""",
-    },
-    "Tradexcel Leave Balance Board": {
-        "ref_doctype": "Leave Allocation",
-        "query": """
-SELECT e.name AS \"Employee:Link/Employee:120\", e.employee_number AS \"Employee ID:Data:100\",
-e.employee_name AS \"Employee Name:Data:180\", e.company AS \"Company:Link/Company:160\",
-la.leave_type AS \"Leave Type:Link/Leave Type:150\", la.from_date AS \"From Date:Date:90\",
-la.to_date AS \"To Date:Date:90\", la.new_leaves_allocated AS \"Allocated:Float:90\",
-la.total_leaves_allocated AS \"Total Allocated:Float:100\"
-FROM `tabLeave Allocation` la JOIN `tabEmployee` e ON e.name=la.employee
-WHERE e.company=%(company)s AND la.from_date <= %(as_of_date)s AND la.to_date >= %(as_of_date)s
-ORDER BY e.department, e.employee_name, la.leave_type
-""",
-        "javascript": """
-frappe.query_reports[\"Tradexcel Leave Balance Board\"] = {
-  filters: [
-    {fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\", reqd: 1},
-    {fieldname: \"as_of_date\", label: __(\"As Of Date\"), fieldtype: \"Date\", default: frappe.datetime.get_today(), reqd: 1}
   ]
 };
 """,
@@ -390,13 +81,11 @@ frappe.query_reports[\"Tradexcel Leave Balance Board\"] = {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
         "is_standard": "Yes",
-        "javascript": EMPLOYEE_DATA_GAPS_JAVASCRIPT,
     },
     "Workforce Anomaly Radar": {
         "ref_doctype": "Employee",
         "report_type": "Script Report",
         "is_standard": "Yes",
-        "javascript": WORKFORCE_ANOMALY_RADAR_JAVASCRIPT,
     },
 }
 
@@ -413,6 +102,16 @@ STANDARD_SCRIPT_REPORT_NAMES = (
     "Biometric ID Audit",
     "Employee Data Gaps",
     "Workforce Anomaly Radar",
+    "Tradexcel Payroll Readiness",
+    # Promoted from DB-backed Query Reports. Script Reports reload from their
+    # standard app JSON, which converges existing custom Query Report metadata.
+    "Tradexcel Payroll Register",
+    "Tradexcel Leave Balance Board",
+    "Tradexcel Daily Attendance Board",
+    "Tradexcel Shift Coverage",
+    "Tradexcel Joiners and Leavers",
+    "Tradexcel Pay Component Register",
+    "Tradexcel Payroll Variance",
 )
 
 
@@ -421,7 +120,7 @@ def ensure_standard_script_reports() -> None:
 
     Frappe executes a standard Script Report through its app module. A custom
     Script Report instead executes ``report_script`` with safe_exec, which is
-    disabled by default in v16. Older migrations demoted these five records;
+    disabled by default in v16. Older migrations demoted some bundled reports;
     repair only those known app-owned records, then let the JSON files remain
     the source of truth on future migrations.
     """
@@ -437,6 +136,8 @@ def ensure_standard_script_reports() -> None:
         # Always reload the app-owned JSON so role-table changes self-heal on
         # existing standard reports without converting them to custom reports.
         frappe.reload_doc("tradexcel_hr", "report", frappe.scrub(report_name), force=True)
+        # The standard report JSON is the source of filter defaults. Legacy
+        # company-specific JavaScript rewriting is no longer needed.
 
 NUMBER_CARDS = {
     "Tradexcel Active Employees": {
@@ -451,34 +152,6 @@ NUMBER_CARDS = {
         "module": "Tradexcel HR",
         "is_public": 1,
         "color": "Green",
-    },
-    "Tradexcel TCL Active Employees": {
-        "label": "TCL Active Employees",
-        "type": "Document Type",
-        "document_type": "Employee",
-        "function": "Count",
-        "filters_json": json.dumps([
-            ["Employee", "company", "=", COMPANY, False],
-            ["Employee", "status", "=", "Active", False],
-        ]),
-        "is_standard": 0,
-        "module": "Tradexcel HR",
-        "is_public": 1,
-        "color": "Blue",
-    },
-    "Tradexcel EFL Active Employees": {
-        "label": "EFL Active Employees",
-        "type": "Document Type",
-        "document_type": "Employee",
-        "function": "Count",
-        "filters_json": json.dumps([
-            ["Employee", "company", "=", "Elegance Footwear Ltd.", False],
-            ["Employee", "status", "=", "Active", False],
-        ]),
-        "is_standard": 0,
-        "module": "Tradexcel HR",
-        "is_public": 1,
-        "color": "Purple",
     },
     "Tradexcel Punches Logged": {
         "label": "Total Punches Logged",
@@ -521,8 +194,6 @@ NUMBER_CARDS = {
 
 LEGACY_NUMBER_CARD_NAMES = {
     "TradeX Active Employees": "Tradexcel Active Employees",
-    "TradeX TCL Active Employees": "Tradexcel TCL Active Employees",
-    "TradeX EFL Active Employees": "Tradexcel EFL Active Employees",
     "TradeX Punches Logged": "Tradexcel Punches Logged",
     "TradeX Present Records": "Tradexcel Present Records",
     "TradeX Absent Records": "Tradexcel Absent Records",
@@ -540,8 +211,10 @@ ORPHANED_NUMBER_CARD_NAMES = (
     "Attendance Present Logs-4",
     "EFL Active Employees",
     "EFL Active Employees-1",
+    "Tradexcel EFL Active Employees",
     "TCL Active Employees",
     "TCL Active Employees-1",
+    "Tradexcel TCL Active Employees",
     "Total Punches Logged-3",
     "Total Punches Logged-4",
     "TradeX Absent Records",
@@ -649,7 +322,8 @@ WORKSPACE_SHORTCUTS = [
     ("Employee Transfers", "Employee Transfer", "DocType"),
     ("Exits / Separations", "Employee Separation", "DocType"),
     ("Final Settlements", "Full and Final Statement", "DocType"),
-    ("Run Monthly Payroll", "Payroll Entry", "DocType"),
+    ("Run Monthly Payroll", "Tradexcel Payroll Readiness", "Report"),
+    ("Payroll Entries (Advanced)", "Payroll Entry", "DocType"),
     ("Salary Slips", "Salary Slip", "DocType"),
     ("Salary Structures", "Salary Structure", "DocType"),
     ("Salary Assignments", "Salary Structure Assignment", "DocType"),
@@ -666,7 +340,7 @@ WORKSPACE_SHORTCUTS = [
     ("Leave Balances", "Tradexcel Leave Balance Board", "Report"),
     ("Shift Types", "Shift Type", "DocType"),
     ("Shift Planner", "Shift Schedule", "DocType"),
-    ("Shift Assignments", "Shift Schedule Assignment", "DocType"),
+    ("Shift Assignments", "Shift Assignment", "DocType"),
     ("Shift Coverage", "Tradexcel Shift Coverage", "Report"),
     ("Attendance Policies", "Tradexcel Attendance Policy", "DocType"),
     ("Field Duties", "Tradexcel Field Duty", "DocType"),
@@ -678,10 +352,88 @@ WORKSPACE_SHORTCUTS = [
     ("Employee Biometric IDs", "Tradexcel Employee Biometric", "DocType"),
     ("Face Match Settings", "Tradex Face Match Settings", "DocType"),
     ("Bulk Data Import", "Data Import", "DocType"),
+    ("Employee Promotions", "Employee Promotion", "DocType"),
+    ("Job Openings", "Job Opening", "DocType"),
+    ("Job Applicants", "Job Applicant", "DocType"),
+    ("Job Offers", "Job Offer", "DocType"),
+    ("Onboarding", "Employee Onboarding", "DocType"),
+    ("Overtime Reviews", "Overtime Slip", "DocType"),
+    ("Leave Policies", "Leave Policy", "DocType"),
+    ("Leave Policy Assignments", "Leave Policy Assignment", "DocType"),
+    ("Leave Periods", "Leave Period", "DocType"),
+    ("Holiday Lists", "Holiday List", "DocType"),
+    ("Payroll Corrections", "Payroll Correction", "DocType"),
+    ("Salary Arrears", "Arrear", "DocType"),
+    ("Wage Floor Reviews", "Tradexcel Wage Floor Classification", "DocType"),
+    ("Benefit Enrollments", "Tradexcel Statutory Benefit Enrollment", "DocType"),
+    ("Working Time Reviews", "Tradexcel Working Time Classification", "DocType"),
+    ("Maternity Reviews", "Tradexcel Maternity Review", "DocType"),
+    ("Welfare Reviews", "Tradexcel Workplace Welfare Review", "DocType"),
+    ("Statutory Exit Rules", "Tradexcel Statutory Rule Set", "DocType"),
+    ("Wage Floor Rules", "Tradexcel Wage Floor Rule Set", "DocType"),
+    ("Benefit Rules", "Tradexcel Statutory Benefit Rule Set", "DocType"),
+    ("Working Time Rules", "Tradexcel Working Time Rule Set", "DocType"),
+    ("Maternity Rules", "Tradexcel Maternity Rule Set", "DocType"),
+    ("Income Tax Slabs", "Income Tax Slab", "DocType"),
+    ("Payroll Periods", "Payroll Period", "DocType"),
+    # Expenses & Travel
+    ("Expense Claims", "Expense Claim", "DocType"),
+    ("Employee Advances", "Employee Advance", "DocType"),
+    ("Travel Requests", "Travel Request", "DocType"),
+    ("Employee Advance Summary", "Employee Advance Summary", "Report"),
+    ("Unpaid Expense Claims", "Unpaid Expense Claim", "Report"),
+    ("Expense Claim Types", "Expense Claim Type", "DocType"),
+    ("Purpose of Travel", "Purpose of Travel", "DocType"),
+    # Leave & Holidays
+    ("Compensatory Leave Requests", "Compensatory Leave Request", "DocType"),
+    ("Leave Encashment", "Leave Encashment", "DocType"),
+    ("Holiday List Assignments", "Holiday List Assignment", "DocType"),
+    ("Leave Types", "Leave Type", "DocType"),
+    ("Leave Block Lists", "Leave Block List", "DocType"),
+    # Attendance & Shifts
+    ("Shift Requests", "Shift Request", "DocType"),
+    ("Shift Schedule Assignments", "Shift Schedule Assignment", "DocType"),
+    ("Shift Locations", "Shift Location", "DocType"),
+    ("Overtime Types", "Overtime Type", "DocType"),
+    ("Attendance Periods", "Tradexcel Attendance Period", "DocType"),
+    ("Monthly Attendance Sheet", "Monthly Attendance Sheet", "Report"),
+    ("Shift Attendance", "Shift Attendance", "Report"),
+    ("Employees Working on a Holiday", "Employees working on a holiday", "Report"),
+    # Payroll
+    ("Employee Incentive", "Employee Incentive", "DocType"),
+    ("Retention Bonus", "Retention Bonus", "DocType"),
+    ("Salary Withholding", "Salary Withholding", "DocType"),
+    # Recruitment
+    ("Staffing Plans", "Staffing Plan", "DocType"),
+    ("Job Requisitions", "Job Requisition", "DocType"),
+    ("Interviews", "Interview", "DocType"),
+    ("Interview Feedback", "Interview Feedback", "DocType"),
+    ("Employee Referrals", "Employee Referral", "DocType"),
+    ("Appointment Letters", "Appointment Letter", "DocType"),
+    ("Interview Types", "Interview Type", "DocType"),
+    ("Appointment Letter Templates", "Appointment Letter Template", "DocType"),
+    ("Recruitment Analytics", "Recruitment Analytics", "Report"),
+    # Development & Relations
+    ("Employee Grievances", "Employee Grievance", "DocType"),
+    ("Training Programs", "Training Program", "DocType"),
+    ("Training Events", "Training Event", "DocType"),
+    ("Appraisals", "Appraisal", "DocType"),
+    ("Goals", "Goal", "DocType"),
+    ("Employee Skill Map", "Employee Skill Map", "DocType"),
+    ("Training Feedback", "Training Feedback", "DocType"),
+    ("Training Results", "Training Result", "DocType"),
+    ("Appraisal Cycles", "Appraisal Cycle", "DocType"),
+    ("Grievance Types", "Grievance Type", "DocType"),
+    ("Appraisal Templates", "Appraisal Template", "DocType"),
+    # Setup
+    ("Employee Grades", "Employee Grade", "DocType"),
+    ("Employee Groups", "Employee Group", "DocType"),
+    ("HR Settings", "HR Settings", "DocType"),
+    ("Payroll Settings", "Payroll Settings", "DocType"),
 ]
 
 BULK_WORKSPACE_SHORTCUTS = [
-    ("Bulk Salary Structure Assignment", "Salary Structure Assignment Tool", "DocType"),
+    ("Bulk Salary Structure Assignment", "Bulk Salary Structure Assignment", "DocType"),
     ("Attendance Fix Requests", "Attendance Request", "DocType"),
     ("Bulk Leave Allocation", "Leave Control Panel", "DocType"),
     ("Bulk Shift Assignment", "Shift Assignment Tool", "DocType"),
@@ -692,6 +444,7 @@ BULK_WORKSPACE_SHORTCUTS = [
 WORKSPACE_SHORTCUT_ICONS = {
     "Today's Attendance": "today",
     "Attendance Summary": "calendar",
+    "Attendance Periods": "calendar",
     "Mobile Attendance": "location",
     "Live Locations": "map",
     "Punch Log": "scan",
@@ -706,6 +459,7 @@ WORKSPACE_SHORTCUT_ICONS = {
     "Exits / Separations": "remove",
     "Final Settlements": "money-coins-1",
     "Run Monthly Payroll": "accounting",
+    "Payroll Entries (Advanced)": "file",
     "Salary Slips": "file",
     "Salary Structures": "income",
     "Salary Assignments": "assign",
@@ -737,37 +491,206 @@ WORKSPACE_SHORTCUT_ICONS = {
     "Employee Biometric IDs": "users",
     "Face Match Settings": "setting-gear",
     "Bulk Data Import": "upload",
-    "Attendance Fix Requests": "clipboard",
+    "Employee Promotions": "change",
+    "Job Openings": "hr",
+    "Job Applicants": "users",
+    "Job Offers": "clipboard",
+    "Onboarding": "users",
+    "Overtime Reviews": "calendar",
+    "Leave Policies": "setting-gear",
+    "Leave Policy Assignments": "assign",
+    "Leave Periods": "calendar",
+    "Holiday Lists": "calendar",
+    "Payroll Corrections": "change",
+    "Salary Arrears": "money-coins-1",
+    "Wage Floor Reviews": "clipboard",
+    "Benefit Enrollments": "users",
+    "Working Time Reviews": "calendar",
+    "Maternity Reviews": "clipboard",
+    "Welfare Reviews": "clipboard",
+    "Statutory Exit Rules": "setting-gear",
+    "Wage Floor Rules": "setting-gear",
+    "Benefit Rules": "setting-gear",
+    "Working Time Rules": "setting-gear",
+    "Maternity Rules": "setting-gear",
+    "Income Tax Slabs": "setting-gear",
+    "Payroll Periods": "calendar",
+    # New icons
+    "Expense Claims": "money-coins-1",
+    "Employee Advances": "money-coins-1",
+    "Travel Requests": "map",
+    "Employee Advance Summary": "list-alt",
+    "Unpaid Expense Claims": "list-alt",
+    "Expense Claim Types": "setting-gear",
+    "Purpose of Travel": "setting-gear",
+    "Compensatory Leave Requests": "clipboard",
+    "Leave Encashment": "money-coins-1",
+    "Holiday List Assignments": "assign",
+    "Leave Types": "setting-gear",
+    "Leave Block Lists": "setting-gear",
+    "Shift Requests": "clipboard",
+    "Shift Schedule Assignments": "assign",
+    "Shift Locations": "location",
+    "Overtime Types": "setting-gear",
+    "Monthly Attendance Sheet": "calendar",
+    "Shift Attendance": "calendar",
+    "Employees Working on a Holiday": "calendar",
+    "Employee Incentive": "money-coins-1",
+    "Retention Bonus": "money-coins-1",
+    "Salary Withholding": "money-coins-1",
+    "Staffing Plans": "users",
+    "Job Requisitions": "clipboard",
+    "Interviews": "users",
+    "Interview Feedback": "clipboard",
+    "Employee Referrals": "users",
+    "Appointment Letters": "file",
+    "Interview Types": "setting-gear",
+    "Appointment Letter Templates": "setting-gear",
+    "Recruitment Analytics": "chart",
+    "Employee Grievances": "solid-warning",
+    "Training Programs": "hr",
+    "Training Events": "calendar",
+    "Appraisals": "clipboard",
+    "Goals": "check",
+    "Employee Skill Map": "users",
+    "Training Feedback": "clipboard",
+    "Training Results": "list-alt",
+    "Appraisal Cycles": "calendar",
+    "Grievance Types": "setting-gear",
+    "Appraisal Templates": "setting-gear",
+    "Employee Grades": "setting-gear",
+    "Employee Groups": "users",
+    "HR Settings": "setting-gear",
+    "Payroll Settings": "setting-gear",
 }
 
 WORKSPACE_SECTIONS = (
-    ("Every day", "Start here: attendance, missing punches, and corrections.", (
-        "Today's Attendance", "Attendance Summary", "Mobile Attendance", "Live Locations", "Punch Log", "Attendance Records", "Attendance Fix Requests",
+    ("Employees", "Maintain identity and use native records for employment changes.", (
+        "Employee Directory", "Joiners & Leavers", "Employee Transfers", "Employee Promotions", "Missing Employee Data",
     )),
-    ("Field & mobile", "Use GPS, field duties, live positions, and biometric evidence without affecting terminal punches.", (
-        "Attendance Policies", "Field Duties", "Location Pings", "Face Match Settings",
+    ("Attendance & Shifts", "Review work evidence, attendance requests, and shift coverage.", (
+        "Today's Attendance", "Attendance Summary", "Attendance Fix Requests", "Attendance Records", "Punch Log",
+        "Mobile Attendance", "Field Duties", "Overtime Reviews", "Attendance Periods",
+        "Shift Assignments", "Bulk Shift Assignment", "Shift Requests", "Shift Schedule Assignments", "Shift Planner", "Shift Coverage",
+        "Shift Locations", "Overtime Types",
+        "Monthly Attendance Sheet", "Shift Attendance", "Employees Working on a Holiday",
     )),
-    ("People", "Employees, organization structure, movement, and exits.", (
-        "Employee Directory", "Departments", "Designations", "Branches / Locations",
-        "Joiners & Leavers", "Employee Transfers", "Exits / Separations", "Final Settlements",
+    ("Leave & Holidays", "Review requests and explicitly configured leave entitlements.", (
+        "Leave Requests", "Compensatory Leave Requests", "Leave Balances", "Leave Allocations", "Bulk Leave Allocation",
+        "Leave Encashment",
+        "Leave Policy Assignments", "Holiday List Assignments", "Holiday Lists", "Leave Types", "Leave Policies", "Leave Periods", "Leave Block Lists",
     )),
-    ("Payroll & salary", "Prepare payroll, maintain pay rules, and review every amount.", (
-        "Run Monthly Payroll", "Salary Slips", "Salary Structures", "Salary Assignments",
-        "Salary Components", "Extra Pay & Deductions", "Payroll Register", "Payroll Variance",
-        "Pay Component Register", "Salary Setup Coverage", "Payroll Rules", "Policy Exceptions",
-        "Bulk Salary Structure Assignment",
+    ("Expenses & Travel", "Submit and review native employee expenses, advances and travel.", (
+        "Expense Claims", "Employee Advances", "Travel Requests",
+        "Employee Advance Summary", "Unpaid Expense Claims",
+        "Expense Claim Types", "Purpose of Travel",
     )),
-    ("Leave & shifts", "Plan shifts, allocate leave, and check coverage before payroll.", (
-        "Leave Requests", "Leave Allocations", "Bulk Leave Allocation", "Leave Balances",
-        "Shift Types", "Shift Planner", "Shift Assignments", "Bulk Shift Assignment", "Shift Coverage",
+    ("Payroll", "Prepare and review native salary authority and payroll.", (
+        "Run Monthly Payroll", "Salary Setup Coverage", "Bulk Salary Structure Assignment", "Salary Assignments",
+        "Payroll Entries (Advanced)", "Salary Slips", "Extra Pay & Deductions", "Payroll Corrections", "Salary Arrears",
+        "Employee Incentive", "Retention Bonus", "Salary Withholding",
     )),
-    ("Checks & alerts", "Review exceptions before they become payroll or attendance mistakes.", (
-        "Anomaly Radar", "Missing Employee Data", "Biometric ID Audit",
+    ("Recruitment", "Move reviewed hires through native recruitment and onboarding.", (
+        "Staffing Plans", "Job Requisitions", "Job Openings", "Job Applicants", "Interviews", "Interview Feedback",
+        "Employee Referrals", "Job Offers", "Appointment Letters", "Onboarding",
+        "Interview Types", "Appointment Letter Templates", "Recruitment Analytics",
     )),
-    ("Devices & data", "Connect attendance devices and safely fill verified master data.", (
-        "Biometric Devices", "Employee Biometric IDs", "Bulk Data Import", "Attendance Requests",
+    ("Development & Relations", "Manage employee grievances, training events and appraisals.", (
+        "Employee Grievances", "Training Programs", "Training Events", "Appraisals", "Goals", "Employee Skill Map",
+        "Training Feedback", "Training Results", "Appraisal Cycles",
+        "Grievance Types", "Appraisal Templates",
+    )),
+    ("Separation", "Review operational exit and settlement separately.", (
+        "Exits / Separations", "Final Settlements",
+    )),
+    ("Compliance", "Review explicit applicability without inventing legal values.", (
+        "Wage Floor Reviews", "Benefit Enrollments", "Working Time Reviews", "Maternity Reviews", "Welfare Reviews",
+    )),
+    ("Reports", "Open the reviews allowed for your role and scope.", (
+        "Anomaly Radar", "Payroll Register", "Payroll Variance", "Pay Component Register", "Biometric ID Audit",
+    )),
+    ("Setup", "Reviewed configuration for authorized administrators.", (
+        "Departments", "Designations", "Branches / Locations", "Employee Grades", "Employee Groups",
+        "HR Settings", "Payroll Settings",
+        "Shift Types", "Attendance Policies",
+        "Salary Structures", "Salary Components", "Payroll Rules", "Income Tax Slabs", "Payroll Periods",
+        "Statutory Exit Rules", "Wage Floor Rules", "Benefit Rules", "Working Time Rules", "Maternity Rules",
+        "Policy Exceptions", "Bulk Data Import",
+    )),
+    ("Devices", "Device and field evidence for authorized support roles.", (
+        "Biometric Devices", "Employee Biometric IDs", "Face Match Settings", "Live Locations", "Location Pings",
     )),
 )
+
+HOME_NUMBER_CARDS = [
+    {"number_card_name": "Number of Employees on Leave (Today)", "label": "Number of Employees on Leave (Today)"},
+    {"number_card_name": "Number of Employees on Leave (This Month)", "label": "Number of Employees on Leave (This Month)"},
+    {"number_card_name": "Expense Claims (This Month)", "label": "Expense Claims (This Month)"},
+]
+
+HOME_QUICK_LISTS = [
+    {
+        "document_type": "Leave Application",
+        "label": "Open Leave Requests",
+        "quick_list_filter": json.dumps({"status": "Open"}),
+    },
+    {
+        "document_type": "Attendance Request",
+        "label": "Attendance Requests to Review",
+        "quick_list_filter": json.dumps({"docstatus": 0}),
+    },
+    {
+        "document_type": "Expense Claim",
+        "label": "Draft Expense Claims",
+        "quick_list_filter": json.dumps({"docstatus": 0, "approval_status": "Draft"}),
+    },
+]
+
+COMMON_ACTION_SHORTCUTS = [
+    "Employee Directory",
+    "Today's Attendance",
+    "Attendance Summary",
+    "Attendance Fix Requests",
+    "Mobile Attendance",
+    "Leave Requests",
+    "Expense Claims",
+    "Run Monthly Payroll",
+    "Salary Setup Coverage",
+    "Job Applicants",
+    "Field Duties",
+    "Final Settlements",
+]
+
+
+def workspace_sidebar_items(shortcuts):
+    """Native metadata only: Frappe filters every target for the current user."""
+    available = {label: (target, kind) for label, target, kind in shortcuts}
+    items = [{"label": "Home / Action Board", "type": "Link", "link_type": "Workspace",
+              "link_to": "tradexcel-hr", "icon": "home", "child": 0}]
+    for title, _description, labels in WORKSPACE_SECTIONS:
+        selected = [label for label in labels if label in available]
+        if not selected:
+            continue
+        items.append({"label": title, "type": "Section Break", "collapsible": 1, "keep_closed": 1})
+        for label in selected:
+            target, kind = available[label]
+            items.append({"label": label, "type": "Link", "link_type": kind, "link_to": target,
+                          "child": 1, "icon": WORKSPACE_SHORTCUT_ICONS.get(label)})
+    return items
+
+
+def ensure_workspace_sidebar(shortcuts):
+    name = "Tradexcel HR"
+    doc = frappe.get_doc("Workspace Sidebar", name) if frappe.db.exists("Workspace Sidebar", name) else frappe.new_doc("Workspace Sidebar")
+    doc.title = name
+    doc.module = "Tradexcel HR"
+    doc.app = "tradex_hr"
+    doc.standard = 0  # Source-owned installer metadata; no developer-mode export.
+    doc.for_user = None
+    doc.header_icon = "users"
+    doc.set("items", workspace_sidebar_items(shortcuts))
+    doc.save(ignore_permissions=True)
+
 
 
 WORKSPACE_NAMES = {
@@ -790,29 +713,32 @@ def workspace_is_visible(name: str) -> bool:
 
 
 def workspace_blocks(shortcuts=None):
-    """Return the dashboard layout used by both fresh installs and migrations."""
+    """Return the native-first home layout with progressive disclosure."""
     shortcuts = shortcuts if shortcuts is not None else list(WORKSPACE_SHORTCUTS) + list(BULK_WORKSPACE_SHORTCUTS)
     available = {row[0]: row for row in shortcuts}
-    blocks = [{"type": "header", "data": {"text": "<h2>Tradexcel HR Action Board</h2>", "col": 12}}]
-    blocks.extend(
-        {"type": "number_card", "data": {"number_card_name": name, "col": 3}}
-        for name in NUMBER_CARDS
-    )
-    blocks.extend([
-        {"type": "header", "data": {"text": "<h3>Overview</h3>", "col": 12}},
-    ])
-    blocks.extend(
-        {"type": "chart", "data": {"chart_name": name, "col": 6}}
-        for name in DASHBOARD_CHARTS
-    )
-    for title, description, labels in WORKSPACE_SECTIONS:
-        blocks.append({"type": "header", "data": {"text": f"<h3>{title}</h3>", "col": 12}})
-        blocks.append({"type": "paragraph", "data": {"text": description, "col": 12}})
-        blocks.extend(
-            {"type": "shortcut", "data": {"shortcut_name": label, "col": 3}}
-            for label in labels
-            if label in available
-        )
+    blocks = [
+        {"type": "header", "data": {"text": "<h2>Tradexcel HR Action Board</h2>", "col": 12}},
+        {"type": "custom_block", "data": {"custom_block_name": "Tradexcel Work Needing Attention", "col": 12}},
+        {"type": "header", "data": {"text": "<h3>Operational Snapshot</h3>", "col": 12}},
+    ]
+    for card in HOME_NUMBER_CARDS:
+        blocks.append({
+            "type": "number_card",
+            "data": {"number_card_name": card["label"], "col": 4},
+        })
+    blocks.append({"type": "header", "data": {"text": "<h3>Pending Work</h3>", "col": 12}})
+    for ql in HOME_QUICK_LISTS:
+        blocks.append({
+            "type": "quick_list",
+            "data": {"quick_list_name": ql["label"], "col": 4},
+        })
+    blocks.append({"type": "header", "data": {"text": "<h3>Common Actions</h3>", "col": 12}})
+    for label in COMMON_ACTION_SHORTCUTS:
+        if label in available:
+            blocks.append({
+                "type": "shortcut",
+                "data": {"shortcut_name": label, "col": 3},
+            })
     return blocks
 
 
@@ -852,21 +778,6 @@ def _ensure_custom_report(values: dict) -> None:
         doc.insert(ignore_permissions=True)
     else:
         doc.save(ignore_permissions=True)
-
-
-def ensure_daily_attendance_report() -> None:
-    values = {
-        "report_name": "Daily Attendance Summary",
-        "ref_doctype": "Attendance",
-        "report_type": "Script Report",
-        "is_standard": "Yes",
-        "module": "Tradexcel HR",
-        "query": None,
-        "report_script": None,
-        "javascript": DAILY_ATTENDANCE_JAVASCRIPT,
-        "disabled": 0,
-    }
-    _ensure_custom_report(values)
 
 
 def ensure_reports() -> None:
@@ -972,7 +883,26 @@ def rename_legacy_reports() -> None:
         else:
             frappe.rename_doc("Report", legacy_name, canonical_name, force=True)
 
+def ensure_action_board_block() -> None:
+    from pathlib import Path
+    from tradex_hr.tradexcel_hr.action_board import BOARD_ROLES
+
+    name = "Tradexcel Work Needing Attention"
+    root = Path(__file__).parent / "public" / "action_board"
+    doc = frappe.get_doc("Custom HTML Block", name) if frappe.db.exists("Custom HTML Block", name) else frappe.new_doc("Custom HTML Block")
+    doc.name = name
+    doc.private = 0
+    doc.html = (root / "home.html").read_text()
+    doc.script = (root / "home.js").read_text()
+    doc.style = (root / "home.css").read_text()
+    doc.set("roles", [{"role": role} for role in sorted(BOARD_ROLES)])
+    doc.save(ignore_permissions=True)
+
+
 def ensure_workspace() -> None:
+    from tradex_hr.tradexcel_hr.action_board import BOARD_ROLES
+
+    ensure_action_board_block()
     def save_workspace_doc(doc):
         # Frappe normally rejects duplicate workspace slugs during ordinary
         # edits.  These legacy aliases are explicitly retired for production.
@@ -1011,18 +941,33 @@ def ensure_workspace() -> None:
             doc.icon = "users"
             doc.indicator_color = "blue"
 
+        # This cross-module home is role-gated, not gated on having a custom
+        # app DocType permission. Native HR-only approvers need their home too.
+        doc.module = None
+        doc.app = "tradex_hr"
+        doc.set("roles", [{"role": role} for role in sorted(BOARD_ROLES)])
         doc.content = content
+        doc.type = "Workspace"
         doc.title = workspace_values["title"]
         doc.public = 1 if workspace_is_visible(name) else 0
         doc.is_hidden = 0 if workspace_is_visible(name) else 1
         doc.charts = []
-        for chart_name in DASHBOARD_CHARTS:
-            if frappe.db.exists("Dashboard Chart", chart_name):
-                doc.append("charts", {"chart_name": chart_name, "label": chart_name})
         doc.number_cards = []
-        for card_name in NUMBER_CARDS:
-            if frappe.db.exists("Number Card", card_name):
-                doc.append("number_cards", {"number_card_name": card_name, "label": card_name})
+        for card in HOME_NUMBER_CARDS:
+            if frappe.db.exists("Number Card", card["number_card_name"]):
+                doc.append("number_cards", {
+                    "number_card_name": card["number_card_name"],
+                    "label": card["label"],
+                })
+        doc.quick_lists = []
+        for ql in HOME_QUICK_LISTS:
+            if frappe.db.exists("DocType", ql["document_type"]):
+                doc.append("quick_lists", {
+                    "document_type": ql["document_type"],
+                    "label": ql["label"],
+                    "quick_list_filter": ql["quick_list_filter"],
+                })
+        doc.set("custom_blocks", [{"custom_block_name": "Tradexcel Work Needing Attention", "label": "Tradexcel Work Needing Attention"}])
         doc.shortcuts = []
         for label, link_to, link_type in shortcuts:
             doc.append("shortcuts", {
@@ -1033,6 +978,8 @@ def ensure_workspace() -> None:
                 "color": "Blue",
             })
         save_workspace_doc(doc)
+    # Validate the Home Link only after fresh-install Workspace creation.
+    ensure_workspace_sidebar(shortcuts)
 
 
 def ensure_property_setters() -> dict[str, int]:
@@ -1085,16 +1032,29 @@ def after_install():
 
 
 def after_migrate():
-    from tradex_hr.branch_setup import ensure_branch_hierarchy
+    from tradex_hr.branch_setup import ensure_branch_fields
     from tradex_hr.role_setup import ensure_tradex_roles
     from tradex_hr.approval_setup import ensure_tradex_workflows
     from tradex_hr.field_attendance_setup import ensure_field_attendance_fields, ensure_field_transport_component
+    from tradex_hr.field_financial_setup import (
+        ensure_income_tax_review_fields,
+        ensure_payroll_adjustment_workflow_fields,
+    )
+    from tradex_hr.field_employee_exit_setup import ensure_default_exit_template, ensure_employee_exit_fields
+    from tradex_hr.field_working_time_setup import ensure_working_time_holiday_category_field
 
-    ensure_branch_hierarchy()
+    ensure_branch_fields()
     ensure_tradex_roles()
+    ensure_payroll_adjustment_workflow_fields()
+    ensure_employee_exit_fields()
     ensure_tradex_workflows()
+    ensure_default_exit_template()
     ensure_field_attendance_fields()
     ensure_field_transport_component()
+    ensure_working_time_holiday_category_field()
+    ensure_income_tax_review_fields()
+    # Historic structure pay-basis seeding is an explicit reviewed migration
+    # utility, not a generic install action on another company's structures.
     rename_legacy_dashboard_charts()
     ensure_reports()
     ensure_number_cards()

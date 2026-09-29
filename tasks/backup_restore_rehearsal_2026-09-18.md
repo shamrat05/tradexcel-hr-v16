@@ -66,3 +66,18 @@ Lesson for any future verification: never count SQL rows with a substring search
   superuser, which this machine does not currently have.
 
 H2 therefore remains **open**. Do not read this document as "restore rehearsed".
+
+## Follow-up rehearsal — isolated v16 restore, 2026-09-23
+
+The earlier 2026-09-18 result remains accurate for that original host: it was a partial archive-integrity check because no usable DB superuser was available there. A later v16 staging rehearsal used a disposable isolated MariaDB instance with a temporary root credential and did complete a real restore.
+
+- Source: a verified v16 staging backup with database, public files, private files, and site configuration.
+- Target: payroll-migration-check-20260923.localhost in the disposable v16 bench database.
+- Restore: completed through the normal bench restore path.
+- Migration: completed through standard bench migrate with a normal worker running; after_migrate completed.
+- Smoke: app and report metadata loaded. Three file-backed Tradexcel Script Reports were standard/module-owned; four retained Query Report definitions. HTTP report calls passed for the three reports with empty filters and for all seven with their declared filters.
+- No manual ensure_* calls, queue deletion, production-site operation, real payroll submission, or accounting entry creation was part of the rehearsal.
+
+The staging and disposable-site migration evidence, including the verified fresh backup checksums, is recorded in v16_migration_execution_2026-09-22.md. This later rehearsal closes the restore boot/migrate gap for the v16 staging environment only; it does not certify production recovery readiness.
+
+\r\n

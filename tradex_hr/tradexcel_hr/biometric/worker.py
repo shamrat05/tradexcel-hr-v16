@@ -23,11 +23,8 @@ from typing import Any
 from .state_store import SyncStateStore
 
 SOURCE = "senseface"
-DEFAULT_BRIDGE_DB = os.getenv(
-    "SENSEFACE_BRIDGE_DB",
-    "/mnt/c/Users/Sanchita/Desktop/Projects/SenseFace-HRMS-Bridge/data/senseface_hrms.db",
-)
-DEFAULT_STATE_FILE = os.path.expanduser("~/frappe-bench/sync/data/sync_state.sqlite3")
+DEFAULT_BRIDGE_DB = os.getenv("SENSEFACE_BRIDGE_DB")
+DEFAULT_STATE_FILE = os.getenv("TRADEX_SYNC_STATE_FILE")
 
 
 def utc_now() -> str:
@@ -114,7 +111,7 @@ def process_punches(
 class ReliableBiometricWorker:
     def __init__(
         self, *, bridge_url: str = "http://127.0.0.1:8090", sqlite_path: str | None = None,
-        api_key: str | None = None, state_path: str = DEFAULT_STATE_FILE,
+        api_key: str | None = None, state_path: str | None = DEFAULT_STATE_FILE,
         site: str | None = None, sites_path: str | None = None,
         batch_size: int = 500, device_serials: Iterable[str] | None = None,
         frappe_module: Any | None = None,
@@ -122,17 +119,21 @@ class ReliableBiometricWorker:
         self.bridge_url = bridge_url.rstrip("/")
         self.sqlite_path = sqlite_path or DEFAULT_BRIDGE_DB
         self.api_key = api_key or os.getenv("SENSEFACE_API_KEY", "")
-        self.site = site or os.getenv("FRAPPE_SITE", "hrms.localhost")
+        self.site = site or os.getenv("FRAPPE_SITE")
         self.sites_path = sites_path or os.getenv(
-            "FRAPPE_SITES_PATH", os.path.expanduser("~/frappe-bench/sites")
+            "FRAPPE_SITES_PATH", os.path.join(os.getcwd(), "sites")
         )
         self.batch_size = max(1, min(int(batch_size), 5000))
         self.device_serials = [str(value) for value in (device_serials or []) if str(value)]
+        if not state_path:
+            raise ValueError("Set --state-file or TRADEX_SYNC_STATE_FILE to a persistent path")
         self.state = SyncStateStore(state_path)
         self.frappe = frappe_module or self._load_frappe()
 
     def _load_frappe(self) -> Any:
         import frappe
+        if not self.site:
+            raise ValueError("Set --site or FRAPPE_SITE before starting biometric sync")
         if getattr(frappe.local, "site", None) != self.site:
             frappe.init(site=self.site, sites_path=self.sites_path, force=True)
         if not getattr(frappe.local, "db", None):
@@ -152,7 +153,7 @@ class ReliableBiometricWorker:
     def _discover_devices(self) -> list[str]:
         if self.device_serials:
             return self.device_serials
-        if not os.path.exists(self.sqlite_path):
+        if not self.sqlite_path or not os.path.exists(self.sqlite_path):
             try:
                 req = urllib.request.Request(f"{self.bridge_url}/health",
                                               headers={"X-API-Key": self.api_key})
@@ -164,7 +165,7 @@ class ReliableBiometricWorker:
                     return devices
             except (OSError, ValueError, TypeError):
                 pass
-            return ["SenseFace-2A"]
+            raise RuntimeError("No devices were returned by the bridge. Configure a device or pass --device.")
         with self._sqlite() as con:
             rows = con.execute(
                 "SELECT DISTINCT serial_number FROM attendance WHERE serial_number IS NOT NULL ORDER BY serial_number"
@@ -197,7 +198,7 @@ class ReliableBiometricWorker:
         return [dict(row) for row in rows if str(row.get("serial_number", device)) == device]
 
     def _fetch(self, device: str) -> list[dict[str, Any]]:
-        if os.path.exists(self.sqlite_path):
+        if self.sqlite_path and os.path.exists(self.sqlite_path):
             return self._fetch_sqlite(device)
         return self._fetch_http(device)
 
