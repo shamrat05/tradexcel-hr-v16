@@ -4,7 +4,7 @@ Any agent or person about to delete, migrate, or bulk-edit data **must read this
 first**. It lists every backup on this machine with exact timestamps, verified
 file names, sizes and checksums.
 
-Last updated: 2026-09-26 18:10 (Asia/Dhaka, UTC+6)
+Last updated: 2026-09-29 23:28 (Asia/Dhaka, UTC+6)
 
 ---
 
@@ -47,6 +47,7 @@ Several older files are also mirrored under
 
 | Taken (Asia/Dhaka) | Database file | Bytes | SHA-256 (16) | Purpose |
 | --- | --- | --- | --- | --- |
+| **2026-09-29 23:27:44** | `20260929_232744-hrms-v16_localhost-database.sql.gz` | 58,343,952 | `c8083a99755773e2` | Before exposing Attendance Periods under Attendance & Shifts in curated Workspace sidebar; `--with-files`, gzip and both file archives verified |
 | **2026-09-28 01:14:22** | `20260928_011422-hrms-v16_localhost-database.sql.gz` | 56,934,971 | `4083ba08edd55406` | Before removing dead Shift Request Quick List and renaming Expense Claims to Draft Expense Claims on Home Workspace; `--with-files`, gzip and both file archives verified |
 | **2026-09-27 22:01:01** | `20260927_220101-hrms-v16_localhost-database.sql.gz` | 56,079,166 | `33ceef6497c798c6` | Before removing dead Holiday Number Card from Home and updating Workspace metadata; `--with-files`, gzip and both file archives verified |
 | **2026-09-27 20:26:39** | `20260927_202639-hrms-v16_localhost-database.sql.gz` | 53,584,703 | `03f662e0579cda0c` | Before native feature custom role permission convergence and Home action update; `--with-files`, gzip and both file archives verified |
@@ -74,6 +75,19 @@ Several older files are also mirrored under
 | **2026-09-25 11:14** | `20260925_111432-hrms-v16_localhost-database.sql.gz` | 20,389,261 | `9dcac7c73acbd29e` | Before standard lifecycle-branch migration; gzip and both file archives verified |
 | **2026-09-25 13:57** | `20260925_135751-hrms-v16_localhost-database.sql.gz` | 23,518,137 | `392607c1445ebdb3` | Before synthetic PR #20 lifecycle/payroll compatibility cleanup tests; `--with-files`, gzip and both file archives verified |
 | **2026-09-25 10:26** | `20260925_102545-hrms-v16_localhost-database.sql.gz` | 20,389,491 | `49ed5d561ba4abe4` | Before synthetic Employee Lifecycle integration retry |
+
+The **2026-09-29 23:27:44** backup was taken with `--with-files` before
+standard staging migration exposing Attendance Periods under Attendance & Shifts
+in the curated Workspace sidebar. Files are under
+`/home/sanchita/frappe-bench-v16/sites/hrms-v16.localhost/private/backups/`.
+`gzip -t` and public/private `tar -tf` passed. Exact sizes and SHA-256:
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20260929_232744-hrms-v16_localhost-database.sql.gz` | 58,343,952 | `c8083a99755773e268c6be58aaf28a3eac36c65c37f7d412794a28b0ee4668f3` |
+| `20260929_232744-hrms-v16_localhost-files.tar` | 10,240 | `3d1096c937415caf68efe85ca5e342dd4be9cb26e9d717b2fccc03c674e32531` |
+| `20260929_232744-hrms-v16_localhost-private-files.tar` | 38,942,720 | `3a8ba593b16400c6d279351ec7dc1397177cd4b1116f0069579c4d01d34c69b3` |
+| `20260929_232744-hrms-v16_localhost-site_config_backup.json` | 245 | `904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73` |
 
 The **2026-09-26 09:20:27** backup was taken with `--with-files` before
 cleanup of verified orphan `persona-puat…@example.test` Contact and Notification

@@ -792,6 +792,14 @@
    "color": "Blue",
    "doc_view": "",
    "icon": "calendar",
+   "label": "Attendance Periods",
+   "link_to": "Tradexcel Attendance Period",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
    "label": "Monthly Attendance Sheet",
    "link_to": "Monthly Attendance Sheet",
    "report_ref_doctype": "Attendance",

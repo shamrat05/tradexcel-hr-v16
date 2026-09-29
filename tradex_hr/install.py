@@ -395,6 +395,7 @@ WORKSPACE_SHORTCUTS = [
     ("Shift Schedule Assignments", "Shift Schedule Assignment", "DocType"),
     ("Shift Locations", "Shift Location", "DocType"),
     ("Overtime Types", "Overtime Type", "DocType"),
+    ("Attendance Periods", "Tradexcel Attendance Period", "DocType"),
     ("Monthly Attendance Sheet", "Monthly Attendance Sheet", "Report"),
     ("Shift Attendance", "Shift Attendance", "Report"),
     ("Employees Working on a Holiday", "Employees working on a holiday", "Report"),
@@ -443,6 +444,7 @@ BULK_WORKSPACE_SHORTCUTS = [
 WORKSPACE_SHORTCUT_ICONS = {
     "Today's Attendance": "today",
     "Attendance Summary": "calendar",
+    "Attendance Periods": "calendar",
     "Mobile Attendance": "location",
     "Live Locations": "map",
     "Punch Log": "scan",
@@ -568,7 +570,7 @@ WORKSPACE_SECTIONS = (
     )),
     ("Attendance & Shifts", "Review work evidence, attendance requests, and shift coverage.", (
         "Today's Attendance", "Attendance Summary", "Attendance Fix Requests", "Attendance Records", "Punch Log",
-        "Mobile Attendance", "Field Duties", "Overtime Reviews",
+        "Mobile Attendance", "Field Duties", "Overtime Reviews", "Attendance Periods",
         "Shift Assignments", "Bulk Shift Assignment", "Shift Requests", "Shift Schedule Assignments", "Shift Planner", "Shift Coverage",
         "Shift Locations", "Overtime Types",
         "Monthly Attendance Sheet", "Shift Attendance", "Employees Working on a Holiday",

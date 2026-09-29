@@ -61,6 +61,7 @@ doctype_js = {
     "Shift Assignment Tool": "public/js/shift_assignment_tool.js",
     "Bulk Salary Structure Assignment": "public/js/bulk_salary_structure_assignment.js",
     "Income Tax Slab": "public/js/income_tax_slab.js",
+    "Tradexcel Attendance Period": "public/js/tradexcel_attendance_period.js",
 }
 
 doctype_list_js = {
