@@ -150,3 +150,7 @@ Frappe checkout is clean but HEAD `f1bdb53ac60cd96528b52de418f9459510acb5bd` con
 ### Cleanup and validation boundary
 
 Fixture cleanup explicitly verified zero synthetic Users, User Permissions, Employees, Attendance Requests, Contacts, role grants, Branch and Department; zero Attendance created. No payroll, Leave, Checkin or device mutation was performed. Only the six authorized documentation files change. No runtime tests or full site-backed suite were rerun for documentation-only edits; existing test source and prior dated results are audit inputs, not freshly passing tests.
+
+## Baseline reproducibility contract — P01
+
+B01–B15 are the canonical automation baseline IDs. Future 014 comparison must preserve each scenario's meaning, start surface, persona and action taxonomy. Single-run automation seconds are diagnostic only. Human UAT timing is a separate baseline and must never be numerically compared with these automation seconds. If changed Frappe behavior/configuration prevents reproduction, record the difference rather than fabricate parity. P01 changes no measured values or intentional steps.

@@ -10,7 +10,7 @@ Decision order: installed native behavior → native metadata → supported hook
 
 ## Permanent registry
 
-IDs `TXUX-260930-000` through `015` are reserved with the meanings below. Primary/patch/metadata IDs are never reused. Abbreviated dependencies in the table always mean the full campaign ID. “Shared” means a flat branch from the latest independently accepted shared base. “Dependency” means stack only if it uses actual unmerged code, record the exact dependency head, and avoid a giant linear stack.
+IDs `TXUX-260930-000` through `015` are reserved with the meanings below. Primary/patch/metadata IDs are never reused. Abbreviated dependencies in the table always mean the full campaign ID. “Shared” means a flat branch from the latest independently accepted and integrated shared base, after the checkpoint below. “Dependency” means stack only if it uses actual unmerged code, record the exact dependency head, and avoid a giant linear stack.
 
 | ID / name / type | Purpose | Dependencies / base strategy | Ownership / primary agent | Parallel-safe with / blocks | Acceptance gate / expected PR scope / rollback |
 | --- | --- | --- | --- | --- | --- |
@@ -23,11 +23,11 @@ IDs `TXUX-260930-000` through `015` are reserved with the meanings below. Primar
 | 006 Attendance/Shift recovery / implementation | Explain evidence, draft/submit state and canonical next step | 001, 003, 004; integrate 002 route decisions | ATTENDANCE/SHIFT UI; Luna | 007/008 if no shared Calendar/hook/test edits; blocks 014 | Preview/confirm/partial/retry and independent approval preserved; existing reports/forms only; revert UI. |
 | 007 Payroll/Finance recovery / implementation | Precise blocker-to-native-record guidance and money-state explanation | 001, 003, 004; integrate 002 routes | PAYROLL/FINANCE UI; Luna + independent review | 006/008 subject to locks; blocks 014 | No copied money calculation, salary disclosure, mutation/permission changes; existing UI adapters/tests; revert UI. |
 | 008 Employee/joiner/exit/expense recovery / implementation | Reuse Employee readiness and native lifecycle/expense forms | 001, 003, 004; integrate 002 routes | EMPLOYEE/LIFECYCLE/EXPENSE UI; Gemini | 006/007 with Calendar boundary; blocks 014 | Identity, readiness, lifecycle/history/maker-checker remain native; existing UI only; revert UI. |
-| 009 Mobile state clarity / implementation | Distinguish local saved, server accepted, pending review and rejected evidence | 001; accept 000 theme evidence before final integration; Shared | MOBILE; Luna + independent review | 002/004/003; blocks 010/014 | State fixtures/browser offline tests; self-service, quarantine/private media/review/queue unchanged; no new Page; revert labels/UI. |
+| 009 Mobile state clarity / implementation | Distinguish local saved, server accepted, pending review and rejected evidence | 001, 000; preferred: #53 integrated into Shared before branching; otherwise explicit stack on #53 head `830c599b19a6074c58f2a9b37977f336d1fe61d4` (see checkpoint) | MOBILE; Luna + independent review | 002/004/003; blocks 010/014 | State fixtures/browser offline tests; self-service, quarantine/private media/review/queue unchanged; no new Page; revert labels/UI. |
 | 010 Theme/branding/app tile / cleanup | Prefer native settings/theme routing; reduce DOM-specific custom behavior | 001, 000, 009; Shared unless real code dependency | GLOBAL UI; Gemini | 011/domain UI; blocks 012 | Light/dark, desktop/phone, native theme persistence, tile behavior; global family only; restore narrow adapters. |
-| 011 Sidebar source ownership / cleanup | Prove standard app-level Sidebar JSON migration vs installer ownership | 001, 002, 005; serialize with 013 | WORKSPACE; Gemini + independent review | 010/domain UI; blocks 012/014 | Installed export/sync proof, neutral install + persona/stored customizations; no core edit; metadata rollback after verified backup. |
+| 011 Sidebar source ownership / cleanup | Prove standard app-level Sidebar JSON migration vs installer ownership | 001, 002, 005, 013; Shared after Workspace sequence | WORKSPACE; Gemini + independent review | 010/domain UI; blocks 012/014 | Installed export/sync proof, neutral install + persona/stored customizations; no core edit; metadata rollback after verified backup. |
 | 012 Global CSS containment / audit+cleanup | Measure shell width/sidebar/gutters before removing risky selectors | 001, 010, 011 | GLOBAL UI; independent reviewer, Gemini patches | Domain UI/docs; blocks 014 | Viewport/overflow/focus/native sidebar regression; no new theme system; bounded CSS/tests; revert CSS. |
-| 013 Artifact cleanup / cleanup | Remove only proven unused charts/cards/legacy UI artifacts | 001, **002 lock release**; Shared | ARTIFACT SOURCE + WORKSPACE; Gemini | 004/009/003; research can precede 002; blocks 014 | Repository + stored-reference audit, permissions, installer/fresh-install parity; artifact metadata/tests only; restore source/metadata. |
+| 013 Artifact cleanup / cleanup | Remove only proven unused charts/cards/legacy UI artifacts | 001, **005 accepted/integrated or exact-head stack, then lock release**; Shared or documented dependency | ARTIFACT SOURCE + WORKSPACE; Gemini | 004/009/003; research can precede implementation; edits follow 005; blocks 014 | Repository + stored-reference audit, permissions, installer/fresh-install parity; artifact metadata/tests only; restore source/metadata. |
 | 014 Accessibility/resilience/benchmark / validation | Repeat journeys and real-operator protocol, independent final UX audit | 002–013 accepted; Shared integrated head | Independent reviewer; reserve patches separately | Docs/release prep; blocks 015 | Compare same scenarios/starts/devices; keyboard/contrast/overflow/failure; no speculative redesign; evidence-only or separate patch IDs. |
 | 015 UX release gate / validation | Prove integrated source/dependency/CI/UAT truth | 000–014; final integrated accepted head | Independent reviewer; documentation | None dependent | Exact PR graph, local/static/browser evidence, honest remote/device/staff gates; no production cutover; docs rollback. |
 
@@ -43,7 +43,7 @@ flowchart LR
   T001 --> T009
   T002 --> T003[003 Action Board]
   T002 --> T005[005 Learnability]
-  T002 --> T013[013 Artifacts: installer lock]
+  T005 --> T013[013 Artifacts: installer lock]
   T003 --> T006[006 Attendance/Shift]
   T003 --> T007[007 Payroll/Finance]
   T003 --> T008[008 People/Expenses]
@@ -51,8 +51,7 @@ flowchart LR
   T004 --> T007
   T004 --> T008
   T009 --> T010[010 Theme/Brand/Tile]
-  T005 --> T011[011 Sidebar source]
-  T013 --> T011
+  T013 --> T011[011 Sidebar source]
   T010 --> T012[012 CSS containment]
   T011 --> T012
   T006 --> T014[014 Benchmark]
@@ -66,13 +65,25 @@ flowchart LR
 | Wave | Work | Lock caveat |
 | --- | --- | --- |
 | 0 | 000 accepted implementation + 001 | #53 remains separate; do not cherry-pick or assume merged. |
-| A | 002 + 004 + 009 | Three independent runtime locks. 013 can audit references additionally, but installer edits wait for 002. |
-| B | 003 + 005; 013 after Workspace release | 005 and 013 share installer/metadata: serialize their edits. |
+| A | 002 + 004 + 009 | Three independent runtime locks. 013 can audit references additionally, but installer edits wait for 005 and its integration checkpoint. |
+| B | 003 + 005, then 013 after 005 checkpoint/lock release | WORKSPACE order is exactly **002 → 005 → 013 → 011**; research does not authorize early edits. |
 | C | 006 + 007 + 008 | At most three owners; Calendar/hooks/translations/test conflicts require reservation. |
 | D | 010 + 011, then 012 | 011 follows 005/013 Workspace completion; 012 follows both shell/theme and sidebar evidence. |
 | E | 014 then 015 | Final integrated benchmark and release disposition. |
 
-Changes to the proposed graph: 013 installer cleanup cannot safely run beside 002/005 because all own `install.py`; its research can. 012 must consume 011's actual sidebar evidence as well as 010. No dependency requires every domain PR to stack sequentially. Acceptance dependencies are not automatically code ancestry dependencies.
+Changes to the proposed graph: WORKSPACE implementation order is exactly **002 → 005 → 013 → 011**. Home decisions precede learnability metadata, then proven dead-artifact cleanup, then Sidebar source convergence against the reduced final surface. They share `install.py`; only research can run early. 012 must consume 011's actual sidebar evidence as well as 010. No dependency requires every domain PR to stack sequentially. Acceptance dependencies are not automatically code ancestry dependencies.
+
+## INTEGRATION CHECKPOINT — required between waves
+
+A dependent task may begin only when its predecessor is independently accepted **and integrated/merged into the current shared base**, or it has a genuine, explicitly documented stacked code dependency on the predecessor's **exact head SHA**. Acceptance of an unmerged PR alone does not put its code into another branch. Record every dependency's integrated-base ancestry or exact stacked head before starting.
+
+Wave 0 review → human/coordinator integrates accepted foundation/control-plane prerequisites → records/verifies a new exact shared-base SHA → authorizes Wave A branches from that SHA. After Wave A, independently review every PR → human/coordinator integrates accepted non-conflicting PRs → verify resulting shared-base SHA → authorize Wave B. Repeat review/integration/exact-SHA checkpoints for later waves and for sequential substeps within a wave (including 005 → 013). Genuine exact-head stacks are the explicit alternative, not silent missing-code dependencies. No merge method is mandated; agents never merge.
+
+Apply this gate to 001 → 002/004, 000 → 009, 002 → 003/005, 003/004 → 006/007/008, 009 → 010, 005/013 → 011, 010/011 → 012 and all 002–013 → 014. File-lock release is additional to, not a replacement for, dependency integration/ancestry.
+
+**009 / PR #53:** Prefer integrating accepted #53 into the shared base, then branch 009 flat from that new base. Only if #53 intentionally remains unmerged may 009 explicitly stack on exact head `830c599b19a6074c58f2a9b37977f336d1fe61d4`; record #53 as true code ancestry. Never opportunistically cherry-pick, duplicate the theme fix or recreate its test changes independently. Also satisfy 001's control-plane gate.
+
+**001 / PR #54:** Preferred: integrate the six control-plane files before downstream implementation so all branches inherit the same rules. PR existence/acceptance alone is not a usable repository dependency. If #54 intentionally remains unmerged, downstream agents must explicitly read the control plane from its exact current head and declare that exception; this does not waive the general integrated-or-genuine-stack gate or runtime predecessor requirements.
 
 ## Review / merge protocol
 

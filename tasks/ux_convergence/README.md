@@ -25,7 +25,7 @@ Campaign: **TXUX-260930**. We are simplifying operator routes and presentation a
 
 1. Read the root README and AGENTS, then this directory. Historical status counts are not current evidence.
 2. Inspect Git/GitHub: accepted shared base, current PR heads/diffs/checks and active owners. Do not assume an unmerged PR is part of the base.
-3. Find the first authorized incomplete task in MASTER_PLAN; claim its locks before editing. Use a dedicated worktree and task-ID branch.
+3. Apply MASTER_PLAN's INTEGRATION CHECKPOINT: predecessors must be accepted and integrated into the verified exact shared base, or genuine stacked code dependencies must record their exact heads. Find the first authorized incomplete task; claim its locks before editing. Use a dedicated worktree and task-ID branch.
 4. Read that task's evidence/dependencies and exact installed framework source. Preserve any unrelated local work.
 5. Make only its assigned change, record evidence, open a focused draft PR and stop. No automatic merge, retarget, force push or next-task start.
 
@@ -39,4 +39,6 @@ Implementation complete means source/native-mechanism review, permission/busines
 
 Native records and server permissions remain authoritative; no duplicate ledger, approval database, frontend payroll/legal calculation, inferred statutory value, new custom Page without explicit proof/authorization, permission expansion or real business mutation. Keep the read-only Action Board adapter and native Sidebar foundation. Preserve scope, maker/checker, retries and historical immutability.
 
-Use at most three concurrent implementation owners, one per file lock. Documentation audits can run separately. The next implementation candidates after review are 002, 004 and 009; 013 can perform reference research in parallel, but its installer edits must wait for the Workspace owner.
+Use at most three concurrent implementation owners, one per file lock. Documentation audits can run separately. After review **and integration checkpoints**, candidates are 002/004; 009 additionally requires #53 integration (preferred) or an explicit exact-head stack on `830c599b19a6074c58f2a9b37977f336d1fe61d4`. No cherry-pick or duplicate theme/test fix. WORKSPACE edits follow exactly **002 → 005 → 013 → 011**; 013 reference research may run early.
+
+Prefer integrating #54's six control-plane files before downstream branches. If intentionally unmerged, agents must read #54 at its exact current head and declare that exception; PR existence alone is insufficient and does not waive dependency ancestry requirements. Between waves, human/coordinator reviews and integrates accepted non-conflicting PRs, verifies the new shared-base SHA and authorizes the next wave. Agents never merge.
