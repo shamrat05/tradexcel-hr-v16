@@ -86,11 +86,3 @@ header.navbar .navbar-brand {
 	background-color: var(--card-bg);
 	border-color: var(--border-color);
 }
-
-.tradex-live-locations .table,
-.tradex-mobile-attendance .table {
-	--bs-table-color: var(--text-color);
-	--bs-table-bg: transparent;
-	--bs-table-border-color: var(--border-color);
-	color: var(--text-color);
-}
