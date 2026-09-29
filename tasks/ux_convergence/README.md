@@ -7,7 +7,7 @@ Campaign: **TXUX-260930**. We are simplifying operator routes and presentation a
 - PR #52 is merged. Shared base: `feature/hrms-v16-hr-only` at `1a194240b7312609f0dbcf4195558a54bddcca8c`.
 - TXUX-260930-000 / [PR #53](https://github.com/shamrat05/tradexcel-hr-v16/pull/53): implementation accepted; OPEN / DRAFT / UNMERGED, reviewed head `830c599b19a6074c58f2a9b37977f336d1fe61d4`. Remote source-and-pure-tests check failed before steps; it is not a CI pass.
 - TXUX-260930-000-M01 was the separately authorized PR-body correction. It is not runtime work or a dependency commit.
-- TXUX-260930-001: this documentation/audit branch, `ux/TXUX-260930-001-control-plane`, directly from the shared base. Review the PR for this exact head branch; GitHub is authoritative for its number/head/status.
+- TXUX-260930-001: [PR #54](https://github.com/shamrat05/tradexcel-hr-v16/pull/54), OPEN / DRAFT / UNMERGED; this documentation/audit branch, `ux/TXUX-260930-001-control-plane`, directly from the shared base. Review the PR for this exact head branch; GitHub is authoritative for its number/head/status.
 - 002–015 are reserved, NOT STARTED. No implementation task is authorized by completion of this audit alone.
 - Real device/staff UAT is incomplete. Production approval is not implied.
 
