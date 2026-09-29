@@ -112,7 +112,7 @@ const frappe = {call: async options => {
  await assert.rejects(replayQueuedCheckin(rows.get('retry')));
  assert.equal(rows.get('retry').selfie_url, '/private/files/synthetic.jpg');
  assert.equal(uploadCount, 1);
- assert.equal(await replayQueuedCheckin(rows.get('retry')), true);
+ assert.deepEqual(await replayQueuedCheckin(rows.get('retry')), {name:'synthetic'});
  assert.equal(uploadCount, 1);
  assert.equal(rows.has('retry'), false);
 })().catch(e => {console.error(e); process.exit(1)});
