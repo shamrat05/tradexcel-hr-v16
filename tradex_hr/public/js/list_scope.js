@@ -1,3 +1,4 @@
+// Link/date conveniences only. Native server permissions remain the access boundary.
 const TRADEX_SCOPED_LIST_DOCTYPES = [
 	"Employee",
 	"Attendance",
@@ -22,10 +23,9 @@ const TRADEX_LIST_DATE_FIELDS = {
 	"Payroll Entry": "posting_date",
 };
 
-// doctype -> datetime fields that should display as clock time only (hh:mm AM/PM)
+// Attendance already has a separate date column; Checkin must retain its date.
 const TRADEX_LIST_TIME_FIELDS = {
 	"Attendance": ["in_time", "out_time"],
-	"Employee Checkin": ["time"],
 };
 
 function build_time_formatters(doctype) {
@@ -33,6 +33,9 @@ function build_time_formatters(doctype) {
 	(TRADEX_LIST_TIME_FIELDS[doctype] || []).forEach((field) => {
 		formatters[field] = (value) => (value ? moment(value).format("hh:mm A") : "");
 	});
+	if (doctype === "Employee Checkin") {
+		formatters.time = (value) => value ? frappe.datetime.str_to_user(value) : "";
+	}
 	return formatters;
 }
 
@@ -100,29 +103,12 @@ function apply_date_filter(listview, doctype, date_field, operator, value) {
 function add_quick_date_filters(listview, doctype) {
 	const date_field = TRADEX_LIST_DATE_FIELDS[doctype];
 	if (!date_field || !frappe.meta.has_field(doctype, date_field)) return;
-	const add = (label, action) => {
-		if (typeof listview.page.add_button === "function") {
-			listview.page.add_button(label, action);
-		} else {
-			listview.page.add_inner_button(label, action);
-		}
-	};
+	// Native Page groups supply a compact desktop menu and mobile Actions entry.
+	// Advanced ranges and saved filters remain Frappe's own Filter UI.
+	const add = (label, action) => listview.page.add_inner_button(label, action, __("Date"));
 	add(__("Today"), () => apply_date_filter(listview, doctype, date_field, "Timespan", "today"));
 	add(__("This Week"), () => apply_date_filter(listview, doctype, date_field, "Timespan", "this week"));
 	add(__("This Month"), () => apply_date_filter(listview, doctype, date_field, "Timespan", "this month"));
-	add(__("Custom Range"), () => {
-		frappe.prompt(
-			[
-				{ fieldname: "from_date", label: __("From Date"), fieldtype: "Date", reqd: 1 },
-				{ fieldname: "to_date", label: __("To Date"), fieldtype: "Date", reqd: 1 },
-			],
-			(values) => {
-				apply_date_filter(listview, doctype, date_field, "Between", [values.from_date, values.to_date]);
-			},
-			__("Custom Date Range"),
-			__("Apply")
-		);
-	});
 }
 
 TRADEX_SCOPED_LIST_DOCTYPES.forEach((doctype) => {
