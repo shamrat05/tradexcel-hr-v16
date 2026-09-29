@@ -1,6 +1,12 @@
 # UX campaign master plan
 
-TASK-ID: TXUX-260930-001. Accepted shared base: `feature/hrms-v16-hr-only` / `1a194240b7312609f0dbcf4195558a54bddcca8c` (merged PR #52).
+TASK-ID: TXUX-260930-001. Current integrated Wave-A shared base: `feature/hrms-v16-hr-only` / `9ba1e9c185f2e01964d28b650b48f797927f68da`. Historical audit/release foundation: `1a194240b7312609f0dbcf4195558a54bddcca8c` (PR #52).
+
+## Current coordination state — M02
+
+Wave 0 is **COMPLETE / INTEGRATED**. #53 is MERGED at `e03ba50cfe436769fddf3083c4ee6811b7876146`, preserving accepted head `830c599b19a6074c58f2a9b37977f336d1fe61d4`. #54 is MERGED at `9ba1e9c185f2e01964d28b650b48f797927f68da`, preserving accepted head `deff8fa06002518d16960af6b3b567fffc62bf29`. Tasks 000/001 are COMPLETE / ACCEPTED / INTEGRATED. Both remote runs (36636332224 / 36641903787) failed before steps, not CI passes.
+
+After M02 is reviewed/integrated, the coordinator verifies its resulting exact shared-base SHA (a descendant of `9ba1e9c185f2e01964d28b650b48f797927f68da`) and may separately authorize exactly **002 / WORKSPACE, 004 / LIST, 009 / MOBILE**. All three use independent flat branches from the **same** resulting SHA, not the historical foundation and not each other's branches. No task is started here; 013 remains research-only until 002 → 005 → 013 → 011 permits implementation. Preserve native Workspace/Sidebar/Awesomebar, read-only Action Board, permissions and maker/checker for 002; compare installed native List features before removal for 004; inherit #53 unchanged for 009. No new dashboard architecture or decorative charts.
 
 ## Immutable design contract
 
@@ -14,8 +20,8 @@ IDs `TXUX-260930-000` through `015` are reserved with the meanings below. Primar
 
 | ID / name / type | Purpose | Dependencies / base strategy | Ownership / primary agent | Parallel-safe with / blocks | Acceptance gate / expected PR scope / rollback |
 | --- | --- | --- | --- | --- | --- |
-| 000 Native page dark theme / implementation | Correct two existing field-page card surfaces | Shared exact release base; existing PR #53 | Existing GLOBAL UI/MOBILE intersection; independent reviewer | 001 audit; blocks final 009/010 theme integration | Accepted implementation, open draft, remote CI unresolved. Scoped native tokens; revert CSS/test commit only. |
-| 001 Control plane / audit | Permanent IDs, inventory, measured baseline, routes, locks | Shared exact release base | Six authorized documentation files; independent reviewer | 000 and nonconflicting research; enables 002/004/009/013 research | Source/GitHub audit, measured journeys with limitations, scope/link checks; docs-only PR; revert docs. |
+| 000 Native page dark theme / implementation | Correct two existing field-page card surfaces | Historical foundation; #53 now integrated in Shared | Existing GLOBAL UI/MOBILE intersection; independent reviewer | 001 audit; blocks final 009/010 theme integration | COMPLETE / ACCEPTED / INTEGRATED; #53 MERGED, remote CI unresolved. Scoped native tokens; revert CSS/test commit only. |
+| 001 Control plane / audit | Permanent IDs, inventory, measured baseline, routes, locks | Historical foundation; #54 now integrated in Shared | Six authorized documentation files; independent reviewer | 000 and nonconflicting research; enables 002/004/009/013 research | COMPLETE / ACCEPTED / INTEGRATED; #54 MERGED. Source/GitHub audit, measured journeys with limitations, scope/link checks; docs-only PR; revert docs. |
 | 002 Home convergence / implementation | One obvious primary entry for ordinary work; reduce redundant Home choices | 001; Shared | WORKSPACE; Luna | 004, 009; 013 research only; blocks 003/005 and installer cleanup | Persona Home parity and native target visibility, no lost needed route; Home metadata/tests only; restore prior metadata via standard convergence. |
 | 003 Compact Action Board / implementation | Exception-first presentation and clear recovery, preserve adapters | 001, 002; Shared unless Home code is required | ACTION BOARD; Luna + independent review | 004/005/009/013 subject to locks; blocks recovery integration and 014 | Preserve source/scope; compact categories/severity, empty/error honesty; reproduce modal leakage. Adapter/UI/tests only; revert adapter/presentation. |
 | 004 Native List View / cleanup | Compare date controls, native quick/saved filters and scoped Link UX | 001; Shared | LIST; Gemini | 002, 009, 003, domain tasks that do not touch list settings; blocks 006/007/008 acceptance | Desktop + phone evidence; preserve negative scope tests and datetime context; one list family; revert customization. |
@@ -23,7 +29,7 @@ IDs `TXUX-260930-000` through `015` are reserved with the meanings below. Primar
 | 006 Attendance/Shift recovery / implementation | Explain evidence, draft/submit state and canonical next step | 001, 003, 004; integrate 002 route decisions | ATTENDANCE/SHIFT UI; Luna | 007/008 if no shared Calendar/hook/test edits; blocks 014 | Preview/confirm/partial/retry and independent approval preserved; existing reports/forms only; revert UI. |
 | 007 Payroll/Finance recovery / implementation | Precise blocker-to-native-record guidance and money-state explanation | 001, 003, 004; integrate 002 routes | PAYROLL/FINANCE UI; Luna + independent review | 006/008 subject to locks; blocks 014 | No copied money calculation, salary disclosure, mutation/permission changes; existing UI adapters/tests; revert UI. |
 | 008 Employee/joiner/exit/expense recovery / implementation | Reuse Employee readiness and native lifecycle/expense forms | 001, 003, 004; integrate 002 routes | EMPLOYEE/LIFECYCLE/EXPENSE UI; Gemini | 006/007 with Calendar boundary; blocks 014 | Identity, readiness, lifecycle/history/maker-checker remain native; existing UI only; revert UI. |
-| 009 Mobile state clarity / implementation | Distinguish local saved, server accepted, pending review and rejected evidence | 001, 000; preferred: #53 integrated into Shared before branching; otherwise explicit stack on #53 head `830c599b19a6074c58f2a9b37977f336d1fe61d4` (see checkpoint) | MOBILE; Luna + independent review | 002/004/003; blocks 010/014 | State fixtures/browser offline tests; self-service, quarantine/private media/review/queue unchanged; no new Page; revert labels/UI. |
+| 009 Mobile state clarity / implementation | Distinguish local saved, server accepted, pending review and rejected evidence | 001, 000 integrated; flat from the same post-M02 verified Shared as 002/004; no old #53 stack | MOBILE; Luna + independent review | 002/004/003; blocks 010/014 | State fixtures/browser offline tests; self-service, quarantine/private media/review/queue unchanged; no new Page; revert labels/UI. |
 | 010 Theme/branding/app tile / cleanup | Prefer native settings/theme routing; reduce DOM-specific custom behavior | 001, 000, 009; Shared unless real code dependency | GLOBAL UI; Gemini | 011/domain UI; blocks 012 | Light/dark, desktop/phone, native theme persistence, tile behavior; global family only; restore narrow adapters. |
 | 011 Sidebar source ownership / cleanup | Prove standard app-level Sidebar JSON migration vs installer ownership | 001, 002, 005, 013; Shared after Workspace sequence | WORKSPACE; Gemini + independent review | 010/domain UI; blocks 012/014 | Installed export/sync proof, neutral install + persona/stored customizations; no core edit; metadata rollback after verified backup. |
 | 012 Global CSS containment / audit+cleanup | Measure shell width/sidebar/gutters before removing risky selectors | 001, 010, 011 | GLOBAL UI; independent reviewer, Gemini patches | Domain UI/docs; blocks 014 | Viewport/overflow/focus/native sidebar regression; no new theme system; bounded CSS/tests; revert CSS. |
@@ -37,7 +43,7 @@ Primary agent labels are allocation recommendations (Luna/Gemini/independent rev
 
 ```mermaid
 flowchart LR
-  T000[000 Theme accepted / CI unresolved] --> T009[009 Mobile states]
+  T000[000 Theme integrated / CI unresolved] --> T009[009 Mobile states]
   T001[001 Control plane] --> T002[002 Home]
   T001 --> T004[004 Lists]
   T001 --> T009
@@ -64,7 +70,7 @@ flowchart LR
 
 | Wave | Work | Lock caveat |
 | --- | --- | --- |
-| 0 | 000 accepted implementation + 001 | #53 remains separate; do not cherry-pick or assume merged. |
+| 0 | 000 + 001 COMPLETE / INTEGRATED | #53/#54 merged normally; checkpoint passed at `9ba1e9c185f2e01964d28b650b48f797927f68da`. |
 | A | 002 + 004 + 009 | Three independent runtime locks. 013 can audit references additionally, but installer edits wait for 005 and its integration checkpoint. |
 | B | 003 + 005, then 013 after 005 checkpoint/lock release | WORKSPACE order is exactly **002 → 005 → 013 → 011**; research does not authorize early edits. |
 | C | 006 + 007 + 008 | At most three owners; Calendar/hooks/translations/test conflicts require reservation. |
@@ -81,9 +87,9 @@ Wave 0 review → human/coordinator integrates accepted foundation/control-plane
 
 Apply this gate to 001 → 002/004, 000 → 009, 002 → 003/005, 003/004 → 006/007/008, 009 → 010, 005/013 → 011, 010/011 → 012 and all 002–013 → 014. File-lock release is additional to, not a replacement for, dependency integration/ancestry.
 
-**009 / PR #53:** Prefer integrating accepted #53 into the shared base, then branch 009 flat from that new base. Only if #53 intentionally remains unmerged may 009 explicitly stack on exact head `830c599b19a6074c58f2a9b37977f336d1fe61d4`; record #53 as true code ancestry. Never opportunistically cherry-pick, duplicate the theme fix or recreate its test changes independently. Also satisfy 001's control-plane gate.
+**009 / PR #53:** Preferred integration is satisfied: #53 is MERGED and its CSS/test/evidence are in Shared. 009 branches flat from the then-current integrated shared base after M02 review/integration and authorization, alongside 002/004. Do not stack on old #53, cherry-pick it, duplicate its theme fix or recreate its test changes.
 
-**001 / PR #54:** Preferred: integrate the six control-plane files before downstream implementation so all branches inherit the same rules. PR existence/acceptance alone is not a usable repository dependency. If #54 intentionally remains unmerged, downstream agents must explicitly read the control plane from its exact current head and declare that exception; this does not waive the general integrated-or-genuine-stack gate or runtime predecessor requirements.
+**001 / PR #54:** #54 is MERGED; its six control-plane files are now in Shared. The former unmerged-control-plane exception is no longer needed. M02 must be reviewed/integrated before Wave-A authorization; record that resulting exact SHA for all three branches. The general predecessor checkpoint still applies to subsequent waves and substeps.
 
 ## Review / merge protocol
 
