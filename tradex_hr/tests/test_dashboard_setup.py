@@ -39,7 +39,7 @@ def test_workspace_has_salary_setup_shortcuts():
 def test_workspace_prioritizes_scoped_work_instead_of_overview_cards():
     blocks = workspace_blocks()
     assert not any(block["type"] == "chart" for block in blocks)
-    assert len([block for block in blocks if block["type"] == "number_card"]) == 3
+    assert len([block for block in blocks if block["type"] == "number_card"]) == 0
     assert [block["data"]["custom_block_name"] for block in blocks if block["type"] == "custom_block"] == ["Tradexcel Work Needing Attention"]
     assert not any("Overview" in block.get("data", {}).get("text", "") for block in blocks)
 
