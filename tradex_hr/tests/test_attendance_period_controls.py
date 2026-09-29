@@ -416,3 +416,243 @@ def test_attendance_period_form_js_registration_and_contract():
     assert "finalize_attendance_period" in content
     assert "reopen_attendance_period" in content
     assert "frm.reload_doc()" in content
+
+
+def test_attendance_officer_persona_finalization_and_reopen_lifecycle():
+    from tradex_hr.tests.persona_uat import (
+        PERSONA_ROLES,
+        SyntheticPersonaHarness,
+        assert_only_tradexcel_roles,
+    )
+
+    company = "Tradexcel Ceramics Ltd."
+    start = "2026-11-01"
+    end = "2026-11-30"
+
+    h = SyntheticPersonaHarness("ATTOFF" + frappe.generate_hash(4).upper())
+    tracked = []
+    try:
+        frappe.set_user("Administrator")
+        for name in frappe.get_all(
+            "Tradexcel Attendance Period",
+            filters={"company": company, "from_date": start, "to_date": end},
+            pluck="name",
+        ):
+            frappe.delete_doc(
+                "Tradexcel Attendance Period", name, force=True, ignore_permissions=True
+            )
+
+        period = frappe.get_doc(
+            {
+                "doctype": "Tradexcel Attendance Period",
+                "company": company,
+                "from_date": start,
+                "to_date": end,
+                "status": "Open",
+            }
+        )
+        period.insert(ignore_permissions=True)
+        tracked.append(period.name)
+
+        att_officer = h.create_user(
+            "att_officer",
+            [PERSONA_ROLES["attendance_officer"]],
+            company=company,
+        )
+        assert_only_tradexcel_roles(att_officer)
+
+        frappe.set_user(att_officer)
+
+        result = tradexcel_attendance_period.finalize_attendance_period(period.name)
+        assert result["status"] == "Finalized"
+        assert result["revision"] == 1
+        assert result["attendance_hash"]
+
+        period.reload()
+        assert period.status == "Finalized"
+        assert period.revision == 1
+        assert period.attendance_hash == result["attendance_hash"]
+        assert period.finalized_by == att_officer
+        assert period.finalized_at is not None
+
+        reopen_result = tradexcel_attendance_period.reopen_attendance_period(period.name)
+        assert reopen_result["status"] == "Reopened"
+
+        period.reload()
+        assert period.status == "Reopened"
+    finally:
+        frappe.set_user("Administrator")
+        for name in tracked:
+            if frappe.db.exists("Tradexcel Attendance Period", name):
+                frappe.delete_doc(
+                    "Tradexcel Attendance Period", name, force=True, ignore_permissions=True
+                )
+        h.cleanup()
+
+
+def test_attendance_officer_cross_company_access_denied():
+    from tradex_hr.tests.persona_uat import (
+        PERSONA_ROLES,
+        SyntheticPersonaHarness,
+        assert_only_tradexcel_roles,
+    )
+
+    company_a = "Tradexcel Ceramics Ltd."
+    company_b = "Elegance Footwear Ltd."
+    start = "2026-11-01"
+    end = "2026-11-30"
+
+    h = SyntheticPersonaHarness("ATTCROSS" + frappe.generate_hash(4).upper())
+    tracked = []
+    try:
+        frappe.set_user("Administrator")
+        for c in (company_a, company_b):
+            for name in frappe.get_all(
+                "Tradexcel Attendance Period",
+                filters={"company": c, "from_date": start, "to_date": end},
+                pluck="name",
+            ):
+                frappe.delete_doc(
+                    "Tradexcel Attendance Period", name, force=True, ignore_permissions=True
+                )
+
+        period_b = frappe.get_doc(
+            {
+                "doctype": "Tradexcel Attendance Period",
+                "company": company_b,
+                "from_date": start,
+                "to_date": end,
+                "status": "Open",
+            }
+        )
+        period_b.insert(ignore_permissions=True)
+        tracked.append(period_b.name)
+
+        att_officer = h.create_user(
+            "att_officer",
+            [PERSONA_ROLES["attendance_officer"]],
+            company=company_a,
+        )
+        assert_only_tradexcel_roles(att_officer)
+
+        frappe.set_user(att_officer)
+
+        with pytest.raises(frappe.PermissionError):
+            tradexcel_attendance_period.finalize_attendance_period(period_b.name)
+
+        frappe.set_user("Administrator")
+        tradexcel_attendance_period.finalize_attendance_period(period_b.name)
+        period_b.reload()
+        assert period_b.status == "Finalized"
+
+        frappe.set_user(att_officer)
+        with pytest.raises(frappe.PermissionError):
+            tradexcel_attendance_period.reopen_attendance_period(period_b.name)
+    finally:
+        frappe.set_user("Administrator")
+        for name in tracked:
+            if frappe.db.exists("Tradexcel Attendance Period", name):
+                frappe.delete_doc(
+                    "Tradexcel Attendance Period", name, force=True, ignore_permissions=True
+                )
+        h.cleanup()
+
+
+def test_attendance_period_denied_for_unrelated_personas():
+    from tradex_hr.tests.persona_uat import (
+        PERSONA_ROLES,
+        SyntheticPersonaHarness,
+        assert_only_tradexcel_roles,
+    )
+
+    company = "Tradexcel Ceramics Ltd."
+    start = "2026-11-01"
+    end = "2026-11-30"
+
+    h = SyntheticPersonaHarness("ATTUNREL" + frappe.generate_hash(4).upper())
+    tracked = []
+    try:
+        frappe.set_user("Administrator")
+        for name in frappe.get_all(
+            "Tradexcel Attendance Period",
+            filters={"company": company, "from_date": start, "to_date": end},
+            pluck="name",
+        ):
+            frappe.delete_doc(
+                "Tradexcel Attendance Period", name, force=True, ignore_permissions=True
+            )
+
+        period = frappe.get_doc(
+            {
+                "doctype": "Tradexcel Attendance Period",
+                "company": company,
+                "from_date": start,
+                "to_date": end,
+                "status": "Open",
+            }
+        )
+        period.insert(ignore_permissions=True)
+        tracked.append(period.name)
+
+        branch_mgr = h.create_user(
+            "branch_mgr",
+            [PERSONA_ROLES["branch_manager"]],
+            company=company,
+        )
+        worker = h.create_user(
+            "worker",
+            [PERSONA_ROLES["worker"]],
+            company=company,
+        )
+        assert_only_tradexcel_roles(branch_mgr)
+        assert_only_tradexcel_roles(worker)
+
+        for user in (branch_mgr, worker):
+            frappe.set_user(user)
+            with pytest.raises(frappe.PermissionError):
+                tradexcel_attendance_period.finalize_attendance_period(period.name)
+            with pytest.raises(frappe.PermissionError):
+                tradexcel_attendance_period.reopen_attendance_period(period.name)
+    finally:
+        frappe.set_user("Administrator")
+        for name in tracked:
+            if frappe.db.exists("Tradexcel Attendance Period", name):
+                frappe.delete_doc(
+                    "Tradexcel Attendance Period", name, force=True, ignore_permissions=True
+                )
+        h.cleanup()
+
+
+def test_attendance_officer_denied_payroll_and_broad_explicit_scope():
+    from tradex_hr.tests.persona_uat import (
+        PERSONA_ROLES,
+        SyntheticPersonaHarness,
+        assert_only_tradexcel_roles,
+    )
+    from tradex_hr.tradexcel_hr.company_context import assert_company_access
+    from tradex_hr.tradexcel_hr.native_payroll import prepare_native_payroll
+
+    company = "Tradexcel Ceramics Ltd."
+    start = "2026-11-01"
+    end = "2026-11-30"
+
+    h = SyntheticPersonaHarness("ATTPAYDENY" + frappe.generate_hash(4).upper())
+    try:
+        frappe.set_user("Administrator")
+        att_officer = h.create_user(
+            "att_officer",
+            [PERSONA_ROLES["attendance_officer"]],
+            company=company,
+        )
+        assert_only_tradexcel_roles(att_officer)
+
+        frappe.set_user(att_officer)
+
+        with pytest.raises(frappe.PermissionError, match="explicit Company User Permission"):
+            assert_company_access(company, require_explicit_scope=True)
+
+        with pytest.raises(frappe.PermissionError):
+            prepare_native_payroll(company, start, end)
+    finally:
+        frappe.set_user("Administrator")
+        h.cleanup()

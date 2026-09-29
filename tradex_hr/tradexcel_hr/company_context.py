@@ -2,8 +2,20 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 import frappe
 from frappe import _
+
+DEFAULT_EXPLICIT_SCOPE_ROLES = frozenset(
+    {
+        "Tradexcel Payroll Manager",
+        "Tradexcel Payroll Approver",
+        "Tradexcel HR Manager",
+        "Tradexcel Finance/Accounts Officer",
+        "Tradexcel Owner/Director",
+    }
+)
 
 
 def user_default_company() -> str | None:
@@ -26,33 +38,33 @@ def resolve_company(filters: dict | None = None) -> str:
     return company
 
 
-def assert_company_access(company: str, *, require_explicit_scope: bool = False) -> str:
+def assert_company_access(
+    company: str,
+    *,
+    require_explicit_scope: bool = False,
+    additional_explicit_roles: Iterable[str] | None = None,
+) -> str:
     """Reject unknown or unauthorized companies before report SQL runs."""
     if not frappe.db.exists("Company", company):
         frappe.throw(_("Company {0} does not exist").format(company))
     user = frappe.session.user
     roles = set(frappe.get_roles(user))
     privileged = user == "Administrator" or "System Manager" in roles
-    scoped_payroll_user = require_explicit_scope and not privileged and bool(
-        roles.intersection(
-            {
-                "Tradexcel Payroll Manager",
-                "Tradexcel Payroll Approver",
-                "Tradexcel HR Manager",
-                "Tradexcel Finance/Accounts Officer",
-                "Tradexcel Owner/Director",
-            }
-        )
+    allowed_explicit_roles = DEFAULT_EXPLICIT_SCOPE_ROLES
+    if additional_explicit_roles:
+        allowed_explicit_roles = allowed_explicit_roles | set(additional_explicit_roles)
+    scoped_user = require_explicit_scope and not privileged and bool(
+        roles.intersection(allowed_explicit_roles)
     ) and frappe.db.exists(
         "User Permission",
         {"user": user, "allow": "Company", "for_value": company},
     )
-    if require_explicit_scope and not privileged and not scoped_payroll_user:
+    if require_explicit_scope and not privileged and not scoped_user:
         frappe.throw(
             _("You need an explicit Company User Permission for {0}.").format(company),
             frappe.PermissionError,
         )
-    if scoped_payroll_user:
+    if scoped_user:
         return company
     if not frappe.has_permission("Company", "read"):
         frappe.throw(

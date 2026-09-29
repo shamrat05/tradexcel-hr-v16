@@ -272,7 +272,11 @@ def _unique_findings(findings):
 @frappe.whitelist()
 def inspect_working_time_compliance(company, from_date, to_date, employee_ids=None):
 	"""Read-only review of approved legal scope and native Attendance/Leave/OT records."""
-	assert_company_access(company, require_explicit_scope=True)
+	assert_company_access(
+		company,
+		require_explicit_scope=True,
+		additional_explicit_roles={"Tradexcel HR/Attendance Officer"},
+	)
 	start, end = getdate(from_date), getdate(to_date)
 	if end < start:
 		frappe.throw(_("To Date must be on or after From Date."))
