@@ -2,14 +2,15 @@
 
 Campaign: **TXUX-260930**. We are simplifying operator routes and presentation around native Frappe v16 records. This is a sequence of focused reviews/PRs, not a replacement Desk or business engine.
 
-## Accepted foundation and current work
+## Current integrated base and next checkpoint
 
-- PR #52 is merged. Shared base: `feature/hrms-v16-hr-only` at `1a194240b7312609f0dbcf4195558a54bddcca8c`.
-- TXUX-260930-000 / [PR #53](https://github.com/shamrat05/tradexcel-hr-v16/pull/53): implementation accepted; OPEN / DRAFT / UNMERGED, reviewed head `830c599b19a6074c58f2a9b37977f336d1fe61d4`. Remote source-and-pure-tests check failed before steps; it is not a CI pass.
-- TXUX-260930-000-M01 was the separately authorized PR-body correction. It is not runtime work or a dependency commit.
-- TXUX-260930-001: [PR #54](https://github.com/shamrat05/tradexcel-hr-v16/pull/54), OPEN / DRAFT / UNMERGED; this documentation/audit branch, `ux/TXUX-260930-001-control-plane`, directly from the shared base. Review the PR for this exact head branch; GitHub is authoritative for its number/head/status.
-- 002–015 are reserved, NOT STARTED. No implementation task is authorized by completion of this audit alone.
-- Real device/staff UAT is incomplete. Production approval is not implied.
+- **Current shared branch:** `feature/hrms-v16-hr-only`, exactly `9ba1e9c185f2e01964d28b650b48f797927f68da`. Wave 0 → Wave A integration checkpoint **PASSED**; Wave 0 is **COMPLETE / INTEGRATED**.
+- TXUX-260930-000: **COMPLETE / ACCEPTED / INTEGRATED**. [PR #53](https://github.com/shamrat05/tradexcel-hr-v16/pull/53) **MERGED**; accepted head `830c599b19a6074c58f2a9b37977f336d1fe61d4`, normal merge commit `e03ba50cfe436769fddf3083c4ee6811b7876146`.
+- TXUX-260930-001: **COMPLETE / ACCEPTED / INTEGRATED**. [PR #54](https://github.com/shamrat05/tradexcel-hr-v16/pull/54) **MERGED**; accepted head `deff8fa06002518d16960af6b3b567fffc62bf29`, normal merge commit `9ba1e9c185f2e01964d28b650b48f797927f68da`. Its P01 planning and M01 PR-body corrections are accepted.
+- **Historical release foundation only:** PR #52 / `1a194240b7312609f0dbcf4195558a54bddcca8c`. Do not start Wave A from that stale SHA.
+- Remote CI **did not pass**: #53 run `36636332224` and #54 run `36641903787` failed before any steps (**FAILURE / BLOCKED BEFORE STEPS**). Real device/staff UAT remains unresolved; production approval is not implied.
+- M02 synchronizes this status only. After it is reviewed/integrated, verify and record the resulting shared-base SHA, then separately authorize 002 / WORKSPACE, 004 / LIST and 009 / MOBILE as flat branches from **that same exact integrated SHA**. It will include this status commit and descend from `9ba1e9c185f2e01964d28b650b48f797927f68da`; do not assume the SHA stays unchanged after integration.
+- 002–015 remain **NOT STARTED**. 013 is research-only until implementation order **002 → 005 → 013 → 011** permits its edits. M02 does not authorize or start product work.
 
 ## Where to look
 
@@ -39,6 +40,6 @@ Implementation complete means source/native-mechanism review, permission/busines
 
 Native records and server permissions remain authoritative; no duplicate ledger, approval database, frontend payroll/legal calculation, inferred statutory value, new custom Page without explicit proof/authorization, permission expansion or real business mutation. Keep the read-only Action Board adapter and native Sidebar foundation. Preserve scope, maker/checker, retries and historical immutability.
 
-Use at most three concurrent implementation owners, one per file lock. Documentation audits can run separately. After review **and integration checkpoints**, candidates are 002/004; 009 additionally requires #53 integration (preferred) or an explicit exact-head stack on `830c599b19a6074c58f2a9b37977f336d1fe61d4`. No cherry-pick or duplicate theme/test fix. WORKSPACE edits follow exactly **002 → 005 → 013 → 011**; 013 reference research may run early.
+Use at most three concurrent implementation owners, one per file lock. After M02 integration and separate authorization, Agent A may own 002 / WORKSPACE (Home convergence), Agent B 004 / LIST (native List View comparison), and Agent C 009 / MOBILE (state clarity). All branch flat from the same newly verified integrated base; no stack between these tasks.
 
-Prefer integrating #54's six control-plane files before downstream branches. If intentionally unmerged, agents must read #54 at its exact current head and declare that exception; PR existence alone is insufficient and does not waive dependency ancestry requirements. Between waves, human/coordinator reviews and integrates accepted non-conflicting PRs, verifies the new shared-base SHA and authorizes the next wave. Agents never merge.
+#53's preferred integration condition for 009 is now satisfied. Do not stack on old #53, cherry-pick it, duplicate its theme fix or recreate its asset-test change. #54's six control-plane files are also integrated. Keep the general integration checkpoints for future predecessors: human/coordinator review, integration, exact shared-SHA verification and next-wave authorization; implementation agents never merge. WORKSPACE order remains **002 → 005 → 013 → 011**; 013 may research references without owning/editing Workspace files before its implementation turn.
