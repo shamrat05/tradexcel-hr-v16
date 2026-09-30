@@ -56,7 +56,7 @@ def get_employee_calendar(employee: str, month: str | None = None) -> dict:
         str(row.attendance_date): row
         for row in frappe.get_all(
             "Attendance",
-            filters={"employee": employee, "docstatus": ["<", 2],
+            filters={"employee": employee, "docstatus": 1,
                      "attendance_date": ["between", [start, end]]},
             fields=["attendance_date", "status", "late_entry", "early_exit", "shift"],
         )

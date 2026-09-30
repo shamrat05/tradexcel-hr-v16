@@ -52,4 +52,27 @@ frappe.query_reports["Tradexcel Joiners and Leavers"] = {
             },
         },
     ],
+    formatter(value, row, column, data, default_formatter) {
+        value = default_formatter(value, row, column, data);
+        if (column.fieldname === "movement") {
+            if (data.movement === "Joined") {
+                value = `<span class="indicator-pill green font-weight-bold">${value}</span>`;
+            } else if (data.movement === "Left") {
+                value = `<span class="indicator-pill orange font-weight-bold">${value}</span>`;
+            }
+        }
+        return value;
+    },
+    onload(report) {
+        const hr_maker = ["Tradexcel HR Manager", "HR User", "HR Manager"]
+            .some((role) => frappe.user.has_role(role));
+        if (hr_maker) {
+            report.page.add_inner_button(__("View Employee Onboardings"), () => {
+                frappe.set_route("List", "Employee Onboarding");
+            });
+            report.page.add_inner_button(__("View Employee Separations"), () => {
+                frappe.set_route("List", "Employee Separation");
+            });
+        }
+    },
 };
