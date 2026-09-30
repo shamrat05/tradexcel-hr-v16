@@ -622,23 +622,12 @@ WORKSPACE_SECTIONS = (
     )),
 )
 
-HOME_NUMBER_CARDS = [
-    {"number_card_name": "Number of Employees on Leave (Today)", "label": "Number of Employees on Leave (Today)"},
-    {"number_card_name": "Number of Employees on Leave (This Month)", "label": "Number of Employees on Leave (This Month)"},
-    {"number_card_name": "Expense Claims (This Month)", "label": "Expense Claims (This Month)"},
-]
+# Home is an operator starting point; the full catalog below remains in Sidebar.
+# Snapshot artifacts are retained for TXUX-013's separate reference audit.
+HOME_NUMBER_CARDS = []
 
+# Expense drafts have no Action Board category and are useful for resuming work.
 HOME_QUICK_LISTS = [
-    {
-        "document_type": "Leave Application",
-        "label": "Open Leave Requests",
-        "quick_list_filter": json.dumps({"status": "Open"}),
-    },
-    {
-        "document_type": "Attendance Request",
-        "label": "Attendance Requests to Review",
-        "quick_list_filter": json.dumps({"docstatus": 0}),
-    },
     {
         "document_type": "Expense Claim",
         "label": "Draft Expense Claims",
@@ -649,15 +638,11 @@ HOME_QUICK_LISTS = [
 COMMON_ACTION_SHORTCUTS = [
     "Employee Directory",
     "Today's Attendance",
-    "Attendance Summary",
     "Attendance Fix Requests",
-    "Mobile Attendance",
     "Leave Requests",
     "Expense Claims",
     "Run Monthly Payroll",
-    "Salary Setup Coverage",
     "Job Applicants",
-    "Field Duties",
     "Final Settlements",
 ]
 
@@ -719,20 +704,13 @@ def workspace_blocks(shortcuts=None):
     blocks = [
         {"type": "header", "data": {"text": "<h2>Tradexcel HR Action Board</h2>", "col": 12}},
         {"type": "custom_block", "data": {"custom_block_name": "Tradexcel Work Needing Attention", "col": 12}},
-        {"type": "header", "data": {"text": "<h3>Operational Snapshot</h3>", "col": 12}},
     ]
-    for card in HOME_NUMBER_CARDS:
-        blocks.append({
-            "type": "number_card",
-            "data": {"number_card_name": card["label"], "col": 4},
-        })
-    blocks.append({"type": "header", "data": {"text": "<h3>Pending Work</h3>", "col": 12}})
     for ql in HOME_QUICK_LISTS:
         blocks.append({
             "type": "quick_list",
-            "data": {"quick_list_name": ql["label"], "col": 4},
+            "data": {"quick_list_name": ql["label"], "col": 12},
         })
-    blocks.append({"type": "header", "data": {"text": "<h3>Common Actions</h3>", "col": 12}})
+    blocks.append({"type": "header", "data": {"text": "<h3>Frequent Actions</h3>", "col": 12}})
     for label in COMMON_ACTION_SHORTCUTS:
         if label in available:
             blocks.append({
