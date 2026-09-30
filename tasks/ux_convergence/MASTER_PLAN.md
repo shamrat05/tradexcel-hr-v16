@@ -1,12 +1,14 @@
 # UX campaign master plan
 
-TASK-ID: TXUX-260930-001. Current integrated Wave-A shared base: `feature/hrms-v16-hr-only` / `9ba1e9c185f2e01964d28b650b48f797927f68da`. Historical audit/release foundation: `1a194240b7312609f0dbcf4195558a54bddcca8c` (PR #52).
+TASK-ID: TXUX-260930-001. Current integrated shared source: `feature/hrms-v16-hr-only` / `bb48574050214e364c73a15e38dce6128bea2f80`. Historical original audit/release foundation: `1a194240b7312609f0dbcf4195558a54bddcca8c` (PR #52).
 
-## Current coordination state — M02
+## Current coordination state — final master-run audit
 
-Wave 0 is **COMPLETE / INTEGRATED**. #53 is MERGED at `e03ba50cfe436769fddf3083c4ee6811b7876146`, preserving accepted head `830c599b19a6074c58f2a9b37977f336d1fe61d4`. #54 is MERGED at `9ba1e9c185f2e01964d28b650b48f797927f68da`, preserving accepted head `deff8fa06002518d16960af6b3b567fffc62bf29`. Tasks 000/001 are COMPLETE / ACCEPTED / INTEGRATED. Both remote runs (36636332224 / 36641903787) failed before steps, not CI passes.
+Source/evidence for 000–013 is integrated. 012 concludes no measured app-only defect justifying runtime CSS changes. 014's independently reviewed **PARTIAL validation evidence** is integrated at `bb48574050214e364c73a15e38dce6128bea2f80`; required deployed/disposable/device/staff acceptance remains BLOCKED. The draft [015 audit](TXUX-260930-015.md) records full exact ancestry and release gates; it does not authorize production.
 
-After M02 is reviewed/integrated, the coordinator verifies its resulting exact shared-base SHA (a descendant of `9ba1e9c185f2e01964d28b650b48f797927f68da`) and may separately authorize exactly **002 / WORKSPACE, 004 / LIST, 009 / MOBILE**. All three use independent flat branches from the **same** resulting SHA, not the historical foundation and not each other's branches. No task is started here; 013 remains research-only until 002 → 005 → 013 → 011 permits implementation. Preserve native Workspace/Sidebar/Awesomebar, read-only Action Board, permissions and maker/checker for 002; compare installed native List features before removal for 004; inherit #53 unchanged for 009. No new dashboard architecture or decorative charts.
+#67/#69/#68 merged normally at `e441ce953bbb3e2986b1f8dfa0153c43eebcde27`, `5fdf5256d54c0875bf77b79c02584392a4a680b6`, `09bfca490a04d5e185cfd183bd85ce8d39fe442b`. #70 containment audit merged at `4a9b1d5ff3fc0d5ae23fa99786764f4dc50f87a2`; #71 partial evidence merged at the current shared SHA. The prior Wave-0/A/B status prose is historical, not a current branching instruction. Task meanings/dependencies below remain unchanged.
+
+Workspace sequence **002 → 005 → 013 → 011** has integrated source. Physical artifact deletion is NOT completed or authorized. No further implementation wave starts here. Next work requires owner-approved backup/restore and staging parity, isolated native workflow validation, final B01–B15 measurement, real device/staff evidence and release review. Remote CI remains zero-step blocked; stale #61 is open/draft and must not be merged as current status.
 
 ## Immutable design contract
 

@@ -2,15 +2,17 @@
 
 Campaign: **TXUX-260930**. We are simplifying operator routes and presentation around native Frappe v16 records. This is a sequence of focused reviews/PRs, not a replacement Desk or business engine.
 
-## Current integrated base and next checkpoint
+## Current integrated base and release checkpoint
 
-- **Current shared branch:** `feature/hrms-v16-hr-only`, exactly `9ba1e9c185f2e01964d28b650b48f797927f68da`. Wave 0 → Wave A integration checkpoint **PASSED**; Wave 0 is **COMPLETE / INTEGRATED**.
-- TXUX-260930-000: **COMPLETE / ACCEPTED / INTEGRATED**. [PR #53](https://github.com/shamrat05/tradexcel-hr-v16/pull/53) **MERGED**; accepted head `830c599b19a6074c58f2a9b37977f336d1fe61d4`, normal merge commit `e03ba50cfe436769fddf3083c4ee6811b7876146`.
-- TXUX-260930-001: **COMPLETE / ACCEPTED / INTEGRATED**. [PR #54](https://github.com/shamrat05/tradexcel-hr-v16/pull/54) **MERGED**; accepted head `deff8fa06002518d16960af6b3b567fffc62bf29`, normal merge commit `9ba1e9c185f2e01964d28b650b48f797927f68da`. Its P01 planning and M01 PR-body corrections are accepted.
-- **Historical release foundation only:** PR #52 / `1a194240b7312609f0dbcf4195558a54bddcca8c`. Do not start Wave A from that stale SHA.
-- Remote CI **did not pass**: #53 run `36636332224` and #54 run `36641903787` failed before any steps (**FAILURE / BLOCKED BEFORE STEPS**). Real device/staff UAT remains unresolved; production approval is not implied.
-- M02 synchronizes this status only. After it is reviewed/integrated, verify and record the resulting shared-base SHA, then separately authorize 002 / WORKSPACE, 004 / LIST and 009 / MOBILE as flat branches from **that same exact integrated SHA**. It will include this status commit and descend from `9ba1e9c185f2e01964d28b650b48f797927f68da`; do not assume the SHA stays unchanged after integration.
-- 002–015 remain **NOT STARTED**. 013 is research-only until implementation order **002 → 005 → 013 → 011** permits its edits. M02 does not authorize or start product work.
+- **Current shared branch:** `feature/hrms-v16-hr-only` at `bb48574050214e364c73a15e38dce6128bea2f80`. Fetch and verify before new work; never branch from historical campaign snapshots.
+- 000–011 and 013 source implementations/evidence are integrated. 012 is an independently accepted containment audit/test: no speculative runtime CSS change was justified. 014 evidence is integrated via #71, but **validation is PARTIAL / release acceptance BLOCKED**.
+- [Final audit](TXUX-260930-015.md) records full accepted-head/merge ancestry, measured evidence and deployment/rollback checklist. The 015 audit is draft work, not production approval.
+- #67, #69, #68 integrated normally in that order; FINAL_UX_BASE_SHA `09bfca490a04d5e185cfd183bd85ce8d39fe442b`. #70 audit merge `4a9b1d5ff3fc0d5ae23fa99786764f4dc50f87a2`; #71 partial evidence merge `bb48574050214e364c73a15e38dce6128bea2f80`.
+- **Next:** independent final-audit review and separately authorized backed-up staging/disposable validation, then deployed B01–B15, device/staff UAT and release decision. No next implementation wave or speculative redesign is authorized.
+- Served staging still has old Home/Action Board/Icon metadata and lacks native guidance. Public Sidebar matches 132 expected routes, but unknown public edits require fresh backed-up comparison; personal Administrator Sidebar is absent. Eleven retired artifacts and historical column remain; deletion is a separate guarded operation.
+- Remote checks have zero job steps: **FAILURE / BLOCKED BEFORE STEPS**, not PASS. Physical device/staff UAT, configuration/parallel-payroll and recovery/cutover approval remain unresolved.
+- #61 remains OPEN/DRAFT as a historical Wave-A snapshot. Do not merge its stale current-base claims; coordinator disposition requires separate authorization.
+- Historical foundation `1a194240b7312609f0dbcf4195558a54bddcca8c`, Wave-0 `9ba1e9c185f2e01964d28b650b48f797927f68da` and original Wave-A/B bases remain historical evidence only.
 
 ## Where to look
 
@@ -40,6 +42,6 @@ Implementation complete means source/native-mechanism review, permission/busines
 
 Native records and server permissions remain authoritative; no duplicate ledger, approval database, frontend payroll/legal calculation, inferred statutory value, new custom Page without explicit proof/authorization, permission expansion or real business mutation. Keep the read-only Action Board adapter and native Sidebar foundation. Preserve scope, maker/checker, retries and historical immutability.
 
-Use at most three concurrent implementation owners, one per file lock. After M02 integration and separate authorization, Agent A may own 002 / WORKSPACE (Home convergence), Agent B 004 / LIST (native List View comparison), and Agent C 009 / MOBILE (state clarity). All branch flat from the same newly verified integrated base; no stack between these tasks.
+Use at most three concurrent implementation owners, one per file lock. Historical Wave-A tasks are already integrated; no additional implementation task is authorized by this status refresh. Preserve independent branches and exact integration checkpoints for separately authorized future work.
 
-#53's preferred integration condition for 009 is now satisfied. Do not stack on old #53, cherry-pick it, duplicate its theme fix or recreate its asset-test change. #54's six control-plane files are also integrated. Keep the general integration checkpoints for future predecessors: human/coordinator review, integration, exact shared-SHA verification and next-wave authorization; implementation agents never merge. WORKSPACE order remains **002 → 005 → 013 → 011**; 013 may research references without owning/editing Workspace files before its implementation turn.
+#53's preferred integration condition for 009 is now satisfied. Do not stack on old #53, cherry-pick it, duplicate its theme fix or recreate its asset-test change. #54's six control-plane files are also integrated. Keep the general integration checkpoints for future predecessors: human/coordinator review, integration, exact shared-SHA verification and next-wave authorization; implementation agents never merge. WORKSPACE order remains **002 → 005 → 013 → 011** and has been respected. Source retirement is integrated; physical artifact deletion remains separately guarded.
