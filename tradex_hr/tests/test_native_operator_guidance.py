@@ -1,13 +1,14 @@
-"""Source projection, native visibility and destination permission proof."""
-from unittest.mock import Mock, patch
+"""Native global-completion reproduction and completion-independent form help."""
+from unittest.mock import patch
 
 import frappe
 import pytest
 
 from tradex_hr import install
+from tradex_hr.tests.persona_uat import SyntheticPersonaHarness
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def site():
     frappe.init(site='hrms-v16.localhost', sites_path='/home/sanchita/frappe-bench-v16/sites', force=True)
     frappe.connect()
@@ -17,76 +18,87 @@ def site():
     frappe.destroy()
 
 
-def test_guidance_is_native_navigation_and_preserves_existing_progress():
-    saved = []
-    def doc(values):
-        result = Mock()
-        result.insert.side_effect = lambda **kwargs: saved.append(values)
-        return result
-    with patch.object(frappe.db, "exists", return_value=False), patch.object(frappe, "get_doc", side_effect=doc):
-        install.ensure_operator_guidance()
-    assert len(saved) == 3
-    assert {r['doctype'] for r in saved} == {'Onboarding Step', 'Module Onboarding'}
-    assert all(r['action'] == 'Go to Page' for r in saved[:2])
-    assert all('Attendance Request' in r['path'] for r in saved[:2])
-    assert all('is_complete' not in r and 'is_skipped' not in r for r in saved)
-    with patch.object(frappe.db, "exists", return_value=True), patch.object(frappe, "get_doc") as get:
-        install.ensure_operator_guidance()
-        get.assert_not_called()  # Never reset dismissal, completion or admin edits.
-
-
-def test_guidance_uses_installed_native_enablement_and_role_filtering():
-    from frappe.desk.desktop import get_onboarding_data
-    from frappe.desk.doctype.module_onboarding.module_onboarding import ModuleOnboarding
-    module = ModuleOnboarding({"doctype": "Module Onboarding", "name": install.ATTENDANCE_GUIDE,
-        "title": "Learn attendance", "allow_roles": [{"role": r} for r in install.ATTENDANCE_GUIDE_ROLES]})
-    with patch.object(frappe, "get_system_settings", return_value=0), patch.object(frappe, "get_doc") as get:
-        assert get_onboarding_data(install.ATTENDANCE_GUIDE) == []
-        get.assert_not_called()
-    for role, allowed in [(r, True) for r in install.ATTENDANCE_GUIDE_ROLES] + [
-        ('System Manager', True), ('Tradexcel Employee/Worker', False), ('Tradexcel Payroll Manager', False),
-        ('Tradexcel Finance/Accounts Officer', False), ('Tradexcel Branch Manager', False)]:
-        with patch.object(frappe, "get_system_settings", return_value=1), \
-             patch.object(frappe, "get_doc", return_value=module), patch.object(frappe, "get_roles", return_value=[role]), \
-             patch('frappe.desk.desktop.get_onboarding_step_maps', return_value=[s['name'] for s in install.ATTENDANCE_GUIDE_STEPS]), \
-             patch.object(frappe, "get_all", side_effect=lambda *a, **kw: [frappe._dict(next(s for s in install.ATTENDANCE_GUIDE_STEPS if s['name'] == kw['filters']['name']))]):
-            result = get_onboarding_data(install.ATTENDANCE_GUIDE)
-            assert bool(result) == allowed
-    module.is_complete = 1
-    with patch.object(frappe, "get_system_settings", return_value=1), patch.object(frappe, "get_doc", return_value=module):
-        assert get_onboarding_data(install.ATTENDANCE_GUIDE) == []
-
-
-def test_guidance_destination_permissions_and_worker_exclusion():
-    from tradex_hr.tests.persona_uat import SyntheticPersonaHarness
-    frappe.set_user('Administrator')
-    h = SyntheticPersonaHarness('TXUX005' + frappe.generate_hash(8).upper())
+def test_native_shared_completion_hides_the_guide_from_second_operator():
+    from frappe.desk.desktop import get_onboarding_data, update_onboarding_step
+    h = SyntheticPersonaHarness('TXUX005P01' + frappe.generate_hash(8).upper())
+    name = 'TEST ' + h.token
     try:
-        company = 'Tradexcel Ceramics Ltd.'
-        branch = frappe.db.get_value('Branch', {'company': company}, 'name')
-        department = frappe.db.get_value('Department', {'company': company}, 'name')
-        for i, role in enumerate((*install.ATTENDANCE_GUIDE_ROLES, 'System Manager', 'Tradexcel Employee/Worker')):
-            user = h.create_user(str(i), [role], company=company, branch=branch, department=department)
-            frappe.set_user(user)
-            if role != 'Tradexcel Employee/Worker':
-                assert frappe.has_permission('Attendance Request', 'read')
-                assert frappe.has_permission('Attendance Request', 'create')
-            else:
-                assert role not in install.ATTENDANCE_GUIDE_ROLES
-            frappe.set_user('Administrator')
-        assert not frappe.db.exists('Module Onboarding', install.ATTENDANCE_GUIDE)
+        for key in ('first', 'second'):
+            h.create_user(key, ['Tradexcel HR Manager'])
+        step = frappe.get_doc({'doctype': 'Onboarding Step', 'name': name, 'title': 'Synthetic navigation',
+            'action': 'Go to Page', 'path': 'List/Attendance Request/List'}).insert(ignore_permissions=True)
+        # Prevent developer-mode export of these strictly synthetic native fixtures.
+        with patch('frappe.desk.doctype.module_onboarding.module_onboarding.export_to_files'):
+            frappe.get_doc({'doctype': 'Module Onboarding', 'name': name, 'module': 'Tradexcel HR',
+                'title': 'Synthetic shared-completion proof', 'allow_roles': [{'role': 'Tradexcel HR Manager'}],
+                'steps': [{'step': step.name}]}).insert(ignore_permissions=True)
+        settings = frappe.get_system_settings
+        with patch.object(frappe, 'get_system_settings', side_effect=lambda key: 1 if key == 'enable_onboarding' else settings(key)), patch('frappe.utils.telemetry.capture'):
+            frappe.set_user(h.users['first'])
+            assert get_onboarding_data(name)
+            update_onboarding_step(step.name, 'is_complete', 1)
+            frappe.set_user(h.users['second'])
+            assert frappe.db.get_value('Onboarding Step', step.name, 'is_complete') == 1
+            assert get_onboarding_data(name) == []
+            # Our replacement does not consult native onboarding progress/settings.
+            with patch.object(frappe.db, 'exists', return_value=False), \
+                 patch('frappe.custom.doctype.property_setter.property_setter.make_property_setter') as make:
+                install.ensure_operator_guidance()
+                assert make.call_args.args[3] == install.ATTENDANCE_REQUEST_GUIDANCE
     finally:
         frappe.set_user('Administrator')
-        with patch.object(frappe, 'in_test', True), patch.object(frappe, 'enqueue'):
+        with patch.object(frappe, 'enqueue'), patch.object(frappe, 'in_test', True):
+            for dt in ('Module Onboarding', 'Onboarding Step'):
+                if frappe.db.exists(dt, name):
+                    frappe.delete_doc(dt, name, force=True, ignore_permissions=True)
+            h.cleanup()
+        assert not frappe.db.exists('Onboarding Step', name)
+        assert not frappe.db.exists('Module Onboarding', name)
+
+
+def test_persistent_help_has_no_completion_state_and_preserves_admin_override():
+    with patch.object(frappe.db, 'exists', return_value=False), \
+         patch('frappe.custom.doctype.property_setter.property_setter.make_property_setter') as make:
+        install.ensure_operator_guidance()
+        make.assert_called_once_with('Attendance Request', 'explanation', 'description',
+                                    install.ATTENDANCE_REQUEST_GUIDANCE, 'Small Text')
+    with patch.object(frappe.db, 'exists', return_value=True), \
+         patch('frappe.custom.doctype.property_setter.property_setter.make_property_setter') as make:
+        install.ensure_operator_guidance()
+        make.assert_not_called()
+    assert 'draft' in install.ATTENDANCE_REQUEST_GUIDANCE
+    assert 'independent reviewer' in install.ATTENDANCE_REQUEST_GUIDANCE
+    assert 'does not create approved Attendance' in install.ATTENDANCE_REQUEST_GUIDANCE
+
+
+def test_help_destination_uses_existing_native_access_without_management_navigation():
+    h = SyntheticPersonaHarness('TXUX005P01' + frappe.generate_hash(8).upper())
+    try:
+        for key, role in [('hr', 'Tradexcel HR Manager'), ('officer', 'Tradexcel HR/Attendance Officer'),
+                          ('system', 'System Manager'), ('worker', 'Tradexcel Employee/Worker')]:
+            user = h.create_user(key, [role])
+            frappe.set_user(user)
+            if key == 'worker':
+                assert not frappe.has_permission('Attendance Request', 'read')
+                frappe.set_user('Administrator')
+                continue
+            assert frappe.has_permission('Attendance Request', 'read'), role
+            assert frappe.has_permission('Attendance Request', 'create'), role
+            # Help is generic request guidance, not management onboarding/navigation.
+            meta = frappe.get_meta('Attendance Request')
+            assert meta.get_field('explanation').fieldtype == 'Small Text'
+            assert not meta.get_field('explanation').show_description_on_click
+            frappe.set_user('Administrator')
+    finally:
+        frappe.set_user('Administrator')
+        with patch.object(frappe, 'enqueue'), patch.object(frappe, 'in_test', True):
             h.cleanup()
 
 
-def test_installed_metadata_supports_source_projection_without_custom_frontend():
-    assert frappe.get_meta('Workspace Sidebar').has_field('module_onboarding')
-    for values in install.ATTENDANCE_GUIDE_STEPS:
-        doc = frappe.get_doc({'doctype': 'Onboarding Step', **values})
-        assert doc.action in doc.meta.get_field('action').options.split('\n')
-        assert all(doc.meta.has_field(field) for field in values if field != 'name')
-        assert doc.path.startswith(('List/Attendance Request/', 'Form/Attendance Request/'))
-    assert 'module_onboarding = ATTENDANCE_GUIDE' in __import__('inspect').getsource(install.ensure_workspace_sidebar)
-    assert 'standard = 0' in __import__('inspect').getsource(install.ensure_workspace_sidebar)
+def test_source_does_not_install_shared_onboarding_or_change_sidebar_owner():
+    import inspect
+    guidance = inspect.getsource(install.ensure_operator_guidance)
+    sidebar = inspect.getsource(install.ensure_workspace_sidebar)
+    assert 'Onboarding Step' not in guidance and 'Module Onboarding' not in guidance
+    assert 'module_onboarding' not in sidebar
+    assert 'standard = 0' in sidebar
