@@ -18,7 +18,7 @@ function readiness_route(report, action, employee, start, end) {
     }
 }
 
-function financial_readiness_route(action, company, employee, slip, component, account) {
+function financial_readiness_route(action, company, employee, slip, component, account, entry) {
     const routes = {
         tax_slabs: ["List", "Income Tax Slab", {company}],
         payroll_periods: ["List", "Payroll Period", {company}],
@@ -27,6 +27,7 @@ function financial_readiness_route(action, company, employee, slip, component, a
         policy_exceptions: ["List", "Tradexcel Policy Exception", {company}],
         accounting_dimensions: ["List", "Accounting Dimension", {}],
         cost_centers: ["List", "Cost Center", {company}],
+        payroll_entry: entry ? ["Form", "Payroll Entry", entry] : null,
         payroll_payable: account
             ? ["Form", "Account", account]
             : ["Form", "Company", company],
@@ -86,6 +87,7 @@ function show_daily_wage_migration_preview(report) {
                         "<p role=\"status\">" + status + "</p>" +
                         "<p>" + __("Employees") + ": " + result.employee_count + " · " +
                         __("Conflicts or missing data") + ": " + result.conflict_count + "</p>" +
+                        "<p>" + __("This preview creates nothing. To apply an approved change, create the new effective-dated Salary Structure in the native form, assign it through the native Bulk Salary Structure Assignment tool, and let a different Payroll Approver submit those assignments.") + "</p>" +
                         "<p>" + escape(result.proposed_structure.name) + "<br>" +
                         (components ? components + "<br>" : "") + escape(result.proposed_structure.guidance || "") + "</p>" +
                         "<div style=\"max-height: 50vh; overflow: auto\" tabindex=\"0\" aria-label=\"" +
@@ -178,7 +180,8 @@ frappe.query_reports["Tradexcel Payroll Readiness"] = {
                 financial_readiness_route(
                     button.attr("data-action"), button.attr("data-company"),
                     button.attr("data-employee"), button.attr("data-slip"),
-                    button.attr("data-component"), button.attr("data-account")
+                    button.attr("data-component"), button.attr("data-account"),
+                    button.attr("data-entry")
                 );
             });
     },
@@ -216,6 +219,15 @@ frappe.query_reports["Tradexcel Payroll Readiness"] = {
         }
     },
     formatter(value, row, column, data, default_formatter) {
+        if (column.fieldname === "run_action_kinds" && data?.run_action_kinds) {
+            const escape = frappe.utils.escape_html;
+            return "<div class=\"text-nowrap\">" + data.run_action_kinds.split("|").map((action) =>
+                "<button type=\"button\" class=\"btn btn-link btn-xs financial-readiness-action\" " +
+                "data-action=\"" + escape(action) + "\" " +
+                "data-entry=\"" + escape(data.payroll_entry || "") + "\">" +
+                escape(__("Payroll Entry")) + "</button>"
+            ).join("") + "</div>";
+        }
         if (column.fieldname === "financial_action_kinds" && data?.financial_action_kinds) {
             const escape = frappe.utils.escape_html;
             const labels = {
