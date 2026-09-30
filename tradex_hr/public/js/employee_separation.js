@@ -22,7 +22,13 @@ frappe.ui.form.on("Employee Separation", {
 						change() {
 							const is_approved = dialog.get_value("status") === "Approved";
 							dialog.set_df_property("rule_set", "reqd", is_approved ? 1 : 0);
-							dialog.set_df_property("classification", "reqd", is_approved ? 1 : 0);
+							dialog.set_df_property("classification", "reqd", 1);
+							dialog.set_df_property("classification", "read_only", is_approved ? 0 : 1);
+							if (!is_approved) {
+								dialog.set_value("rule_set", "");
+								dialog.set_value("classification", "Outside worker scope");
+							}
+							dialog.set_df_property("rule_set", "read_only", is_approved ? 0 : 1);
 						},
 					},
 					{
@@ -56,6 +62,10 @@ frappe.ui.form.on("Employee Separation", {
 				],
 				primary_action_label: __("Record Review"),
 				primary_action(values) {
+					if (values.status === "Not Applicable") {
+						values.rule_set = "";
+						values.classification = "Outside worker scope";
+					}
 					frappe.call({
 						method: "tradex_hr.tradexcel_hr.employee_separation.review_separation_statutory_status",
 						args: { separation_name: frm.doc.name, ...values },

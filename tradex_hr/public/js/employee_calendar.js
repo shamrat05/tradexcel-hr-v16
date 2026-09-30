@@ -46,6 +46,10 @@ function show_employee_calendar(employee, employee_name) {
 		size: 'extra-large'
 	});
 
+	const show_unavailable = (message) => {
+		dialog.$body.html(`<div role="status" aria-live="polite" class="p-3">${frappe.utils.escape_html(message)}</div><button class="btn btn-default" data-retry>${__('Retry calendar')}</button>`);
+		dialog.$body.find('[data-retry]').on('click', render);
+	};
 	const render = () => {
 		const req_id = ++current_request_id;
 		dialog.$body.find('[data-nav]').prop('disabled', true);
@@ -56,7 +60,7 @@ function show_employee_calendar(employee, employee_name) {
 			if (req_id !== current_request_id) return;
 			const data = response.message;
 			if (!data) {
-				dialog.$body.html(`<div class="p-3 text-muted text-center">${frappe.utils.escape_html(__('No calendar data available.'))}</div>`);
+				show_unavailable(__("No calendar data available. Try again."));
 				return;
 			}
 			const month_label = frappe.datetime.str_to_user(month + '-01').slice(3);
@@ -92,7 +96,7 @@ function show_employee_calendar(employee, employee_name) {
 				} else if (entry.category === 'Weekly Off') {
 					status_markup = `<span class="badge" style="background:#e8eaed;color:#374151;font-size:10px;font-weight:600">${frappe.utils.escape_html(__('Weekly Off'))}</span>`;
 				} else if (entry.category === 'No Record' && entry.date < data.today) {
-					status_markup = `<span class="text-danger" style="font-size:11px;font-weight:600">${frappe.utils.escape_html(__('No Record / Absent'))}</span>`;
+					status_markup = `<span class="text-danger" style="font-size:11px;font-weight:600">${frappe.utils.escape_html(__('No submitted Attendance — review may be required'))}</span>`;
 				} else {
 					status_markup = `<div style="font-size:12px;font-weight:600">${frappe.utils.escape_html(__(entry.label || entry.category))}</div>`;
 				}
@@ -122,7 +126,7 @@ function show_employee_calendar(employee, employee_name) {
 			});
 		}).catch(() => {
 			if (req_id !== current_request_id) return;
-			dialog.$body.html(`<div class="p-3 text-danger text-center">${frappe.utils.escape_html(__('Unable to load employee calendar. Please check permissions or try again.'))}</div>`);
+			show_unavailable(__("Unable to load employee calendar. Please check permissions or try again."));
 		});
 	};
 
@@ -159,7 +163,7 @@ frappe.ui.form.on("Employee", {
 			}, __("Separation"));
 		}
 
-		if (has_manager_role && ["Active", "Left"].includes(frm.doc.status) && frm.doc.relieving_date) {
+		if ((frappe.session.user === "Administrator" || ["Tradexcel HR Manager", "Tradexcel Owner/Director"].some(role => frappe.user.has_role(role))) && ["Active", "Left"].includes(frm.doc.status) && frm.doc.relieving_date) {
 			frm.add_custom_button(__("Finalize Exit Access"), () => {
 				frappe.confirm(
 					__("This disables the employee's dedicated application and biometric access on or after the relieving date. Financial settlement and Full & Final remain completely separate."),
@@ -298,6 +302,16 @@ function show_exit_readiness(result) {
 function show_full_and_final_readiness(result) {
 	if (!result) return;
 
+	const render_findings = (items) => items.map(item => `<li>${frappe.utils.escape_html(item.message || item.code || '')}${item.count ? ` (${frappe.utils.escape_html(String(item.count))})` : ''}</li>`).join('');
+	const findings = result.findings || [];
+	const informational = findings.filter(item => item.severity === "info");
+	const unresolved = findings.filter(item => item.severity !== "info");
+	const findings_html = `${unresolved.length ? `<h5>${__('Needs attention')}</h5><ul>${render_findings(unresolved)}</ul>` : ''}${informational.length ? `<h5>${__('Information')}</h5><ul>${render_findings(informational)}</ul>` : ''}`;
+	// An early response does not establish downstream payroll/settlement progress.
+	if (!Object.prototype.hasOwnProperty.call(result, "native_outstanding_sources")) {
+		frappe.msgprint({title: __("Full & Final Readiness"), message: `<div role="status">${frappe.utils.escape_html(result.status || __('Unavailable'))}</div>${findings_html}`});
+		return;
+	}
 	const slip_info = (result.final_salary_slips && result.final_salary_slips.length)
 		? `<span class="badge badge-success" style="background:#c6efce;color:#14532d">${frappe.utils.escape_html(result.final_salary_slips[0].name)} (${frappe.utils.escape_html(result.final_salary_slips[0].status)})</span>`
 		: `<span class="badge badge-danger" style="background:#ffc7ce;color:#991b1b">${__("Pending Submission")}</span> <a class="btn btn-xs btn-default ml-1" href="/app/salary-slip?employee=${encodeURIComponent(result.employee)}">${__("View Salary Slips")}</a>`;
@@ -321,6 +335,7 @@ function show_full_and_final_readiness(result) {
 		: `<span class="badge badge-info" style="background:#d1ecf1;color:#0c5460">${frappe.utils.escape_html(result.payment_status || __("Not Prepared"))}</span>`;
 
 	const content = `<div>
+		${findings_html}
 		<div class="alert alert-info p-2 mb-2" style="font-size:11px;">
 			${frappe.utils.escape_html(__("Full & Final Readiness inspects settlement prerequisites across final regular payroll, statutory review, native payables/receivables, and payment status. No money or statutory entitlements are calculated on the client."))}
 		</div>

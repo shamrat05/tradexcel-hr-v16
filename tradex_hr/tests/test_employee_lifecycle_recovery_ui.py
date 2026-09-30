@@ -48,26 +48,6 @@ def site():
     frappe.destroy()
 
 
-@pytest.fixture(autouse=True)
-def fixture_enqueue(monkeypatch):
-    """Intercept frappe.enqueue background jobs so teardown doesn't fail on full queues."""
-    real_enqueue = frappe.enqueue
-
-    def safe_enqueue(method, *args, **kwargs):
-        if method in (
-            "frappe.model.delete_doc.delete_dynamic_links",
-            "frappe.desk.doctype.workspace.workspace.rebuild_for_doctype",
-            "frappe.core.doctype.user.user.create_contact",
-        ):
-            return None
-        try:
-            return real_enqueue(method, *args, **kwargs)
-        except frappe.exceptions.QueueOverloaded:
-            return None
-
-    monkeypatch.setattr(frappe, "enqueue", safe_enqueue)
-
-
 def test_calendar_js_prevents_navigation_race_and_escapes_html():
     """Verify employee_calendar.js tracks request ID and escapes server-provided text."""
     js_path = ROOT / "public/js/employee_calendar.js"
@@ -179,3 +159,83 @@ def test_finalize_employee_exit_access_negative_authorization(monkeypatch):
 
     with pytest.raises(frappe.PermissionError):
         finalize_employee_exit_access(emp)
+
+
+def test_calendar_only_submitted_attendance(monkeypatch):
+    from tradex_hr.tradexcel_hr import employee_calendar as calendar
+    from datetime import date
+    monkeypatch.setattr(frappe, "has_permission", lambda *a, **k: True)
+    monkeypatch.setattr(frappe.db, "get_value", lambda *a, **k: None)
+    monkeypatch.setattr(frappe.db, "sql", lambda *a, **k: [])
+    rows=[frappe._dict(attendance_date=date(2026,9,1),status="Absent",docstatus=0,late_entry=0,early_exit=0),
+          frappe._dict(attendance_date=date(2026,9,2),status="Present",docstatus=1,late_entry=0,early_exit=0)]
+    def get_all(dt,filters=None,**kw):
+        if dt!="Attendance":return []
+        assert filters["docstatus"]==1
+        return [r for r in rows if r.docstatus==filters["docstatus"]]
+    monkeypatch.setattr(frappe,"get_all",get_all)
+    result=calendar.get_employee_calendar("TXUX-SYNTHETIC","2026-09")
+    assert result["days"][0]["category"]=="No Record"
+    assert result["days"][1]["category"]=="Present"
+
+
+@pytest.mark.parametrize("role,user,passes",[
+    ("Tradexcel HR Manager","synthetic@test",True),
+    ("Tradexcel Owner/Director","synthetic@test",True),
+    ("System Manager","synthetic@test",False),
+    ("Employee","synthetic@test",False),
+    ("System Manager","Administrator",True),
+])
+def test_exact_exit_role_boundary_without_writes(monkeypatch,role,user,passes):
+    from tradex_hr.tradexcel_hr import employee_separation as service
+    monkeypatch.setattr(service,"_authorized_employee",lambda name:frappe._dict(name=name))
+    monkeypatch.setattr(frappe,"get_roles",lambda:[role])
+    monkeypatch.setattr(frappe.session,"user",user)
+    monkeypatch.setattr(service,"inspect_employee_exit_readiness",lambda name:{"ready_for_access_finalization":False})
+    with pytest.raises(frappe.ValidationError if passes else frappe.PermissionError) as error:
+        service.finalize_employee_exit_access("TXUX-SYNTHETIC")
+    assert ("operational exit blockers" in str(error.value))==passes
+
+
+def test_early_fnf_blocker_is_authoritative(monkeypatch):
+    from tradex_hr.tradexcel_hr import employee_separation as service
+    monkeypatch.setattr(service,"_authorized_employee",lambda name:frappe._dict(name=name,relieving_date=None))
+    result=service.inspect_full_and_final_readiness("TXUX-SYNTHETIC")
+    assert result=={"status":"BLOCKED","employee":"TXUX-SYNTHETIC","findings":[{"code":"RELIEVING_DATE_MISSING"}]}
+
+
+@pytest.mark.parametrize("decision,classification,rule_name,allowed",[
+    ("Not Applicable","Outside worker scope",None,True),
+    ("Not Applicable","Worker under selected regime",None,False),
+    ("Not Applicable","Outside worker scope","Synthetic rule",False),
+    ("Approved","Worker under selected regime","Synthetic rule",True),
+    ("Approved","Worker under selected regime",None,False),
+    ("Approved",None,"Synthetic rule",False),
+])
+def test_actual_legal_review_decisions(monkeypatch,decision,classification,rule_name,allowed):
+    from tradex_hr.tradexcel_hr import statutory_exit as service
+    from datetime import date
+    class Synthetic(frappe._dict):
+        def db_set(self,values):self.update(values)
+    doc=Synthetic(name="TXUX-SYNTHETIC",employee="TXUX-SYNTHETIC",company="Synthetic",owner="maker@test",docstatus=1)
+    doc[service.SEPARATION_TYPE]="Resignation"
+    rule=frappe._dict(docstatus=1,company="Synthetic",branch=None,
+        applicability_date_basis="Employee Relieving Date (Legal Review)",
+        effective_from="2026-01-01",effective_to=None,
+        entitlements=[frappe._dict(separation_type="Resignation",classification="Worker under selected regime")])
+    monkeypatch.setattr(service,"_separation",lambda name:doc)
+    monkeypatch.setattr(frappe,"get_doc",lambda *a:rule)
+    monkeypatch.setattr(frappe.db,"get_value",lambda dt,name,field: "2026-09-01" if field=="relieving_date" else None)
+    monkeypatch.setattr(frappe,"get_roles",lambda:["Tradexcel Owner/Director"])
+    monkeypatch.setattr(frappe.session,"user","reviewer@test")
+    if not allowed:
+        with pytest.raises(frappe.ValidationError):service.review_separation_statutory_status(doc.name,decision,"Synthetic notes",rule_name,classification)
+        assert not doc.get(service.STATUS_FIELD)
+    else:
+        result=service.review_separation_statutory_status(doc.name,decision,"Synthetic notes",rule_name,classification)
+        assert result["status"]==decision
+        assert doc[service.CLASSIFICATION_FIELD]==classification
+        assert result["rule_set"]==(rule_name if decision=="Approved" else None)
+    # Durable maker evidence still prevents self-review.
+    monkeypatch.setattr(frappe.session,"user","maker@test")
+    with pytest.raises(frappe.PermissionError):service.review_separation_statutory_status(doc.name,decision,"Synthetic notes",rule_name,classification)
