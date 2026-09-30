@@ -1,12 +1,16 @@
 // Presentation only: native Employee Checkin fields remain the evidence authority.
-function tradexMobileEvidenceState(logType, checkin = {}, queued = false) {
+function tradexMobileEvidenceState(logType, checkin = {}, queued = false, ingestionFailed = false) {
   if (queued) return {
     kind: "queued", title: __("Saved on this device"),
-    detail: __("Waiting to sync. This check-in has not yet been received by the server."),
+    detail: __("Waiting to sync or confirm with the server. This device has retained the event for safe retry. Final Attendance is handled separately."),
   };
-  if (checkin.custom_tradex_review_status === "Rejected" || checkin.custom_tradex_time_status === "Blocked") return {
+  if (ingestionFailed || checkin.custom_tradex_time_status === "Blocked") return {
     kind: "rejected", title: __("Could not be accepted"),
     detail: __("This check-in was rejected. Contact HR before trying again."),
+  };
+  if (checkin.custom_tradex_review_status === "Rejected") return {
+    kind: "review_rejected", title: logType === "IN" ? __("Check-in rejected after review") : __("Check-out rejected after review"),
+    detail: __("This evidence was received but rejected during review and will not be used normally. Contact HR if you think this is incorrect."),
   };
   const needsReview = checkin.custom_tradex_review_status === "Pending" || Number(checkin.skip_auto_attendance) === 1 ||
     (checkin.custom_tradex_review_status !== "Approved" &&
@@ -111,7 +115,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   async function queueOfflineCheckin(payload) {
     await withOfflineStore("readwrite", (store) => store.put({
       ...payload,
-      queued_at: new Date().toISOString(),
+      queued_at: payload.queued_at || new Date().toISOString(),
       retryable: true,
     }));
   }
@@ -140,7 +144,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   async function discardQueuedEvidence(item, message) {
     // Retain only retry/error metadata, never the photo, location or personal payload.
     await withOfflineStore("readwrite", store => store.put({
-      sync_id: item.sync_id, queued_at: item.queued_at, retryable: false, last_error: message
+      sync_id: item.sync_id, queued_at: item.queued_at || new Date().toISOString(), retryable: false, last_error: message
     }));
   }
 
@@ -153,6 +157,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   }
 
   function isNetworkError(error) {
+    error = error && (error.cause || error);
     return !navigator.onLine || !error || error.status === 0 || error.readyState === 0 ||
       error.status >= 500 || error.name === "TypeError";
   }
@@ -207,17 +212,18 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     }
   }
 
-  function showSuccessState(logType, checkin, queued) {
+  function showSuccessState(logType, checkin, queued, attachmentWarning = false, ingestionFailed = false) {
     attendanceForm.addClass("d-none");
     successState.removeClass("d-none");
-    const state = tradexMobileEvidenceState(logType, checkin, queued);
-    const canCheckout = logType === "IN" && state.kind !== "rejected";
+    const state = tradexMobileEvidenceState(logType, checkin, queued, ingestionFailed);
+    const rejected = ["rejected", "review_rejected"].includes(state.kind);
+    const canCheckout = logType === "IN" && !rejected;
     const actionLabel = canCheckout ? (queued ? __("Back to work") : __("Check Out")) : __("Done");
-    const tone = state.kind === "saved" ? "success" : state.kind === "rejected" ? "danger" : "warning";
+    const tone = state.kind === "saved" ? "success" : rejected ? "danger" : "warning";
     successState.removeClass("border-success border-warning border-danger").addClass("border-" + tone);
     successTitle.text(state.title);
     root.find("[data-success-symbol]").text(state.kind === "saved" ? "✓" : "!");
-    successDetail.text(state.detail);
+    successDetail.text(state.detail + (attachmentWarning ? " " + __("Check-in was saved, but the selfie file link needs HR attention.") : ""));
     successAction.removeClass("d-none").text(actionLabel).off("click");
     if (canCheckout) {
       successAction.on("click", showCheckoutForm);
@@ -260,6 +266,35 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     return payload.message && payload.message.file_url;
   }
 
+  async function finishSelfieAttachment(checkin, selfieUrl) {
+    if (!selfieUrl || !checkin || !checkin.name) return;
+    try {
+      await frappe.call({
+        method: "tradex_hr.tradexcel_hr.field_attendance_service.attach_selfie",
+        args: {checkin: checkin.name, file_url: selfieUrl},
+      });
+    } catch (cause) {
+      // In-memory result only: the canonical Checkin already exists.
+      const error = new Error("Selfie attachment incomplete", {cause});
+      error.acceptedCheckin = checkin;
+      throw error;
+    }
+  }
+
+  async function handleSyncFailure(item, error) {
+    const accepted = error && error.acceptedCheckin;
+    if (isNetworkError(error)) {
+      await queueOfflineCheckin(item);
+      showSuccessState(item.log_type, accepted || {}, true);
+      return true;
+    }
+    await discardQueuedEvidence(item, accepted
+      ? __("Check-in saved; selfie file link needs HR attention.")
+      : __("Could not be accepted by the server. Contact HR before retrying."));
+    showSuccessState(item.log_type, accepted || {}, false, Boolean(accepted), !accepted);
+    return false;
+  }
+
   async function replayQueuedCheckin(item) {
     if (!navigator.onLine) return false;
     let selfieUrl = item.selfie_url || null;
@@ -290,13 +325,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
       },
     });
     const checkin = response.message;
-    await deleteQueuedCheckin(item.sync_id);
-    if (selfieUrl && checkin && checkin.name) {
-      await frappe.call({
-        method: "tradex_hr.tradexcel_hr.field_attendance_service.attach_selfie",
-        args: {checkin: checkin.name, file_url: selfieUrl},
-      });
-    }
+    await finishSelfieAttachment(checkin, selfieUrl);
     await deleteQueuedCheckin(item.sync_id);
     return checkin;
   }
@@ -316,9 +345,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
             showSuccessState(item.log_type, checkin);
           }
         } catch (error) {
-          if (isNetworkError(error)) break;
-          await discardQueuedEvidence(item, __("Could not be accepted by the server. Contact HR before retrying."));
-          showSuccessState(item.log_type, {custom_tradex_review_status: "Rejected"});
+          if (await handleSyncFailure(item, error)) break;
         }
       }
     } finally {
@@ -464,7 +491,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
         args: requestArgs
       });
       const checkin = response.message;
-      if (selfieUrl) await frappe.call({method: "tradex_hr.tradexcel_hr.field_attendance_service.attach_selfie", args: {checkin: checkin.name, file_url: selfieUrl}});
+      await finishSelfieAttachment(checkin, selfieUrl);
       try {
         await loadContext();
       } catch (contextError) {
@@ -472,14 +499,16 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
       }
       showSuccessState(completedAction, checkin);
     } catch (error) {
-      if (queuedPayload && isNetworkError(error)) {
+      if (queuedPayload) {
         try {
-          await queueOfflineCheckin(queuedPayload);
+          await handleSyncFailure(queuedPayload, error);
           await updateQueueStatus();
-          showSuccessState(queuedPayload.log_type, {time: queuedPayload.time}, true);
           return;
-        } catch (queueError) {
-          error = queueError;
+        } catch (storageError) {
+          if (error.acceptedCheckin) {
+            showSuccessState(queuedPayload.log_type, error.acceptedCheckin, false, true);
+            return;
+          }
         }
       }
       resultEl.addClass("text-danger").text(__("Check-in could not be accepted. Check your evidence or contact HR before retrying."));

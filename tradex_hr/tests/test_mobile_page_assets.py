@@ -59,7 +59,7 @@ def test_offline_selfie_cleanup_waits_for_policy_and_reuses_partial_upload():
     import subprocess
     script = (ROOT / 'tradexcel_mobile_attendance/tradexcel_mobile_attendance.js').read_text()
     cleanup = script[script.index('  function offlineEventExpired'):script.index('  function isNetworkError')]
-    replay = script[script.index('  async function replayQueuedCheckin'):script.index('  async function flushOfflineQueue')]
+    replay = script[script.index('  async function finishSelfieAttachment'):script.index('  async function flushOfflineQueue')]
     node = shutil.which('node')
     assert node, 'Node is required for the offline evidence contract'
     program = '''
