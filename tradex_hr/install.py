@@ -139,70 +139,26 @@ def ensure_standard_script_reports() -> None:
         # The standard report JSON is the source of filter defaults. Legacy
         # company-specific JavaScript rewriting is no longer needed.
 
-NUMBER_CARDS = {
-    "Tradexcel Active Employees": {
-        "label": "Active Employees (All Companies)",
-        "type": "Document Type",
-        "document_type": "Employee",
-        "function": "Count",
-        "filters_json": json.dumps([
-            ["Employee", "status", "=", "Active", False],
-        ]),
-        "is_standard": 0,
-        "module": "Tradexcel HR",
-        "is_public": 1,
-        "color": "Green",
-    },
-    "Tradexcel Punches Logged": {
-        "label": "Total Punches Logged",
-        "type": "Document Type",
-        "document_type": "Employee Checkin",
-        "function": "Count",
-        "filters_json": json.dumps([["Employee Checkin", "docstatus", "<", "2", False]]),
-        "is_standard": 0,
-        "module": "Tradexcel HR",
-        "is_public": 1,
-        "color": "Blue",
-    },
-    "Tradexcel Present Records": {
-        "label": "Attendance Present Logs",
-        "type": "Document Type",
-        "document_type": "Attendance",
-        "function": "Count",
-        "filters_json": json.dumps([
-            ["Attendance", "status", "=", "Present", False],
-        ]),
-        "is_standard": 0,
-        "module": "Tradexcel HR",
-        "is_public": 1,
-        "color": "Cyan",
-    },
-    "Tradexcel Absent Records": {
-        "label": "Attendance Absent Logs",
-        "type": "Document Type",
-        "document_type": "Attendance",
-        "function": "Count",
-        "filters_json": json.dumps([
-            ["Attendance", "status", "=", "Absent", False],
-        ]),
-        "is_standard": 0,
-        "module": "Tradexcel HR",
-        "is_public": 1,
-        "color": "Red",
-    },
-}
-
-LEGACY_NUMBER_CARD_NAMES = {
-    "TradeX Active Employees": "Tradexcel Active Employees",
-    "TradeX Punches Logged": "Tradexcel Punches Logged",
-    "TradeX Present Records": "Tradexcel Present Records",
-    "TradeX Absent Records": "Tradexcel Absent Records",
-}
-
-# These are duplicate records created by the prototype dashboard setup. They
-# are intentionally explicit so future migrations never delete a genuinely
-# user-created card or chart in the Tradexcel HR module.
-ORPHANED_NUMBER_CARD_NAMES = (
+# TXUX-260930-013: exact-name allowlist of app-owned UI artifacts proven unused
+# by the accepted reference audit and re-audited read-only against staging
+# before retirement. The installer no longer creates these records. Migration
+# removes one only when its `module` proves Tradexcel HR ownership, so a
+# user-created document with a similar purpose is never deleted automatically.
+#
+# Canonical plus legacy-alias names cover historical installs. Prototype
+# duplicates were already explicitly retired by the original installer.
+RETIRED_NUMBER_CARDS = (
+    # Managed cards retired by TXUX-260930-013.
+    "Tradexcel Active Employees",
+    "Tradexcel Punches Logged",
+    "Tradexcel Present Records",
+    "Tradexcel Absent Records",
+    # Their pre-rename aliases from older prototype installs.
+    "TradeX Active Employees",
+    "TradeX Punches Logged",
+    "TradeX Present Records",
+    "TradeX Absent Records",
+    # Prototype duplicates with company-specific or numbered variants.
     "Active Employees (All Companies)",
     "Active Employees-3",
     "Attendance Absent Logs-3",
@@ -217,94 +173,35 @@ ORPHANED_NUMBER_CARD_NAMES = (
     "Tradexcel TCL Active Employees",
     "Total Punches Logged-3",
     "Total Punches Logged-4",
-    "TradeX Absent Records",
-    "TradeX Active Employees",
     "TradeX EFL Active Employees",
-    "TradeX Present Records",
-    "TradeX Punches Logged",
     "TradeX TCL Active Employees",
 )
 
 
-DASHBOARD_CHARTS = {
-    "Tradexcel Employees by Department": {
-        "chart_type": "Group By",
-        "document_type": "Employee",
-        "group_by_type": "Count",
-        "group_by_based_on": "department",
-        "type": "Bar",
-        "filters_json": json.dumps([
-            ["Employee", "status", "=", "Active", False],
-        ]),
-    },
-    "Tradexcel Employees by Branch": {
-        "chart_type": "Group By",
-        "document_type": "Employee",
-        "group_by_type": "Count",
-        "group_by_based_on": "branch",
-        "type": "Bar",
-        "filters_json": json.dumps([
-            ["Employee", "status", "=", "Active", False],
-        ]),
-    },
-    "Tradexcel Headcount by Company": {
-        "chart_type": "Group By",
-        "document_type": "Employee",
-        "group_by_type": "Count",
-        "group_by_based_on": "company",
-        "type": "Pie",
-        "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
-    },
-    "Tradexcel Attendance Status": {
-        "chart_type": "Group By",
-        "document_type": "Attendance",
-        "group_by_type": "Count",
-        "group_by_based_on": "status",
-        "type": "Pie",
-        "filters_json": json.dumps([]),
-    },
-    "Tradexcel Leave Allocated by Type": {
-        "chart_type": "Group By",
-        "document_type": "Leave Allocation",
-        "group_by_type": "Sum",
-        "group_by_based_on": "leave_type",
-        "aggregate_function_based_on": "total_leaves_allocated",
-        "type": "Bar",
-        "filters_json": json.dumps([]),
-    },
-    "Tradexcel Payroll by Month": {
-        "chart_type": "Sum",
-        "document_type": "Salary Slip",
-        "based_on": "start_date",
-        "value_based_on": "net_pay",
-        "timeseries": 1,
-        "timespan": "Last Year",
-        "time_interval": "Monthly",
-        "type": "Line",
-        "filters_json": json.dumps([["Salary Slip", "docstatus", "=", "1", False]]),
-    },
-    "Tradexcel Checkins by Day": {
-        "chart_type": "Count",
-        "document_type": "Employee Checkin",
-        "based_on": "time",
-        "timeseries": 1,
-        "timespan": "Last Month",
-        "time_interval": "Daily",
-        "type": "Line",
-        "filters_json": json.dumps([["Employee Checkin", "docstatus", "<", "2", False]]),
-    },
-}
+RETIRED_DASHBOARD_CHARTS = (
+    # Managed charts retired by TXUX-260930-013.
+    "Tradexcel Employees by Department",
+    "Tradexcel Employees by Branch",
+    "Tradexcel Headcount by Company",
+    "Tradexcel Attendance Status",
+    "Tradexcel Leave Allocated by Type",
+    "Tradexcel Payroll by Month",
+    "Tradexcel Checkins by Day",
+    # Their pre-rename aliases from older prototype installs.
+    "TradeX Employees by Department",
+    "TradeX Employees by Branch",
+    "TradeX Headcount by Company",
+    "TradeX Attendance Status",
+    "TradeX Leave Allocated by Type",
+    "TradeX Payroll by Month",
+    "TradeX Checkins by Day",
+)
 
 
-LEGACY_DASHBOARD_CHART_NAMES = {
-    "TradeX Employees by Department": "Tradexcel Employees by Department",
-    "TradeX Employees by Branch": "Tradexcel Employees by Branch",
-    "TradeX Headcount by Company": "Tradexcel Headcount by Company",
-    "TradeX Attendance Status": "Tradexcel Attendance Status",
-    "TradeX Leave Allocated by Type": "Tradexcel Leave Allocated by Type",
-    "TradeX Payroll by Month": "Tradexcel Payroll by Month",
-    "TradeX Checkins by Day": "Tradexcel Checkins by Day",
-}
+RETIRED_ARTIFACTS = (
+    ("Number Card", RETIRED_NUMBER_CARDS),
+    ("Dashboard Chart", RETIRED_DASHBOARD_CHARTS),
+)
 
 
 WORKSPACE_SHORTCUTS = [
@@ -623,8 +520,7 @@ WORKSPACE_SECTIONS = (
 )
 
 # Home is an operator starting point; the full catalog below remains in Sidebar.
-# Snapshot artifacts are retained for TXUX-013's separate reference audit.
-HOME_NUMBER_CARDS = []
+# TXUX-260930-013 removed the snapshot cards; the Workspace keeps zero cards.
 
 # Expense drafts have no Action Board category and are useful for resuming work.
 HOME_QUICK_LISTS = [
@@ -792,80 +688,30 @@ def ensure_reports() -> None:
         _ensure_custom_report(values)
 
 
-def ensure_number_cards() -> None:
-    for name, values in NUMBER_CARDS.items():
-        payload = {"doctype": "Number Card", **values}
-        if frappe.db.exists("Number Card", name):
-            doc = frappe.get_doc("Number Card", name)
-            for key, value in payload.items():
-                if key not in {"doctype", "name"}:
-                    setattr(doc, key, value)
-            doc.save(ignore_permissions=True)
-        else:
-            doc = frappe.get_doc(payload)
-            doc.insert(ignore_permissions=True)
-            if doc.name != name:
-                frappe.rename_doc("Number Card", doc.name, name, force=True)
+def remove_retired_dashboard_artifacts(retired=None):
+    """Delete exact-name app-owned artifacts from earlier installs.
 
+    The retired set is an explicit allowlist (``RETIRED_ARTIFACTS``) of names
+    the app itself created. A record is deleted only when its ``module`` is
+    still ``Tradexcel HR``; anything else is left untouched and reported, so a
+    user-created replacement with a similar purpose survives migration.
 
-def ensure_dashboard_charts() -> None:
-    for name, values in DASHBOARD_CHARTS.items():
-        payload = {
-            "doctype": "Dashboard Chart",
-            "chart_name": name,
-            "is_standard": 0,
-            "module": "Tradexcel HR",
-            "is_public": 1,
-            **values,
-        }
-        if frappe.db.exists("Dashboard Chart", name):
-            doc = frappe.get_doc("Dashboard Chart", name)
-            for key, value in payload.items():
-                if key != "doctype":
-                    setattr(doc, key, value)
-            doc.save(ignore_permissions=True)
-        else:
-            frappe.get_doc(payload).insert(ignore_permissions=True)
-
-
-def rename_legacy_dashboard_charts() -> None:
-    """Rename managed chart records so the dashboard uses the Tradexcel brand."""
-    for legacy_name, canonical_name in LEGACY_DASHBOARD_CHART_NAMES.items():
-        if not frappe.db.exists("Dashboard Chart", legacy_name):
-            continue
-        if frappe.db.exists("Dashboard Chart", canonical_name):
-            frappe.delete_doc(
-                "Dashboard Chart", legacy_name, force=True, ignore_permissions=True
-            )
-        else:
-            frappe.rename_doc(
-                "Dashboard Chart", legacy_name, canonical_name, force=True
-            )
-
-
-def rename_legacy_number_cards() -> None:
-    """Rename managed card records so the dashboard has one brand namespace."""
-    for legacy_name, canonical_name in LEGACY_NUMBER_CARD_NAMES.items():
-        if not frappe.db.exists("Number Card", legacy_name):
-            continue
-        if frappe.db.exists("Number Card", canonical_name):
-            frappe.delete_doc("Number Card", legacy_name, force=True, ignore_permissions=True)
-        else:
-            frappe.rename_doc("Number Card", legacy_name, canonical_name, force=True)
-
-
-def remove_orphaned_dashboard_records() -> None:
-    """Remove known prototype duplicates after canonical records are ensured."""
-    for doctype, names in (
-        ("Number Card", ORPHANED_NUMBER_CARD_NAMES),
-        ("Dashboard Chart", tuple(LEGACY_DASHBOARD_CHART_NAMES)),
-    ):
+    Idempotent: absent records are skipped, so a second execution is a no-op.
+    Returns ``{"removed": [...], "retained": [...]}`` for auditability.
+    """
+    removed: list[str] = []
+    retained: list[str] = []
+    for doctype, names in retired if retired is not None else RETIRED_ARTIFACTS:
         for name in names:
             if not frappe.db.exists(doctype, name):
                 continue
             module = frappe.db.get_value(doctype, name, "module")
-            if module == "Tradexcel HR":
-                frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+            if module != "Tradexcel HR":
+                retained.append(f"{doctype}:{name} (module={module!r})")
+                continue
+            frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+            removed.append(f"{doctype}:{name}")
+    return {"removed": removed, "retained": retained}
 
 
 def rename_legacy_reports() -> None:
@@ -948,12 +794,6 @@ def ensure_workspace() -> None:
         doc.is_hidden = 0 if workspace_is_visible(name) else 1
         doc.charts = []
         doc.number_cards = []
-        for card in HOME_NUMBER_CARDS:
-            if frappe.db.exists("Number Card", card["number_card_name"]):
-                doc.append("number_cards", {
-                    "number_card_name": card["number_card_name"],
-                    "label": card["label"],
-                })
         doc.quick_lists = []
         for ql in HOME_QUICK_LISTS:
             if frappe.db.exists("DocType", ql["document_type"]):
@@ -1051,13 +891,11 @@ def after_migrate():
     ensure_income_tax_review_fields()
     # Historic structure pay-basis seeding is an explicit reviewed migration
     # utility, not a generic install action on another company's structures.
-    rename_legacy_dashboard_charts()
     ensure_reports()
-    ensure_number_cards()
-    ensure_dashboard_charts()
-    rename_legacy_number_cards()
+    # TXUX-260930-013: remove exact-name retired app-owned artifacts; never
+    # recreate them. Records outside the Tradexcel HR module are left intact.
+    remove_retired_dashboard_artifacts()
     rename_legacy_reports()
-    remove_orphaned_dashboard_records()
     ensure_workspace()
     ensure_property_setters()
     frappe.db.commit()
