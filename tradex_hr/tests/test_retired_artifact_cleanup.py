@@ -31,7 +31,32 @@ import pytest
 from tradex_hr import install
 importlib.reload(install)
 
-PREFIX = "TXUX013P02-SYNTH"
+TASK_TAG = "TXUX013P04"
+PREFIX = f"{TASK_TAG}-SYNTH"
+
+# Exact, unmistakable task-specific custom field and column identifiers
+SYNTH_LINK_CF_DT = "Department"
+SYNTH_LINK_CF_FIELDNAME = f"custom_{TASK_TAG.lower()}_card_ref"
+SYNTH_LINK_CF_NAME = f"{SYNTH_LINK_CF_DT}-{SYNTH_LINK_CF_FIELDNAME}"
+
+SYNTH_DYN_CF_DT = "Department"
+SYNTH_DYN_CF_FIELDNAME = f"custom_{TASK_TAG.lower()}_dyn_link_ref"
+SYNTH_DYN_CF_NAME = f"{SYNTH_DYN_CF_DT}-{SYNTH_DYN_CF_FIELDNAME}"
+
+_TRACKED_DOCS: set[tuple[str, str]] = set()
+_TRACKED_COLUMNS: set[tuple[str, str]] = set()
+
+
+def _track_doc(doctype: str, name: str) -> str:
+    _TRACKED_DOCS.add((doctype, name))
+    return name
+
+
+def _track_column(dt: str, fieldname: str) -> str:
+    _TRACKED_COLUMNS.add((dt, fieldname))
+    return fieldname
+
+
 CANONICAL_CARDS = (
     "Tradexcel Active Employees",
     "Tradexcel Punches Logged",
@@ -138,6 +163,17 @@ def _synthetic_truncated_backup(
     return filename, checksum, backup_file
 
 
+def _synthetic_file(
+    tmp_path: Path,
+    filename: str,
+    content: bytes = b"SYNTHETIC_FILE_CONTENT\n",
+):
+    file_path = tmp_path / filename
+    file_path.write_bytes(content)
+    checksum = hashlib.sha256(content).hexdigest()
+    return filename, checksum, file_path
+
+
 def _synthetic_card(
     name,
     *,
@@ -169,6 +205,7 @@ def _synthetic_card(
     doc.insert(ignore_permissions=True)
     if doc.name != name:
         frappe.rename_doc("Number Card", doc.name, name, force=True)
+    _track_doc("Number Card", name)
     return name
 
 
@@ -233,6 +270,7 @@ def _synthetic_chart(
     doc.insert(ignore_permissions=True)
     if doc.name != name:
         frappe.rename_doc("Dashboard Chart", doc.name, name, force=True)
+    _track_doc("Dashboard Chart", name)
     return name
 
 
@@ -263,27 +301,68 @@ def _chart_fingerprint(
 
 
 def _synthetic_block(name, html="", script="", style=""):
-    return frappe.get_doc({
+    doc = frappe.get_doc({
         "doctype": "Custom HTML Block",
         "name": name,
         "html": html,
         "script": script,
         "style": style,
         "private": 1,
-    }).insert(ignore_permissions=True).name
+    }).insert(ignore_permissions=True)
+    _track_doc("Custom HTML Block", doc.name)
+    return doc.name
 
 
 def _cleanup_synthetic():
+    """Narrowly scoped cleanup for test-owned synthetic records.
+
+    Eliminates broad wildcards (e.g. 'custom_cf_%') to avoid matching legitimate
+    or unrelated custom fields. Tracks and cleans only records and columns created
+    by this task's test suite, using supported Frappe deletion APIs.
+    """
+    # 1. Clean up explicitly tracked test documents
+    for doctype, name in list(_TRACKED_DOCS):
+        try:
+            if doctype == "Workspace Sidebar Item":
+                frappe.db.sql("delete from `tabWorkspace Sidebar Item` where name=%s", (name,))
+            elif frappe.db.exists(doctype, name):
+                frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+        except Exception:
+            pass
+    _TRACKED_DOCS.clear()
+
+    # 2. Clean up explicitly tracked test columns
+    for dt, col in list(_TRACKED_COLUMNS):
+        table = f"tab{dt}"
+        try:
+            cols = [c[0] for c in frappe.db.sql(f"DESCRIBE `{table}`")]
+            if col in cols:
+                frappe.db.commit()
+                frappe.db.sql_ddl(f"ALTER TABLE `{table}` DROP COLUMN `{col}`")
+        except Exception:
+            pass
+    _TRACKED_COLUMNS.clear()
+
+    # 3. Task-prefix scoped failsafe cleanup (e.g. for aborted test runs)
     for doctype in ("Number Card", "Dashboard Chart", "Custom HTML Block", "Desktop Icon"):
         for name in frappe.get_all(doctype, filters={"name": ["like", f"{PREFIX}%"]}, pluck="name"):
             frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
-    for name in frappe.get_all("Custom Field", filters={"name": ["like", f"%{PREFIX}%"]}, pluck="name"):
-        frappe.db.delete("Custom Field", {"name": name})
-    for name in frappe.get_all("Custom Field", filters={"fieldname": ["like", "custom_cf_%"]}, pluck="name"):
-        frappe.db.delete("Custom Field", {"name": name})
-    for name in frappe.get_all("Custom Field", filters={"fieldname": ["like", f"%{PREFIX.lower()}%"]}, pluck="name"):
-        frappe.db.delete("Custom Field", {"name": name})
-    frappe.db.sql("delete from `tabWorkspace Sidebar Item` where name like %s", (f"{PREFIX}%",))
+
+    # 4. Clean only exact task-owned custom fields and column
+    for cf_name in (SYNTH_LINK_CF_NAME, SYNTH_DYN_CF_NAME):
+        if frappe.db.exists("Custom Field", cf_name):
+            frappe.delete_doc("Custom Field", cf_name, force=True, ignore_permissions=True)
+    frappe.db.sql(
+        "DELETE FROM `tabCustom Field` WHERE name IN (%s, %s) OR fieldname IN (%s, %s)",
+        (SYNTH_LINK_CF_NAME, SYNTH_DYN_CF_NAME, SYNTH_LINK_CF_FIELDNAME, SYNTH_DYN_CF_FIELDNAME),
+    )
+
+    dept_cols = [c[0] for c in frappe.db.sql("DESCRIBE `tabDepartment`")]
+    if SYNTH_LINK_CF_FIELDNAME in dept_cols:
+        frappe.db.commit()
+        frappe.db.sql_ddl(f"ALTER TABLE `tabDepartment` DROP COLUMN `{SYNTH_LINK_CF_FIELDNAME}`")
+
+    frappe.db.sql("DELETE FROM `tabWorkspace Sidebar Item` WHERE name LIKE %s", (f"{PREFIX}%",))
     frappe.db.commit()
 
 
@@ -443,15 +522,18 @@ def test_referenced_artifact_is_retained_across_native_and_custom_surfaces(tmp_p
     _synthetic_block(f"{PREFIX}-BLK", html=f"<p>{card_block}</p>")
 
     # 2. Desktop Icon link
+    icon_name = f"{PREFIX}-ICON"
     frappe.get_doc({
         "doctype": "Desktop Icon",
-        "label": f"{PREFIX}-ICON",
+        "label": icon_name,
         "link_type": "External",
         "link": f"/app/number-card/{card_desktop}",
         "standard": 0,
     }).insert(ignore_permissions=True)
+    _track_doc("Desktop Icon", icon_name)
 
     # 3. Workspace Sidebar Item (url / route_options / filters)
+    sidebar_item_name = f"{PREFIX}-SIDEBAR-ITEM"
     frappe.db.sql(
         """
         insert into `tabWorkspace Sidebar Item`
@@ -459,26 +541,27 @@ def test_referenced_artifact_is_retained_across_native_and_custom_surfaces(tmp_p
         values (%s, 'HR', 'Workspace Sidebar', 'items', 'URL', %s, %s, %s)
         """,
         (
-            f"{PREFIX}-SIDEBAR-ITEM",
+            sidebar_item_name,
             f"/app/number-card/{card_sidebar}",
             f'{{"card": "{card_sidebar}"}}',
             f'[["Number Card", "name", "=", "{card_sidebar}"]]',
         ),
     )
+    _track_doc("Workspace Sidebar Item", sidebar_item_name)
 
     # 4. Custom Field linking to Number Card
-    import random
-    uid = f"{random.randint(10000, 99999)}"
-    cf_name = f"{PREFIX}-CF-{uid}"
-    col_name = f"custom_cf_{uid}_card"
+    col_name = SYNTH_LINK_CF_FIELDNAME
     cf_doc = frappe.get_doc({
         "doctype": "Custom Field",
-        "dt": "Department",
+        "dt": SYNTH_LINK_CF_DT,
         "fieldname": col_name,
         "label": "Synthetic Linked Card",
         "fieldtype": "Link",
         "options": "Number Card",
     }).insert(ignore_permissions=True)
+    _track_doc("Custom Field", cf_doc.name)
+    _track_column(SYNTH_LINK_CF_DT, col_name)
+
     # Put a reference value in the table
     dept = frappe.db.get_value("Department", {"company": "Tradexcel Ceramics Ltd."}, "name")
     frappe.db.sql(f"update `tabDepartment` set `{col_name}`=%s where name=%s", (card_custom_field, dept))
@@ -514,7 +597,7 @@ def test_referenced_artifact_is_retained_across_native_and_custom_surfaces(tmp_p
     finally:
         if dept:
             frappe.db.sql(f"update `tabDepartment` set `{col_name}`=NULL where name=%s", (dept,))
-        frappe.db.sql("delete from `tabCustom Field` where name=%s or fieldname=%s", (cf_doc.name, col_name))
+        frappe.delete_doc("Custom Field", cf_doc.name, force=True, ignore_permissions=True)
         frappe.db.commit()
         frappe.db.sql_ddl(f"alter table `tabDepartment` drop column `{col_name}`")
         _cleanup_synthetic()
@@ -524,9 +607,10 @@ def test_referenced_artifact_is_retained_across_native_and_custom_surfaces(tmp_p
         assert not frappe.db.exists("Custom Field", {"fieldname": col_name})
         cols_now = [c[0] for c in frappe.db.sql("DESCRIBE `tabDepartment`")]
         assert col_name not in cols_now, f"Synthetic column {col_name} was not dropped from tabDepartment"
-        assert not frappe.db.exists("Desktop Icon", f"{PREFIX}-ICON")
+        assert "custom_cf_12319_card" in cols_now, "Unrelated historical orphan column custom_cf_12319_card must be preserved"
+        assert not frappe.db.exists("Desktop Icon", icon_name)
         assert not frappe.db.exists("Custom HTML Block", f"{PREFIX}-BLK")
-        assert len(frappe.db.sql("select name from `tabWorkspace Sidebar Item` where name=%s", (f"{PREFIX}-SIDEBAR-ITEM",))) == 0
+        assert len(frappe.db.sql("select name from `tabWorkspace Sidebar Item` where name=%s", (sidebar_item_name,))) == 0
         assert not frappe.db.exists("Number Card", card_block)
         assert not frappe.db.exists("Number Card", card_desktop)
         assert not frappe.db.exists("Number Card", card_sidebar)
@@ -541,16 +625,17 @@ def test_unresolvable_custom_dynamic_link_fails_closed():
     candidates = (("Number Card", (card,)),)
 
     # Insert a synthetic Custom Field of type Dynamic Link directly in DB
-    cf_clean = PREFIX.lower().replace("-", "_")
-    cf_name = f"{PREFIX}-DYN-CF"
+    cf_name = SYNTH_DYN_CF_NAME
+    col_name = SYNTH_DYN_CF_FIELDNAME
     frappe.db.sql(
         """
         insert into `tabCustom Field` (name, dt, fieldname, label, fieldtype, options)
-        values (%s, 'Department', %s, 'Synthetic Dynamic Link', 'Dynamic Link', 'department_name')
+        values (%s, %s, %s, 'Synthetic Dynamic Link', 'Dynamic Link', 'department_name')
         """,
-        (cf_name, f"custom_{cf_clean}_target"),
+        (cf_name, SYNTH_DYN_CF_DT, col_name),
     )
     frappe.db.commit()
+    _track_doc("Custom Field", cf_name)
 
     try:
         with pytest.raises(RuntimeError, match="Unresolvable custom Dynamic Link field"):
@@ -560,9 +645,12 @@ def test_unresolvable_custom_dynamic_link_fails_closed():
         assert plan["removable"] == []
         assert "reference surfaces could not be inspected" in plan["retained"][0]["reason"]
     finally:
+        if frappe.db.exists("Custom Field", cf_name):
+            frappe.delete_doc("Custom Field", cf_name, force=True, ignore_permissions=True)
         frappe.db.sql("delete from `tabCustom Field` where name=%s", (cf_name,))
         frappe.db.commit()
         _cleanup_synthetic()
+        assert not frappe.db.exists("Custom Field", cf_name)
 
 
 def test_inaccessible_reference_surface_fails_closed(tmp_path, monkeypatch):
@@ -624,54 +712,85 @@ def test_dry_run_and_ordinary_migration_never_delete(monkeypatch):
 def test_backup_preflight_verification(tmp_path, monkeypatch):
     monkeypatch.setattr(install, "_backup_directory", lambda: tmp_path)
     site = frappe.local.site or "hrms-v16.localhost"
+    site_tag = site.replace(".", "_")
     valid_name, valid_checksum, valid_file = _synthetic_backup(tmp_path, site_name=site)
 
     # 1. Empty reference throws
     with pytest.raises(frappe.ValidationError, match="reference from BACKUPS.md is required"):
         install.verify_backup_preflight("")
 
-    # 2. Path traversal throws
+    # 2. Path traversal throws (both relative and subdirectory)
     with pytest.raises(frappe.ValidationError, match="must be a pure filename"):
         install.verify_backup_preflight(f"../{valid_name}", valid_checksum)
+    with pytest.raises(frappe.ValidationError, match="must be a pure filename"):
+        install.verify_backup_preflight(f"subdir/{valid_name}", valid_checksum)
 
-    # 3. Site identity mismatch throws
-    with pytest.raises(frappe.ValidationError, match="does not match current site identity"):
-        install.verify_backup_preflight("20260930_012059-other_site-database.sql.gz", valid_checksum)
+    # 3. Wrong site identity throws
+    wrong_site_name = "20260930_012059-wrong_site_name-database.sql.gz"
+    _synthetic_file(tmp_path, wrong_site_name)
+    with pytest.raises(frappe.ValidationError, match="not a supported database backup archive"):
+        install.verify_backup_preflight(wrong_site_name, valid_checksum)
 
-    # 4. Non-existent file throws
+    # 4. Ambiguous substring site match is rejected
+    ambig_name = f"20260930_012059-prefix_{site_tag}-database.sql.gz"
+    _synthetic_file(tmp_path, ambig_name)
+    with pytest.raises(frappe.ValidationError, match="not a supported database backup archive"):
+        install.verify_backup_preflight(ambig_name, valid_checksum)
+
+    # 5. Arbitrary .txt file rejected (even if supplied with valid matching SHA-256)
+    txt_name, txt_chk, _ = _synthetic_file(tmp_path, f"notes-{site_tag}.txt")
+    with pytest.raises(frappe.ValidationError, match="not a supported database backup archive"):
+        install.verify_backup_preflight(txt_name, txt_chk)
+
+    # 6. Non-database .tar files archive rejected (even with valid matching SHA-256)
+    tar_name, tar_chk, _ = _synthetic_file(tmp_path, f"20260930_012059-{site_tag}-files.tar")
+    with pytest.raises(frappe.ValidationError, match="not a supported database backup archive"):
+        install.verify_backup_preflight(tar_name, tar_chk)
+
+    # 7. Non-database site config backup .json rejected (even with valid matching SHA-256)
+    json_name, json_chk, _ = _synthetic_file(tmp_path, f"20260930_012059-{site_tag}-site_config_backup.json")
+    with pytest.raises(frappe.ValidationError, match="not a supported database backup archive"):
+        install.verify_backup_preflight(json_name, json_chk)
+
+    # 8. Uncompressed .sql rejected (even with valid matching SHA-256)
+    sql_name, sql_chk, _ = _synthetic_file(tmp_path, f"20260930_012059-{site_tag}-database.sql")
+    with pytest.raises(frappe.ValidationError, match="not a supported database backup archive"):
+        install.verify_backup_preflight(sql_name, sql_chk)
+
+    # 9. Non-existent file throws
+    missing_name = f"20260930_012050-{site_tag}-database.sql.gz"
     with pytest.raises(frappe.ValidationError, match="does not exist or is empty"):
-        install.verify_backup_preflight(f"20260930_012059-{site.replace('.', '_')}-missing.sql.gz", valid_checksum)
+        install.verify_backup_preflight(missing_name, valid_checksum)
 
-    # 5. Empty file throws
-    empty_file = tmp_path / f"20260930_012059-{site.replace('.', '_')}-empty.sql.gz"
-    empty_file.write_bytes(b"")
+    # 10. Empty file throws
+    empty_name, empty_chk, _ = _synthetic_file(tmp_path, f"20260930_012051-{site_tag}-database.sql.gz", content=b"")
     with pytest.raises(frappe.ValidationError, match="does not exist or is empty"):
-        install.verify_backup_preflight(empty_file.name, valid_checksum)
+        install.verify_backup_preflight(empty_name, empty_chk)
 
-    # 6. Missing checksum throws
+    # 11. Missing checksum throws
     with pytest.raises(frappe.ValidationError, match="verified SHA-256 checksum from BACKUPS.md is required"):
         install.verify_backup_preflight(valid_name, "")
 
-    # 7. Checksum mismatch throws
+    # 12. Checksum mismatch throws
     with pytest.raises(frappe.ValidationError, match="checksum verification failed"):
         install.verify_backup_preflight(valid_name, "0000000000000000000000000000000000000000000000000000000000000000")
 
-    # 8. Corrupt gzip archive (with matching supplied SHA-256) throws
+    # 13. Corrupt gzip archive (with matching supplied SHA-256) throws
     corrupt_name, corrupt_checksum, _ = _synthetic_corrupt_backup(tmp_path, site_name=site)
     with pytest.raises(frappe.ValidationError, match="failed gzip integrity validation"):
         install.verify_backup_preflight(corrupt_name, corrupt_checksum)
 
-    # 9. Truncated gzip archive (with matching supplied SHA-256) throws
+    # 14. Truncated gzip archive (with matching supplied SHA-256) throws
     truncated_name, truncated_checksum, _ = _synthetic_truncated_backup(tmp_path, site_name=site)
     with pytest.raises(frappe.ValidationError, match="failed gzip integrity validation"):
         install.verify_backup_preflight(truncated_name, truncated_checksum)
 
-    # 10. Valid archive and checksum succeeds
+    # 15. Valid database backup archive and checksum succeeds
     verified_path = install.verify_backup_preflight(valid_name, valid_checksum)
     assert verified_path == valid_file
 
-    # 11. Non-System Manager is rejected by remove_retired_dashboard_artifacts
-    monkeypatch.setattr(install.frappe.session, "user", "txux013p02-nonadmin@example.test", raising=False)
+    # 16. Non-System Manager is rejected by remove_retired_dashboard_artifacts
+    monkeypatch.setattr(install.frappe.session, "user", "txux013p04-nonadmin@example.test", raising=False)
     monkeypatch.setattr(install.frappe, "get_roles", lambda: ["HR User"])
     with pytest.raises(frappe.PermissionError, match="System Manager"):
         install.remove_retired_dashboard_artifacts(

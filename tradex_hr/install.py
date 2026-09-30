@@ -6,8 +6,10 @@ import gzip
 import hashlib
 import json
 from pathlib import Path
+import re
 
 import frappe
+
 
 
 BIOMETRIC_ID_AUDIT_JAVASCRIPT = """
@@ -1034,22 +1036,24 @@ def _backup_directory() -> Path:
 
 
 def verify_backup_preflight(backup_reference: str, backup_checksum: str | None = None) -> Path:
-    """Verify that an operator-provided backup reference exists, matches site identity, matches checksum, and has valid archive integrity.
+    """Verify that an operator-provided backup reference exists, matches site database format, matches checksum, and has valid archive integrity.
 
     An arbitrary string is merely an operator reference, not proof of a restorable backup.
     This preflight verifies:
     1. The reference is a pure filename without path traversal.
-    2. The backup archive exists in the site's private/backups directory and is non-empty.
-    3. The filename contains the current site's normalized identity.
+    2. The filename matches Frappe's supported site-specific database backup convention:
+       <YYYYMMDD_HHMMSS>-<site_slug>-database.sql.gz (rejecting .txt, .tar, file archives, or foreign-site files).
+    3. The backup archive exists in the site's private/backups directory and is non-empty.
     4. A verified SHA-256 checksum from BACKUPS.md is supplied and matches the archive's SHA-256.
-    5. For compressed archives (.sql.gz), gzip stream integrity and CRC32 trailer are valid.
+    5. Gzip stream integrity and CRC32 trailer are valid across the entire archive.
 
     Operational Boundary:
-    Passing this preflight proves the archive exists, matches the given SHA-256, and is
-    a valid uncorrupted gzip stream. It does NOT prove that the database SQL dump inside is
-    semantically restorable or that the backup is current. The operator must independently
-    verify that the checksum appears in a fresh, site-specific BACKUPS.md entry recorded
-    immediately prior to cleanup, and that recovery procedures have been validated.
+    Passing this preflight proves the archive exists, conforms to the database backup naming
+    format for the active site, matches the given SHA-256, and is an uncorrupted gzip stream.
+    It does NOT prove that the database SQL dump inside is semantically restorable or that
+    the backup is current. The operator must independently verify that the checksum appears
+    in a fresh, site-specific BACKUPS.md entry recorded immediately prior to cleanup, and
+    that complete database recovery procedures have been rehearsed and proven.
 
     Throws frappe.ValidationError if any check fails.
     """
@@ -1067,11 +1071,18 @@ def verify_backup_preflight(backup_reference: str, backup_checksum: str | None =
             frappe.ValidationError,
         )
 
-    site = frappe.local.site or ""
+    site = (frappe.local.site or "").strip()
+    if not site:
+        frappe.throw("Active Frappe site identity is not set.", frappe.ValidationError)
+
     site_tag = site.replace(".", "_")
-    if site_tag not in ref and site not in ref:
+    db_backup_pattern = re.compile(
+        rf"^\d{{8}}_\d{{6}}-(?:{re.escape(site_tag)}|{re.escape(site)})(-partial)?-database\.sql\.gz$"
+    )
+    if not db_backup_pattern.match(ref):
         frappe.throw(
-            f"Backup reference {ref!r} does not match current site identity {site!r}.",
+            f"Backup reference {ref!r} is not a supported database backup archive (.sql.gz) for site {site!r}. "
+            f"Expected format: <YYYYMMDD_HHMMSS>-{site_tag}-database.sql.gz",
             frappe.ValidationError,
         )
 
@@ -1101,16 +1112,15 @@ def verify_backup_preflight(backup_reference: str, backup_checksum: str | None =
             frappe.ValidationError,
         )
 
-    if ref.endswith(".gz"):
-        try:
-            with gzip.open(backup_file, "rb") as gz:
-                for _ in iter(lambda: gz.read(65536), b""):
-                    pass
-        except Exception as exc:
-            frappe.throw(
-                f"Backup archive {ref!r} failed gzip integrity validation ({exc}).",
-                frappe.ValidationError,
-            )
+    try:
+        with gzip.open(backup_file, "rb") as gz:
+            for _ in iter(lambda: gz.read(65536), b""):
+                pass
+    except Exception as exc:
+        frappe.throw(
+            f"Backup archive {ref!r} failed gzip integrity validation ({exc}).",
+            frappe.ValidationError,
+        )
 
     return backup_file
 
