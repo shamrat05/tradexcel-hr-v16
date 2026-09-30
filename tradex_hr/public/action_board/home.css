@@ -5,10 +5,15 @@ select, input, button { font: inherit; padding: 8px; border: 1px solid var(--bor
 button { cursor: pointer; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .notice { color: var(--text-muted); margin: 12px 0; }
-.items { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; }
-.item { border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
-.item h3 { font-size: 1rem; margin: 6px 0; }
-.item p { margin: 6px 0 12px; }
+.items { display: grid; gap: 12px; }
+.items section { min-width: 0; }
+.items h3 { font-size: 1rem; }
+.item { margin: 6px 0; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
+.item summary { cursor: pointer; overflow-wrap: anywhere; }
+.item summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.title { font-weight: 600; }
+.category { display: block; margin-top: 4px; }
+.item p { margin: 6px 0 12px; overflow-wrap: anywhere; }
 .category { color: var(--text-muted); font-size: .85rem; }
 
 .context { overflow-wrap: anywhere; font-weight: 600; }
