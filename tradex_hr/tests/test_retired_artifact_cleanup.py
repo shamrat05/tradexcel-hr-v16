@@ -220,10 +220,16 @@ def _cleanup_synthetic():
     for doctype in ("Number Card", "Dashboard Chart", "Custom HTML Block", "Desktop Icon"):
         for name in frappe.get_all(doctype, filters={"name": ["like", f"{PREFIX}%"]}, pluck="name"):
             frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
-    for name in frappe.get_all("Custom Field", filters={"name": ["like", f"{PREFIX}%"]}, pluck="name"):
-        frappe.delete_doc("Custom Field", name, force=True, ignore_permissions=True)
+    for name in frappe.get_all("Custom Field", filters={"name": ["like", f"%{PREFIX}%"]}, pluck="name"):
+        frappe.db.delete("Custom Field", {"name": name})
+    for name in frappe.get_all("Custom Field", filters={"fieldname": ["like", "custom_cf_%"]}, pluck="name"):
+        frappe.db.delete("Custom Field", {"name": name})
+    for name in frappe.get_all("Custom Field", filters={"fieldname": ["like", f"%{PREFIX.lower()}%"]}, pluck="name"):
+        frappe.db.delete("Custom Field", {"name": name})
     frappe.db.sql("delete from `tabWorkspace Sidebar Item` where name like %s", (f"{PREFIX}%",))
     frappe.db.commit()
+
+
 
 
 def test_production_allowlist_and_separate_test_injection():
@@ -401,9 +407,8 @@ def test_referenced_artifact_is_retained_across_native_and_custom_surfaces(tmp_p
     uid = f"{random.randint(10000, 99999)}"
     cf_name = f"{PREFIX}-CF-{uid}"
     col_name = f"custom_cf_{uid}_card"
-    frappe.get_doc({
+    cf_doc = frappe.get_doc({
         "doctype": "Custom Field",
-        "name": cf_name,
         "dt": "Department",
         "fieldname": col_name,
         "label": "Synthetic Linked Card",
@@ -445,10 +450,14 @@ def test_referenced_artifact_is_retained_across_native_and_custom_surfaces(tmp_p
     finally:
         if dept:
             frappe.db.sql(f"update `tabDepartment` set `{col_name}`=NULL where name=%s", (dept,))
-        frappe.db.sql("delete from `tabCustom Field` where name=%s", (cf_name,))
+        frappe.db.sql("delete from `tabCustom Field` where name=%s or fieldname=%s", (cf_doc.name, col_name))
         frappe.db.commit()
-        frappe.db.sql_ddl(f"alter table `tabDepartment` drop column `{col_name}`")
+        try:
+            frappe.db.sql_ddl(f"alter table `tabDepartment` drop column `{col_name}`")
+        except Exception:
+            pass
         _cleanup_synthetic()
+
 
 
 def test_unresolvable_custom_dynamic_link_fails_closed():
