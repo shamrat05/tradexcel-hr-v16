@@ -184,6 +184,7 @@ def _preview_one(employee, company, attendance_date, action, explanation, ambigu
         return row
 
     request = _candidate(employee, company, attendance_date, action, explanation)
+    messages_before = len(getattr(frappe.local, "message_log", []))
     try:
         request.validate()
         shifts = request.get_active_shifts()
@@ -194,6 +195,9 @@ def _preview_one(employee, company, attendance_date, action, explanation, ambigu
         if warnings and all(item.get("action") == "Skip" for item in warnings):
             row["outcome"] = "Skipped"
             row["message"] = _warning_message({item.get("reason") for item in warnings})
+            # Remove only the expected skip message emitted by native validate_no_attendance_to_create
+            if hasattr(frappe.local, "message_log"):
+                del frappe.local.message_log[messages_before:]
         else:
             row["message"] = _("Native Attendance Request checks need review. Open the Employee's Attendance Request for details.")
         return row
