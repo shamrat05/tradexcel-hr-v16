@@ -1041,8 +1041,8 @@ def verify_backup_preflight(backup_reference: str, backup_checksum: str | None =
     An arbitrary string is merely an operator reference, not proof of a restorable backup.
     This preflight verifies:
     1. The reference is a pure filename without path traversal.
-    2. The filename matches Frappe's supported site-specific database backup convention:
-       <YYYYMMDD_HHMMSS>-<site_slug>-database.sql.gz (rejecting .txt, .tar, file archives, or foreign-site files).
+    2. The filename matches Frappe's supported site-specific full database backup convention:
+       <YYYYMMDD_HHMMSS>-<site_slug>-database.sql.gz (rejecting partial backups, .txt, .tar, file archives, or foreign-site files).
     3. The backup archive exists in the site's private/backups directory and is non-empty.
     4. A verified SHA-256 checksum from BACKUPS.md is supplied and matches the archive's SHA-256.
     5. Gzip stream integrity and CRC32 trailer are valid across the entire archive.
@@ -1077,11 +1077,11 @@ def verify_backup_preflight(backup_reference: str, backup_checksum: str | None =
 
     site_tag = site.replace(".", "_")
     db_backup_pattern = re.compile(
-        rf"^\d{{8}}_\d{{6}}-(?:{re.escape(site_tag)}|{re.escape(site)})(-partial)?-database\.sql\.gz$"
+        rf"^\d{{8}}_\d{{6}}-(?:{re.escape(site_tag)}|{re.escape(site)})-database\.sql\.gz$"
     )
     if not db_backup_pattern.match(ref):
         frappe.throw(
-            f"Backup reference {ref!r} is not a supported database backup archive (.sql.gz) for site {site!r}. "
+            f"Backup reference {ref!r} is not a supported full database backup archive (.sql.gz) for site {site!r}. "
             f"Expected format: <YYYYMMDD_HHMMSS>-{site_tag}-database.sql.gz",
             frappe.ValidationError,
         )
