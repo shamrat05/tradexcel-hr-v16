@@ -86,15 +86,34 @@ def _item(category, title, reason, count, company, route, source, *, severity="R
             "count": count, "company": company, "route": route, "filters": filters or {}, "source": source}
 
 
-def _report_items(company, day, name, category, title, predicate, reason):
-    from frappe.desk.query_report import get_report_doc
+def _permitted_report(name):
+    # Match native get_report_doc's non-throwing gates before an optional source
+    # is selected. Catching its throw would still serialize an RPC modal.
+    report = frappe.get_doc("Report", name)
+    if not report.is_permitted() or not frappe.has_permission(report.ref_doctype, "report"):
+        return None
+    return report
 
-    try:
-        report = get_report_doc(name)
-    except frappe.PermissionError:
-        return []
+
+def _report_items(company, day, name, category, title, predicate, reason):
+    report = _permitted_report(name)
+    if report is None:
+        return []  # Not an applicable source for this role; no access granted.
     filters = {"company": company, "as_of_date": day, "attendance_date": day,
                "payroll_month": day, "from_date": str(get_first_day(day)), "to_date": day}
+    if report.disabled:
+        return [_item(category, title, "This review is disabled. Ask an administrator to check its configuration.",
+                      None, company, [], name, severity="Configuration")]
+    if name == "Tradexcel Payroll Readiness":
+        from tradex_hr.tradexcel_hr.attendance_payroll_boundary import _employees_for_period
+        from frappe.utils import get_last_day
+        # Reuse the payroll population loader, not a second readiness calculation.
+        # This whole-company source cannot represent partial Company totals.
+        population = _employees_for_period(company, get_first_day(day), get_last_day(day), None)
+        permitted = set(_employee_names(company))
+        if any(row.name not in permitted for row in population):
+            return [_item(category, title, "Whole-company payroll review is unavailable in your current Employee scope. Ask a company-wide payroll operator to review it; scoped salary coverage remains available.",
+                          None, company, [], name, severity="Configuration")]
     try:
         # Execute the source-backed report, without native prepared-report
         # automation (which may write Report metadata after a slow query).
@@ -106,7 +125,7 @@ def _report_items(company, day, name, category, title, predicate, reason):
                       None, company, [], name, severity="Configuration")]
     except (frappe.ValidationError, ValueError):
         return [_item(category, title, "This review could not be loaded for your current scope or configuration. Open the review for details.",
-                      None, company, ["query-report", name], name, filters=filters)]
+                      None, company, ["query-report", name], name, severity="Configuration", filters=filters)]
     count = sum(bool(predicate(row)) for row in rows)
     return [_item(category, title, reason, count, company, ["query-report", name], name, filters=filters)] if count else []
 
@@ -175,12 +194,8 @@ def _attendance_items(company, day, names):
 
 
 def _can_report(name):
-    from frappe.desk.query_report import get_report_doc
-    try:
-        get_report_doc(name)
-        return True
-    except frappe.PermissionError:
-        return False
+    report = _permitted_report(name)
+    return bool(report and not report.disabled)
 
 
 @frappe.whitelist()

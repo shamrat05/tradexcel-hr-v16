@@ -25,6 +25,7 @@
   async function load() {
     const request = ++generation;
     items.replaceChildren();
+    refresh.disabled = false;
     items.setAttribute("aria-busy", "false");
     if (!company.value) {
       notice.textContent = __("Choose a Company to review your work.");
@@ -42,14 +43,25 @@
       if (request !== generation || !root.isConnected) return;
       const data = response.message;
       notice.textContent = data.notice;
+      // Group only the server's existing severity; no client business ranking.
+      const groups = new Map();
       for (const item of data.items) {
-        const card = element("article", undefined, items);
+        if (!groups.has(item.severity)) {
+          const group = element("section", undefined, items);
+          element("h3", item.severity === "Configuration" ? __("Access and configuration") : __("Review work"), group);
+          groups.set(item.severity, group);
+        }
+        const card = element("details", undefined, groups.get(item.severity));
         card.className = "item";
-        element("span", __(item.category), card).className = "category";
-        element("h3", item.title + (item.count === null ? "" : " (" + item.count + ")"), card);
+        const summary = element("summary", undefined, card);
+        element("span", item.title + (item.count === null ? "" : " (" + item.count + ")"), summary).className = "title";
+        element("span", __(item.category) + " · " + __(item.severity), summary).className = "category";
         if (item.context) element("p", item.context, card).className = "context";
         element("p", item.reason, card);
-        if (!item.route.length) continue;
+        if (!item.route.length) {
+          element("p", __("This source is unavailable; this does not mean there is no work."), card);
+          continue;
+        }
         const open = element("button", __("Open review"), card);
         open.type = "button";
         open.addEventListener("click", () => {
