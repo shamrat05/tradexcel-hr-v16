@@ -10,9 +10,12 @@ Tests cover:
 - Canonical allowlist coverage and zero source recreation paths.
 """
 import ast
+import gzip
 import hashlib
 import importlib
 import inspect
+import io
+import json
 import os
 import sys
 from pathlib import Path
@@ -83,12 +86,55 @@ def _called_function_names(func) -> set[str]:
     }
 
 
-def _synthetic_backup(tmp_path: Path, site_name: str = "hrms-v16.localhost", content: bytes = b"synthetic-backup-data"):
+def _synthetic_backup(
+    tmp_path: Path,
+    site_name: str = "hrms-v16.localhost",
+    sql_content: bytes = b"CREATE TABLE synthetic (id int);\n",
+    timestamp: str = "20260930_012059",
+):
     site_tag = site_name.replace(".", "_")
-    filename = f"20260930_012059-{site_tag}-database.sql.gz"
+    filename = f"{timestamp}-{site_tag}-database.sql.gz"
     backup_file = tmp_path / filename
-    backup_file.write_bytes(content)
-    checksum = hashlib.sha256(content).hexdigest()
+    with gzip.open(backup_file, "wb") as gz:
+        gz.write(sql_content)
+    compressed_bytes = backup_file.read_bytes()
+    checksum = hashlib.sha256(compressed_bytes).hexdigest()
+    return filename, checksum, backup_file
+
+
+def _synthetic_corrupt_backup(
+    tmp_path: Path,
+    site_name: str = "hrms-v16.localhost",
+    timestamp: str = "20260930_012058",
+):
+    site_tag = site_name.replace(".", "_")
+    filename = f"{timestamp}-{site_tag}-database.sql.gz"
+    backup_file = tmp_path / filename
+    # File containing arbitrary non-gzip bytes
+    corrupt_bytes = b"CORRUPTED_NON_GZIP_CONTENT_BYTES"
+    backup_file.write_bytes(corrupt_bytes)
+    # Supplied checksum matches the actual bytes on disk
+    checksum = hashlib.sha256(corrupt_bytes).hexdigest()
+    return filename, checksum, backup_file
+
+
+def _synthetic_truncated_backup(
+    tmp_path: Path,
+    site_name: str = "hrms-v16.localhost",
+    timestamp: str = "20260930_012057",
+):
+    site_tag = site_name.replace(".", "_")
+    filename = f"{timestamp}-{site_tag}-database.sql.gz"
+    backup_file = tmp_path / filename
+    # Create valid gzip bytes, then truncate before the 8-byte trailer
+    buf = io.BytesIO()
+    with gzip.GzipFile(fileobj=buf, mode="wb") as gz:
+        gz.write(b"CREATE TABLE synthetic (id int);\n" * 50)
+    full_bytes = buf.getvalue()
+    truncated_bytes = full_bytes[: len(full_bytes) - 10]
+    backup_file.write_bytes(truncated_bytes)
+    # Supplied checksum matches the actual truncated bytes on disk
+    checksum = hashlib.sha256(truncated_bytes).hexdigest()
     return filename, checksum, backup_file
 
 
@@ -100,6 +146,7 @@ def _synthetic_card(
     color="Green",
     background_color=None,
     show_percentage_stats=1,
+    dynamic_filters_json=None,
 ):
     fields = {
         "doctype": "Number Card",
@@ -114,6 +161,8 @@ def _synthetic_card(
     }
     if background_color is not None:
         fields["background_color"] = background_color
+    if dynamic_filters_json is not None:
+        fields["dynamic_filters_json"] = dynamic_filters_json
     if module:
         fields["module"] = module
     doc = frappe.get_doc(fields)
@@ -129,6 +178,7 @@ def _card_fingerprint(
     color="Green",
     background_color=None,
     show_percentage_stats=1,
+    dynamic_filters_json=None,
 ):
     return {
         "label": label,
@@ -136,6 +186,13 @@ def _card_fingerprint(
         "document_type": "Employee",
         "function": "Count",
         "filters_json": "[]",
+        "dynamic_filters_json": dynamic_filters_json,
+        "filters_config": None,
+        "aggregate_function_based_on": None,
+        "parent_document_type": None,
+        "report_name": None,
+        "report_field": None,
+        "method": None,
         "is_standard": 0,
         "is_public": 1,
         "color": color,
@@ -321,6 +378,10 @@ def test_customizations_survive_including_previously_omitted_properties(tmp_path
     drift = _synthetic_card(f"{PREFIX}-DRIFT", label="A user renamed this card")
     custom_bg = _synthetic_card(f"{PREFIX}-BG", background_color="#123456")
     custom_pct = _synthetic_card(f"{PREFIX}-PCT", show_percentage_stats=0)
+    custom_dyn = _synthetic_card(
+        f"{PREFIX}-DYN",
+        dynamic_filters_json=json.dumps([["Employee", "department", "=", "Operations", False]]),
+    )
     custom_vals = _synthetic_chart(f"{PREFIX}-VALS", show_values_over_chart=1)
     custom_opts = _synthetic_chart(f"{PREFIX}-OPTS", custom_options='{"colors": ["#000"]}')
 
@@ -329,11 +390,12 @@ def test_customizations_survive_including_previously_omitted_properties(tmp_path
         ("Number Card", drift): _card_fingerprint(f"{PREFIX}-DRIFT"),
         ("Number Card", custom_bg): _card_fingerprint(f"{PREFIX}-BG", background_color=None),
         ("Number Card", custom_pct): _card_fingerprint(f"{PREFIX}-PCT", show_percentage_stats=1),
+        ("Number Card", custom_dyn): _card_fingerprint(f"{PREFIX}-DYN", dynamic_filters_json=None),
         ("Dashboard Chart", custom_vals): _chart_fingerprint(f"{PREFIX}-VALS", show_values_over_chart=0),
         ("Dashboard Chart", custom_opts): _chart_fingerprint(f"{PREFIX}-OPTS", custom_options=None),
     }
     candidates = (
-        ("Number Card", (foreign, drift, custom_bg, custom_pct)),
+        ("Number Card", (foreign, drift, custom_bg, custom_pct, custom_dyn)),
         ("Dashboard Chart", (custom_vals, custom_opts)),
     )
     try:
@@ -344,6 +406,7 @@ def test_customizations_survive_including_previously_omitted_properties(tmp_path
         assert "label" in reasons[drift] and "differs" in reasons[drift]
         assert "background_color" in reasons[custom_bg] and "differs" in reasons[custom_bg]
         assert "show_percentage_stats" in reasons[custom_pct] and "differs" in reasons[custom_pct]
+        assert "dynamic_filters_json" in reasons[custom_dyn] and "differs" in reasons[custom_dyn]
         assert "show_values_over_chart" in reasons[custom_vals] and "differs" in reasons[custom_vals]
         assert "custom_options" in reasons[custom_opts] and "differs" in reasons[custom_opts]
 
@@ -359,6 +422,7 @@ def test_customizations_survive_including_previously_omitted_properties(tmp_path
         assert frappe.db.exists("Number Card", drift)
         assert frappe.db.exists("Number Card", custom_bg)
         assert frappe.db.exists("Number Card", custom_pct)
+        assert frappe.db.exists("Number Card", custom_dyn)
         assert frappe.db.exists("Dashboard Chart", custom_vals)
         assert frappe.db.exists("Dashboard Chart", custom_opts)
     finally:
@@ -452,11 +516,21 @@ def test_referenced_artifact_is_retained_across_native_and_custom_surfaces(tmp_p
             frappe.db.sql(f"update `tabDepartment` set `{col_name}`=NULL where name=%s", (dept,))
         frappe.db.sql("delete from `tabCustom Field` where name=%s or fieldname=%s", (cf_doc.name, col_name))
         frappe.db.commit()
-        try:
-            frappe.db.sql_ddl(f"alter table `tabDepartment` drop column `{col_name}`")
-        except Exception:
-            pass
+        frappe.db.sql_ddl(f"alter table `tabDepartment` drop column `{col_name}`")
         _cleanup_synthetic()
+
+        # Enforce synthetic database-schema cleanup: verify absence of CF, column, and references
+        assert not frappe.db.exists("Custom Field", cf_doc.name)
+        assert not frappe.db.exists("Custom Field", {"fieldname": col_name})
+        cols_now = [c[0] for c in frappe.db.sql("DESCRIBE `tabDepartment`")]
+        assert col_name not in cols_now, f"Synthetic column {col_name} was not dropped from tabDepartment"
+        assert not frappe.db.exists("Desktop Icon", f"{PREFIX}-ICON")
+        assert not frappe.db.exists("Custom HTML Block", f"{PREFIX}-BLK")
+        assert len(frappe.db.sql("select name from `tabWorkspace Sidebar Item` where name=%s", (f"{PREFIX}-SIDEBAR-ITEM",))) == 0
+        assert not frappe.db.exists("Number Card", card_block)
+        assert not frappe.db.exists("Number Card", card_desktop)
+        assert not frappe.db.exists("Number Card", card_sidebar)
+        assert not frappe.db.exists("Number Card", card_custom_field)
 
 
 
@@ -582,11 +656,21 @@ def test_backup_preflight_verification(tmp_path, monkeypatch):
     with pytest.raises(frappe.ValidationError, match="checksum verification failed"):
         install.verify_backup_preflight(valid_name, "0000000000000000000000000000000000000000000000000000000000000000")
 
-    # 8. Valid archive and checksum succeeds
+    # 8. Corrupt gzip archive (with matching supplied SHA-256) throws
+    corrupt_name, corrupt_checksum, _ = _synthetic_corrupt_backup(tmp_path, site_name=site)
+    with pytest.raises(frappe.ValidationError, match="failed gzip integrity validation"):
+        install.verify_backup_preflight(corrupt_name, corrupt_checksum)
+
+    # 9. Truncated gzip archive (with matching supplied SHA-256) throws
+    truncated_name, truncated_checksum, _ = _synthetic_truncated_backup(tmp_path, site_name=site)
+    with pytest.raises(frappe.ValidationError, match="failed gzip integrity validation"):
+        install.verify_backup_preflight(truncated_name, truncated_checksum)
+
+    # 10. Valid archive and checksum succeeds
     verified_path = install.verify_backup_preflight(valid_name, valid_checksum)
     assert verified_path == valid_file
 
-    # 9. Non-System Manager is rejected by remove_retired_dashboard_artifacts
+    # 11. Non-System Manager is rejected by remove_retired_dashboard_artifacts
     monkeypatch.setattr(install.frappe.session, "user", "txux013p02-nonadmin@example.test", raising=False)
     monkeypatch.setattr(install.frappe, "get_roles", lambda: ["HR User"])
     with pytest.raises(frappe.PermissionError, match="System Manager"):

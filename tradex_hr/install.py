@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -246,6 +247,9 @@ RETIRED_ARTIFACT_FINGERPRINTS = {
         "label": "Active Employees (All Companies)", "type": "Document Type",
         "document_type": "Employee", "function": "Count",
         "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
+        "dynamic_filters_json": None, "filters_config": None,
+        "aggregate_function_based_on": None, "parent_document_type": None,
+        "report_name": None, "report_field": None, "method": None,
         "is_standard": 0, "is_public": 1, "color": "Green",
         "background_color": None, "show_percentage_stats": 1, "stats_time_interval": "Daily",
         "show_full_number": 0, "report_function": "Sum", "currency": "BDT",
@@ -254,6 +258,9 @@ RETIRED_ARTIFACT_FINGERPRINTS = {
         "label": "Total Punches Logged", "type": "Document Type",
         "document_type": "Employee Checkin", "function": "Count",
         "filters_json": json.dumps([["Employee Checkin", "docstatus", "<", "2", False]]),
+        "dynamic_filters_json": None, "filters_config": None,
+        "aggregate_function_based_on": None, "parent_document_type": None,
+        "report_name": None, "report_field": None, "method": None,
         "is_standard": 0, "is_public": 1, "color": "Blue",
         "background_color": None, "show_percentage_stats": 1, "stats_time_interval": "Daily",
         "show_full_number": 0, "report_function": "Sum", "currency": "BDT",
@@ -262,6 +269,9 @@ RETIRED_ARTIFACT_FINGERPRINTS = {
         "label": "Attendance Present Logs", "type": "Document Type",
         "document_type": "Attendance", "function": "Count",
         "filters_json": json.dumps([["Attendance", "status", "=", "Present", False]]),
+        "dynamic_filters_json": None, "filters_config": None,
+        "aggregate_function_based_on": None, "parent_document_type": None,
+        "report_name": None, "report_field": None, "method": None,
         "is_standard": 0, "is_public": 1, "color": "Cyan",
         "background_color": None, "show_percentage_stats": 1, "stats_time_interval": "Daily",
         "show_full_number": 0, "report_function": "Sum", "currency": "BDT",
@@ -270,6 +280,9 @@ RETIRED_ARTIFACT_FINGERPRINTS = {
         "label": "Attendance Absent Logs", "type": "Document Type",
         "document_type": "Attendance", "function": "Count",
         "filters_json": json.dumps([["Attendance", "status", "=", "Absent", False]]),
+        "dynamic_filters_json": None, "filters_config": None,
+        "aggregate_function_based_on": None, "parent_document_type": None,
+        "report_name": None, "report_field": None, "method": None,
         "is_standard": 0, "is_public": 1, "color": "Red",
         "background_color": None, "show_percentage_stats": 1, "stats_time_interval": "Daily",
         "show_full_number": 0, "report_function": "Sum", "currency": "BDT",
@@ -1021,7 +1034,7 @@ def _backup_directory() -> Path:
 
 
 def verify_backup_preflight(backup_reference: str, backup_checksum: str | None = None) -> Path:
-    """Verify that an operator-provided backup reference exists, matches site identity, and matches checksum.
+    """Verify that an operator-provided backup reference exists, matches site identity, matches checksum, and has valid archive integrity.
 
     An arbitrary string is merely an operator reference, not proof of a restorable backup.
     This preflight verifies:
@@ -1029,6 +1042,14 @@ def verify_backup_preflight(backup_reference: str, backup_checksum: str | None =
     2. The backup archive exists in the site's private/backups directory and is non-empty.
     3. The filename contains the current site's normalized identity.
     4. A verified SHA-256 checksum from BACKUPS.md is supplied and matches the archive's SHA-256.
+    5. For compressed archives (.sql.gz), gzip stream integrity and CRC32 trailer are valid.
+
+    Operational Boundary:
+    Passing this preflight proves the archive exists, matches the given SHA-256, and is
+    a valid uncorrupted gzip stream. It does NOT prove that the database SQL dump inside is
+    semantically restorable or that the backup is current. The operator must independently
+    verify that the checksum appears in a fresh, site-specific BACKUPS.md entry recorded
+    immediately prior to cleanup, and that recovery procedures have been validated.
 
     Throws frappe.ValidationError if any check fails.
     """
@@ -1079,6 +1100,17 @@ def verify_backup_preflight(backup_reference: str, backup_checksum: str | None =
             f"Backup checksum verification failed for {ref!r}: expected {chk}, actual {actual_chk}.",
             frappe.ValidationError,
         )
+
+    if ref.endswith(".gz"):
+        try:
+            with gzip.open(backup_file, "rb") as gz:
+                for _ in iter(lambda: gz.read(65536), b""):
+                    pass
+        except Exception as exc:
+            frappe.throw(
+                f"Backup archive {ref!r} failed gzip integrity validation ({exc}).",
+                frappe.ValidationError,
+            )
 
     return backup_file
 
