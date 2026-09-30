@@ -184,16 +184,35 @@ def _preview_one(employee, company, attendance_date, action, explanation, ambigu
         return row
 
     request = _candidate(employee, company, attendance_date, action, explanation)
+    messages_before = len(getattr(frappe.local, "message_log", []))
     try:
         request.validate()
         shifts = request.get_active_shifts()
         row["active_shift"] = request.shift or (shifts[0] if len(shifts) == 1 else None)
         warnings = request.get_attendance_warnings()
-    except Exception:
-        warnings = request.get_attendance_warnings() if request.employee and request.from_date and request.to_date else []
-        if warnings and all(item.get("action") == "Skip" for item in warnings):
+    except frappe.ValidationError as exc:
+        # The native method has no dedicated exception type. Match its actual
+        # traceback frame and Frappe exception ID, not a later warning snapshot.
+        from hrms.hr.doctype.attendance_request.attendance_request import AttendanceRequest
+
+        native_code = AttendanceRequest.validate_no_attendance_to_create.__code__
+        trace = exc.__traceback__
+        native_skip = False
+        while trace:
+            native_skip = native_skip or trace.tb_frame.f_code is native_code
+            trace = trace.tb_next
+        exc_id = getattr(exc, "__frappe_exc_id", None)
+        messages = getattr(frappe.local, "message_log", [])
+        skip_index = next((index for index in range(messages_before, len(messages))
+            if native_skip and exc_id
+            and messages[index].get("__frappe_exc_id") == exc_id
+            and messages[index].get("title") == _("No attendance records to create due to following reasons")
+        ), None)
+        if skip_index is not None:
+            warnings = request.get_attendance_warnings()
             row["outcome"] = "Skipped"
             row["message"] = _warning_message({item.get("reason") for item in warnings})
+            del messages[skip_index]
         else:
             row["message"] = _("Native Attendance Request checks need review. Open the Employee's Attendance Request for details.")
         return row
