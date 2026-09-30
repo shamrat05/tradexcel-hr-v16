@@ -139,14 +139,18 @@ def ensure_standard_script_reports() -> None:
         # The standard report JSON is the source of filter defaults. Legacy
         # company-specific JavaScript rewriting is no longer needed.
 
-# TXUX-260930-013: exact-name allowlist of app-owned UI artifacts proven unused
-# by the accepted reference audit and re-audited read-only against staging
-# before retirement. The installer no longer creates these records. Migration
-# removes one only when its `module` proves Tradexcel HR ownership, so a
-# user-created document with a similar purpose is never deleted automatically.
+# TXUX-260930-013 / P01: exact-name allowlist of app-owned UI artifacts proven
+# unused by the accepted reference audit and re-audited read-only against
+# staging before retirement. Source retirement is independent of database
+# deletion: the installer no longer creates these records, and ordinary
+# migration never deletes them. Deletion is a separate, explicit, idempotent
+# operation that re-checks live references and unchanged app ownership first
+# (see ``remove_retired_dashboard_artifacts``).
 #
 # Canonical plus legacy-alias names cover historical installs. Prototype
-# duplicates were already explicitly retired by the original installer.
+# duplicates were already explicitly retired by the original installer. Names
+# without a reliable unchanged-ownership fingerprint are retained rather than
+# guessed.
 RETIRED_NUMBER_CARDS = (
     # Managed cards retired by TXUX-260930-013.
     "Tradexcel Active Employees",
@@ -202,6 +206,102 @@ RETIRED_ARTIFACTS = (
     ("Number Card", RETIRED_NUMBER_CARDS),
     ("Dashboard Chart", RETIRED_DASHBOARD_CHARTS),
 )
+
+
+# The exact original installer payloads of the eleven canonical artifacts,
+# kept only as unchanged-ownership fingerprints. They are never used to create
+# records; a deletion candidate must still match every field below, so a record
+# that was customized after the app created it is retained. Historical aliases
+# and prototype duplicates have no reliable fingerprint and are always
+# retained rather than guessed.
+RETIRED_ARTIFACT_FINGERPRINTS = {
+    ("Number Card", "Tradexcel Active Employees"): {
+        "label": "Active Employees (All Companies)", "type": "Document Type",
+        "document_type": "Employee", "function": "Count",
+        "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
+        "is_standard": 0, "is_public": 1, "color": "Green",
+    },
+    ("Number Card", "Tradexcel Punches Logged"): {
+        "label": "Total Punches Logged", "type": "Document Type",
+        "document_type": "Employee Checkin", "function": "Count",
+        "filters_json": json.dumps([["Employee Checkin", "docstatus", "<", "2", False]]),
+        "is_standard": 0, "is_public": 1, "color": "Blue",
+    },
+    ("Number Card", "Tradexcel Present Records"): {
+        "label": "Attendance Present Logs", "type": "Document Type",
+        "document_type": "Attendance", "function": "Count",
+        "filters_json": json.dumps([["Attendance", "status", "=", "Present", False]]),
+        "is_standard": 0, "is_public": 1, "color": "Cyan",
+    },
+    ("Number Card", "Tradexcel Absent Records"): {
+        "label": "Attendance Absent Logs", "type": "Document Type",
+        "document_type": "Attendance", "function": "Count",
+        "filters_json": json.dumps([["Attendance", "status", "=", "Absent", False]]),
+        "is_standard": 0, "is_public": 1, "color": "Red",
+    },
+    ("Dashboard Chart", "Tradexcel Employees by Department"): {
+        "chart_type": "Group By", "document_type": "Employee", "group_by_type": "Count",
+        "group_by_based_on": "department", "type": "Bar",
+        "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
+        "is_standard": 0, "is_public": 1,
+    },
+    ("Dashboard Chart", "Tradexcel Employees by Branch"): {
+        "chart_type": "Group By", "document_type": "Employee", "group_by_type": "Count",
+        "group_by_based_on": "branch", "type": "Bar",
+        "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
+        "is_standard": 0, "is_public": 1,
+    },
+    ("Dashboard Chart", "Tradexcel Headcount by Company"): {
+        "chart_type": "Group By", "document_type": "Employee", "group_by_type": "Count",
+        "group_by_based_on": "company", "type": "Pie",
+        "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
+        "is_standard": 0, "is_public": 1,
+    },
+    ("Dashboard Chart", "Tradexcel Attendance Status"): {
+        "chart_type": "Group By", "document_type": "Attendance", "group_by_type": "Count",
+        "group_by_based_on": "status", "type": "Pie", "filters_json": json.dumps([]),
+        "is_standard": 0, "is_public": 1,
+    },
+    ("Dashboard Chart", "Tradexcel Leave Allocated by Type"): {
+        "chart_type": "Group By", "document_type": "Leave Allocation", "group_by_type": "Sum",
+        "group_by_based_on": "leave_type", "aggregate_function_based_on": "total_leaves_allocated",
+        "type": "Bar", "filters_json": json.dumps([]), "is_standard": 0, "is_public": 1,
+    },
+    ("Dashboard Chart", "Tradexcel Payroll by Month"): {
+        "chart_type": "Sum", "document_type": "Salary Slip", "based_on": "start_date",
+        "value_based_on": "net_pay", "timeseries": 1, "timespan": "Last Year",
+        "time_interval": "Monthly", "type": "Line",
+        "filters_json": json.dumps([["Salary Slip", "docstatus", "=", "1", False]]),
+        "is_standard": 0, "is_public": 1,
+    },
+    ("Dashboard Chart", "Tradexcel Checkins by Day"): {
+        "chart_type": "Count", "document_type": "Employee Checkin", "based_on": "time",
+        "timeseries": 1, "timespan": "Last Month", "time_interval": "Daily", "type": "Line",
+        "filters_json": json.dumps([["Employee Checkin", "docstatus", "<", "2", False]]),
+        "is_standard": 0, "is_public": 1,
+    },
+}
+
+
+# Functional reference surfaces inspected before any deletion. Private
+# Workspaces live in the same ``tabWorkspace`` table as public ones, so the
+# content/child-table checks cover both. Historical Version/UI Version rows are
+# deliberately not checked: they are audit history, not live references.
+RETIRED_ARTIFACT_REFERENCE_SURFACES = (
+    ("tabWorkspace Chart", "chart_name"),
+    ("tabWorkspace Number Card", "number_card_name"),
+    ("tabWorkspace", "content"),
+    ("tabDashboard Chart Link", "chart"),
+    ("tabNumber Card Link", "card"),
+    ("tabCustom HTML Block", "html"),
+    ("tabCustom HTML Block", "script"),
+    ("tabCustom HTML Block", "style"),
+    ("tabDesktop Icon", "link_to"),
+    ("tabWorkspace Sidebar Item", "link_to"),
+    ("__UserSettings", "data"),
+)
+
+_OWNED_ARTIFACT_MODULE = "Tradexcel HR"
 
 
 WORKSPACE_SHORTCUTS = [
@@ -688,30 +788,138 @@ def ensure_reports() -> None:
         _ensure_custom_report(values)
 
 
-def remove_retired_dashboard_artifacts(retired=None):
-    """Delete exact-name app-owned artifacts from earlier installs.
+def _raw_table_exists(table: str) -> bool:
+    return bool(frappe.db.sql(
+        "select 1 from information_schema.tables where table_schema=database() and table_name=%s",
+        (table,),
+    ))
 
-    The retired set is an explicit allowlist (``RETIRED_ARTIFACTS``) of names
-    the app itself created. A record is deleted only when its ``module`` is
-    still ``Tradexcel HR``; anything else is left untouched and reported, so a
-    user-created replacement with a similar purpose survives migration.
 
-    Idempotent: absent records are skipped, so a second execution is a no-op.
-    Returns ``{"removed": [...], "retained": [...]}`` for auditability.
+def _functional_reference_count(artifact_name: str) -> int:
+    """Count live references to an artifact across the supported surfaces.
+
+    Absent tables hold no references. A surface that cannot be queried raises,
+    and the caller must then retain the candidate (fail closed).
     """
-    removed: list[str] = []
-    retained: list[str] = []
-    for doctype, names in retired if retired is not None else RETIRED_ARTIFACTS:
+    total = 0
+    for table, column in RETIRED_ARTIFACT_REFERENCE_SURFACES:
+        if not _raw_table_exists(table):
+            continue
+        rows = frappe.db.sql(
+            f"select count(*) from `{table}` where `{column}` like %s",
+            (f"%{artifact_name}%",),
+        )
+        total += int((rows[0][0] if rows else 0) or 0)
+    return total
+
+
+def _artifact_ownership_mismatch(doctype: str, name: str, expected: dict) -> str | None:
+    """Return why a record no longer matches its original app definition."""
+    doc = frappe.db.get_value(doctype, name, list(expected) + ["module"], as_dict=True)
+    if not doc:
+        return "record no longer exists"
+    if (doc.get("module") or "") != _OWNED_ARTIFACT_MODULE:
+        return f"module is {doc.get('module')!r}, not {_OWNED_ARTIFACT_MODULE!r}"
+    for field, expected_value in expected.items():
+        current = doc.get(field)
+        if field == "filters_json":
+            try:
+                same = frappe.parse_json(current or "[]") == frappe.parse_json(expected_value or "[]")
+            except Exception:
+                same = False
+        elif isinstance(expected_value, int):
+            same = frappe.utils.cint(current) == expected_value
+        else:
+            same = (current or "") == expected_value
+        if not same:
+            return f"{field!r} differs from the retired app definition"
+    return None
+
+
+def _candidate_disposition(doctype: str, name: str, fingerprints: dict) -> tuple[str, str]:
+    """Classify one deletion candidate: absent, removable, or retained + why."""
+    if not frappe.db.exists(doctype, name):
+        return "absent", ""
+    expected = fingerprints.get((doctype, name))
+    if not expected:
+        return "retained", "no unchanged-ownership fingerprint; retained instead of guessing"
+    mismatch = _artifact_ownership_mismatch(doctype, name, expected)
+    if mismatch:
+        return "retained", f"ownership/customization check failed: {mismatch}"
+    try:
+        references = _functional_reference_count(name)
+    except Exception as exc:
+        return "retained", f"reference surfaces could not be inspected ({exc}); retained"
+    if references:
+        return "retained", f"{references} functional reference(s) still exist"
+    return "removable", ""
+
+
+def plan_retired_dashboard_artifacts(candidates=None, fingerprints=None) -> dict:
+    """Non-destructive cleanup plan; never deletes anything."""
+    candidates = candidates if candidates is not None else RETIRED_ARTIFACTS
+    fingerprints = fingerprints if fingerprints is not None else RETIRED_ARTIFACT_FINGERPRINTS
+    removable: list[dict] = []
+    retained: list[dict] = []
+    for doctype, names in candidates:
         for name in names:
-            if not frappe.db.exists(doctype, name):
-                continue
-            module = frappe.db.get_value(doctype, name, "module")
-            if module != "Tradexcel HR":
-                retained.append(f"{doctype}:{name} (module={module!r})")
-                continue
-            frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
-            removed.append(f"{doctype}:{name}")
-    return {"removed": removed, "retained": retained}
+            disposition, reason = _candidate_disposition(doctype, name, fingerprints)
+            if disposition == "removable":
+                removable.append({"doctype": doctype, "name": name})
+            elif disposition == "retained":
+                retained.append({"doctype": doctype, "name": name, "reason": reason})
+    return {"dry_run": True, "removable": removable, "retained": retained}
+
+
+def remove_retired_dashboard_artifacts(apply=False, backup_reference=None, candidates=None,
+                                       fingerprints=None) -> dict:
+    """Explicit, idempotent retired-artifact cleanup; dry-run by default.
+
+    Ordinary migration never calls this. Applying deletions is a deliberate
+    deployment-checkpoint action: it requires a named System Manager (or
+    Administrator) session and the reference of a fresh verified backup
+    recorded in ``BACKUPS.md``, for example::
+
+        bench --site <site> execute tradex_hr.install.remove_retired_dashboard_artifacts
+        bench --site <site> execute tradex_hr.install.remove_retired_dashboard_artifacts \\
+            --kwargs "{'apply': True, 'backup_reference': '20260930_...-database.sql.gz'}"
+
+    Every candidate is re-checked for live references and unchanged app
+    ownership immediately before deletion; anything referenced, customized or
+    uninspectable is retained and reported. Idempotent: a second execution is
+    harmless.
+    """
+    plan = plan_retired_dashboard_artifacts(candidates, fingerprints)
+    result = {"applied": False, **plan}
+    if not apply:
+        return result
+    _require_cleanup_operator()
+    backup_reference = (backup_reference or "").strip()
+    if not backup_reference:
+        frappe.throw(
+            "Record the verified backup reference from BACKUPS.md before removing retired artifacts."
+        )
+    fingerprints = fingerprints if fingerprints is not None else RETIRED_ARTIFACT_FINGERPRINTS
+    removed: list[dict] = []
+    retained = list(plan["retained"])
+    for item in plan["removable"]:
+        # Never trust a stale plan: re-verify immediately before deleting.
+        disposition, reason = _candidate_disposition(item["doctype"], item["name"], fingerprints)
+        if disposition == "removable":
+            frappe.delete_doc(item["doctype"], item["name"], force=True, ignore_permissions=True)
+            removed.append(item)
+        elif disposition == "retained":
+            retained.append({"doctype": item["doctype"], "name": item["name"], "reason": reason})
+    return {"applied": True, "backup_reference": backup_reference,
+            "removed": removed, "retained": retained}
+
+
+def _require_cleanup_operator() -> None:
+    if frappe.session.user == "Administrator":
+        return
+    if "System Manager" in set(frappe.get_roles()):
+        return
+    frappe.throw("Only a System Manager can remove retired artifacts.", frappe.PermissionError)
 
 
 def rename_legacy_reports() -> None:
@@ -892,9 +1100,10 @@ def after_migrate():
     # Historic structure pay-basis seeding is an explicit reviewed migration
     # utility, not a generic install action on another company's structures.
     ensure_reports()
-    # TXUX-260930-013: remove exact-name retired app-owned artifacts; never
-    # recreate them. Records outside the Tradexcel HR module are left intact.
-    remove_retired_dashboard_artifacts()
+    # TXUX-260930-013-P01: retired artifacts are never recreated here, and
+    # ordinary migration never deletes them. Removal is a separate explicit,
+    # backed-up checkpoint action: remove_retired_dashboard_artifacts(apply=True,
+    # backup_reference=...). See that function's docstring.
     rename_legacy_reports()
     ensure_workspace()
     ensure_property_setters()
