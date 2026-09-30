@@ -59,7 +59,7 @@ def test_offline_selfie_cleanup_waits_for_policy_and_reuses_partial_upload():
     import subprocess
     script = (ROOT / 'tradexcel_mobile_attendance/tradexcel_mobile_attendance.js').read_text()
     cleanup = script[script.index('  function offlineEventExpired'):script.index('  function isNetworkError')]
-    replay = script[script.index('  async function replayQueuedCheckin'):script.index('  async function flushOfflineQueue')]
+    replay = script[script.index('  async function finishSelfieAttachment'):script.index('  async function flushOfflineQueue')]
     node = shutil.which('node')
     assert node, 'Node is required for the offline evidence contract'
     program = '''
@@ -112,7 +112,7 @@ const frappe = {call: async options => {
  await assert.rejects(replayQueuedCheckin(rows.get('retry')));
  assert.equal(rows.get('retry').selfie_url, '/private/files/synthetic.jpg');
  assert.equal(uploadCount, 1);
- assert.equal(await replayQueuedCheckin(rows.get('retry')), true);
+ assert.deepEqual(await replayQueuedCheckin(rows.get('retry')), {name:'synthetic'});
  assert.equal(uploadCount, 1);
  assert.equal(rows.has('retry'), false);
 })().catch(e => {console.error(e); process.exit(1)});

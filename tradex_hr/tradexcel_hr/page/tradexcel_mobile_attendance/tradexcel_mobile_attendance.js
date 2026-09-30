@@ -1,3 +1,31 @@
+// Presentation only: native Employee Checkin fields remain the evidence authority.
+function tradexMobileEvidenceState(logType, checkin = {}, queued = false, ingestionFailed = false) {
+  if (queued) return {
+    kind: "queued", title: __("Saved on this device"),
+    detail: __("Waiting to sync or confirm with the server. This device has retained the event for safe retry. Final Attendance is handled separately."),
+  };
+  if (ingestionFailed || checkin.custom_tradex_time_status === "Blocked") return {
+    kind: "rejected", title: __("Could not be accepted"),
+    detail: __("This check-in was rejected. Contact HR before trying again."),
+  };
+  if (checkin.custom_tradex_review_status === "Rejected") return {
+    kind: "review_rejected", title: logType === "IN" ? __("Check-in rejected after review") : __("Check-out rejected after review"),
+    detail: __("This evidence was received but rejected during review and will not be used normally. Contact HR if you think this is incorrect."),
+  };
+  const needsReview = checkin.custom_tradex_review_status === "Pending" || Number(checkin.skip_auto_attendance) === 1 ||
+    (checkin.custom_tradex_review_status !== "Approved" &&
+      (checkin.custom_tradex_time_status === "Flagged" ||
+       checkin.custom_tradex_location_status === "Time Review Required"));
+  if (needsReview) return {
+    kind: "review", title: logType === "IN" ? __("Check-in received — needs review") : __("Check-out received — needs review"),
+    detail: __("HR must review this evidence before it can be used normally. Final Attendance has not been confirmed."),
+  };
+  return {
+    kind: "saved", title: logType === "IN" ? __("Check-in saved") : __("Check-out saved"),
+    detail: __("Synced to server. No evidence review is currently required. Final Attendance is handled separately."),
+  };
+}
+
 frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({parent: wrapper, title: __("Mobile Attendance"), single_column: true});
   const root = $(wrapper).find(".layout-main-section");
@@ -18,11 +46,11 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     '<div class="small text-muted mt-2" data-selfie-meta></div></div>' +
     '<div class="small text-muted mb-3" data-location>' + __("Location is requested when you press the button.") + '</div>' +
     '<button class="btn btn-primary btn-lg w-100" data-action disabled>' + __("Loading...") + '</button>' +
-    '<div class="small mt-3" data-result></div>' +
-    '<div class="small mt-2" data-queue-status></div></div>' +
+    '<div class="mt-3" data-result role="status" aria-live="polite"></div>' +
+    '<div class="mt-2" data-queue-status role="status" aria-live="polite"></div></div>' +
     '<div class="d-none card border-success text-center p-5" data-success-state role="status" aria-live="polite">' +
-    '<div class="display-4 text-success mb-3">✓</div>' +
-    '<h2 class="text-success" data-success-title>' + __("Attendance recorded") + '</h2>' +
+    '<div class="display-4 mb-3" data-success-symbol aria-hidden="true">✓</div>' +
+    '<h2 data-success-title>' + __("Check-in saved") + '</h2>' +
     '<p class="lead mb-4" data-success-detail></p>' +
     '<button class="btn btn-success btn-lg w-100" data-success-action></button></div></div>'
   );
@@ -87,7 +115,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   async function queueOfflineCheckin(payload) {
     await withOfflineStore("readwrite", (store) => store.put({
       ...payload,
-      queued_at: new Date().toISOString(),
+      queued_at: payload.queued_at || new Date().toISOString(),
       retryable: true,
     }));
   }
@@ -116,7 +144,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   async function discardQueuedEvidence(item, message) {
     // Retain only retry/error metadata, never the photo, location or personal payload.
     await withOfflineStore("readwrite", store => store.put({
-      sync_id: item.sync_id, queued_at: item.queued_at, retryable: false, last_error: message
+      sync_id: item.sync_id, queued_at: item.queued_at || new Date().toISOString(), retryable: false, last_error: message
     }));
   }
 
@@ -129,6 +157,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   }
 
   function isNetworkError(error) {
+    error = error && (error.cause || error);
     return !navigator.onLine || !error || error.status === 0 || error.readyState === 0 ||
       error.status >= 500 || error.name === "TypeError";
   }
@@ -145,7 +174,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
         queueStatusEl.addClass(failed.length ? "text-danger" : "text-warning").text(
           failed.length
             ? __("{0} event(s) need HR attention; {1} event(s) will sync automatically when online.", [failed.length, pending.length])
-            : __("{0} attendance event(s) are saved on this device and will sync automatically when online.", [pending.length])
+            : __("{0} check-in event(s) saved on this device. Waiting to sync when online.", [pending.length])
         );
       }
       return items;
@@ -183,23 +212,18 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     }
   }
 
-  function showSuccessState(logType, checkin, queued) {
+  function showSuccessState(logType, checkin, queued, attachmentWarning = false, ingestionFailed = false) {
     attendanceForm.addClass("d-none");
     successState.removeClass("d-none");
-    const canCheckout = logType === "IN";
+    const state = tradexMobileEvidenceState(logType, checkin, queued, ingestionFailed);
+    const rejected = ["rejected", "review_rejected"].includes(state.kind);
+    const canCheckout = logType === "IN" && !rejected;
     const actionLabel = canCheckout ? (queued ? __("Back to work") : __("Check Out")) : __("Done");
-    successTitle.text(
-      queued
-        ? __("Saved on this device")
-        : (logType === "IN" ? __("Successfully checked in") : __("Successfully checked out"))
-    );
-    successDetail.text(
-      queued
-        ? __("Your attendance is safely queued and will sync automatically when the connection returns.")
-        : (logType === "IN"
-          ? __("You have successfully checked in at {0}. You can now go back to work.", [checkin.time || __("the current time")])
-          : __("You have successfully checked out at {0}.", [checkin.time || __("the current time")]))
-    );
+    const tone = state.kind === "saved" ? "success" : rejected ? "danger" : "warning";
+    successState.removeClass("border-success border-warning border-danger").addClass("border-" + tone);
+    successTitle.text(state.title);
+    root.find("[data-success-symbol]").text(state.kind === "saved" ? "✓" : "!");
+    successDetail.text(state.detail + (attachmentWarning ? " " + __("Check-in was saved, but the selfie file link needs HR attention.") : ""));
     successAction.removeClass("d-none").text(actionLabel).off("click");
     if (canCheckout) {
       successAction.on("click", showCheckoutForm);
@@ -242,6 +266,35 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     return payload.message && payload.message.file_url;
   }
 
+  async function finishSelfieAttachment(checkin, selfieUrl) {
+    if (!selfieUrl || !checkin || !checkin.name) return;
+    try {
+      await frappe.call({
+        method: "tradex_hr.tradexcel_hr.field_attendance_service.attach_selfie",
+        args: {checkin: checkin.name, file_url: selfieUrl},
+      });
+    } catch (cause) {
+      // In-memory result only: the canonical Checkin already exists.
+      const error = new Error("Selfie attachment incomplete", {cause});
+      error.acceptedCheckin = checkin;
+      throw error;
+    }
+  }
+
+  async function handleSyncFailure(item, error) {
+    const accepted = error && error.acceptedCheckin;
+    if (isNetworkError(error)) {
+      await queueOfflineCheckin(item);
+      showSuccessState(item.log_type, accepted || {}, true);
+      return true;
+    }
+    await discardQueuedEvidence(item, accepted
+      ? __("Check-in saved; selfie file link needs HR attention.")
+      : __("Could not be accepted by the server. Contact HR before retrying."));
+    showSuccessState(item.log_type, accepted || {}, false, Boolean(accepted), !accepted);
+    return false;
+  }
+
   async function replayQueuedCheckin(item) {
     if (!navigator.onLine) return false;
     let selfieUrl = item.selfie_url || null;
@@ -272,15 +325,9 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
       },
     });
     const checkin = response.message;
+    await finishSelfieAttachment(checkin, selfieUrl);
     await deleteQueuedCheckin(item.sync_id);
-    if (selfieUrl && checkin && checkin.name) {
-      await frappe.call({
-        method: "tradex_hr.tradexcel_hr.field_attendance_service.attach_selfie",
-        args: {checkin: checkin.name, file_url: selfieUrl},
-      });
-    }
-    await deleteQueuedCheckin(item.sync_id);
-    return true;
+    return checkin;
   }
 
   async function flushOfflineQueue() {
@@ -291,10 +338,14 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
       const items = await queuedCheckins();
       for (const item of items.filter((row) => row.retryable !== false)) {
         try {
-          await replayQueuedCheckin(item);
+          const checkin = await replayQueuedCheckin(item);
+          if (checkin) {
+            if (context) context.next_action = item.log_type === "IN" ? "OUT" : "IN";
+            refreshButton();
+            showSuccessState(item.log_type, checkin);
+          }
         } catch (error) {
-          if (isNetworkError(error)) break;
-          await discardQueuedEvidence(item, __("Server rejected event; review before retrying."));
+          if (await handleSyncFailure(item, error)) break;
         }
       }
     } finally {
@@ -350,6 +401,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
   async function loadContext() {
     const response = await frappe.call({method: "tradex_hr.tradexcel_hr.field_attendance_service.get_mobile_context"});
     context = response.message;
+    await cleanupOfflineEvidence({allowAgeExpiry: true});
     contextEl.text(context.employee_name + " · " + context.attendance_mode + " · " + context.company);
     lastEl.text(context.last_checkin ? __("Last {0}: {1}", [context.last_checkin.log_type, context.last_checkin.time]) : __("No mobile check-in yet"));
     const queued = await queuedCheckins().catch(() => []);
@@ -373,7 +425,22 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
     refreshButton();
     startTracking();
   }
+  async function loadPageContext() {
+    actionEl.prop("disabled", true).text(__("Loading..."));
+    contextEl.removeClass("text-danger").text(__("Loading employee policy..."));
+    try {
+      await loadContext();
+      await updateQueueStatus();
+      await flushOfflineQueue();
+    } catch (_error) {
+      context = null;
+      stopTracking();
+      contextEl.addClass("text-danger").text(__("Mobile attendance unavailable. Your employee link or approved attendance policy could not be loaded. Contact HR or retry when connected."));
+      actionEl.prop("disabled", false).text(__("Retry loading"));
+    }
+  }
   actionEl.on("click", async () => {
+    if (!context) return loadPageContext();
     actionEl.prop("disabled", true);
     resultEl.removeClass("text-danger text-success").text(__("Requesting location..."));
     let queuedPayload = null;
@@ -402,11 +469,12 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
         showSuccessState(completedAction, {time: queuedPayload.time}, true);
         return;
       }
-      resultEl.text(file ? __("Uploading selfie and recording attendance...") : __("Recording attendance..."));
+      resultEl.text(file ? __("Uploading selfie...") : __("Saving check-in..."));
       const selfieUrl = file ? await uploadSelfie(file) : null;
       // If the following request fails offline, replay the already uploaded
       // private file instead of creating another selfie on each retry.
       if (selfieUrl) queuedPayload.selfie_url = selfieUrl;
+      resultEl.text(__("Saving check-in..."));
       const requestArgs = {
         employee: queuedPayload.employee,
         log_type: queuedPayload.log_type,
@@ -423,7 +491,7 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
         args: requestArgs
       });
       const checkin = response.message;
-      if (selfieUrl) await frappe.call({method: "tradex_hr.tradexcel_hr.field_attendance_service.attach_selfie", args: {checkin: checkin.name, file_url: selfieUrl}});
+      await finishSelfieAttachment(checkin, selfieUrl);
       try {
         await loadContext();
       } catch (contextError) {
@@ -431,24 +499,24 @@ frappe.pages["tradexcel-mobile-attendance"].on_page_load = function (wrapper) {
       }
       showSuccessState(completedAction, checkin);
     } catch (error) {
-      if (queuedPayload && isNetworkError(error)) {
+      if (queuedPayload) {
         try {
-          await queueOfflineCheckin(queuedPayload);
+          await handleSyncFailure(queuedPayload, error);
           await updateQueueStatus();
-          showSuccessState(queuedPayload.log_type, {time: queuedPayload.time}, true);
           return;
-        } catch (queueError) {
-          error = queueError;
+        } catch (storageError) {
+          if (error.acceptedCheckin) {
+            showSuccessState(queuedPayload.log_type, error.acceptedCheckin, false, true);
+            return;
+          }
         }
       }
-      resultEl.addClass("text-danger").text(error.message || __("Attendance could not be recorded."));
+      resultEl.addClass("text-danger").text(__("Check-in could not be accepted. Check your evidence or contact HR before retrying."));
       refreshButton();
     }
   });
   window.addEventListener("online", flushOfflineQueue);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) cleanupOfflineEvidence(); });
   cleanupOfflineEvidence().catch(() => {});
-  loadContext()
-    .then(() => Promise.all([updateQueueStatus(), flushOfflineQueue()]))
-    .catch((error) => contextEl.addClass("text-danger").text(error.message || __("Employee policy is not configured.")));
+  loadPageContext();
 };
