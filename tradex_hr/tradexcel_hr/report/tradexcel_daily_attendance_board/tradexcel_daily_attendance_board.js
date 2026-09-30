@@ -17,13 +17,24 @@ frappe.query_reports["Tradexcel Daily Attendance Board"] = {
 			return;
 		}
 		const values = report.get_filter_values();
+		const escape = frappe.utils.escape_html;
 		const dialog = new frappe.ui.Dialog({
 			title: __("Prepare Attendance Corrections"),
 			fields: [
-				{ fieldname: "scope", fieldtype: "HTML", options: `<p>${frappe.utils.escape_html(values.company)} · ${frappe.utils.escape_html(values.attendance_date)}</p>` },
+				{ fieldname: "steps", fieldtype: "HTML", options: `<div class="small">
+					<p class="text-muted">${escape(values.company)} · ${escape(values.attendance_date)} · ${selected.length} ${__("selected Employee(s)")}</p>
+					<ol>
+						<li><b>${__("Evidence")}</b> — ${__("punches, device/mobile records and the active Shift are evidence only.")}</li>
+						<li><b>${__("Current Attendance")}</b> — ${__("the native record that exists today.")}</li>
+						<li><b>${__("Problem")}</b> — ${__("the preview Result states what is missing, conflicting, already resolved or blocked.")}</li>
+						<li><b>${__("Proposed correction")}</b> — ${__("the action you choose for the reviewed date.")}</li>
+						<li><b>${__("Now")}</b> — ${__("only draft Attendance Requests are created. Attendance does not change.")}</li>
+						<li><b>${__("Later")}</b> — ${__("an independent Attendance Correction Approver must submit each request.")}</li>
+					</ol></div>` },
 				{ fieldname: "action", label: __("Correction"), fieldtype: "Select", reqd: 1,
 					options: ["Present", "Half Day", "Work From Home"].join("\n") },
-				{ fieldname: "explanation", label: __("Explanation"), fieldtype: "Small Text", reqd: 1 },
+				{ fieldname: "explanation", label: __("Explanation"), fieldtype: "Small Text", reqd: 1,
+					description: __("Explain the dates and why this request is needed. A draft is not approved Attendance.") },
 				{ fieldname: "preview", fieldtype: "HTML" },
 			],
 		});
@@ -38,23 +49,78 @@ frappe.query_reports["Tradexcel Daily Attendance Board"] = {
 			action: dialog.get_value("action"),
 			explanation: dialog.get_value("explanation"),
 		});
+		const renderNotice = (text, indicator) => {
+			dialog.fields_dict.preview.$wrapper.html(
+				`<div class="small ${indicator === "red" ? "text-danger" : "text-muted"}">${escape(text)}</div>`);
+		};
 		const render = (rows) => {
-			const escape = frappe.utils.escape_html;
-			const body = rows.map((row) => `<tr><td>${escape(row.employee_name || row.employee || "")}</td>
-				<td>${escape(__(row.current_state || ""))}${row.current_attendance ? `: ${escape(row.current_attendance)}` : ""}</td>
-				<td>${escape(__(row.current_status || ""))}</td><td>${escape(row.active_shift || "")}</td>
-				<td>${escape(row.checkin_count ?? "")}</td><td>${escape(row.in_time || "")}</td><td>${escape(row.out_time || "")}</td>
-				<td>${escape(__(row.proposed_status || ""))}</td>
-				<td>${escape(__(row.outcome || ""))}</td><td>${escape((row.native_warnings || []).map((item) => `${item.reason} — ${item.action}`).join("; "))}</td>
-				<td>${escape(row.message || "")}</td></tr>`).join("");
+			const body = rows.map((row) => {
+				const current = [escape(__(row.current_state || "")),
+					row.current_attendance ? `: ${escape(row.current_attendance)}` : "",
+					row.current_status ? ` (${escape(__(row.current_status))})` : ""].join("");
+				const evidence = `<details><summary>${__("Show evidence")}</summary>
+					<div>${__("Active Shift")}: ${escape(row.active_shift || "")}</div>
+					<div>${__("Punches")}: ${escape(row.checkin_count ?? "")}</div>
+					<div>${__("First IN")}: ${escape(row.in_time || "")}</div>
+					<div>${__("Last OUT")}: ${escape(row.out_time || "")}</div>
+					${row.existing_request ? `<div>${__("Existing request")}: ${escape(row.existing_request)}</div>` : ""}</details>`;
+				const warnings = (row.native_warnings || []).map((item) => `${escape(item.reason || "")} — ${escape(item.action || "")}`).join("; ");
+				return `<tr><td>${escape(row.employee_name || row.employee || "")}
+					<div class="text-muted small">${escape(row.employee || "")}</div></td>
+					<td>${current}</td><td>${evidence}</td>
+					<td>${escape(__(row.proposed_status || ""))}</td>
+					<td>${escape(__(row.outcome || ""))}${row.message ? `<div class="text-muted small">${escape(row.message)}</div>` : ""}</td>
+					<td>${warnings}</td></tr>`;
+			}).join("");
 			dialog.fields_dict.preview.$wrapper.html(`<div class="small text-muted">${__("Punches are evidence only. No Attendance changes until an approver submits the native request.")}</div>
 				<div class="table-responsive"><table class="table table-bordered"><thead><tr>
-				<th>${__("Employee")}</th><th>${__("Current record")}</th><th>${__("Current status")}</th><th>${__("Active Shift")}</th>
-				<th>${__("Punches")}</th><th>${__("First IN")}</th><th>${__("Last OUT")}</th>
-				<th>${__("Proposed")}</th><th>${__("Result")}</th><th>${__("Native warning")}</th><th>${__("Review note")}</th>
+				<th>${__("Employee")}</th><th>${__("Current Attendance")}</th><th>${__("Evidence")}</th>
+				<th>${__("Proposed")}</th><th>${__("Problem / Result")}</th><th>${__("Native warning")}</th>
 				</tr></thead><tbody>${body}</tbody></table></div>`);
 		};
 		const prepareArgs = (reviewed) => ({ method: "tradex_hr.tradexcel_hr.attendance_corrections.prepare_attendance_corrections", args: reviewed });
+		const showResults = (message) => {
+			const created = message.created || [];
+			const names = created.map((row) => row.attendance_request).filter(Boolean);
+			const groups = new Map();
+			for (const row of message.results || []) {
+				const key = row.outcome || __("Needs review");
+				if (!groups.has(key)) groups.set(key, []);
+				groups.get(key).push(row);
+			}
+			let html = created.length
+				? `<p><b>${__("Draft Attendance Requests created: {0}", [created.length])}</b></p>`
+				: `<p><b>${__("No draft Attendance Requests were created.")}</b></p>`;
+			if (names.length) html += `<p>${names.map(escape).join(", ")}</p>`;
+			for (const [outcome, rows] of groups) {
+				html += `<p class="small"><b>${escape(__(outcome))} (${rows.length})</b></p><ul>` +
+					rows.map((row) => `<li>${escape(row.employee || "")} — ${escape(row.message || row.outcome || "")}</li>`).join("") +
+					`</ul>`;
+			}
+			html += `<p class="small text-muted">${__("Draft requests are not approved Attendance. An independent Attendance Correction Approver must submit them. Running the same selection again cannot duplicate a request; it is reported as an existing request instead.")}</p>`;
+			frappe.msgprint({
+				title: __("Draft correction results"),
+				message: html,
+				primary_action: names.length ? {
+					label: __("Review draft requests"),
+					action: () => {
+						frappe.route_options = {name: ["in", names]};
+						frappe.set_route("List", "Attendance Request", "List");
+					},
+				} : undefined,
+			});
+		};
+		const apply = (reviewed) => {
+			previewReady = false;
+			frappe.call(prepareArgs(reviewed)).then((result) => {
+				showResults(result.message || {});
+				dialog.hide();
+				report.refresh();
+			}).catch(() => {
+				invalidatePreview();
+				renderNotice(__("The result could not be confirmed. Run Preview again: already-created requests are reported as existing requests, so drafts are never duplicated."), "red");
+			});
+		};
 		const preview = () => {
 			if (!dialog.get_values()) return;
 			const request = ++previewGeneration;
@@ -63,32 +129,17 @@ frappe.query_reports["Tradexcel Daily Attendance Board"] = {
 			frappe.call({ method: "tradex_hr.tradexcel_hr.attendance_corrections.preview_attendance_corrections", args: reviewed })
 				.then((response) => {
 					if (request !== previewGeneration || JSON.stringify(reviewed) !== JSON.stringify(args())) return;
-					render(response.message.rows || []);
+					render((response.message || {}).rows || []);
 					previewReady = true;
 					dialog.set_primary_action(__("Create draft requests"), () => {
 						if (!previewReady || request !== previewGeneration || JSON.stringify(reviewed) !== JSON.stringify(args())) return;
-						previewReady = false;
-						frappe.call(prepareArgs(reviewed)).then((result) => {
-							const message = result.message || {};
-							const created = (message.created || []).length;
-							const blocked = (message.results || []).length;
-							const names = (message.created || []).map((row) => row.attendance_request).filter(Boolean);
-							frappe.msgprint({
-								title: __("Draft correction results"),
-								message: __("Draft requests created: {0}. Skipped or blocked: {1}.", [created, blocked]) +
-									(message.results || []).map((row) => `<p>${frappe.utils.escape_html(row.employee || "")}: ${frappe.utils.escape_html(row.message || row.outcome || "")}</p>`).join(""),
-								primary_action: names.length ? {
-									label: __("Review draft requests"),
-									action: () => {
-										frappe.route_options = {name: ["in", names]};
-										frappe.set_route("List", "Attendance Request", "List");
-									},
-								} : undefined,
-							});
-							dialog.hide();
-							report.refresh();
-						}).catch(() => invalidatePreview());
+						apply(reviewed);
 					});
+				})
+				.catch(() => {
+					if (request !== previewGeneration) return;
+					invalidatePreview();
+					renderNotice(__("Preview could not be loaded. Nothing was created. Check the message, then try Preview again."), "red");
 				});
 		};
 		const invalidatePreview = () => {

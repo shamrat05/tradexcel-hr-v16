@@ -1,11 +1,30 @@
 frappe.ui.form.on("Employee Checkin", {
   refresh(frm) {
-    const roles = ["System Manager", "Tradexcel Owner/Director", "Tradexcel HR Manager",
+    if (frm.is_new()) return;
+    const reviewerRoles = ["System Manager", "Tradexcel Owner/Director", "Tradexcel HR Manager",
       "Tradexcel HR/Attendance Officer", "Tradexcel Factory Supervisor", "Tradexcel Branch Manager",
       "Tradexcel Department Manager", "Tradexcel Attendance Correction Approver"];
-    if (frm.is_new() || frm.doc.custom_tradex_source !== "Mobile" ||
-        frm.doc.custom_tradex_time_status !== "Flagged" || frm.doc.custom_tradex_review_status !== "Pending" ||
-        !(frappe.session.user === "Administrator" || roles.some(role => frappe.user.has_role(role)))) return;
+    const isReviewer = frappe.session.user === "Administrator" || reviewerRoles.some(role => frappe.user.has_role(role));
+    const source = frm.doc.custom_tradex_source;
+    const time_status = frm.doc.custom_tradex_time_status;
+    const review_status = frm.doc.custom_tradex_review_status;
+    const quarantined = source === "Mobile" && time_status === "Flagged" && review_status === "Pending";
+
+    if (quarantined) {
+      if (isReviewer) {
+        frm.set_intro(__("Quarantined mobile evidence awaiting review. Check the reason below, then Approve or Reject with a review reason. Approval releases it to native auto-attendance; rejection excludes it. Neither action alone creates approved Attendance."), "orange");
+      } else {
+        frm.set_intro(__("Quarantined mobile evidence awaiting an authorized reviewer. It is not Attendance."), "orange");
+      }
+    } else if (source === "Mobile" && review_status === "Approved") {
+      frm.set_intro(__("Approved evidence. It was released to native auto-attendance; native rules decide whether it becomes Attendance."), "green");
+    } else if (source === "Mobile" && review_status === "Rejected") {
+      frm.set_intro(__("Rejected evidence. It is excluded from attendance and cannot be approved later. The review reason is recorded below."), "red");
+    } else if (source === "Mobile" && time_status === "Trusted") {
+      frm.set_intro(__("Trusted mobile evidence. Native auto-attendance decides whether it becomes Attendance."), "blue");
+    }
+
+    if (!quarantined || !isReviewer) return;
     for (const [label, method] of [[__("Approve Evidence"), "approve_mobile_checkin"], [__("Reject Evidence"), "reject_mobile_checkin"]]) {
       frm.add_custom_button(label, () => frappe.prompt(
         [{fieldname: "review_note", fieldtype: "Small Text", label: __("Review Reason"), reqd: 1}],
