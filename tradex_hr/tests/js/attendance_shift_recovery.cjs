@@ -167,8 +167,16 @@ async function run() {
 		print.secondary_action.action();
 		const review_options = JSON.parse(JSON.stringify(frappe.route_options));
 		assert.deepEqual(review_options.employee, ['in', ['EMP-OVER']]);
-		assert.deepEqual(review_options.from_date, ['<=', '2026-09-30']);
-		assert.deepEqual(review_options.to_date, ['>=', '2026-09-30']);
+		assert.deepEqual(review_options.start_date, ['<=', '2026-09-30'], 'must use the native start_date field');
+		assert.ok(!('from_date' in review_options) && !('to_date' in review_options),
+			'from_date/to_date are not native Shift Assignment fields');
+		assert.ok(!('end_date' in review_options),
+			'route options cannot express "End Date blank OR End Date >= day" and must not pretend to');
+		assert.ok(print.message.includes('End Date'), 'operator must be told to inspect End Date');
+		assert.ok(print.message.includes('blank'), 'blank open-ended End Date must be explained');
+		assert.ok(print.message.includes('already ended'), 'broader list must not be presented as all-active');
+		assert.ok(!print.message.includes('existing native Shift Assignments for this date'),
+			'must not claim every listed row is active on the selected day');
 		assert.deepEqual(state.routes[1], ['List', 'Shift Assignment', 'List']);
 
 		// A role without tool read gets no button.

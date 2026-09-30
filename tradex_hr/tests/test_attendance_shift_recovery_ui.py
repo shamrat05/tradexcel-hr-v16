@@ -64,6 +64,102 @@ def test_shift_coverage_routes_to_native_tool_without_employee_ids():
     assert 'route_options = { action: "Assign Shift", start_date: report.get_filter_value("as_of_date") }' in source
     # Conflicting assignments never auto-select a winner.
     assert "The app never chooses between assignments" in source
+    # No automatic Shift Type selection is passed to the native tool.
+    assert "shift_type" not in source.split("const openTool")[1].split("const openAssignments")[0]
+
+
+def test_shift_assignment_route_uses_only_confirmed_native_fields():
+    """P01: from_date/to_date are not Shift Assignment fields; start_date is."""
+    meta = frappe.get_meta("Shift Assignment")
+    assert meta.has_field("start_date") and meta.has_field("end_date")
+    assert not meta.has_field("from_date") and not meta.has_field("to_date")
+
+    source = (COVERAGE_DIR / "tradexcel_shift_coverage.js").read_text()
+    assert 'start_date: ["<=", report.get_filter_value("as_of_date")]' in source
+    assert "from_date" not in source and "to_date" not in source
+    # Route options cannot express "End Date blank OR End Date >= day", so no
+    # end_date filter may be implied; the operator gets an explicit instruction.
+    assert "end_date: [" not in source
+    assert "End Date" in source and "blank" in source and "already ended" in source
+    assert "existing native Shift Assignments for this date" not in source
+
+
+def test_native_list_route_options_cannot_express_open_ended_or_condition():
+    """The installed List View route parser is AND-only; OR lives server-side."""
+    list_view = Path(frappe.get_app_path("frappe", "public/js/frappe/list/list_view.js")).read_text()
+    parser = list_view.split("parse_filters_from_route_options()")[1].split("get_list_view")[0]
+    assert "or_filters" not in parser
+    # The server-side query builder does support the exact condition, which is
+    # why the fallback instruction (not a fake filter) is the safe choice.
+    db_query = Path(frappe.get_app_path("frappe", "model/db_query.py")).read_text()
+    assert "or_filters" in db_query
+
+
+def test_shift_assignment_route_filter_semantics_on_installed_schema():
+    from tradex_hr.tests.persona_uat import SyntheticPersonaHarness
+
+    company = "Tradexcel Ceramics Ltd."
+    branch = frappe.db.get_value("Branch", {"company": company}, "name")
+    department = frappe.db.get_value("Department", {"company": company}, "name")
+    shift_type = "General Shift" if frappe.db.exists("Shift Type", "General Shift") else frappe.get_all(
+        "Shift Type", limit=1, pluck="name"
+    )[0]
+    day = frappe.utils.getdate("2026-09-15")
+    harness = SyntheticPersonaHarness("TXUX006P01" + frappe.generate_hash(6).upper())
+    tracked = []
+    try:
+        employee = harness.create_employee("route", company, branch, department)
+        other = harness.create_employee("other", company, branch, department)
+
+        def assignment(target, start, end):
+            doc = frappe.get_doc({
+                "doctype": "Shift Assignment", "employee": target, "shift_type": shift_type,
+                "company": company, "start_date": start, "end_date": end, "status": "Active",
+                "docstatus": 1,
+            })
+            doc.db_insert()
+            tracked.append(doc.name)
+            return doc.name
+
+        # Synthetic records: direct insert avoids native same-date overlap
+        # validation (allow_multiple_shift_assignments is 0 site-wide).
+        overlap = assignment(employee, frappe.utils.add_days(day, -5), frappe.utils.add_days(day, 5))
+        open_ended = assignment(employee, frappe.utils.add_days(day, -10), None)
+        ended = assignment(employee, frappe.utils.add_days(day, -20), frappe.utils.add_days(day, -1))
+        foreign = assignment(other, frappe.utils.add_days(day, -5), frappe.utils.add_days(day, 5))
+
+        # The route's actual AND-only filter: selected Employees, start on or
+        # before the day. It includes ended rows, so the instruction matters.
+        route_rows = set(frappe.get_list(
+            "Shift Assignment",
+            filters={"employee": ["in", [employee]], "start_date": ["<=", day]},
+            pluck="name",
+        ))
+        assert route_rows == {overlap, open_ended, ended}
+        assert foreign not in route_rows, "selected Employee scoping must hold"
+
+        # The exact active-on-day definition (blank End Date OR End Date >= day)
+        # is available only server-side, not through List route options.
+        active_rows = set(frappe.get_list(
+            "Shift Assignment",
+            filters={"employee": ["in", [employee]], "start_date": ["<=", day]},
+            or_filters=[["end_date", "is", "not set"], ["end_date", ">=", day]],
+            pluck="name",
+        ))
+        assert active_rows == {overlap, open_ended}
+        assert ended not in active_rows
+    finally:
+        frappe.set_user("Administrator")
+        for name in tracked:
+            if frappe.db.exists("Shift Assignment", name):
+                # Synthetic rows were inserted directly with docstatus 1; reset
+                # at DB level so the test-owned record can be removed.
+                frappe.db.sql("update `tabShift Assignment` set docstatus=0 where name=%s", (name,))
+                frappe.delete_doc("Shift Assignment", name, force=True, ignore_permissions=True)
+        harness.cleanup()
+        assert not frappe.get_all(
+            "Shift Assignment", filters={"employee": ["in", harness.employees]}, pluck="name"
+        )
 
 
 def test_checkin_review_has_no_client_state_and_uses_server_endpoints():

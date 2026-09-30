@@ -20,10 +20,15 @@ frappe.query_reports["Tradexcel Shift Coverage"] = {
             frappe.set_route("Form", "Shift Assignment Tool");
         };
         const openAssignments = (rows) => {
+            // Native Shift Assignment date fields are `start_date`/`end_date`
+            // (verified against the installed DocType). List route options can
+            // only express AND filters, so an exact "active on the selected
+            // day" filter (End Date blank OR End Date on/after the day) is not
+            // available here. Show the safe broader native list and tell the
+            // operator how to read End Date; never present every row as active.
             frappe.route_options = {
                 employee: ["in", names(rows)],
-                from_date: ["<=", report.get_filter_value("as_of_date")],
-                to_date: [">=", report.get_filter_value("as_of_date")],
+                start_date: ["<=", report.get_filter_value("as_of_date")],
             };
             frappe.set_route("List", "Shift Assignment", "List");
         };
@@ -45,7 +50,7 @@ frappe.query_reports["Tradexcel Shift Coverage"] = {
             }
             if (overlap.length) {
                 html += `<p><b>${__("Multiple active assignments")} (${overlap.length})</b></p>
-                    <p class="small">${__("The app never chooses between assignments. Review the existing native Shift Assignments for this date and correct the wrong one there.")}</p>
+                    <p class="small">${__("The app never chooses between assignments. Review opens the native Shift Assignment list for these Employees with Start Date on or before the selected day. Check each row's End Date: an assignment is active on that day only when End Date is blank or on/after it — the list also contains assignments that already ended. Correct the wrong assignment there.")}</p>
                     <ul>${overlap.map((row) => `<li>${escape(row.employee_name || row.employee || "")} — ${escape(row.assigned_shifts || "")}</li>`).join("")}</ul>`;
             }
             if (default_only.length) {
