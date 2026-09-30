@@ -65,18 +65,6 @@ html {
 	scrollbar-gutter: stable both-edges;
 }
 
-/* Hide the navbar app logo.
-
-   Nothing sets `app_logo` in Website Settings or Navbar Settings, so
-   frappe.core.doctype.navbar_settings.get_app_logo() falls through to
-   frappe.get_hooks("app_logo_url") and renders ERPNext's "e" above a Tradexcel
-   desk. To show a Tradexcel logo here instead of hiding it, set the logo at
-   Desk > Website > Website Settings > App Logo (that setting takes priority). */
-
-header.navbar .navbar-brand {
-	display: none !important;
-}
-
 /* These custom Desk pages use Bootstrap cards and tables. Bootstrap's default
    light surfaces do not follow Frappe's dark theme, so bind their surfaces and
    text to the native Desk theme tokens. Keep this scoped to the two pages. */
