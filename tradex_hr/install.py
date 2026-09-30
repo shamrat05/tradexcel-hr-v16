@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+from pathlib import Path
 
 import frappe
 
@@ -208,77 +210,133 @@ RETIRED_ARTIFACTS = (
 )
 
 
+CANONICAL_RETIRED_ARTIFACTS = (
+    ("Number Card", (
+        "Tradexcel Active Employees",
+        "Tradexcel Punches Logged",
+        "Tradexcel Present Records",
+        "Tradexcel Absent Records",
+    )),
+    ("Dashboard Chart", (
+        "Tradexcel Employees by Department",
+        "Tradexcel Employees by Branch",
+        "Tradexcel Headcount by Company",
+        "Tradexcel Attendance Status",
+        "Tradexcel Leave Allocated by Type",
+        "Tradexcel Payroll by Month",
+        "Tradexcel Checkins by Day",
+    )),
+)
+CANONICAL_DELETABLE_ARTIFACTS = frozenset(
+    (dt, name)
+    for dt, names in CANONICAL_RETIRED_ARTIFACTS
+    for name in names
+)
+
+
 # The exact original installer payloads of the eleven canonical artifacts,
 # kept only as unchanged-ownership fingerprints. They are never used to create
-# records; a deletion candidate must still match every field below, so a record
-# that was customized after the app created it is retained. Historical aliases
-# and prototype duplicates have no reliable fingerprint and are always
-# retained rather than guessed.
+# records; a deletion candidate must still match every field below, including
+# presentation-relevant properties and native defaults, so a record that was
+# customized after the app created it is retained. Historical aliases and
+# prototype duplicates have no reliable fingerprint and are always retained
+# rather than guessed.
 RETIRED_ARTIFACT_FINGERPRINTS = {
     ("Number Card", "Tradexcel Active Employees"): {
         "label": "Active Employees (All Companies)", "type": "Document Type",
         "document_type": "Employee", "function": "Count",
         "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
         "is_standard": 0, "is_public": 1, "color": "Green",
+        "background_color": None, "show_percentage_stats": 1, "stats_time_interval": "Daily",
+        "show_full_number": 0, "report_function": "Sum", "currency": "BDT",
     },
     ("Number Card", "Tradexcel Punches Logged"): {
         "label": "Total Punches Logged", "type": "Document Type",
         "document_type": "Employee Checkin", "function": "Count",
         "filters_json": json.dumps([["Employee Checkin", "docstatus", "<", "2", False]]),
         "is_standard": 0, "is_public": 1, "color": "Blue",
+        "background_color": None, "show_percentage_stats": 1, "stats_time_interval": "Daily",
+        "show_full_number": 0, "report_function": "Sum", "currency": "BDT",
     },
     ("Number Card", "Tradexcel Present Records"): {
         "label": "Attendance Present Logs", "type": "Document Type",
         "document_type": "Attendance", "function": "Count",
         "filters_json": json.dumps([["Attendance", "status", "=", "Present", False]]),
         "is_standard": 0, "is_public": 1, "color": "Cyan",
+        "background_color": None, "show_percentage_stats": 1, "stats_time_interval": "Daily",
+        "show_full_number": 0, "report_function": "Sum", "currency": "BDT",
     },
     ("Number Card", "Tradexcel Absent Records"): {
         "label": "Attendance Absent Logs", "type": "Document Type",
         "document_type": "Attendance", "function": "Count",
         "filters_json": json.dumps([["Attendance", "status", "=", "Absent", False]]),
         "is_standard": 0, "is_public": 1, "color": "Red",
+        "background_color": None, "show_percentage_stats": 1, "stats_time_interval": "Daily",
+        "show_full_number": 0, "report_function": "Sum", "currency": "BDT",
     },
     ("Dashboard Chart", "Tradexcel Employees by Department"): {
+        "chart_name": "Tradexcel Employees by Department",
         "chart_type": "Group By", "document_type": "Employee", "group_by_type": "Count",
         "group_by_based_on": "department", "type": "Bar",
         "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
-        "is_standard": 0, "is_public": 1,
+        "is_standard": 0, "is_public": 1, "show_values_over_chart": 0,
+        "custom_options": None, "dynamic_filters_json": None, "color": None,
+        "time_interval": "Yearly", "timespan": "Last Year", "timeseries": 0,
     },
     ("Dashboard Chart", "Tradexcel Employees by Branch"): {
+        "chart_name": "Tradexcel Employees by Branch",
         "chart_type": "Group By", "document_type": "Employee", "group_by_type": "Count",
         "group_by_based_on": "branch", "type": "Bar",
         "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
-        "is_standard": 0, "is_public": 1,
+        "is_standard": 0, "is_public": 1, "show_values_over_chart": 0,
+        "custom_options": None, "dynamic_filters_json": None, "color": None,
+        "time_interval": "Yearly", "timespan": "Last Year", "timeseries": 0,
+        "currency": "BDT",
     },
     ("Dashboard Chart", "Tradexcel Headcount by Company"): {
+        "chart_name": "Tradexcel Headcount by Company",
         "chart_type": "Group By", "document_type": "Employee", "group_by_type": "Count",
         "group_by_based_on": "company", "type": "Pie",
         "filters_json": json.dumps([["Employee", "status", "=", "Active", False]]),
-        "is_standard": 0, "is_public": 1,
+        "is_standard": 0, "is_public": 1, "show_values_over_chart": 0,
+        "custom_options": None, "dynamic_filters_json": None, "color": None,
+        "time_interval": "Yearly", "timespan": "Last Year", "timeseries": 0,
+        "currency": "BDT",
     },
     ("Dashboard Chart", "Tradexcel Attendance Status"): {
+        "chart_name": "Tradexcel Attendance Status",
         "chart_type": "Group By", "document_type": "Attendance", "group_by_type": "Count",
         "group_by_based_on": "status", "type": "Pie", "filters_json": json.dumps([]),
-        "is_standard": 0, "is_public": 1,
+        "is_standard": 0, "is_public": 1, "show_values_over_chart": 0,
+        "custom_options": None, "dynamic_filters_json": None, "color": None,
+        "time_interval": "Yearly", "timespan": "Last Year", "timeseries": 0,
+        "currency": "BDT",
     },
     ("Dashboard Chart", "Tradexcel Leave Allocated by Type"): {
+        "chart_name": "Tradexcel Leave Allocated by Type",
         "chart_type": "Group By", "document_type": "Leave Allocation", "group_by_type": "Sum",
         "group_by_based_on": "leave_type", "aggregate_function_based_on": "total_leaves_allocated",
         "type": "Bar", "filters_json": json.dumps([]), "is_standard": 0, "is_public": 1,
+        "show_values_over_chart": 0, "custom_options": None, "dynamic_filters_json": None, "color": None,
+        "time_interval": "Yearly", "timespan": "Last Year", "timeseries": 0,
     },
     ("Dashboard Chart", "Tradexcel Payroll by Month"): {
+        "chart_name": "Tradexcel Payroll by Month",
         "chart_type": "Sum", "document_type": "Salary Slip", "based_on": "start_date",
         "value_based_on": "net_pay", "timeseries": 1, "timespan": "Last Year",
         "time_interval": "Monthly", "type": "Line",
         "filters_json": json.dumps([["Salary Slip", "docstatus", "=", "1", False]]),
-        "is_standard": 0, "is_public": 1,
+        "is_standard": 0, "is_public": 1, "show_values_over_chart": 0,
+        "custom_options": None, "dynamic_filters_json": None, "color": None,
+        "currency": "BDT",
     },
     ("Dashboard Chart", "Tradexcel Checkins by Day"): {
+        "chart_name": "Tradexcel Checkins by Day",
         "chart_type": "Count", "document_type": "Employee Checkin", "based_on": "time",
         "timeseries": 1, "timespan": "Last Month", "time_interval": "Daily", "type": "Line",
         "filters_json": json.dumps([["Employee Checkin", "docstatus", "<", "2", False]]),
-        "is_standard": 0, "is_public": 1,
+        "is_standard": 0, "is_public": 1, "show_values_over_chart": 0,
+        "custom_options": None, "dynamic_filters_json": None, "color": None,
     },
 }
 
@@ -287,9 +345,13 @@ RETIRED_ARTIFACT_FINGERPRINTS = {
 # Workspaces live in the same ``tabWorkspace`` table as public ones, so the
 # content/child-table checks cover both. Historical Version/UI Version rows are
 # deliberately not checked: they are audit history, not live references.
+# Similarly, ``link_type`` columns store target doctype/category names rather
+# than artifact names and are excluded.
 RETIRED_ARTIFACT_REFERENCE_SURFACES = (
     ("tabWorkspace Chart", "chart_name"),
     ("tabWorkspace Number Card", "number_card_name"),
+    ("tabWorkspace Shortcut", "link_to"),
+    ("tabWorkspace Link", "link_to"),
     ("tabWorkspace", "content"),
     ("tabDashboard Chart Link", "chart"),
     ("tabNumber Card Link", "card"),
@@ -297,7 +359,11 @@ RETIRED_ARTIFACT_REFERENCE_SURFACES = (
     ("tabCustom HTML Block", "script"),
     ("tabCustom HTML Block", "style"),
     ("tabDesktop Icon", "link_to"),
+    ("tabDesktop Icon", "link"),
     ("tabWorkspace Sidebar Item", "link_to"),
+    ("tabWorkspace Sidebar Item", "url"),
+    ("tabWorkspace Sidebar Item", "route_options"),
+    ("tabWorkspace Sidebar Item", "filters"),
     ("__UserSettings", "data"),
 )
 
@@ -795,15 +861,67 @@ def _raw_table_exists(table: str) -> bool:
     ))
 
 
-def _functional_reference_count(artifact_name: str) -> int:
-    """Count live references to an artifact across the supported surfaces.
+def _column_exists(table: str, column: str) -> bool:
+    return bool(frappe.db.sql(
+        "select 1 from information_schema.columns where table_schema=database() and table_name=%s and column_name=%s",
+        (table, column),
+    ))
 
-    Absent tables hold no references. A surface that cannot be queried raises,
-    and the caller must then retain the candidate (fail closed).
+
+def _custom_reference_surfaces() -> list[tuple[str, str]]:
+    """Discover custom fields linking to Dashboard Chart or Number Card.
+
+    Fails closed (raises RuntimeError) if an unresolvable custom Dynamic Link field
+    is detected, ensuring candidates are retained.
+    """
+    if not _raw_table_exists("tabCustom Field"):
+        return []
+
+    unresolvable = frappe.db.sql(
+        """
+        select dt, fieldname from `tabCustom Field`
+        where fieldtype = 'Dynamic Link'
+        """,
+        as_dict=True,
+    )
+    if unresolvable:
+        field_desc = ", ".join(f"{r.dt}.{r.fieldname}" for r in unresolvable)
+        raise RuntimeError(
+            f"Unresolvable custom Dynamic Link field(s) present ({field_desc}); cannot exclude references"
+        )
+
+    custom_links = frappe.db.sql(
+        """
+        select dt, fieldname from `tabCustom Field`
+        where fieldtype = 'Link' and options in ('Dashboard Chart', 'Number Card')
+        """,
+        as_dict=True,
+    )
+    surfaces = []
+    for row in custom_links:
+        table = f"tab{row.dt}"
+        surfaces.append((table, row.fieldname))
+    return surfaces
+
+
+def _functional_reference_count(artifact_name: str) -> int:
+    """Count live references to an artifact across supported surfaces.
+
+    Inspects native tables/columns and dynamically discovers custom Link fields
+    targeting Dashboard Chart or Number Card. If an unresolvable custom Dynamic Link
+    exists or any surface query fails, raises an exception so the caller fails closed
+    and retains the candidate.
+
+    Non-reference fields (e.g. `link_type` containing DocType names rather than artifact
+    names, or historical `tabVersion` rows containing audit history) are deliberately
+    excluded.
     """
     total = 0
-    for table, column in RETIRED_ARTIFACT_REFERENCE_SURFACES:
+    all_surfaces = list(RETIRED_ARTIFACT_REFERENCE_SURFACES) + _custom_reference_surfaces()
+    for table, column in all_surfaces:
         if not _raw_table_exists(table):
+            continue
+        if not _column_exists(table, column):
             continue
         rows = frappe.db.sql(
             f"select count(*) from `{table}` where `{column}` like %s",
@@ -822,13 +940,15 @@ def _artifact_ownership_mismatch(doctype: str, name: str, expected: dict) -> str
         return f"module is {doc.get('module')!r}, not {_OWNED_ARTIFACT_MODULE!r}"
     for field, expected_value in expected.items():
         current = doc.get(field)
-        if field == "filters_json":
+        if field in ("filters_json", "dynamic_filters_json"):
             try:
                 same = frappe.parse_json(current or "[]") == frappe.parse_json(expected_value or "[]")
             except Exception:
                 same = False
         elif isinstance(expected_value, int):
             same = frappe.utils.cint(current) == expected_value
+        elif expected_value is None:
+            same = current is None or (isinstance(current, str) and not current.strip())
         else:
             same = (current or "") == expected_value
         if not same:
@@ -836,10 +956,18 @@ def _artifact_ownership_mismatch(doctype: str, name: str, expected: dict) -> str
     return None
 
 
-def _candidate_disposition(doctype: str, name: str, fingerprints: dict) -> tuple[str, str]:
+def _candidate_disposition(
+    doctype: str,
+    name: str,
+    fingerprints: dict,
+    *,
+    allow_non_canonical: bool = False,
+) -> tuple[str, str]:
     """Classify one deletion candidate: absent, removable, or retained + why."""
     if not frappe.db.exists(doctype, name):
         return "absent", ""
+    if not allow_non_canonical and (doctype, name) not in CANONICAL_DELETABLE_ARTIFACTS:
+        return "retained", "historical alias; non-deletable without separately established app ownership"
     expected = fingerprints.get((doctype, name))
     if not expected:
         return "retained", "no unchanged-ownership fingerprint; retained instead of guessing"
@@ -855,15 +983,19 @@ def _candidate_disposition(doctype: str, name: str, fingerprints: dict) -> tuple
     return "removable", ""
 
 
-def plan_retired_dashboard_artifacts(candidates=None, fingerprints=None) -> dict:
-    """Non-destructive cleanup plan; never deletes anything."""
-    candidates = candidates if candidates is not None else RETIRED_ARTIFACTS
-    fingerprints = fingerprints if fingerprints is not None else RETIRED_ARTIFACT_FINGERPRINTS
+def _plan_retired_artifacts_internal(
+    candidates,
+    fingerprints,
+    *,
+    allow_non_canonical: bool = False,
+) -> dict:
     removable: list[dict] = []
     retained: list[dict] = []
     for doctype, names in candidates:
         for name in names:
-            disposition, reason = _candidate_disposition(doctype, name, fingerprints)
+            disposition, reason = _candidate_disposition(
+                doctype, name, fingerprints, allow_non_canonical=allow_non_canonical
+            )
             if disposition == "removable":
                 removable.append({"doctype": doctype, "name": name})
             elif disposition == "retained":
@@ -871,47 +1003,186 @@ def plan_retired_dashboard_artifacts(candidates=None, fingerprints=None) -> dict
     return {"dry_run": True, "removable": removable, "retained": retained}
 
 
-def remove_retired_dashboard_artifacts(apply=False, backup_reference=None, candidates=None,
-                                       fingerprints=None) -> dict:
+def plan_retired_dashboard_artifacts() -> dict:
+    """Non-destructive cleanup plan for production; never deletes anything.
+
+    Inspects the canonical retired artifacts and historical aliases against
+    all functional reference surfaces and unchanged app ownership fingerprints.
+    """
+    return _plan_retired_artifacts_internal(
+        candidates=RETIRED_ARTIFACTS,
+        fingerprints=RETIRED_ARTIFACT_FINGERPRINTS,
+        allow_non_canonical=False,
+    )
+
+
+def _backup_directory() -> Path:
+    return Path(frappe.get_site_path("private", "backups"))
+
+
+def verify_backup_preflight(backup_reference: str, backup_checksum: str | None = None) -> Path:
+    """Verify that an operator-provided backup reference exists, matches site identity, and matches checksum.
+
+    An arbitrary string is merely an operator reference, not proof of a restorable backup.
+    This preflight verifies:
+    1. The reference is a pure filename without path traversal.
+    2. The backup archive exists in the site's private/backups directory and is non-empty.
+    3. The filename contains the current site's normalized identity.
+    4. A verified SHA-256 checksum from BACKUPS.md is supplied and matches the archive's SHA-256.
+
+    Throws frappe.ValidationError if any check fails.
+    """
+    ref = (backup_reference or "").strip()
+    if not ref:
+        frappe.throw(
+            "An operator-provided backup reference from BACKUPS.md is required before removing retired artifacts.",
+            frappe.ValidationError,
+        )
+
+    ref_path = Path(ref)
+    if ref_path.name != ref or "/" in ref or "\\" in ref:
+        frappe.throw(
+            f"Backup reference {ref!r} must be a pure filename, not a path.",
+            frappe.ValidationError,
+        )
+
+    site = frappe.local.site or ""
+    site_tag = site.replace(".", "_")
+    if site_tag not in ref and site not in ref:
+        frappe.throw(
+            f"Backup reference {ref!r} does not match current site identity {site!r}.",
+            frappe.ValidationError,
+        )
+
+    backup_file = _backup_directory() / ref
+    if not backup_file.is_file() or backup_file.stat().st_size == 0:
+        frappe.throw(
+            f"Backup archive {ref!r} does not exist or is empty in {backup_file.parent}.",
+            frappe.ValidationError,
+        )
+
+    chk = (backup_checksum or "").strip().lower()
+    if not chk:
+        frappe.throw(
+            f"A verified SHA-256 checksum from BACKUPS.md is required to confirm integrity for backup {ref!r}.",
+            frappe.ValidationError,
+        )
+
+    hasher = hashlib.sha256()
+    with backup_file.open("rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            hasher.update(chunk)
+    actual_chk = hasher.hexdigest().lower()
+
+    if actual_chk != chk:
+        frappe.throw(
+            f"Backup checksum verification failed for {ref!r}: expected {chk}, actual {actual_chk}.",
+            frappe.ValidationError,
+        )
+
+    return backup_file
+
+
+def _remove_retired_artifacts_internal(
+    apply: bool = False,
+    backup_reference: str | None = None,
+    backup_checksum: str | None = None,
+    candidates=None,
+    fingerprints=None,
+    *,
+    allow_non_canonical: bool = False,
+) -> dict:
+    candidates = candidates if candidates is not None else RETIRED_ARTIFACTS
+    fingerprints = fingerprints if fingerprints is not None else RETIRED_ARTIFACT_FINGERPRINTS
+    plan = _plan_retired_artifacts_internal(
+        candidates, fingerprints, allow_non_canonical=allow_non_canonical
+    )
+    result = {"applied": False, **plan}
+    if not apply:
+        return result
+    _require_cleanup_operator()
+    verify_backup_preflight(backup_reference or "", backup_checksum)
+
+    removed: list[dict] = []
+    retained = list(plan["retained"])
+    for item in plan["removable"]:
+        if not allow_non_canonical and (item["doctype"], item["name"]) not in CANONICAL_DELETABLE_ARTIFACTS:
+            retained.append({
+                "doctype": item["doctype"],
+                "name": item["name"],
+                "reason": "candidate is outside the canonical eleven allowlist; non-deletable in production",
+            })
+            continue
+        # Never trust a stale plan: re-verify immediately before deleting.
+        disposition, reason = _candidate_disposition(
+            item["doctype"], item["name"], fingerprints, allow_non_canonical=allow_non_canonical
+        )
+        if disposition == "removable":
+            frappe.delete_doc(item["doctype"], item["name"], force=True, ignore_permissions=True)
+            removed.append(item)
+        elif disposition == "retained":
+            retained.append({"doctype": item["doctype"], "name": item["name"], "reason": reason})
+    return {
+        "applied": True,
+        "backup_reference": backup_reference,
+        "backup_checksum": (backup_checksum or "").lower(),
+        "removed": removed,
+        "retained": retained,
+    }
+
+
+def remove_retired_dashboard_artifacts(
+    apply: bool = False,
+    backup_reference: str | None = None,
+    backup_checksum: str | None = None,
+) -> dict:
     """Explicit, idempotent retired-artifact cleanup; dry-run by default.
 
     Ordinary migration never calls this. Applying deletions is a deliberate
     deployment-checkpoint action: it requires a named System Manager (or
-    Administrator) session and the reference of a fresh verified backup
-    recorded in ``BACKUPS.md``, for example::
+    Administrator) session and an independently verified backup reference and
+    SHA-256 checksum recorded in ``BACKUPS.md``, for example::
 
         bench --site <site> execute tradex_hr.install.remove_retired_dashboard_artifacts
         bench --site <site> execute tradex_hr.install.remove_retired_dashboard_artifacts \\
-            --kwargs "{'apply': True, 'backup_reference': '20260930_...-database.sql.gz'}"
+            --kwargs "{'apply': True, 'backup_reference': '20260930_012059-hrms-v16_localhost-database.sql.gz', 'backup_checksum': 'eb661fcf35d258f2d79acda5ecd9b38e72cfd0c6385e897517223f9329bd8d9d'}"
 
     Every candidate is re-checked for live references and unchanged app
     ownership immediately before deletion; anything referenced, customized or
     uninspectable is retained and reported. Idempotent: a second execution is
     harmless.
     """
-    plan = plan_retired_dashboard_artifacts(candidates, fingerprints)
-    result = {"applied": False, **plan}
-    if not apply:
-        return result
-    _require_cleanup_operator()
-    backup_reference = (backup_reference or "").strip()
-    if not backup_reference:
-        frappe.throw(
-            "Record the verified backup reference from BACKUPS.md before removing retired artifacts."
-        )
-    fingerprints = fingerprints if fingerprints is not None else RETIRED_ARTIFACT_FINGERPRINTS
-    removed: list[dict] = []
-    retained = list(plan["retained"])
-    for item in plan["removable"]:
-        # Never trust a stale plan: re-verify immediately before deleting.
-        disposition, reason = _candidate_disposition(item["doctype"], item["name"], fingerprints)
-        if disposition == "removable":
-            frappe.delete_doc(item["doctype"], item["name"], force=True, ignore_permissions=True)
-            removed.append(item)
-        elif disposition == "retained":
-            retained.append({"doctype": item["doctype"], "name": item["name"], "reason": reason})
-    return {"applied": True, "backup_reference": backup_reference,
-            "removed": removed, "retained": retained}
+    return _remove_retired_artifacts_internal(
+        apply=apply,
+        backup_reference=backup_reference,
+        backup_checksum=backup_checksum,
+        candidates=RETIRED_ARTIFACTS,
+        fingerprints=RETIRED_ARTIFACT_FINGERPRINTS,
+        allow_non_canonical=False,
+    )
+
+
+def _plan_retired_dashboard_artifacts_for_tests(candidates, fingerprints) -> dict:
+    """Test injection facility for dry-run planning with synthetic fixtures."""
+    return _plan_retired_artifacts_internal(candidates, fingerprints, allow_non_canonical=True)
+
+
+def _remove_retired_dashboard_artifacts_for_tests(
+    apply: bool = False,
+    backup_reference: str | None = None,
+    backup_checksum: str | None = None,
+    candidates=None,
+    fingerprints=None,
+) -> dict:
+    """Test injection facility for cleanup execution with synthetic fixtures."""
+    return _remove_retired_artifacts_internal(
+        apply=apply,
+        backup_reference=backup_reference,
+        backup_checksum=backup_checksum,
+        candidates=candidates,
+        fingerprints=fingerprints,
+        allow_non_canonical=True,
+    )
 
 
 def _require_cleanup_operator() -> None:

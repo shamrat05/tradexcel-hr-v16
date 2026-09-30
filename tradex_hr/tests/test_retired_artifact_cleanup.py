@@ -1,21 +1,34 @@
-"""TXUX-260930-013-P01: explicit retired-artifact cleanup contract tests.
+"""TXUX-260930-013-P02: explicit retired-artifact cleanup contract tests.
 
-Synthetic records only; the real staging records are never deleted here. The
-plan/apply functions under test are the same ones the deployment checkpoint
-uses, driven with an explicit synthetic allowlist and fingerprints.
+Synthetic records only; real staging records are never deleted here.
+Tests cover:
+- Production allowlist enforcement and separation of test injection.
+- Detection of additional functional references (Workspace Sidebar Item, Desktop Icon, custom Link fields).
+- Fail-closed behavior on unresolvable custom Dynamic Link fields.
+- Customization detection on presentation properties (background_color, show_percentage_stats, custom_options, show_values_over_chart).
+- Verified backup preflight integrity checks against recorded evidence.
+- Canonical allowlist coverage and zero source recreation paths.
 """
 import ast
+import hashlib
+import importlib
 import inspect
 import os
+import sys
 from pathlib import Path
 from unittest.mock import patch
+
+WORKTREE_ROOT = Path(__file__).resolve().parents[2]
+if str(WORKTREE_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKTREE_ROOT))
 
 import frappe
 import pytest
 
 from tradex_hr import install
+importlib.reload(install)
 
-PREFIX = "TXUX013P01-SYNTH"
+PREFIX = "TXUX013P02-SYNTH"
 CANONICAL_CARDS = (
     "Tradexcel Active Employees",
     "Tradexcel Punches Logged",
@@ -44,16 +57,15 @@ def site():
     frappe.set_user("Administrator")
 
     # Fixture-only housekeeping: synthetic rename/delete must not enqueue
-    # search rebuilds into the shared staging queue.
+    # search rebuilds or queue overloads in the shared staging environment.
     original_enqueue = frappe.enqueue
 
     def fixture_enqueue(method=None, *args, **kwargs):
-        if method == "frappe.model.delete_doc.delete_dynamic_links":
-            if str(kwargs.get("name", "")).startswith(PREFIX):
-                return None
-        if method == "frappe.utils.global_search.rebuild_for_doctype":
-            if kwargs.get("doctype") in ("Number Card", "Dashboard Chart", "Custom HTML Block"):
-                return None
+        if method in (
+            "frappe.model.delete_doc.delete_dynamic_links",
+            "frappe.utils.global_search.rebuild_for_doctype",
+        ):
+            return None
         return original_enqueue(method, *args, **kwargs)
 
     with patch.object(frappe, "enqueue", new=fixture_enqueue):
@@ -71,7 +83,24 @@ def _called_function_names(func) -> set[str]:
     }
 
 
-def _synthetic_card(name, *, label=None, module="Tradexcel HR", color="Green"):
+def _synthetic_backup(tmp_path: Path, site_name: str = "hrms-v16.localhost", content: bytes = b"synthetic-backup-data"):
+    site_tag = site_name.replace(".", "_")
+    filename = f"20260930_012059-{site_tag}-database.sql.gz"
+    backup_file = tmp_path / filename
+    backup_file.write_bytes(content)
+    checksum = hashlib.sha256(content).hexdigest()
+    return filename, checksum, backup_file
+
+
+def _synthetic_card(
+    name,
+    *,
+    label=None,
+    module="Tradexcel HR",
+    color="Green",
+    background_color=None,
+    show_percentage_stats=1,
+):
     fields = {
         "doctype": "Number Card",
         "label": label or name,
@@ -81,7 +110,10 @@ def _synthetic_card(name, *, label=None, module="Tradexcel HR", color="Green"):
         "filters_json": "[]",
         "is_public": 1,
         "color": color,
+        "show_percentage_stats": show_percentage_stats,
     }
+    if background_color is not None:
+        fields["background_color"] = background_color
     if module:
         fields["module"] = module
     doc = frappe.get_doc(fields)
@@ -91,32 +123,149 @@ def _synthetic_card(name, *, label=None, module="Tradexcel HR", color="Green"):
     return name
 
 
-def _card_fingerprint(label, *, color="Green"):
+def _card_fingerprint(
+    label,
+    *,
+    color="Green",
+    background_color=None,
+    show_percentage_stats=1,
+):
     return {
-        "label": label, "type": "Document Type", "document_type": "Employee",
-        "function": "Count", "filters_json": "[]", "is_standard": 0, "is_public": 1,
+        "label": label,
+        "type": "Document Type",
+        "document_type": "Employee",
+        "function": "Count",
+        "filters_json": "[]",
+        "is_standard": 0,
+        "is_public": 1,
         "color": color,
+        "background_color": background_color,
+        "show_percentage_stats": show_percentage_stats,
+        "stats_time_interval": "Daily",
+        "show_full_number": 0,
+        "report_function": "Sum",
+        "currency": "BDT",
     }
 
 
-def _synthetic_block(name, html):
+def _synthetic_chart(
+    name,
+    *,
+    chart_name=None,
+    module="Tradexcel HR",
+    show_values_over_chart=0,
+    custom_options=None,
+):
+    fields = {
+        "doctype": "Dashboard Chart",
+        "chart_name": chart_name or name,
+        "chart_type": "Group By",
+        "document_type": "Employee",
+        "group_by_type": "Count",
+        "group_by_based_on": "department",
+        "type": "Bar",
+        "filters_json": "[]",
+        "is_public": 1,
+        "show_values_over_chart": show_values_over_chart,
+    }
+    if custom_options is not None:
+        fields["custom_options"] = custom_options
+    if module:
+        fields["module"] = module
+    doc = frappe.get_doc(fields)
+    doc.insert(ignore_permissions=True)
+    if doc.name != name:
+        frappe.rename_doc("Dashboard Chart", doc.name, name, force=True)
+    return name
+
+
+def _chart_fingerprint(
+    name,
+    *,
+    show_values_over_chart=0,
+    custom_options=None,
+):
+    return {
+        "chart_name": name,
+        "chart_type": "Group By",
+        "document_type": "Employee",
+        "group_by_type": "Count",
+        "group_by_based_on": "department",
+        "type": "Bar",
+        "filters_json": "[]",
+        "is_standard": 0,
+        "is_public": 1,
+        "show_values_over_chart": show_values_over_chart,
+        "custom_options": custom_options,
+        "dynamic_filters_json": None,
+        "color": None,
+        "time_interval": "Yearly",
+        "timespan": "Last Year",
+        "timeseries": 0,
+    }
+
+
+def _synthetic_block(name, html="", script="", style=""):
     return frappe.get_doc({
         "doctype": "Custom HTML Block",
         "name": name,
         "html": html,
+        "script": script,
+        "style": style,
         "private": 1,
     }).insert(ignore_permissions=True).name
 
 
 def _cleanup_synthetic():
-    for doctype in ("Number Card", "Dashboard Chart", "Custom HTML Block"):
+    for doctype in ("Number Card", "Dashboard Chart", "Custom HTML Block", "Desktop Icon"):
         for name in frappe.get_all(doctype, filters={"name": ["like", f"{PREFIX}%"]}, pluck="name"):
             frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+    for name in frappe.get_all("Custom Field", filters={"name": ["like", f"{PREFIX}%"]}, pluck="name"):
+        frappe.delete_doc("Custom Field", name, force=True, ignore_permissions=True)
+    frappe.db.sql("delete from `tabWorkspace Sidebar Item` where name like %s", (f"{PREFIX}%",))
     frappe.db.commit()
 
 
-def test_unused_identifiable_artifact_is_removed_and_second_run_is_idempotent():
+def test_production_allowlist_and_separate_test_injection():
+    # Production entry points must not accept arbitrary candidate/fingerprint injection.
+    with pytest.raises(TypeError):
+        install.remove_retired_dashboard_artifacts(candidates=[])  # type: ignore[call-arg]
+    with pytest.raises(TypeError):
+        install.remove_retired_dashboard_artifacts(fingerprints={})  # type: ignore[call-arg]
+    with pytest.raises(TypeError):
+        install.plan_retired_dashboard_artifacts(candidates=[])  # type: ignore[call-arg]
+
+    # Calling dry-run production plan returns canonical eleven in removable
+    # (staging has no functional references).
+    plan = install.plan_retired_dashboard_artifacts()
+    removable_names = {item["name"] for item in plan["removable"]}
+    for name in CANONICAL_CARDS:
+        assert name in removable_names
+    for name in CANONICAL_CHARTS:
+        assert name in removable_names
+
+    # Historical aliases are reportable but non-deletable in production.
+    # Create a synthetic alias that is in RETIRED_NUMBER_CARDS but not canonical.
+    alias_name = "TradeX Active Employees"
+    alias_created = False
+    if not frappe.db.exists("Number Card", alias_name):
+        _synthetic_card(alias_name)
+        alias_created = True
+    try:
+        alias_plan = install.plan_retired_dashboard_artifacts()
+        alias_items = {item["name"]: item["reason"] for item in alias_plan["retained"]}
+        assert alias_name in alias_items
+        assert "historical alias; non-deletable" in alias_items[alias_name]
+    finally:
+        if alias_created and frappe.db.exists("Number Card", alias_name):
+            frappe.delete_doc("Number Card", alias_name, force=True, ignore_permissions=True)
+
+
+def test_unused_identifiable_artifact_is_removed_and_second_run_is_idempotent(tmp_path, monkeypatch):
     _cleanup_synthetic()
+    ref_name, checksum, _ = _synthetic_backup(tmp_path)
+    monkeypatch.setattr(install, "_backup_directory", lambda: tmp_path)
+
     owned = _synthetic_card(f"{PREFIX}-OWNED")
     customized = _synthetic_card(f"{PREFIX}-CUSTOM", color="Red")
     absent = f"{PREFIX}-ABSENT"
@@ -126,23 +275,29 @@ def test_unused_identifiable_artifact_is_removed_and_second_run_is_idempotent():
     }
     candidates = (("Number Card", (owned, customized, absent)),)
     try:
-        plan = install.plan_retired_dashboard_artifacts(candidates, fingerprints)
+        plan = install._plan_retired_dashboard_artifacts_for_tests(candidates, fingerprints)
         assert [item["name"] for item in plan["removable"]] == [owned]
         assert [item["name"] for item in plan["retained"]] == [customized]
         assert "differs from the retired app definition" in plan["retained"][0]["reason"]
 
-        result = install.remove_retired_dashboard_artifacts(
-            apply=True, backup_reference="TXUX013P01 synthetic BACKUPS.md row",
-            candidates=candidates, fingerprints=fingerprints,
+        result = install._remove_retired_dashboard_artifacts_for_tests(
+            apply=True,
+            backup_reference=ref_name,
+            backup_checksum=checksum,
+            candidates=candidates,
+            fingerprints=fingerprints,
         )
         assert result["applied"] is True
         assert [item["name"] for item in result["removed"]] == [owned]
         assert not frappe.db.exists("Number Card", owned)
         assert frappe.db.exists("Number Card", customized), "customized artifact must survive"
 
-        second = install.remove_retired_dashboard_artifacts(
-            apply=True, backup_reference="TXUX013P01 synthetic BACKUPS.md row",
-            candidates=candidates, fingerprints=fingerprints,
+        second = install._remove_retired_dashboard_artifacts_for_tests(
+            apply=True,
+            backup_reference=ref_name,
+            backup_checksum=checksum,
+            candidates=candidates,
+            fingerprints=fingerprints,
         )
         assert second["removed"] == [], "second execution must be harmless"
         assert frappe.db.exists("Number Card", customized)
@@ -151,55 +306,187 @@ def test_unused_identifiable_artifact_is_removed_and_second_run_is_idempotent():
     assert not frappe.get_all("Number Card", filters={"name": ["like", f"{PREFIX}%"]}, pluck="name")
 
 
-def test_same_module_but_customized_and_foreign_records_survive():
+def test_customizations_survive_including_previously_omitted_properties(tmp_path, monkeypatch):
     _cleanup_synthetic()
+    ref_name, checksum, _ = _synthetic_backup(tmp_path)
+    monkeypatch.setattr(install, "_backup_directory", lambda: tmp_path)
+
     foreign = _synthetic_card(f"{PREFIX}-FOREIGN", module=None)
-    customized = _synthetic_card(f"{PREFIX}-DRIFT", label="A user renamed this card")
+    drift = _synthetic_card(f"{PREFIX}-DRIFT", label="A user renamed this card")
+    custom_bg = _synthetic_card(f"{PREFIX}-BG", background_color="#123456")
+    custom_pct = _synthetic_card(f"{PREFIX}-PCT", show_percentage_stats=0)
+    custom_vals = _synthetic_chart(f"{PREFIX}-VALS", show_values_over_chart=1)
+    custom_opts = _synthetic_chart(f"{PREFIX}-OPTS", custom_options='{"colors": ["#000"]}')
+
     fingerprints = {
         ("Number Card", foreign): _card_fingerprint(f"{PREFIX}-FOREIGN"),
-        ("Number Card", customized): _card_fingerprint(f"{PREFIX}-DRIFT"),
+        ("Number Card", drift): _card_fingerprint(f"{PREFIX}-DRIFT"),
+        ("Number Card", custom_bg): _card_fingerprint(f"{PREFIX}-BG", background_color=None),
+        ("Number Card", custom_pct): _card_fingerprint(f"{PREFIX}-PCT", show_percentage_stats=1),
+        ("Dashboard Chart", custom_vals): _chart_fingerprint(f"{PREFIX}-VALS", show_values_over_chart=0),
+        ("Dashboard Chart", custom_opts): _chart_fingerprint(f"{PREFIX}-OPTS", custom_options=None),
     }
-    candidates = (("Number Card", (foreign, customized)),)
+    candidates = (
+        ("Number Card", (foreign, drift, custom_bg, custom_pct)),
+        ("Dashboard Chart", (custom_vals, custom_opts)),
+    )
     try:
-        plan = install.plan_retired_dashboard_artifacts(candidates, fingerprints)
+        plan = install._plan_retired_dashboard_artifacts_for_tests(candidates, fingerprints)
         assert plan["removable"] == []
         reasons = {item["name"]: item["reason"] for item in plan["retained"]}
         assert "module is None" in reasons[foreign]
-        assert "label" in reasons[customized] and "differs" in reasons[customized]
-        result = install.remove_retired_dashboard_artifacts(
-            apply=True, backup_reference="TXUX013P01 synthetic row",
-            candidates=candidates, fingerprints=fingerprints,
+        assert "label" in reasons[drift] and "differs" in reasons[drift]
+        assert "background_color" in reasons[custom_bg] and "differs" in reasons[custom_bg]
+        assert "show_percentage_stats" in reasons[custom_pct] and "differs" in reasons[custom_pct]
+        assert "show_values_over_chart" in reasons[custom_vals] and "differs" in reasons[custom_vals]
+        assert "custom_options" in reasons[custom_opts] and "differs" in reasons[custom_opts]
+
+        result = install._remove_retired_dashboard_artifacts_for_tests(
+            apply=True,
+            backup_reference=ref_name,
+            backup_checksum=checksum,
+            candidates=candidates,
+            fingerprints=fingerprints,
         )
         assert result["removed"] == []
         assert frappe.db.exists("Number Card", foreign)
-        assert frappe.db.exists("Number Card", customized)
+        assert frappe.db.exists("Number Card", drift)
+        assert frappe.db.exists("Number Card", custom_bg)
+        assert frappe.db.exists("Number Card", custom_pct)
+        assert frappe.db.exists("Dashboard Chart", custom_vals)
+        assert frappe.db.exists("Dashboard Chart", custom_opts)
     finally:
         _cleanup_synthetic()
 
 
-def test_referenced_artifact_is_retained():
+def test_referenced_artifact_is_retained_across_native_and_custom_surfaces(tmp_path, monkeypatch):
     _cleanup_synthetic()
-    card = _synthetic_card(f"{PREFIX}-REFERENCED")
-    block = _synthetic_block(f"{PREFIX}-BLOCK", f"<p>See {card} for the current headcount.</p>")
-    fingerprints = {("Number Card", card): _card_fingerprint(f"{PREFIX}-REFERENCED")}
-    candidates = (("Number Card", (card,)),)
+    ref_name, checksum, _ = _synthetic_backup(tmp_path)
+    monkeypatch.setattr(install, "_backup_directory", lambda: tmp_path)
+
+    card_block = _synthetic_card(f"{PREFIX}-REF-BLOCK")
+    card_desktop = _synthetic_card(f"{PREFIX}-REF-DESKTOP")
+    card_sidebar = _synthetic_card(f"{PREFIX}-REF-SIDEBAR")
+    card_custom_field = _synthetic_card(f"{PREFIX}-REF-CUSTFIELD")
+
+    # 1. Custom HTML Block
+    _synthetic_block(f"{PREFIX}-BLK", html=f"<p>{card_block}</p>")
+
+    # 2. Desktop Icon link
+    frappe.get_doc({
+        "doctype": "Desktop Icon",
+        "label": f"{PREFIX}-ICON",
+        "link_type": "External",
+        "link": f"/app/number-card/{card_desktop}",
+        "standard": 0,
+    }).insert(ignore_permissions=True)
+
+    # 3. Workspace Sidebar Item (url / route_options / filters)
+    frappe.db.sql(
+        """
+        insert into `tabWorkspace Sidebar Item`
+        (name, parent, parenttype, parentfield, link_type, url, route_options, filters)
+        values (%s, 'HR', 'Workspace Sidebar', 'items', 'URL', %s, %s, %s)
+        """,
+        (
+            f"{PREFIX}-SIDEBAR-ITEM",
+            f"/app/number-card/{card_sidebar}",
+            f'{{"card": "{card_sidebar}"}}',
+            f'[["Number Card", "name", "=", "{card_sidebar}"]]',
+        ),
+    )
+
+    # 4. Custom Field linking to Number Card
+    import random
+    uid = f"{random.randint(10000, 99999)}"
+    cf_name = f"{PREFIX}-CF-{uid}"
+    col_name = f"custom_cf_{uid}_card"
+    frappe.get_doc({
+        "doctype": "Custom Field",
+        "name": cf_name,
+        "dt": "Department",
+        "fieldname": col_name,
+        "label": "Synthetic Linked Card",
+        "fieldtype": "Link",
+        "options": "Number Card",
+    }).insert(ignore_permissions=True)
+    # Put a reference value in the table
+    dept = frappe.db.get_value("Department", {"company": "Tradexcel Ceramics Ltd."}, "name")
+    frappe.db.sql(f"update `tabDepartment` set `{col_name}`=%s where name=%s", (card_custom_field, dept))
+
+    fingerprints = {
+        ("Number Card", card_block): _card_fingerprint(f"{PREFIX}-REF-BLOCK"),
+        ("Number Card", card_desktop): _card_fingerprint(f"{PREFIX}-REF-DESKTOP"),
+        ("Number Card", card_sidebar): _card_fingerprint(f"{PREFIX}-REF-SIDEBAR"),
+        ("Number Card", card_custom_field): _card_fingerprint(f"{PREFIX}-REF-CUSTFIELD"),
+    }
+    candidates = (("Number Card", (card_block, card_desktop, card_sidebar, card_custom_field)),)
+
     try:
-        plan = install.plan_retired_dashboard_artifacts(candidates, fingerprints)
+        plan = install._plan_retired_dashboard_artifacts_for_tests(candidates, fingerprints)
         assert plan["removable"] == []
-        assert plan["retained"][0]["name"] == card
-        assert "functional reference(s) still exist" in plan["retained"][0]["reason"]
-        result = install.remove_retired_dashboard_artifacts(
-            apply=True, backup_reference="TXUX013P01 synthetic row",
-            candidates=candidates, fingerprints=fingerprints,
+        retained_map = {item["name"]: item["reason"] for item in plan["retained"]}
+        for card in (card_block, card_desktop, card_sidebar, card_custom_field):
+            assert card in retained_map
+            assert "functional reference(s) still exist" in retained_map[card]
+
+        result = install._remove_retired_dashboard_artifacts_for_tests(
+            apply=True,
+            backup_reference=ref_name,
+            backup_checksum=checksum,
+            candidates=candidates,
+            fingerprints=fingerprints,
         )
         assert result["removed"] == []
-        assert frappe.db.exists("Number Card", card)
+        assert frappe.db.exists("Number Card", card_block)
+        assert frappe.db.exists("Number Card", card_desktop)
+        assert frappe.db.exists("Number Card", card_sidebar)
+        assert frappe.db.exists("Number Card", card_custom_field)
     finally:
+        if dept:
+            frappe.db.sql(f"update `tabDepartment` set `{col_name}`=NULL where name=%s", (dept,))
+        frappe.db.sql("delete from `tabCustom Field` where name=%s", (cf_name,))
+        frappe.db.commit()
+        frappe.db.sql_ddl(f"alter table `tabDepartment` drop column `{col_name}`")
         _cleanup_synthetic()
 
 
-def test_inaccessible_reference_surface_fails_closed(monkeypatch):
+def test_unresolvable_custom_dynamic_link_fails_closed():
     _cleanup_synthetic()
+    card = _synthetic_card(f"{PREFIX}-DYNLINK")
+    fingerprints = {("Number Card", card): _card_fingerprint(f"{PREFIX}-DYNLINK")}
+    candidates = (("Number Card", (card,)),)
+
+    # Insert a synthetic Custom Field of type Dynamic Link directly in DB
+    cf_clean = PREFIX.lower().replace("-", "_")
+    cf_name = f"{PREFIX}-DYN-CF"
+    frappe.db.sql(
+        """
+        insert into `tabCustom Field` (name, dt, fieldname, label, fieldtype, options)
+        values (%s, 'Department', %s, 'Synthetic Dynamic Link', 'Dynamic Link', 'department_name')
+        """,
+        (cf_name, f"custom_{cf_clean}_target"),
+    )
+    frappe.db.commit()
+
+    try:
+        with pytest.raises(RuntimeError, match="Unresolvable custom Dynamic Link field"):
+            install._custom_reference_surfaces()
+
+        plan = install._plan_retired_dashboard_artifacts_for_tests(candidates, fingerprints)
+        assert plan["removable"] == []
+        assert "reference surfaces could not be inspected" in plan["retained"][0]["reason"]
+    finally:
+        frappe.db.sql("delete from `tabCustom Field` where name=%s", (cf_name,))
+        frappe.db.commit()
+        _cleanup_synthetic()
+
+
+def test_inaccessible_reference_surface_fails_closed(tmp_path, monkeypatch):
+    _cleanup_synthetic()
+    ref_name, checksum, _ = _synthetic_backup(tmp_path)
+    monkeypatch.setattr(install, "_backup_directory", lambda: tmp_path)
+
     card = _synthetic_card(f"{PREFIX}-OPAQUE")
     fingerprints = {("Number Card", card): _card_fingerprint(f"{PREFIX}-OPAQUE")}
     candidates = (("Number Card", (card,)),)
@@ -209,12 +496,15 @@ def test_inaccessible_reference_surface_fails_closed(monkeypatch):
 
     monkeypatch.setattr(install, "_functional_reference_count", broken_surface)
     try:
-        plan = install.plan_retired_dashboard_artifacts(candidates, fingerprints)
+        plan = install._plan_retired_dashboard_artifacts_for_tests(candidates, fingerprints)
         assert plan["removable"] == []
         assert "could not be inspected" in plan["retained"][0]["reason"]
-        result = install.remove_retired_dashboard_artifacts(
-            apply=True, backup_reference="TXUX013P01 synthetic row",
-            candidates=candidates, fingerprints=fingerprints,
+        result = install._remove_retired_dashboard_artifacts_for_tests(
+            apply=True,
+            backup_reference=ref_name,
+            backup_checksum=checksum,
+            candidates=candidates,
+            fingerprints=fingerprints,
         )
         assert result["removed"] == []
         assert frappe.db.exists("Number Card", card), "uninspectable candidate must be retained"
@@ -230,9 +520,11 @@ def test_dry_run_and_ordinary_migration_never_delete(monkeypatch):
     deletions = []
     monkeypatch.setattr(install.frappe, "delete_doc", lambda *args, **kwargs: deletions.append(args))
     try:
-        plan = install.plan_retired_dashboard_artifacts(candidates, fingerprints)
+        plan = install._plan_retired_dashboard_artifacts_for_tests(candidates, fingerprints)
         assert plan["removable"] == [{"doctype": "Number Card", "name": card}]
-        dry = install.remove_retired_dashboard_artifacts(candidates=candidates, fingerprints=fingerprints)
+        dry = install._remove_retired_dashboard_artifacts_for_tests(
+            candidates=candidates, fingerprints=fingerprints
+        )
         assert dry["applied"] is False and dry["dry_run"] is True
         assert deletions == [], "planning/dry-run must not delete anything"
         assert frappe.db.exists("Number Card", card)
@@ -246,36 +538,64 @@ def test_dry_run_and_ordinary_migration_never_delete(monkeypatch):
         _cleanup_synthetic()
 
 
-def test_apply_requires_backup_reference_and_system_manager(monkeypatch):
-    _cleanup_synthetic()
-    card = _synthetic_card(f"{PREFIX}-GATED")
-    fingerprints = {("Number Card", card): _card_fingerprint(f"{PREFIX}-GATED")}
-    candidates = (("Number Card", (card,)),)
-    try:
-        with pytest.raises(frappe.ValidationError, match="verified backup reference"):
-            install.remove_retired_dashboard_artifacts(apply=True, candidates=candidates, fingerprints=fingerprints)
-        assert frappe.db.exists("Number Card", card)
+def test_backup_preflight_verification(tmp_path, monkeypatch):
+    monkeypatch.setattr(install, "_backup_directory", lambda: tmp_path)
+    site = frappe.local.site or "hrms-v16.localhost"
+    valid_name, valid_checksum, valid_file = _synthetic_backup(tmp_path, site_name=site)
 
-        monkeypatch.setattr(install.frappe.session, "user", "txux013p01-nonadmin@example.test", raising=False)
-        with pytest.raises(frappe.PermissionError, match="System Manager"):
-            install.remove_retired_dashboard_artifacts(
-                apply=True, backup_reference="TXUX013P01 synthetic row",
-                candidates=candidates, fingerprints=fingerprints,
-            )
-        assert frappe.db.exists("Number Card", card)
-    finally:
-        monkeypatch.undo()
-        _cleanup_synthetic()
+    # 1. Empty reference throws
+    with pytest.raises(frappe.ValidationError, match="reference from BACKUPS.md is required"):
+        install.verify_backup_preflight("")
+
+    # 2. Path traversal throws
+    with pytest.raises(frappe.ValidationError, match="must be a pure filename"):
+        install.verify_backup_preflight(f"../{valid_name}", valid_checksum)
+
+    # 3. Site identity mismatch throws
+    with pytest.raises(frappe.ValidationError, match="does not match current site identity"):
+        install.verify_backup_preflight("20260930_012059-other_site-database.sql.gz", valid_checksum)
+
+    # 4. Non-existent file throws
+    with pytest.raises(frappe.ValidationError, match="does not exist or is empty"):
+        install.verify_backup_preflight(f"20260930_012059-{site.replace('.', '_')}-missing.sql.gz", valid_checksum)
+
+    # 5. Empty file throws
+    empty_file = tmp_path / f"20260930_012059-{site.replace('.', '_')}-empty.sql.gz"
+    empty_file.write_bytes(b"")
+    with pytest.raises(frappe.ValidationError, match="does not exist or is empty"):
+        install.verify_backup_preflight(empty_file.name, valid_checksum)
+
+    # 6. Missing checksum throws
+    with pytest.raises(frappe.ValidationError, match="verified SHA-256 checksum from BACKUPS.md is required"):
+        install.verify_backup_preflight(valid_name, "")
+
+    # 7. Checksum mismatch throws
+    with pytest.raises(frappe.ValidationError, match="checksum verification failed"):
+        install.verify_backup_preflight(valid_name, "0000000000000000000000000000000000000000000000000000000000000000")
+
+    # 8. Valid archive and checksum succeeds
+    verified_path = install.verify_backup_preflight(valid_name, valid_checksum)
+    assert verified_path == valid_file
+
+    # 9. Non-System Manager is rejected by remove_retired_dashboard_artifacts
+    monkeypatch.setattr(install.frappe.session, "user", "txux013p02-nonadmin@example.test", raising=False)
+    monkeypatch.setattr(install.frappe, "get_roles", lambda: ["HR User"])
+    with pytest.raises(frappe.PermissionError, match="System Manager"):
+        install.remove_retired_dashboard_artifacts(
+            apply=True, backup_reference=valid_name, backup_checksum=valid_checksum
+        )
 
 
 def test_allowlist_and_fingerprints_cover_only_the_reviewed_canonical_artifacts():
     expected = {("Number Card", name) for name in CANONICAL_CARDS}
     expected |= {("Dashboard Chart", name) for name in CANONICAL_CHARTS}
     assert set(install.RETIRED_ARTIFACT_FINGERPRINTS) == expected
+
     # Historical aliases and prototype duplicates stay in the allowlist for
     # reporting, but have no fingerprint and are therefore retained.
     assert ("Number Card", "TradeX Active Employees") not in install.RETIRED_ARTIFACT_FINGERPRINTS
     assert ("Dashboard Chart", "TradeX Checkins by Day") not in install.RETIRED_ARTIFACT_FINGERPRINTS
+
     # Native referenced cards are not candidates and never appear in a plan.
     native = (
         "Expense Claims (This Month)",
@@ -286,16 +606,18 @@ def test_allowlist_and_fingerprints_cover_only_the_reviewed_canonical_artifacts(
     plan = install.plan_retired_dashboard_artifacts()
     planned = {item["name"] for item in plan["removable"] + plan["retained"]}
     assert not set(native).intersection(planned)
+
     # Historical Version/UI Version rows are not reference surfaces.
     surfaces = {table for table, _column in install.RETIRED_ARTIFACT_REFERENCE_SURFACES}
     assert not any("Version" in table for table in surfaces)
 
 
 def test_source_tree_has_no_retired_artifact_json_or_creation_paths():
-    module_root = Path(frappe.get_app_path("tradex_hr", "tradexcel_hr"))
+    app_root = Path(__file__).resolve().parents[1]
+    module_root = app_root / "tradexcel_hr"
     assert not list(module_root.glob("dashboard_chart/*/*.json"))
     assert not list(module_root.glob("number_card/*/*.json"))
-    install_source = Path(frappe.get_app_path("tradex_hr", "install.py")).read_text()
+    install_source = (app_root / "install.py").read_text()
     for retired_helper in (
         "def ensure_number_cards",
         "def ensure_dashboard_charts",
@@ -304,6 +626,7 @@ def test_source_tree_has_no_retired_artifact_json_or_creation_paths():
         "def remove_orphaned_dashboard_records",
     ):
         assert retired_helper not in install_source
+
     # Fingerprints are verification data only; installer entry points never
     # create or delete through them (no direct or indirect call).
     for installer in (install.after_install, install.after_migrate):
