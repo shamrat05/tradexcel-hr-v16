@@ -50,7 +50,8 @@ def test_report_contains_each_readiness_employee_once(monkeypatch):
     assert rows[2]["action_kinds"] == "salary_assignments"
     assert summary[1]["value"] == 1
     assert summary[2]["value"] == 2
-    assert message == "September 2026 Payroll"
+    assert message.startswith("September 2026 Payroll")
+    assert "2 of 3 records need attention before preparing." in message
 
 
 def test_unsafe_daily_wage_structure_offers_migration_review(monkeypatch):
@@ -75,7 +76,9 @@ def test_unsafe_daily_wage_structure_offers_migration_review(monkeypatch):
     _columns, rows, _message, _chart, summary = report.execute({"company": "Company A"})
 
     assert rows[0]["problem"].startswith("2 attendance day(s) need review")
-    assert "(+ 1 more issue)" in rows[0]["problem"]
+    assert "Current Daily Wage structure can calculate the wrong amount" in rows[0]["problem"]
+    assert "more issue" not in rows[0]["problem"]
+    assert rows[0]["fix_scope"] == "Employee record"
     assert "migration" in rows[0]["action_kinds"]
     assert summary[1]["value"] == 0
 
@@ -164,6 +167,51 @@ def test_report_exposes_native_queue_and_failure_state(monkeypatch):
     assert summary[3]["value"] == "Failed"
     assert summary[4]["value"] == "PAY-1"
     assert "native retry" in message
+    assert _rows[0]["run_action_kinds"] == "payroll_entry"
+    assert _rows[0]["payroll_entry"] == "PAY-1"
+    assert any(item["label"] == "Payroll Entry action" for item in summary)
+
+
+def test_fix_scope_classifies_each_blocker_family():
+    assert report._fix_scope([{"code": "ATTENDANCE_UNMARKED"}]) == "Employee record"
+    assert report._fix_scope([{"code": "TAX_COMPONENT_MISSING"}]) == "Company configuration"
+    assert report._fix_scope([{"code": "BLOCKED_ATTENDANCE_PERIOD"}]) == "Period"
+    assert report._fix_scope([{"code": "DRAFT_SLIP_MISSING"}]) == "Payroll run"
+    assert report._fix_scope([{"code": "UNKNOWN_FUTURE_CODE"}]) == "Review required"
+    assert report._fix_scope([{"code": "ATTENDANCE_UNMARKED"}, {"code": "TAX_COMPONENT_MISSING"}]) == (
+        "Employee record + Company configuration"
+    )
+
+
+def test_columns_separate_problem_scope_and_native_next_action(monkeypatch):
+    monkeypatch.setattr(report, "_report_period", lambda *_args: (
+        "Company A", date(2026, 9, 1), date(2026, 9, 30)
+    ))
+    monkeypatch.setattr(report, "inspect_native_payroll_readiness", lambda *_args: {
+        "employee_count": 1, "ready_count": 0, "blocked_count": 1,
+        "outcomes": [{
+            "employee": "EMP-1", "employee_data": {"employee_name": "One"},
+            "status": "BLOCKED_PAY_BASIS",
+            "pay_basis": {"status": "UNRESOLVED"},
+            "findings": [
+                {"code": "BLOCKED_PAY_BASIS", "reason": "No submitted Salary Structure Assignment applies on 2026-09-01"},
+                {"code": "TAX_SLAB_MISSING", "reason": "Income tax configuration is missing."},
+            ],
+        }],
+    })
+    monkeypatch.setattr(report, "_existing_payroll_entry", lambda *_args: [])
+
+    columns, rows, _message, _chart, _summary = report.execute({"company": "Company A"})
+
+    fieldnames = [column["fieldname"] for column in columns]
+    assert "problem" in fieldnames and "fix_scope" in fieldnames and "run_action_kinds" in fieldnames
+    row = rows[0]
+    assert "No salary assignment applies on 2026-09-01" in row["problem"]
+    assert "Income tax configuration is missing" in row["problem"]
+    assert row["blocker_codes"] == "BLOCKED_PAY_BASIS|TAX_SLAB_MISSING"
+    assert row["fix_scope"] == "Employee record + Company configuration"
+    assert row["run_action_kinds"] == ""
+    assert row["action_kinds"] == "salary_assignments"
 
 
 def test_financial_blockers_route_to_native_fix_records():
@@ -220,6 +268,8 @@ def test_financial_report_shows_component_override_source_and_fix_action(monkeyp
     assert rows[0]["financial_action_kinds"] == "salary_components"
     assert rows[0]["financial_salary_slip"] == "SS-1"
     assert rows[0]["financial_component"] == "Housing"
+    assert rows[0]["run_action_kinds"] == "payroll_entry"
+    assert rows[0]["payroll_entry"] == "PE-1"
 
 
 def test_effective_dated_migration_preview_reports_assignment_conflicts(monkeypatch):

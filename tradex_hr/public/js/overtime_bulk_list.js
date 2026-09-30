@@ -61,11 +61,45 @@ frappe.listview_settings["Overtime Slip"] = {
                                     callback(result) {
                                         const outcome = result.message;
                                         if (outcome?.status === "Queued") {
-                                            frappe.msgprint(__("Draft preparation was queued. Review Overtime Slip List when it finishes."));
+                                            frappe.msgprint({
+                                                title: __("Overtime draft preparation queued"),
+                                                message: __("Preparation is queued for {0} selected Employee(s). Drafts do not create pay. Review the native Overtime Slip list when it finishes; an independent Payroll Approver must submit them.", [outcome.count || 0]),
+                                                indicator: "blue",
+                                                primary_action: {
+                                                    label: __("Review Overtime Slips"),
+                                                    action: () => frappe.set_route("List", "Overtime Slip"),
+                                                },
+                                            });
                                         } else {
-                                            const created = (outcome?.rows || []).filter((row) => row.status === "Draft").length;
-                                            const other = (outcome?.rows || []).length - created;
-                                            frappe.msgprint(__("Drafts created: {0}. Needs review: {1}.", [created, other]));
+                                            const rows = outcome?.rows || [];
+                                            const groups = new Map();
+                                            for (const row of rows) {
+                                                const key = row.status || "Review";
+                                                if (!groups.has(key)) groups.set(key, []);
+                                                groups.get(key).push(row);
+                                            }
+                                            const labels = {
+                                                Draft: __("Draft created"),
+                                                Blocked: __("Not eligible — salary authority needs review"),
+                                                Failed: __("Could not be prepared — review the Employee"),
+                                            };
+                                            let html = "";
+                                            for (const [status, items] of groups) {
+                                                html += `<p><b>${escaped(labels[status] || status)} (${items.length})</b></p><ul>` +
+                                                    items.map((row) => `<li>${escaped(row.employee)}` +
+                                                        (row.overtime_slip ? ` — ${escaped(row.overtime_slip)}` : "") +
+                                                        (row.reason ? ` — ${escaped(row.reason)}` : "") + "</li>").join("") + "</ul>";
+                                            }
+                                            html += `<p class="small text-muted">${__("Draft Overtime Slips do not create pay. An independent Payroll Approver must submit them; then inspect the native Overtime Slips.")}</p>`;
+                                            frappe.msgprint({
+                                                title: __("Overtime draft results"),
+                                                message: html,
+                                                indicator: groups.has("Failed") ? "orange" : "blue",
+                                                primary_action: groups.has("Draft") ? {
+                                                    label: __("Review Overtime Slips"),
+                                                    action: () => frappe.set_route("List", "Overtime Slip"),
+                                                } : undefined,
+                                            });
                                         }
                                         dialog.hide();
                                         listview.refresh();

@@ -30,6 +30,50 @@ from tradex_hr.tradexcel_hr.daily_wage_input import inspect_daily_wage_structure
 REPORT_NAME = "Tradexcel Payroll Readiness"
 PAYROLL_MANAGER_ROLE = "Tradexcel Payroll Manager"
 
+# TXUX-260930-007: presentation-only classification of the backend's exact
+# finding codes, so an operator knows which canonical record to open.
+# Unknown codes are never guessed; they stay "Review required".
+EMPLOYEE_FIX_CODES = {
+    "ATTENDANCE_UNMARKED", "BLOCKED_ATTENDANCE", "ATTENDANCE_REQUEST_PENDING",
+    "MOBILE_REVIEW_PENDING", "BIOMETRIC_ID_AMBIGUOUS", "OVERTIME_NOT_APPROVED",
+    "OVERTIME_REVIEW_PENDING", "BLOCKED_PAY_BASIS", "BLOCKED_UNSAFE_STRUCTURE",
+    "BLOCKED_MISSING_BASE", "BLOCKED_OT", "TAX_ASSIGNMENT_MISSING",
+    "UNSAFE_PAYMENT_DAY_FORMULA", "DAILY_WAGE_ASSIGNMENT_REQUIRED",
+}
+COMPANY_FIX_CODES = {
+    "TAX_SLAB_MISSING", "TAX_SLAB_UNAPPROVED", "TAX_COMPONENT_MISSING",
+    "COMPONENT_ACCOUNT_MISSING", "PAYROLL_PAYABLE_INVALID", "BLOCKED_PAYROLL_ACCOUNT",
+    "ACCOUNTING_DIMENSION_MISSING", "TAX_EXCEPTION_REVIEW_REQUIRED",
+}
+PERIOD_FIX_CODES = {
+    "BLOCKED_ATTENDANCE_PERIOD", "BLOCKED_ATTENDANCE_STALE", "TAX_PERIOD_MISSING",
+    "BLOCKED_DAILY_WAGE_INPUT", "BLOCKED_DAILY_WAGE_INPUT_MISMATCH",
+    "BLOCKED_NO_EMPLOYEES",
+}
+RUN_FIX_CODES = {
+    "BLOCKED_EXISTING_PAYROLL_MISMATCH", "DRAFT_SLIP_MISSING",
+    "DRAFT_SLIP_UNIVERSE_MISMATCH", "NEGATIVE_NET_PAY", "SLIP_TOTAL_MISMATCH",
+}
+
+
+def _fix_scope(findings: list[dict]) -> str:
+    """Say where the canonical fix lives; never derive a new conclusion."""
+    labels = []
+    for code in [row.get("code") for row in findings]:
+        if code in EMPLOYEE_FIX_CODES:
+            label = _("Employee record")
+        elif code in COMPANY_FIX_CODES:
+            label = _("Company configuration")
+        elif code in PERIOD_FIX_CODES:
+            label = _("Period")
+        elif code in RUN_FIX_CODES:
+            label = _("Payroll run")
+        else:
+            label = _("Review required")
+        if label not in labels:
+            labels.append(label)
+    return " + ".join(labels)
+
 
 def _assert_company_access(company: str) -> None:
     from tradex_hr.tradexcel_hr.company_context import assert_company_access
@@ -54,6 +98,39 @@ def _report_period(filters: dict | None) -> tuple[str, date, date]:
     return company, start, end
 
 
+_FRIENDLY_FINDINGS = {
+    "BLOCKED_ATTENDANCE_PERIOD": "Attendance review is not finalized for this month",
+    "BLOCKED_ATTENDANCE_STALE": "Attendance changed after review; finalize it again",
+    "BLOCKED_UNSAFE_STRUCTURE": "Current Daily Wage structure can calculate the wrong amount; a new effective-dated structure is required",
+    "BLOCKED_MISSING_BASE": "Daily Wage rate is missing from the salary assignment",
+    "ATTENDANCE_REQUEST_PENDING": "Attendance correction request needs review",
+    "BLOCKED_OT": "Overtime needs a submitted native Overtime Slip",
+    "OVERTIME_NOT_APPROVED": "Overtime needs a submitted native Overtime Slip",
+    "OVERTIME_REVIEW_PENDING": "Overtime review is not finalized",
+    "MOBILE_REVIEW_PENDING": "Mobile attendance evidence is still under review",
+    "BIOMETRIC_ID_AMBIGUOUS": "Biometric identity is ambiguous; resolve it before payroll",
+    "BLOCKED_DAILY_WAGE_INPUT": "Daily Wage attendance input needs review",
+    "BLOCKED_DAILY_WAGE_INPUT_MISMATCH": "Daily Wage attendance input no longer matches the finalized period",
+    "UNSAFE_PAYMENT_DAY_FORMULA": "Payment-day formula is unsafe for Daily Wage",
+    "DAILY_WAGE_ASSIGNMENT_REQUIRED": "A Daily Wage assignment is required",
+    "TAX_SLAB_MISSING": "Income tax configuration is missing",
+    "TAX_SLAB_UNAPPROVED": "Income tax configuration has no approved authoritative source",
+    "TAX_COMPONENT_MISSING": "The Income Tax component is missing from the salary structure",
+    "COMPONENT_ACCOUNT_MISSING": "A salary component has no company account mapping",
+    "PAYROLL_PAYABLE_INVALID": "Payroll payable account needs Finance review",
+    "BLOCKED_PAYROLL_ACCOUNT": "Company payroll payable account is not configured",
+    "ACCOUNTING_DIMENSION_MISSING": "An accounting dimension is missing from payroll posting",
+    "TAX_EXCEPTION_REVIEW_REQUIRED": "Tax policy exception needs review",
+    "TAX_PERIOD_MISSING": "Income tax payroll period is missing",
+    "BLOCKED_EXISTING_PAYROLL_MISMATCH": "An existing payroll run does not match this period",
+    "NEGATIVE_NET_PAY": "Net pay is negative; review the native Salary Slip",
+    "SLIP_TOTAL_MISMATCH": "Salary Slip totals do not match the payroll inputs",
+    "DRAFT_SLIP_MISSING": "No draft Salary Slip exists for this Employee",
+    "DRAFT_SLIP_UNIVERSE_MISMATCH": "Draft Salary Slips do not match this period's Employee list",
+    "BLOCKED_NO_EMPLOYEES": "No employees are in scope for this company and month",
+}
+
+
 def _friendly_problem(findings: list[dict], outcome: dict) -> str:
     messages = []
     for finding in findings:
@@ -61,29 +138,15 @@ def _friendly_problem(findings: list[dict], outcome: dict) -> str:
         if code == "ATTENDANCE_UNMARKED":
             count = reason.split("found ", 1)[-1].split(" unmarked", 1)[0] if "found " in reason else ""
             message = f"{count} attendance day(s) need review" if count.isdigit() else "Attendance days need review"
-        elif code == "BLOCKED_ATTENDANCE_PERIOD":
-            message = "Attendance review is not finalized for this month"
-        elif code == "BLOCKED_ATTENDANCE_STALE":
-            message = "Attendance changed after review; finalize it again"
         elif code == "BLOCKED_PAY_BASIS" and "No submitted Salary Structure Assignment" in reason:
             message = f"No salary assignment applies on {outcome.get('period_start')}"
-        elif code == "BLOCKED_UNSAFE_STRUCTURE":
-            message = "Current Daily Wage structure can calculate the wrong amount; a new effective-dated structure is required"
-        elif code == "BLOCKED_MISSING_BASE":
-            message = "Daily Wage rate is missing from the salary assignment"
-        elif code == "ATTENDANCE_REQUEST_PENDING":
-            message = "Attendance correction request needs review"
-        elif code == "BLOCKED_OT":
-            message = "Overtime needs a submitted native Overtime Slip"
         else:
-            message = reason or code.replace("_", " ").capitalize()
+            message = _FRIENDLY_FINDINGS.get(code) or reason or code.replace("_", " ").capitalize()
         if message not in messages:
             messages.append(message)
-    if not messages:
-        return ""
-    if len(messages) == 1:
-        return messages[0]
-    return f"{messages[0]} (+ {len(messages) - 1} more issue)"
+    # Keep every distinct blocker visible; never collapse the rest into
+    # "(+ N more issue)" style ambiguity.
+    return " · ".join(messages)
 
 
 def _action_kinds(findings: list[dict]) -> str:
@@ -138,6 +201,7 @@ def execute(filters: dict | None = None):
         {"label": _("Pay Basis"), "fieldname": "pay_basis", "fieldtype": "Data", "width": 115},
         {"label": _("Status"), "fieldname": "status_label", "fieldtype": "Data", "width": 130},
         {"label": _("Problem"), "fieldname": "problem", "fieldtype": "Data", "width": 360},
+        {"label": _("Fix Scope"), "fieldname": "fix_scope", "fieldtype": "Data", "width": 150},
         {"label": _("Actions"), "fieldname": "actions", "fieldtype": "Data", "width": 245},
         {"label": _("Financial Status"), "fieldname": "financial_status", "fieldtype": "Data", "width": 125},
         {"label": _("Financial Review"), "fieldname": "financial_review", "fieldtype": "Data", "width": 300},
@@ -151,6 +215,9 @@ def execute(filters: dict | None = None):
         {"label": _("Net Change"), "fieldname": "net_variance", "fieldtype": "Currency", "width": 125},
         {"label": _("Change %"), "fieldname": "net_variance_percent", "fieldtype": "Percent", "width": 95},
         {"label": _("Action Types"), "fieldname": "action_kinds", "fieldtype": "Data", "hidden": 1},
+        {"label": _("Finding Codes"), "fieldname": "blocker_codes", "fieldtype": "Data", "hidden": 1},
+        {"label": _("Payroll Run"), "fieldname": "run_action_kinds", "fieldtype": "Data", "width": 120},
+        {"label": _("Managed Entry"), "fieldname": "payroll_entry", "fieldtype": "Data", "hidden": 1},
         {"label": _("Period Start"), "fieldname": "period_start", "fieldtype": "Date", "hidden": 1},
         {"label": _("Period End"), "fieldname": "period_end", "fieldtype": "Date", "hidden": 1},
     ]
@@ -171,6 +238,7 @@ def execute(filters: dict | None = None):
             "pay_basis": basis_label,
             "status_label": _("READY") if outcome["status"] == "READY" else _("NEEDS ATTENTION"),
             "problem": _friendly_problem(findings, {"period_start": start}),
+            "fix_scope": _fix_scope(findings),
             "financial_status": "-",
             "financial_review": "",
             "financial_result": "",
@@ -183,6 +251,9 @@ def execute(filters: dict | None = None):
             "net_variance": None,
             "net_variance_percent": None,
             "action_kinds": _action_kinds(findings),
+            "blocker_codes": "|".join(sorted({row.get("code") or "" for row in findings} - {""})),
+            "run_action_kinds": "",
+            "payroll_entry": "",
             "period_start": start,
             "period_end": end,
         })
@@ -209,6 +280,12 @@ def execute(filters: dict | None = None):
             slip_status = "Failed"
         elif _row_value(managed, "salary_slips_created"):
             slip_status = "Complete"
+
+    if entry_name and entry_status in {"Failed", "Queued", "Cancelled"}:
+        # A managed run exists but needs a native retry/review decision.
+        for row in rows:
+            row["run_action_kinds"] = "payroll_entry"
+            row["payroll_entry"] = entry_name
 
     summary = [
         {"label": _("Employees"), "value": readiness["employee_count"], "indicator": "blue"},
@@ -274,6 +351,11 @@ def execute(filters: dict | None = None):
                  if item.get("code") == "PAYROLL_PAYABLE_INVALID" and item.get("reference")),
                 "",
             )
+        if financial["blockers"]:
+            # Any run-level financial blocker has a native Payroll Entry home.
+            for row in rows:
+                row["run_action_kinds"] = "payroll_entry"
+                row["payroll_entry"] = entry_name
         summary.extend([
             {"label": _("Financial review"),
              "value": _("READY WITH WARNINGS") if financial["status"] == "READY" and financial["warnings"]
@@ -289,10 +371,16 @@ def execute(filters: dict | None = None):
         ])
 
     message = _("{0} Payroll").format(start.strftime("%B %Y"))
+    if blocked:
+        message += " · " + _("{0} of {1} records need attention before preparing.").format(blocked, readiness["employee_count"])
+    elif ready:
+        message += " · " + _("{0} record(s) ready. The server rechecks readiness when you prepare.").format(ready)
     if managed and "financial" in locals() and financial["blockers"]:
         message += " · " + financial["blockers"][0]["reason"]
     if slip_status == "Failed":
         message += " · " + _("Salary Slip creation failed. Open the Payroll Entry for native retry.")
+    if any(row["run_action_kinds"] for row in rows):
+        summary.append({"label": _("Payroll Entry action"), "value": entry_name, "indicator": "orange"})
     return columns, rows, message, None, summary
 
 
