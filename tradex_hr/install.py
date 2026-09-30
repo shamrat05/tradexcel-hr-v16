@@ -664,6 +664,23 @@ def workspace_sidebar_items(shortcuts):
     return items
 
 
+# Persistent native field help has no shared or per-user completion state.
+ATTENDANCE_REQUEST_GUIDANCE = (
+    "Explain the dates and why this request is needed. Save a draft for an "
+    "authorized independent reviewer to submit. A draft does not create "
+    "approved Attendance."
+)
+
+
+def ensure_operator_guidance():
+    """Create native contextual help; preserve administrator-owned overrides."""
+    filters = {"doc_type": "Attendance Request", "field_name": "explanation", "property": "description"}
+    if not frappe.db.exists("Property Setter", filters):
+        from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+        make_property_setter("Attendance Request", "explanation", "description",
+                             ATTENDANCE_REQUEST_GUIDANCE, "Small Text")
+
+
 def ensure_workspace_sidebar(shortcuts):
     name = "Tradexcel HR"
     doc = frappe.get_doc("Workspace Sidebar", name) if frappe.db.exists("Workspace Sidebar", name) else frappe.new_doc("Workspace Sidebar")
@@ -957,6 +974,7 @@ def ensure_workspace() -> None:
             })
         save_workspace_doc(doc)
     # Validate the Home Link only after fresh-install Workspace creation.
+    ensure_operator_guidance()
     ensure_workspace_sidebar(shortcuts)
 
 
