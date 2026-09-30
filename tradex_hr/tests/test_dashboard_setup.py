@@ -7,8 +7,9 @@ APP_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(APP_ROOT))
 
 from tradex_hr.install import (
-    DASHBOARD_CHARTS,
-    NUMBER_CARDS,
+    RETIRED_ARTIFACTS,
+    RETIRED_DASHBOARD_CHARTS,
+    RETIRED_NUMBER_CARDS,
     REPORTS,
     CANONICAL_WORKSPACE_NAME,
     WORKSPACE_NAMES,
@@ -44,24 +45,84 @@ def test_workspace_prioritizes_scoped_work_instead_of_overview_cards():
     assert not any("Overview" in block.get("data", {}).get("text", "") for block in blocks)
 
 
-def test_dashboard_chart_definitions_are_serializable():
-    for definition in DASHBOARD_CHARTS.values():
-        json.dumps(definition)
-        assert definition["filters_json"].startswith("[")
+def test_retired_artifacts_are_exactly_the_reviewed_allowlist():
+    """TXUX-260930-013: no path may recreate a retired artifact."""
+    assert {doctype for doctype, _names in RETIRED_ARTIFACTS} == {"Number Card", "Dashboard Chart"}
+    assert set(RETIRED_NUMBER_CARDS) == {
+        "Tradexcel Active Employees",
+        "Tradexcel Punches Logged",
+        "Tradexcel Present Records",
+        "Tradexcel Absent Records",
+        "TradeX Active Employees",
+        "TradeX Punches Logged",
+        "TradeX Present Records",
+        "TradeX Absent Records",
+        "Active Employees (All Companies)",
+        "Active Employees-3",
+        "Attendance Absent Logs-3",
+        "Attendance Absent Logs-4",
+        "Attendance Present Logs-3",
+        "Attendance Present Logs-4",
+        "EFL Active Employees",
+        "EFL Active Employees-1",
+        "Tradexcel EFL Active Employees",
+        "TCL Active Employees",
+        "TCL Active Employees-1",
+        "Tradexcel TCL Active Employees",
+        "Total Punches Logged-3",
+        "Total Punches Logged-4",
+        "TradeX EFL Active Employees",
+        "TradeX TCL Active Employees",
+    }
+    assert set(RETIRED_DASHBOARD_CHARTS) == {
+        "Tradexcel Employees by Department",
+        "Tradexcel Employees by Branch",
+        "Tradexcel Headcount by Company",
+        "Tradexcel Attendance Status",
+        "Tradexcel Leave Allocated by Type",
+        "Tradexcel Payroll by Month",
+        "Tradexcel Checkins by Day",
+        "TradeX Employees by Department",
+        "TradeX Employees by Branch",
+        "TradeX Headcount by Company",
+        "TradeX Attendance Status",
+        "TradeX Leave Allocated by Type",
+        "TradeX Payroll by Month",
+        "TradeX Checkins by Day",
+    }
 
 
-def test_dashboard_does_not_ship_company_specific_headcount_cards():
-    assert "Tradexcel Active Employees" in NUMBER_CARDS
-    assert not {"Tradexcel TCL Active Employees", "Tradexcel EFL Active Employees"}.intersection(NUMBER_CARDS)
-    assert not {"Tradexcel TCL Active Employees", "Tradexcel EFL Active Employees"}.intersection(
-        block["data"].get("number_card_name") for block in workspace_blocks()
-    )
+def test_no_bundled_json_source_for_retired_artifacts():
+    """Fresh installs cannot recreate the eleven records from app JSON files."""
+    module_root = Path(__file__).resolve().parents[1] / "tradexcel_hr"
+    assert not list(module_root.glob("dashboard_chart/*/*.json"))
+    assert not list(module_root.glob("number_card/*/*.json"))
 
 
-def test_app_owned_dashboard_records_are_custom_records():
+def test_retired_installer_creation_helpers_are_gone():
+    """The installer no longer contains creation/rename paths for the eleven."""
+    from tradex_hr import install
+
+    for helper in (
+        "ensure_number_cards",
+        "ensure_dashboard_charts",
+        "rename_legacy_dashboard_charts",
+        "rename_legacy_number_cards",
+        "remove_orphaned_dashboard_records",
+    ):
+        assert not hasattr(install, helper), f"{helper} must be retired"
+    assert not hasattr(install, "NUMBER_CARDS")
+    assert not hasattr(install, "DASHBOARD_CHARTS")
+    assert hasattr(install, "remove_retired_dashboard_artifacts")
+
+
+def test_workspace_home_declares_no_snapshot_cards():
+    assert not any(block["type"] == "number_card" for block in workspace_blocks())
+    assert not any(block["type"] == "chart" for block in workspace_blocks())
+
+
+def test_app_owned_reports_declare_their_standard_flag():
     """Runtime install must work on Frappe v16 without developer mode."""
-    assert all(values.get("is_standard") == 0 for values in NUMBER_CARDS.values())
-    assert all(values.get("is_standard", 0) == 0 for values in DASHBOARD_CHARTS.values())
     assert all(
         config.get("is_standard", "No") == ("Yes" if config.get("report_type") == "Script Report" else "No")
         for config in REPORTS.values()

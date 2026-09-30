@@ -7,7 +7,6 @@ import pytest
 
 from tradex_hr.install import (
     COMMON_ACTION_SHORTCUTS,
-    HOME_NUMBER_CARDS,
     HOME_QUICK_LISTS,
     WORKSPACE_SECTIONS,
     WORKSPACE_SHORTCUTS,
