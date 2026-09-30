@@ -664,6 +664,48 @@ def workspace_sidebar_items(shortcuts):
     return items
 
 
+# Learning progress is native onboarding progress, never business approval.
+ATTENDANCE_GUIDE = "Tradexcel Attendance Operator Guide"
+ATTENDANCE_GUIDE_ROLES = ("Tradexcel HR Manager", "Tradexcel HR/Attendance Officer")
+ATTENDANCE_GUIDE_STEPS = (
+    {
+        "name": "Tradexcel Review Attendance Requests",
+        "title": "Find attendance requests to review",
+        "action": "Go to Page",
+        "action_label": "Open requests; inspect the draft before changing it",
+        "path": "List/Attendance Request/List",
+        "description": "Open the native request and review its dates and explanation. Navigation does not approve Attendance.",
+    },
+    {
+        "name": "Tradexcel Prepare Attendance Request",
+        "title": "Prepare a draft; a separate approver submits",
+        "action": "Go to Page",
+        "action_label": "Start a draft correction request",
+        "path": "Form/Attendance Request/new-attendance-request",
+        "description": "Use the native Attendance Request. Save a draft and ask an independent Attendance Correction Approver to review it. A draft creates no payable Attendance.",
+    },
+)
+
+
+def ensure_operator_guidance():
+    """Create native learning metadata once; preserve preferences/progress.
+
+    Existing records are deliberately not reset or rewritten by migration.
+    Frappe controls global enablement, role filtering, dismissal and completion.
+    """
+    for values in ATTENDANCE_GUIDE_STEPS:
+        if not frappe.db.exists("Onboarding Step", values["name"]):
+            frappe.get_doc({"doctype": "Onboarding Step", **values}).insert(ignore_permissions=True)
+    if not frappe.db.exists("Module Onboarding", ATTENDANCE_GUIDE):
+        frappe.get_doc({
+            "doctype": "Module Onboarding", "name": ATTENDANCE_GUIDE,
+            "title": "Learn the attendance request workflow",
+            "module": "Tradexcel HR",
+            "allow_roles": [{"role": role} for role in ATTENDANCE_GUIDE_ROLES],
+            "steps": [{"step": row["name"]} for row in ATTENDANCE_GUIDE_STEPS],
+        }).insert(ignore_permissions=True)
+
+
 def ensure_workspace_sidebar(shortcuts):
     name = "Tradexcel HR"
     doc = frappe.get_doc("Workspace Sidebar", name) if frappe.db.exists("Workspace Sidebar", name) else frappe.new_doc("Workspace Sidebar")
@@ -673,6 +715,7 @@ def ensure_workspace_sidebar(shortcuts):
     doc.standard = 0  # Source-owned installer metadata; no developer-mode export.
     doc.for_user = None
     doc.header_icon = "users"
+    doc.module_onboarding = ATTENDANCE_GUIDE
     doc.set("items", workspace_sidebar_items(shortcuts))
     doc.save(ignore_permissions=True)
 
@@ -957,6 +1000,7 @@ def ensure_workspace() -> None:
             })
         save_workspace_doc(doc)
     # Validate the Home Link only after fresh-install Workspace creation.
+    ensure_operator_guidance()
     ensure_workspace_sidebar(shortcuts)
 
 
