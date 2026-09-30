@@ -166,18 +166,42 @@ async function run() {
 		assert.deepEqual(state.routes[0], ['Form', 'Shift Assignment Tool']);
 		print.secondary_action.action();
 		const review_options = JSON.parse(JSON.stringify(frappe.route_options));
+		assert.equal(review_options.docstatus, 1, 'must filter to submitted assignments only (docstatus 1)');
 		assert.deepEqual(review_options.employee, ['in', ['EMP-OVER']]);
 		assert.deepEqual(review_options.start_date, ['<=', '2026-09-30'], 'must use the native start_date field');
 		assert.ok(!('from_date' in review_options) && !('to_date' in review_options),
 			'from_date/to_date are not native Shift Assignment fields');
 		assert.ok(!('end_date' in review_options),
 			'route options cannot express "End Date blank OR End Date >= day" and must not pretend to');
+		assert.ok(print.message.includes('submitted') && print.message.includes('docstatus 1'),
+			'operator must be told assignments are filtered to submitted records');
 		assert.ok(print.message.includes('End Date'), 'operator must be told to inspect End Date');
 		assert.ok(print.message.includes('blank'), 'blank open-ended End Date must be explained');
-		assert.ok(print.message.includes('already ended'), 'broader list must not be presented as all-active');
+		assert.ok(print.message.includes('previously ended'), 'broader list must explain retained ended assignments');
+		assert.ok(print.message.includes('historical validity') && print.message.includes('cached'),
+			'must warn against inferring historical validity solely from cached status');
 		assert.ok(!print.message.includes('existing native Shift Assignments for this date'),
 			'must not claim every listed row is active on the selected day');
 		assert.deepEqual(state.routes[1], ['List', 'Shift Assignment', 'List']);
+
+		// Verify installed List View route option parsing for docstatus and native fields.
+		const std_fields = ['name', 'owner', 'creation', 'modified', 'modified_by', '_user_tags', '_comments', '_assign', '_liked_by', 'docstatus', 'idx'];
+		const parsed_filters = [];
+		for (const [field, value] of Object.entries(review_options)) {
+			const doctype = std_fields.includes(field) || ['start_date', 'employee'].includes(field) ? 'Shift Assignment' : null;
+			if (doctype) {
+				if (Array.isArray(value)) {
+					parsed_filters.push([doctype, field, value[0], value[1]]);
+				} else {
+					parsed_filters.push([doctype, field, '=', value]);
+				}
+			}
+		}
+		assert.deepEqual(parsed_filters, [
+			['Shift Assignment', 'docstatus', '=', 1],
+			['Shift Assignment', 'employee', 'in', ['EMP-OVER']],
+			['Shift Assignment', 'start_date', '<=', '2026-09-30'],
+		]);
 
 		// A role without tool read gets no button.
 		const denied = baseMock();
