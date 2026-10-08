@@ -44,6 +44,8 @@ jobs:
         run: |
           find workforce_suite -type f \( -name '*.js' -o -name '*.cjs' \) -print0 |
             while IFS= read -r -d '' script; do node --check "$script" || exit 1; done
+      - name: Validate renamed Frappe wiring
+        run: python scripts/check_white_label_wiring.py
       - name: No legacy customer identifiers and consistent metadata
         run: |
           python -m pytest workforce_suite/tests/test_workforce_identifiers.py workforce_suite/tests/test_white_label_migration_tools.py -q
