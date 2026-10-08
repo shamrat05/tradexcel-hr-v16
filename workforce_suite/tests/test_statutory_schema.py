@@ -102,3 +102,22 @@ def test_contextual_export_respects_native_layout_visibility_before_rpc():
         if(calls!==0||messages!==1)process.exit(1);
     });"""
     subprocess.run(['node','-e',program,str(script)],check=True)
+
+
+def test_statutory_branding_uses_optional_native_logo_and_letterhead():
+    from workforce_suite.workforce_suite.statutory_print_html import render_html
+
+    doc = layout("form_8")
+    html = render_html(
+        doc, [], company_name="Synthetic",
+        company_logo="/files/synthetic-logo.png",
+        letter_head_content="<strong>Synthetic Establishment</strong>",
+        letter_head_footer="Confidential footer",
+    )
+    assert 'src="/files/synthetic-logo.png"' in html
+    assert "Synthetic Establishment" in html
+    assert "Confidential footer" in html
+
+    plain = render_html(doc, [], company_name="Synthetic")
+    assert '<img class="company-logo"' not in plain
+    assert "Confidential footer" not in plain

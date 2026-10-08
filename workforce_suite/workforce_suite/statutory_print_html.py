@@ -35,6 +35,9 @@ def render_html(
     company_name: str,
     company_address: str = "",
     signatory: str = "",
+    company_logo: str = "",
+    letter_head_content: str = "",
+    letter_head_footer: str = "",
     from_date: str = "",
     to_date: str = "",
     is_draft: bool = True,
@@ -77,8 +80,13 @@ def render_html(
         "অভ্যন্তরীণ খসড়া — সরকারি দাখিলের জন্য নয়"
         if translated else "INTERNAL DRAFT — NOT AN OFFICIAL FILING"
     )
+    branding = ""
+    if company_logo:
+        branding += '<img class="company-logo" src="' + _safe(company_logo) + '" alt="Company logo">'
+    if letter_head_content:
+        branding += '<div class="letter-head-content">' + letter_head_content + '</div>'
     heading = (
-        '<header><div class="heading-left"><h1>' + title + '</h1></div>'
+        '<header><div class="heading-left">' + branding + '<h1>' + title + '</h1></div>'
         + '<div class="heading-right"><strong>' + name + '</strong>'
         + (f"<span>{address}</span>" if address else "")
         + (f'<span>{period_label}: {period}</span>' if period else "")
@@ -143,7 +151,7 @@ def render_html(
                 pages.append('<section class="document-entry">' + (f'<h2>{section_heading}</h2>' if section_heading else '')
                              + '<table class="key-value"><tbody>' + cells + '</tbody></table></section>')
         table = "".join(pages)
-    footer = "\n".join(value for value in (footer, _safe(signatory)) if value)
+    footer = "\n".join(value for value in (letter_head_footer, footer, _safe(signatory)) if value)
     foot = f'<footer class="signatory">{footer}</footer>' if footer else ""
     density = "dense" if len(columns) >= 14 and family == "Register" else "normal"
     css = """
@@ -155,6 +163,8 @@ body {font-family:"Noto Sans Bengali","Nirmala UI",Arial,sans-serif;
 header {display:table; width:100%; border-bottom:1.2pt solid #171717;
         padding:0 0 3mm; margin:0 0 3mm;}
 .heading-left,.heading-right {display:table-cell; vertical-align:top;}
+.company-logo {display:block; max-width:42mm; max-height:18mm; object-fit:contain; margin-bottom:2mm;}
+.letter-head-content {font-size:8.5pt; margin-bottom:2mm;}
 .heading-right {text-align:right; width:36%; font-size:8pt;}
 .heading-right span {display:block; overflow-wrap:anywhere; padding-top:1mm;}
 h1 {font-size:13pt; line-height:1.35; font-weight:700; margin:0;}

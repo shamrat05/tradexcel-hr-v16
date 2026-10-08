@@ -51,6 +51,7 @@ def _table(doc, labels, keys, rows):
 def render_docx(
     layout, rows, *, company_name: str, from_date: str = "",
     to_date: str = "", language: str = "en", company_address: str = "", signatory: str = "",
+    company_logo: str = "", letter_head_content: str = "", letter_head_footer: str = "",
 ) -> bytes:
     from docx import Document
     from docx.enum.section import WD_ORIENT
@@ -95,6 +96,9 @@ def render_docx(
             heading_fonts.set(qn(language_font), style.font.name)
 
     suffix = "বাংলা সম্পাদনাযোগ্য খসড়া — সরকারি দাখিল নয়" if language == "bn" else "EDITABLE WORKING COPY — NOT AN OFFICIAL FILING"
+    if letter_head_content:
+        from re import sub
+        doc.add_paragraph(_text(sub("<[^>]+>", " ", letter_head_content)).strip())
     doc.add_heading(_text(_value(layout, "title_bn" if language == "bn" else "title_en")), 1)
     doc.add_paragraph(_text(company_name))
     if company_address:
@@ -177,6 +181,9 @@ def render_docx(
                 _table(doc, ["বিষয়" if language == "bn" else "Field", "তথ্য" if language == "bn" else "Value"],
                        ["label", "value"], [{"label": _value(c, "label_bn" if language == "bn" else "label_en"),
                        "value": _text(item.get(_value(c, "field_key")))} for c in group])
+    if letter_head_footer:
+        from re import sub
+        doc.add_paragraph(_text(sub("<[^>]+>", " ", letter_head_footer)).strip())
     if _value(layout, footer_key):
         doc.add_paragraph(_text(_value(layout, footer_key)))
     page_number = OxmlElement("w:fldSimple")

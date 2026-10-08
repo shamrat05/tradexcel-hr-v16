@@ -482,13 +482,25 @@ def _print_context(
                 if col.required_value and row.get(col.field_key) in (None, ""):
                     frappe.throw(_("Missing {0} on row {1}.").format(col.label_en, i))
 
+    company_doc = frappe.get_cached_doc("Company", layout.company)
     company_name = ((profile.establishment_bn if language == "bn" else profile.establishment_en)
-                    if profile else frappe.db.get_value("Company", layout.company, "company_name"))
+                    if profile else company_doc.company_name)
     company_address = (profile.address_bn if language == "bn" else profile.address_en) if profile else ""
     signatory = ((profile.signatory_bn if language == "bn" else profile.signatory_en) or "") if profile else ""
+    company_logo = company_doc.get("company_logo") or ""
+    letter_head_content = ""
+    letter_head_footer = ""
+    letter_head_name = company_doc.get("default_letter_head")
+    if letter_head_name and not frappe.db.get_value("Letter Head", letter_head_name, "disabled"):
+        from frappe.www.printview import get_letter_head
+        letter_head = get_letter_head(company_doc, False, letter_head_name) or {}
+        letter_head_content = letter_head.get("content") or ""
+        letter_head_footer = letter_head.get("footer") or ""
     html = render_html(
         layout, rows, company_name=company_name or layout.company,
         company_address=company_address, signatory=signatory,
+        company_logo=company_logo, letter_head_content=letter_head_content,
+        letter_head_footer=letter_head_footer,
         from_date=start, to_date=end, is_draft=layout.docstatus != 1,
         language=language,
     )
@@ -496,6 +508,8 @@ def _print_context(
         "rows": rows, "company_name": company_name or layout.company,
         "from_date": start, "to_date": end, "language": language, "findings": findings,
         "company_address": company_address, "signatory": signatory,
+        "company_logo": company_logo, "letter_head_content": letter_head_content,
+        "letter_head_footer": letter_head_footer,
         "scope": {"employee": employee, "branch": branch or layout.branch, "department": department,
                   "employment_type": employment_type, "include_all": include_all},
     }
@@ -586,6 +600,8 @@ def download_docx(
         layout, data["rows"], company_name=data["company_name"],
         from_date=data["from_date"], to_date=data["to_date"], language=data["language"],
         company_address=data["company_address"], signatory=data["signatory"],
+        company_logo=data.get("company_logo", ""), letter_head_content=data.get("letter_head_content", ""),
+        letter_head_footer=data.get("letter_head_footer", ""),
     )
     _audit_generation(layout, data, "DOCX", payload)
     safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", layout.form_code)

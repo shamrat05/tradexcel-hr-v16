@@ -68,3 +68,31 @@ PR: #77, OPEN / DRAFT / UNMERGED, base `feat/bd-statutory-printing-v1`. Runtime 
 Disposition remains **PARTIAL / ready for engineering and legal review**, not production or official filing. Incomplete prescribed variant layouts, full Form 81 matrix/automatic period aggregation, unavailable receipt/rate evidence, current-law/translation approval and real staff/device UAT remain outstanding. No government template was marked legally approved.
 
 A documentation-only follow-up initially failed White-label QA because an inline repository URL matched the existing customer-identifier contract. The note now references the PR number; no test or identifier restriction was weakened. The affected source checks were rerun before publication.
+
+
+## Final consolidation and local preview checkpoint — 2026-10-09
+
+The statutory candidate now includes the consolidated Workforce Suite base:
+canonical base a20c33e27dfb27ae840e9edd220c422b71bfd0b4, including PR #73
+merge a20c33e27dfb27ae840e9edd220c422b71bfd0b4 and PR #74 merge
+1fa37a3d831e64f237b5963378a63a111dfa8551. PRs #75/#76 were superseded;
+their verified catalog/prototype content is preserved through PR #77. The
+current statutory head is authoritative and remains OPEN/DRAFT/UNMERGED.
+
+The isolated populated preview was synchronized to statutory head
+1147ea66328abe5f6ea35754920f565a24128890, migrated once from a verified
+backup, built with Node 24.15.0, and served at
+http://workforce-preview.localhost:8032. Existing company/employee and
+protected HR/payroll counts remained unchanged. Administrator Desk and
+Employee List browser smoke passed at desktop/mobile sizes with no document
+overflow or uncaught page errors. One reviewed draft Form 8 layout was created
+idempotently for preview only; no profile, legal approval, or official filing
+was invented.
+
+Statutory output branding now reuses native Company company_logo and the
+Company default_letter_head; a disabled native Letter Head is omitted. No
+second branding store was introduced. The feature remains partial: statutory
+variant completion, legal/translation approval, physical-device/staff UAT,
+CI workflow expansion and deployed parity remain open. Socket.IO and the
+legacy stored tradex_hr logo request require separate preview/runtime
+cleanup; /undefined remains the known upstream Frappe sidebar request.
