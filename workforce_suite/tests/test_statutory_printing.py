@@ -136,3 +136,60 @@ def test_print_layout_controllers_enforce_review_and_access_checks():
     rec = (MODULE / "doctype" / "workforce_statutory_record" / "workforce_statutory_record.py").read_text()
     assert "assert_company_access(" in rec
     assert 'layout.check_permission("read")' in rec
+
+
+# Export UX policy is deliberately independent of any Frappe database.
+from workforce_suite.workforce_suite.statutory_export_policy import (
+    available_languages, normalize_period, period_mode, validate_language,
+)
+
+
+def test_employee_documents_use_employee_scope_without_date_prompt():
+    assert period_mode("form_6", "Employee") == "none"
+    assert period_mode("form_8", "Employee") == "none"
+    assert normalize_period("form_6", "Employee", None, None) == ("", "")
+
+
+def test_attendance_form_week_is_saturday_to_friday_only():
+    assert period_mode("form_34", "Attendance") == "week"
+    assert normalize_period("form_34", "Attendance", "2026-10-03", "2026-10-09") == (
+        "2026-10-03", "2026-10-09"
+    )
+    with pytest.raises(ValueError, match="Saturday-Friday"):
+        normalize_period("form_34", "Attendance", "2026-10-01", "2026-10-07")
+    with pytest.raises(ValueError, match="Saturday-Friday"):
+        normalize_period("form_34", "Attendance", "2026-10-01", "2026-10-31")
+
+
+def test_period_reports_keep_existing_custom_range_without_another_period_type():
+    assert period_mode("form_38", "Salary Slip") == "range"
+    assert normalize_period("form_38", "Salary Slip", "2026-10-01", "2026-10-31") == (
+        "2026-10-01", "2026-10-31"
+    )
+
+
+def test_bn_export_requires_complete_translations_without_english_fallback():
+    layout = _layout("form_34")
+    layout["title_bn"] = "হাজিরা ও অতিরিক্ত সময়"
+    assert available_languages(layout) == ("en", "bn")
+    assert validate_language(layout, "bn") == "bn"
+    html = _renderer()(layout, [{"employee_name": "Synthetic"}],
+                       company_name="Example Company", language="bn")
+    assert 'lang="bn"' in html
+    assert "হাজিরা ও অতিরিক্ত সময়" in html
+    assert "অভ্যন্তরীণ খসড়া" in html
+    assert '<th scope="col">Worker name' not in html
+
+    layout["columns"][0]["label_bn"] = ""
+    assert available_languages(layout) == ("en",)
+    with pytest.raises(ValueError, match="Bangla"):
+        _renderer()(layout, [], company_name="Example Company", language="bn")
+
+
+def test_en_export_has_only_en_headers_and_html_language():
+    layout = _layout("form_34")
+    layout["title_bn"] = "হাজিরা"
+    html = _renderer()(layout, [], company_name="Example Company", language="en")
+    assert 'lang="en"' in html
+    assert '<th scope="col">Worker name' in html
+    assert "হাজিরা" not in html

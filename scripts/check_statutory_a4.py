@@ -56,7 +56,9 @@ def check_pdf(output: Path, orientation: str, expected_id: str):
                 output, page.number, word
             )
     all_text = " ".join(p.get_text("text") for p in doc)
-    # Narrow PDF columns can wrap at hyphens without clipping any glyph.\n    assert expected_id in re.sub(r"\\s+", "", all_text), (output, expected_id, all_text[-350:])
+    # PDF extraction may insert line breaks after hyphens in narrow cells.
+    # Ignore whitespace only: still require the complete worker identifier.
+    assert expected_id in re.sub(r"\\s+", "", all_text), (output, expected_id, all_text[-350:])
     return len(doc)
 
 
@@ -67,6 +69,7 @@ def main():
         ("form_6", 1, "SYN-EMP-0001"),
         ("form_34", 48, "SYN-EMP-0048"),
         ("form_38", 105, "SYN-EMP-0105"),
+        ("form_9", 85, "SYN-EMP-0085"),
     ]
     for code, count, final in jobs:
         layout = form(code)
