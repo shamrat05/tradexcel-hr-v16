@@ -193,3 +193,67 @@ def test_en_export_has_only_en_headers_and_html_language():
     assert 'lang="en"' in html
     assert '<th scope="col">Worker name' in html
     assert "হাজিরা" not in html
+
+
+
+def test_docx_working_copy_a4_orientation_language_and_no_source_instructions():
+    from io import BytesIO
+    from docx import Document
+    from docx.shared import Mm
+    from workforce_suite.workforce_suite.statutory_print_docx import render_docx
+
+    layout = _layout("form_34")
+    layout["title_bn"] = "হাজিরা ও অতিরিক্ত সময়"
+    layout["source_issue"] = "NEVER_LEAK_GOVERNMENT_INSTRUCTIONS"
+    source = [{"employee_name": "EMP-01", "day_fri": "8"},
+              {"employee_name": "EMP-02", "day_fri": "6"}]
+    result = render_docx(layout, source, company_name="Example", language="bn")
+    assert result[:2] == b"PK"
+    written = Document(BytesIO(result))
+    section = written.sections[0]
+    assert abs(section.page_width.mm - 297) < 1
+    assert abs(section.page_height.mm - 210) < 1
+    text = "\n".join(p.text for p in written.paragraphs)
+    assert "হাজিরা ও অতিরিক্ত সময়" in text
+    assert "সরকারি দাখিল নয়" in text
+    assert "NEVER_LEAK" not in text
+    joined = "\n".join(cell.text for table in written.tables for row in table.rows for cell in row.cells)
+    assert "EMP-01" in joined and "EMP-02" in joined
+
+
+def test_docx_portrait_document_and_wide_register_keep_all_columns():
+    from io import BytesIO
+    from docx import Document
+    from workforce_suite.workforce_suite.statutory_print_docx import render_docx
+
+    layout = _layout("form_6")
+    output = Document(BytesIO(render_docx(
+        layout, [{"employee_name": "SYN-001"}], company_name="Example"
+    )))
+    assert abs(output.sections[0].page_width.mm - 210) < 1
+    assert "SYN-001" in "\n".join(
+        cell.text for t in output.tables for row in t.rows for cell in row.cells
+    )
+    wide = _layout("form_38")
+    rendered = Document(BytesIO(render_docx(wide, [
+        {x["field_key"]: f"VALUE-{x['field_key']}" for x in wide["columns"]}
+    ], company_name="Example")))
+    docx_body = "\n".join(
+        cell.text for t in rendered.tables for row in t.rows for cell in row.cells
+    )
+    assert all(f"VALUE-{x['field_key']}" in docx_body for x in wide["columns"])
+    assert max(len(t.columns) for t in rendered.tables) <= 8
+
+
+def test_native_sources_cannot_be_relabelled_as_manual_statutory_forms():
+    controller = (
+        MODULE / "doctype" / "workforce_statutory_print_layout" /
+        "workforce_statutory_print_layout.py"
+    ).read_text()
+    assert 'self.data_source != source["data_source"]' in controller
+    assert 'layout.data_source != spec["data_source"]' in (MODULE / "statutory_forms.py").read_text()
+    record = (
+        MODULE / "doctype" / "workforce_statutory_record" /
+        "workforce_statutory_record.py"
+    ).read_text()
+    assert 'layout.data_source != "Manual"' in record

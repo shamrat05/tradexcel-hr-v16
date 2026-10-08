@@ -28,8 +28,8 @@ class WorkforceStatutoryPrintLayout(Document):
             branch_company = frappe.db.get_value("Branch", self.branch, "company")
             if branch_company != self.company:
                 frappe.throw(_("Establishment Branch must belong to the selected Company."))
-        if self.data_source not in {"Manual", "Employee", "Attendance", "Leave Application", "Salary Slip"}:
-            frappe.throw(_("Unsupported print data source."))
+        if self.data_source != source["data_source"]:
+            frappe.throw(_("The data source must match the DIFE source category. Do not relabel a different dataset as an official form."))
         if self.orientation not in {"Portrait", "Landscape"}:
             frappe.throw(_("Use A4 portrait or landscape."))
         if self.effective_to and getdate(self.effective_to) < getdate(self.effective_from):

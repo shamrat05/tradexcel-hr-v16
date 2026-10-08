@@ -16,6 +16,8 @@ class WorkforceStatutoryRecord(Document):
         layout.check_permission("read")
         if layout.company != self.company:
             frappe.throw(_("The statutory record Company must match its layout Company."))
+        if layout.data_source != "Manual":
+            frappe.throw(_("Manual evidence must use a Manual data-source layout, not an Employee, Attendance, Leave or Payroll layout."))
         columns = {col.field_key: col for col in layout.columns}
         if len(self.get("entries") or []) > 80:
             frappe.throw(_("Split large evidence records into separate entries."))

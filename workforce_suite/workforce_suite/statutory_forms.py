@@ -48,6 +48,38 @@ def spec_for(form_code: str):
 
 
 @frappe.whitelist()
+def available_print_layouts(form_code: str, company: str, branch: str = ""):
+    """List only readable layouts in the requested Company/establishment.
+
+    Contextual buttons never guess which tenant or saved legal draft to use.
+    A site-wide report cannot silently select a layout restricted to one Branch.
+    """
+    spec_for(form_code)
+    if not company:
+        frappe.throw(_("Select a Company in the current report first."))
+    assert_company_access(company, require_explicit_scope=True)
+    if not frappe.has_permission("Workforce Statutory Print Layout", "read"):
+        frappe.throw(_("You are not allowed to print statutory layouts."), frappe.PermissionError)
+    records = frappe.get_list(
+        "Workforce Statutory Print Layout",
+        filters={"form_code": form_code, "company": company},
+        fields=["name", "title", "branch", "docstatus", "orientation", "template_version"],
+        order_by="modified desc",
+        limit_page_length=100,
+    )
+    return [
+        {
+            "name": item.name, "title": item.title,
+            "branch": item.branch or "",
+            "status": "Reviewed" if item.docstatus == 1 else "Draft",
+            "orientation": item.orientation,
+            "version": item.template_version,
+        }
+        for item in records if not item.branch or (branch and item.branch == branch)
+    ]
+
+
+@frappe.whitelist()
 def get_form_spec(form_code: str):
     if not frappe.has_permission("Workforce Statutory Print Layout", "create"):
         frappe.throw(_("You cannot configure statutory form layouts."), frappe.PermissionError)
@@ -175,7 +207,25 @@ def _read_attendance(layout, from_date: str, to_date: str, allowed: tuple[str, .
         row[key] = r.working_hours if r.working_hours is not None else ""
         if r.working_hours is not None:
             row["total_work_hours"] += float(r.working_hours)
-    return list(groups.values())
+    # These are actual native worker identifiers, not assumed legal register
+    # numbers. Never substitute an Employee ID for a statutory register ID.
+    identities = frappe.get_list(
+        "Employee",
+        filters={"company": layout.company, "name": ["in", list(groups)]},
+        fields=["name", "employee_number", "branch"],
+        limit_page_length=MAX_PRINT_ROWS + 1,
+    ) if groups else []
+    person_index = {person.name: person for person in identities}
+    output = []
+    for serial, employee_id in enumerate(sorted(groups), 1):
+        row = groups[employee_id]
+        person = person_index.get(employee_id)
+        row["serial_no"] = serial
+        if person:
+            row["employee_number"] = person.employee_number
+            row["branch"] = person.branch
+        output.append(row)
+    return output
 
 
 def _read_leave(layout, from_date: str, to_date: str, allowed: tuple[str, ...]):
@@ -193,7 +243,17 @@ def _read_leave(layout, from_date: str, to_date: str, allowed: tuple[str, ...]):
     )
     if len(rows) > MAX_PRINT_ROWS:
         frappe.throw(_("Too many leave records for one PDF. Narrow the reporting period."))
-    return [dict(r) for r in rows]
+    # Form 9 draft fields use native submitted leave history only. Annual
+    # opening/balances, approval date, and legal classifications still require
+    # independent evidence: never invent them from total_leave_days.
+    output = []
+    for record in rows:
+        row = dict(record)
+        row["leave_requested"] = record.leave_type
+        if record.status == "Approved":
+            row["granted_days"] = record.total_leave_days
+        output.append(row)
+    return output
 
 
 def _read_salary_slips(layout, from_date: str, to_date: str, allowed: tuple[str, ...]):
@@ -288,6 +348,8 @@ def _print_context(
     spec = spec_for(layout.form_code)
     if spec["kind"] == "Evidence Only":
         frappe.throw(_("Upload the real externally issued approval; do not generate it."))
+    if layout.form_family != spec["kind"] or layout.data_source != spec["data_source"]:
+        frappe.throw(_("This layout does not match its DIFE source type and data source."))
     if layout.docstatus and not spec["legal_approved"]:
         frappe.throw(_("A government-reviewed template is required before official printing."))
 
@@ -314,7 +376,10 @@ def _print_context(
         from_date=start, to_date=end, is_draft=layout.docstatus != 1,
         language=language,
     )
-    return layout, html
+    return layout, html, {
+        "rows": rows, "company_name": company_name or layout.company,
+        "from_date": start, "to_date": end, "language": language,
+    }
 
 
 @frappe.whitelist()
@@ -333,6 +398,7 @@ def export_options(layout_name: str):
         "languages": list(available_languages(layout)),
         "allow_worker_filters": layout.data_source != "Manual",
         "employee_required": layout.form_family == "Document" and layout.data_source == "Employee",
+        "docx_working_copy": True,
     }
 
 
@@ -343,7 +409,7 @@ def preview_a4(
     department: str = "", employment_type: str = "", include_all: int = 0,
 ):
     """Render the selected authorization-scoped draft or approved layout."""
-    _, html = _print_context(
+    _, html, _ = _print_context(
         layout_name, from_date, to_date, language=language,
         employee=employee, branch=branch, department=department,
         employment_type=employment_type, include_all=bool(int(include_all)),
@@ -360,7 +426,7 @@ def download_a4(
     """Always render on A4 with orientation selected by reviewed layout."""
     from frappe.utils.pdf import get_pdf
 
-    layout, html = _print_context(
+    layout, html, _ = _print_context(
         layout_name, from_date, to_date, language=language,
         employee=employee, branch=branch, department=department,
         employment_type=employment_type, include_all=bool(int(include_all)),
@@ -378,3 +444,28 @@ def download_a4(
     )
     frappe.local.response.filecontent = payload
     frappe.local.response.type = "pdf"
+
+
+
+@frappe.whitelist()
+def download_docx(
+    layout_name: str, from_date: str = "", to_date: str = "",
+    language: str = "en", employee: str = "", branch: str = "",
+    department: str = "", employment_type: str = "", include_all: int = 0,
+):
+    """Editable A4 working copy. Never identified as a government-issued form."""
+    from workforce_suite.workforce_suite.statutory_print_docx import render_docx
+
+    layout, _html, data = _print_context(
+        layout_name, from_date, to_date, language=language,
+        employee=employee, branch=branch, department=department,
+        employment_type=employment_type, include_all=bool(int(include_all)),
+    )
+    payload = render_docx(
+        layout, data["rows"], company_name=data["company_name"],
+        from_date=data["from_date"], to_date=data["to_date"], language=data["language"],
+    )
+    safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", layout.form_code)
+    frappe.local.response.filename = f"{safe_name}_{language}_working_copy.docx"
+    frappe.local.response.filecontent = payload
+    frappe.local.response.type = "download"
