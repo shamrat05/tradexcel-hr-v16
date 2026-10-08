@@ -1,6 +1,32 @@
 frappe.listview_settings["Workforce Statutory Print Layout"] = {
     onload(listview) {
         if (!frappe.model.can_create("Workforce Statutory Print Layout")) return;
+        listview.page.add_menu_item(__("Prepare Draft Profile"), () => {
+            const dialog = new frappe.ui.Dialog({
+                title: __("Prepare Draft Profile"),
+                fields: [
+                    {fieldname: "company", fieldtype: "Link", options: "Company", label: __("Company"), reqd: 1},
+                    {fieldname: "branch", fieldtype: "Link", options: "Branch", label: __("Establishment / Branch"),
+                        get_query: () => ({filters: {company: dialog.get_value("company")}})},
+                    {fieldname: "effective_from", fieldtype: "Date", label: __("Profile Effective From"), reqd: 1},
+                    {fieldname: "notice", fieldtype: "HTML", options: "<p>" + __("Copies Company and linked Address data only. Registration, applicability, translations and approval remain administrator review items.") + "</p>"}
+                ],
+                primary_action_label: __("Prepare Draft Profile"),
+                async primary_action(values) {
+                    dialog.disable_primary_action();
+                    try {
+                        const result = await frappe.call({
+                            method: "workforce_suite.workforce_suite.statutory_setup.prepare_draft_profile",
+                            args: values, freeze: true
+                        });
+                        dialog.hide();
+                        const name = result.message.profiles[0];
+                        frappe.set_route("Form", "Workforce Statutory Profile", name);
+                    } finally { dialog.enable_primary_action(); }
+                }
+            });
+            dialog.show();
+        });
         listview.page.add_menu_item(__("Prepare Draft Layout"), () => {
             const dialog = new frappe.ui.Dialog({
                 title: __("Prepare Draft Layout"),

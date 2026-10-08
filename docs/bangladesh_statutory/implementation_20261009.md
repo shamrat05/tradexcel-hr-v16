@@ -96,3 +96,29 @@ variant completion, legal/translation approval, physical-device/staff UAT,
 CI workflow expansion and deployed parity remain open. Socket.IO remains a separate preview/runtime service gate; the app-owned legacy
 Desktop Icon logo request was repaired idempotently to the packaged Workforce
 Suite asset. /undefined remains the known upstream Frappe sidebar request.
+
+
+## Administrator configuration and realtime checkpoint — 2026-10-09
+
+The layout list now provides a native Prepare Draft Profile action. It selects an
+existing Company and optional Branch, copies only the native Company name and
+linked Address when available, and opens an editable draft profile with explicit
+missing requirements. Registration numbers, applicability, translations,
+evidence and approval remain blank/review findings. Repeating the action is
+idempotent. New draft layouts link only independently submitted profiles; a
+draft profile is never treated as approval. The existing Prepare Draft Layout
+action remains available for every applicable catalog entry.
+
+The isolated preview's realtime service was started from installed Frappe source
+at port 9032 with DEV_SERVER enabled. Frappe's native socket client then used
+the configured socketio_port; Playwright observed successful Socket.IO polling
+responses (HTTP 200) rather than the former same-origin 404. No Frappe core or
+client workaround was added. The preview web process remains separate from the
+realtime process, and workers/scheduler remain stopped.
+
+Remaining statutory work includes the service-book and Forms 24, 35/35(a),
+37 variants and Form 40 layouts, complete Form 80/81 period/category
+aggregation, payment/rate evidence and the legal/regulatory crosswalk. These
+remain draft/legal-review gates. DOCX is documented as an editable working copy:
+native letterhead text is included, while PDF/HTML retains the configured native
+logo and Letter Head presentation.

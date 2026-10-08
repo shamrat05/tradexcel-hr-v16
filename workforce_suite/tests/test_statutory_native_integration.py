@@ -349,6 +349,27 @@ def test_explicit_draft_setup_is_repeatable_preserves_edits_and_never_approves(d
         assert all(not frappe.db.exists('Workforce Statutory Print Layout', n) for n in names)
 
 
+def test_draft_profile_setup_reuses_company_and_reports_review_gaps(data):
+    from workforce_suite.workforce_suite.statutory_setup import (
+        prepare_draft_profile, prepare_draft_layout, profile_missing_requirements,
+    )
+    first = prepare_draft_profile("Example Company A", effective_from="2026-10-01")
+    assert first["created"] and len(first["profiles"]) == 1
+    profile_name = first["profiles"][0]
+    profile_doc = frappe.get_doc("Workforce Statutory Profile", profile_name)
+    assert profile_doc.docstatus == 0
+    assert profile_doc.establishment_en == "Example Company A"
+    assert any(item["field"] in {"registration_no", "legal_reference", "docstatus"} for item in first["missing_requirements"])
+    again = prepare_draft_profile("Example Company A", effective_from="2027-01-01")
+    assert again["created"] is False and again["profiles"] == [profile_name]
+    layout_result = prepare_draft_layout("Example Company A", "form_8", "2026-10-01")
+    layout_doc = frappe.get_doc("Workforce Statutory Print Layout", layout_result["layouts"][0])
+    assert not layout_doc.statutory_profile
+    assert profile_missing_requirements(profile_name)
+    frappe.delete_doc("Workforce Statutory Print Layout", layout_doc.name)
+    frappe.delete_doc("Workforce Statutory Profile", profile_name)
+    frappe.db.commit()
+
 def test_draft_setup_concurrent_blank_branch_requests_create_one_configuration():
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
