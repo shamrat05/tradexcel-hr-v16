@@ -1,7 +1,7 @@
 [project]
-name = "tradex_hr"
-authors = [{name = "Tradexcel"}]
-description = "Tradexcel HRMS integration"
+name = "workforce_suite"
+authors = [{name = "Workforce"}]
+description = "Reusable HRMS workflows and controls for Frappe v16"
 requires-python = ">=3.14,<3.15"
 dynamic = ["version"]
 
@@ -15,9 +15,9 @@ erpnext = ">=16.0.0,<17.0.0"
 hrms = ">=16.0.0,<17.0.0"
 
 [project.optional-dependencies]
-# PyYAML reads tradex_hr/tradexcel_hr/salary_setup.yaml. It ships with Frappe,
+# PyYAML reads workforce_suite/workforce_suite/salary_setup.yaml. It ships with Frappe,
 # so this is documentation rather than a new install.
 salary-config = ["PyYAML>=6.0"]
 # Optional because most terminal-only sites do not need local biometric
-# matching. Install this extra before enabling Tradex Face Match Settings.
+# matching. Install this extra before enabling Workforce Face Match Settings.
 face-match = ["opencv-contrib-python-headless>=4.9,<5"]

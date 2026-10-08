@@ -1,1 +1,1 @@
-recursive-include tradex_hr *.json *.js *.py *.svg
+recursive-include workforce_suite *.json *.js *.py *.svg

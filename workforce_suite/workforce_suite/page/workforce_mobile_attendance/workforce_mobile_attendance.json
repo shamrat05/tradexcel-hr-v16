@@ -1,0 +1,15 @@
+{
+ "doctype":"Page",
+ "name":"workforce-mobile-attendance",
+ "page_name":"workforce-mobile-attendance",
+ "title":"Workforce Mobile Attendance",
+ "module":"Workforce Suite",
+ "standard":"Yes",
+ "roles":[
+  {"role":"Workforce Employee/Worker"},
+  {"role":"Workforce Suite Manager"},
+  {"role":"Workforce Suite/Attendance Officer"},
+  {"role":"Workforce Factory Supervisor"},
+  {"role":"Workforce Branch Manager"}
+ ]
+}

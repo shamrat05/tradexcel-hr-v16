@@ -1,0 +1,36 @@
+{
+ "doctype":"DocType","name":"Workforce Maternity Rule Set","module":"Workforce Suite","autoname":"naming_series:","naming_series":"TMAT-.YYYY.-.#####","allow_rename":0,"is_submittable":1,"track_changes":1,"engine":"InnoDB",
+ "field_order":["naming_series","title","company","branch","legal_regime","effective_from","effective_to","minimum_service_months","pre_delivery_days","post_delivery_days","post_delivery_work_protection_days","separation_protection_before_months","separation_protection_after_days","benefit_rate_method","benefit_daily_rate_divisor","benefit_reference_period_months","maternity_leave_type","leave_is_lwp","leave_is_ppl","leave_include_holidays","leave_max_continuous_days","legal_review_notes","sources","reviewed_by","reviewed_at"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Series","options":"TMAT-.YYYY.-.#####","default":"TMAT-.YYYY.-.#####","reqd":1},
+  {"fieldname":"title","fieldtype":"Data","label":"Title","reqd":1,"in_list_view":1},
+  {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
+  {"fieldname":"branch","fieldtype":"Link","label":"Branch / Establishment","options":"Branch"},
+  {"fieldname":"legal_regime","fieldtype":"Select","label":"Legal Regime","options":"Bangladesh Labour Act\nBangladesh EPZ Labour Act\nOther Reviewed Regime","reqd":1},
+  {"fieldname":"effective_from","fieldtype":"Date","label":"Effective From","reqd":1},
+  {"fieldname":"effective_to","fieldtype":"Date","label":"Effective To"},
+  {"fieldname":"minimum_service_months","fieldtype":"Int","label":"Minimum Service Months","reqd":1},
+  {"fieldname":"pre_delivery_days","fieldtype":"Int","label":"Pre-delivery Benefit Days","reqd":1},
+  {"fieldname":"post_delivery_days","fieldtype":"Int","label":"Post-delivery Benefit Days","reqd":1},
+  {"fieldname":"post_delivery_work_protection_days","fieldtype":"Int","label":"Post-delivery Protected Work Days","reqd":1},
+  {"fieldname":"separation_protection_before_months","fieldtype":"Int","label":"Separation Protection Before Delivery (Months)","reqd":1},
+  {"fieldname":"separation_protection_after_days","fieldtype":"Int","label":"Separation Protection After Delivery (Days)","reqd":1},
+  {"fieldname":"benefit_rate_method","fieldtype":"Select","label":"Reviewed Benefit Rate Method","options":"Monthly Gross / Divisor\nAverage Wages / Actual Days Worked\nManual Legal Review","reqd":1},
+  {"fieldname":"benefit_daily_rate_divisor","fieldtype":"Float","label":"Daily Rate Divisor","description":"Required only when the reviewed source defines monthly gross divided by an explicit divisor."},
+  {"fieldname":"benefit_reference_period_months","fieldtype":"Int","label":"Reference Period Months","description":"Required only when the reviewed source uses average wages over a stated past period."},
+  {"fieldname":"maternity_leave_type","fieldtype":"Link","label":"Native Maternity Leave Type","options":"Leave Type","reqd":1},
+  {"fieldname":"leave_is_lwp","fieldtype":"Check","label":"Leave Type Is LWP"},
+  {"fieldname":"leave_is_ppl","fieldtype":"Check","label":"Leave Type Is PPL"},
+  {"fieldname":"leave_include_holidays","fieldtype":"Check","label":"Include Holidays"},
+  {"fieldname":"leave_max_continuous_days","fieldtype":"Int","label":"Maximum Continuous Days","reqd":1},
+  {"fieldname":"legal_review_notes","fieldtype":"Small Text","label":"Legal Review Notes","reqd":1},
+  {"fieldname":"sources","fieldtype":"Table","label":"Official Legal Sources","options":"Workforce Statutory Source","reqd":1},
+  {"fieldname":"reviewed_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1,"allow_on_submit":0},
+  {"fieldname":"reviewed_at","fieldtype":"Datetime","label":"Approved At","read_only":1,"allow_on_submit":0}
+ ],
+ "permissions":[
+  {"role":"Workforce Suite Manager","read":1,"write":1,"create":1,"report":1},
+  {"role":"Workforce Owner/Director","read":1,"write":1,"create":1,"submit":1,"report":1},
+  {"role":"Workforce Compliance Auditor","read":1,"report":1}
+ ]
+}

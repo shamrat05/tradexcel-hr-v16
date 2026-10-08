@@ -1,0 +1,13 @@
+{
+ "doctype": "DocType",
+ "name": "Workforce Working Time Break",
+ "module": "Workforce Suite",
+ "istable": 1,
+ "editable_grid": 1,
+ "field_order": ["minimum_work_duration", "required_break_minutes", "source_reference"],
+ "fields": [
+  {"fieldname": "minimum_work_duration", "fieldtype": "Float", "label": "Minimum Work Duration (Hours)", "reqd": 1, "non_negative": 1, "in_list_view": 1},
+  {"fieldname": "required_break_minutes", "fieldtype": "Int", "label": "Required Break (Minutes)", "reqd": 1, "non_negative": 1, "in_list_view": 1},
+  {"fieldname": "source_reference", "fieldtype": "Data", "label": "Source Section", "reqd": 1}
+ ]
+}

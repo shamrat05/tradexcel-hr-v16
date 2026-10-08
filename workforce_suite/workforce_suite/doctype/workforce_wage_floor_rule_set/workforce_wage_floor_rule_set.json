@@ -1,0 +1,32 @@
+{
+ "doctype":"DocType",
+ "name":"Workforce Wage Floor Rule Set",
+ "module":"Workforce Suite",
+ "autoname":"naming_series:",
+ "naming_series":"TWFR-.YYYY.-.#####",
+ "allow_rename":0,
+ "is_submittable":1,
+ "track_changes":1,
+ "sort_field":"effective_from",
+ "sort_order":"DESC",
+ "field_order":["naming_series","title","company","branch","jurisdiction","legal_regime","industry_sector","establishment_reference","currency","effective_from","effective_to","annual_increment_review_required","legal_review_notes","sources","floor_rows","reviewed_by","reviewed_at"],
+ "fields":[
+  {"fieldname":"naming_series","fieldtype":"Select","label":"Series","options":"TWFR-.YYYY.-.#####","default":"TWFR-.YYYY.-.#####","reqd":1},
+  {"fieldname":"title","fieldtype":"Data","label":"Title","reqd":1,"in_list_view":1},
+  {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
+  {"fieldname":"branch","fieldtype":"Link","label":"Branch / Establishment","options":"Branch","description":"Blank means an explicitly reviewed company-wide establishment scope."},
+  {"fieldname":"jurisdiction","fieldtype":"Data","label":"Jurisdiction","reqd":1},
+  {"fieldname":"legal_regime","fieldtype":"Select","label":"Legal Regime","options":"Bangladesh Labour Act\nBangladesh EPZ Labour Act\nOther Reviewed Regime","reqd":1,"in_list_view":1},
+  {"fieldname":"industry_sector","fieldtype":"Data","label":"Registered Industry Sector","reqd":1},
+  {"fieldname":"establishment_reference","fieldtype":"Data","label":"DIFE / Establishment Reference","description":"Enter the reviewed license, registration, or establishment reference. Do not infer sector from company name."},
+  {"fieldname":"currency","fieldtype":"Link","label":"Currency","options":"Currency","reqd":1},
+  {"fieldname":"effective_from","fieldtype":"Date","label":"Effective From","reqd":1,"in_list_view":1},
+  {"fieldname":"effective_to","fieldtype":"Date","label":"Effective To"},
+  {"fieldname":"annual_increment_review_required","fieldtype":"Check","label":"Annual Increment Needs Manual Review","default":0,"description":"When the source requires increments but no approved deterministic method is encoded, payroll readiness stays in review."},
+  {"fieldname":"legal_review_notes","fieldtype":"Small Text","label":"Legal Review Notes","reqd":1},
+  {"fieldname":"sources","fieldtype":"Table","label":"Official Sources","options":"Workforce Wage Floor Source","reqd":1},
+  {"fieldname":"floor_rows","fieldtype":"Table","label":"Grade / Component Floors","options":"Workforce Wage Floor Rate","reqd":1},
+  {"fieldname":"reviewed_by","fieldtype":"Link","label":"Approved By","options":"User","read_only":1,"allow_on_submit":0},
+  {"fieldname":"reviewed_at","fieldtype":"Datetime","label":"Approved At","read_only":1,"allow_on_submit":0}
+ ]
+}

@@ -1,1 +1,0 @@
-from tradex_hr.tradexcel_hr.flexible_work_records import TradexcelFlexibleWorkPolicy

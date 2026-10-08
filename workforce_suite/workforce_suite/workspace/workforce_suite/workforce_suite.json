@@ -1,0 +1,1055 @@
+{
+ "app": "workforce_suite",
+ "charts": [],
+ "content": "[{\"type\": \"header\", \"data\": {\"text\": \"<h2>Workforce Suite Action Board</h2>\", \"col\": 12}}, {\"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Workforce Work Needing Attention\", \"col\": 12}}, {\"type\": \"quick_list\", \"data\": {\"quick_list_name\": \"Draft Expense Claims\", \"col\": 12}}, {\"type\": \"header\", \"data\": {\"text\": \"<h3>Frequent Actions</h3>\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employee Directory\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Today's Attendance\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance Fix Requests\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Leave Requests\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Expense Claims\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Run Monthly Payroll\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Job Applicants\", \"col\": 3}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Final Settlements\", \"col\": 3}}]",
+ "creation": "2026-09-17 02:50:51.215570",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Workforce Work Needing Attention",
+   "label": "Workforce Work Needing Attention"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "users",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Workforce Suite",
+ "links": [],
+ "modified": "2026-09-27 20:28:24.265550",
+ "modified_by": "Administrator",
+ "module": "Workforce Suite",
+ "name": "Workforce Suite",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [
+  {
+   "document_type": "Expense Claim",
+   "label": "Draft Expense Claims",
+   "quick_list_filter": "{\"docstatus\": 0, \"approval_status\": \"Draft\"}"
+  }
+ ],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Workforce Attendance Correction Approver"
+  },
+  {
+   "role": "Workforce Branch Manager"
+  },
+  {
+   "role": "Workforce Compliance Auditor"
+  },
+  {
+   "role": "Workforce Department Manager"
+  },
+  {
+   "role": "Workforce Device/IT Administrator"
+  },
+  {
+   "role": "Workforce Factory Supervisor"
+  },
+  {
+   "role": "Workforce Finance/Accounts Officer"
+  },
+  {
+   "role": "Workforce Suite Manager"
+  },
+  {
+   "role": "Workforce Suite/Attendance Officer"
+  },
+  {
+   "role": "Workforce Leave Approver"
+  },
+  {
+   "role": "Workforce Owner/Director"
+  },
+  {
+   "role": "Workforce Payroll Approver"
+  },
+  {
+   "role": "Workforce Payroll Manager"
+  }
+ ],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "today",
+   "label": "Today's Attendance",
+   "link_to": "Workforce Daily Attendance Board",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Attendance Summary",
+   "link_to": "Daily Attendance Summary",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "location",
+   "label": "Mobile Attendance",
+   "link_to": "workforce-mobile-attendance",
+   "type": "Page"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "map",
+   "label": "Live Locations",
+   "link_to": "workforce-live-locations",
+   "type": "Page"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "scan",
+   "label": "Punch Log",
+   "link_to": "Employee Checkin",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "check",
+   "label": "Attendance Records",
+   "link_to": "Attendance",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Employee Directory",
+   "link_to": "Employee",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "organization",
+   "label": "Departments",
+   "link_to": "Department",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "hr",
+   "label": "Designations",
+   "link_to": "Designation",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "branch",
+   "label": "Branches / Locations",
+   "link_to": "Branch",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "change",
+   "label": "Joiners & Leavers",
+   "link_to": "Workforce Joiners and Leavers",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Employee Transfers",
+   "link_to": "Employee Transfer",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "remove",
+   "label": "Exits / Separations",
+   "link_to": "Employee Separation",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Final Settlements",
+   "link_to": "Full and Final Statement",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "accounting",
+   "label": "Run Monthly Payroll",
+   "link_to": "Workforce Payroll Readiness",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "file",
+   "label": "Payroll Entries (Advanced)",
+   "link_to": "Payroll Entry",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "file",
+   "label": "Salary Slips",
+   "link_to": "Salary Slip",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "income",
+   "label": "Salary Structures",
+   "link_to": "Salary Structure",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Salary Assignments",
+   "link_to": "Salary Structure Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Salary Components",
+   "link_to": "Salary Component",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Extra Pay & Deductions",
+   "link_to": "Additional Salary",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "list-alt",
+   "label": "Payroll Register",
+   "link_to": "Workforce Payroll Register",
+   "report_ref_doctype": "Salary Slip",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "chart",
+   "label": "Payroll Variance",
+   "link_to": "Workforce Payroll Variance",
+   "report_ref_doctype": "Salary Slip",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Pay Component Register",
+   "link_to": "Workforce Pay Component Register",
+   "report_ref_doctype": "Salary Slip",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "check",
+   "label": "Salary Setup Coverage",
+   "link_to": "Workforce Salary Coverage Board",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Payroll Rules",
+   "link_to": "Workforce Payroll Policy",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "workflow",
+   "label": "Policy Exceptions",
+   "link_to": "Workforce Policy Exception",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Leave Requests",
+   "link_to": "Leave Application",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Leave Allocations",
+   "link_to": "Leave Allocation",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "chart",
+   "label": "Leave Balances",
+   "link_to": "Workforce Leave Balance Board",
+   "report_ref_doctype": "Leave Allocation",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "hr",
+   "label": "Shift Types",
+   "link_to": "Shift Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Shift Planner",
+   "link_to": "Shift Schedule",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Shift Assignments",
+   "link_to": "Shift Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "check",
+   "label": "Shift Coverage",
+   "link_to": "Workforce Shift Coverage",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Attendance Policies",
+   "link_to": "Workforce Attendance Policy",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "location",
+   "label": "Field Duties",
+   "link_to": "Workforce Field Duty",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "map",
+   "label": "Location Pings",
+   "link_to": "Workforce Location Ping",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "solid-warning",
+   "label": "Anomaly Radar",
+   "link_to": "Workforce Anomaly Radar",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "solid-warning",
+   "label": "Missing Employee Data",
+   "link_to": "Employee Data Gaps",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "scan",
+   "label": "Biometric ID Audit",
+   "link_to": "Biometric ID Audit",
+   "report_ref_doctype": "Employee",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "integration",
+   "label": "Biometric Devices",
+   "link_to": "Workforce Biometric Device",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Employee Biometric IDs",
+   "link_to": "Workforce Employee Biometric",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Face Match Settings",
+   "link_to": "Workforce Face Match Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "upload",
+   "label": "Bulk Data Import",
+   "link_to": "Data Import",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "change",
+   "label": "Employee Promotions",
+   "link_to": "Employee Promotion",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "hr",
+   "label": "Job Openings",
+   "link_to": "Job Opening",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Job Applicants",
+   "link_to": "Job Applicant",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Job Offers",
+   "link_to": "Job Offer",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Onboarding",
+   "link_to": "Employee Onboarding",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Overtime Reviews",
+   "link_to": "Overtime Slip",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Leave Policies",
+   "link_to": "Leave Policy",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Leave Policy Assignments",
+   "link_to": "Leave Policy Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Leave Periods",
+   "link_to": "Leave Period",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Holiday Lists",
+   "link_to": "Holiday List",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "change",
+   "label": "Payroll Corrections",
+   "link_to": "Payroll Correction",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Salary Arrears",
+   "link_to": "Arrear",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Wage Floor Reviews",
+   "link_to": "Workforce Wage Floor Classification",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Benefit Enrollments",
+   "link_to": "Workforce Statutory Benefit Enrollment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Working Time Reviews",
+   "link_to": "Workforce Working Time Classification",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Maternity Reviews",
+   "link_to": "Workforce Maternity Review",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Welfare Reviews",
+   "link_to": "Workforce Workplace Welfare Review",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Statutory Exit Rules",
+   "link_to": "Workforce Statutory Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Wage Floor Rules",
+   "link_to": "Workforce Wage Floor Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Benefit Rules",
+   "link_to": "Workforce Statutory Benefit Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Working Time Rules",
+   "link_to": "Workforce Working Time Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Maternity Rules",
+   "link_to": "Workforce Maternity Rule Set",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Income Tax Slabs",
+   "link_to": "Income Tax Slab",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Payroll Periods",
+   "link_to": "Payroll Period",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Expense Claims",
+   "link_to": "Expense Claim",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Employee Advances",
+   "link_to": "Employee Advance",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "map",
+   "label": "Travel Requests",
+   "link_to": "Travel Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "list-alt",
+   "label": "Employee Advance Summary",
+   "link_to": "Employee Advance Summary",
+   "report_ref_doctype": "Employee Advance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "list-alt",
+   "label": "Unpaid Expense Claims",
+   "link_to": "Unpaid Expense Claim",
+   "report_ref_doctype": "Expense Claim",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Expense Claim Types",
+   "link_to": "Expense Claim Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Purpose of Travel",
+   "link_to": "Purpose of Travel",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Compensatory Leave Requests",
+   "link_to": "Compensatory Leave Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Leave Encashment",
+   "link_to": "Leave Encashment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Holiday List Assignments",
+   "link_to": "Holiday List Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Leave Types",
+   "link_to": "Leave Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Leave Block Lists",
+   "link_to": "Leave Block List",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Shift Requests",
+   "link_to": "Shift Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Shift Schedule Assignments",
+   "link_to": "Shift Schedule Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "location",
+   "label": "Shift Locations",
+   "link_to": "Shift Location",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Overtime Types",
+   "link_to": "Overtime Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Attendance Periods",
+   "link_to": "Workforce Attendance Period",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Monthly Attendance Sheet",
+   "link_to": "Monthly Attendance Sheet",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Shift Attendance",
+   "link_to": "Shift Attendance",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Employees Working on a Holiday",
+   "link_to": "Employees working on a holiday",
+   "report_ref_doctype": "Attendance",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Employee Incentive",
+   "link_to": "Employee Incentive",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Retention Bonus",
+   "link_to": "Retention Bonus",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "money-coins-1",
+   "label": "Salary Withholding",
+   "link_to": "Salary Withholding",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Staffing Plans",
+   "link_to": "Staffing Plan",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Job Requisitions",
+   "link_to": "Job Requisition",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Interviews",
+   "link_to": "Interview",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Interview Feedback",
+   "link_to": "Interview Feedback",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Employee Referrals",
+   "link_to": "Employee Referral",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "file",
+   "label": "Appointment Letters",
+   "link_to": "Appointment Letter",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Interview Types",
+   "link_to": "Interview Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Appointment Letter Templates",
+   "link_to": "Appointment Letter Template",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "chart",
+   "label": "Recruitment Analytics",
+   "link_to": "Recruitment Analytics",
+   "report_ref_doctype": "Staffing Plan",
+   "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "solid-warning",
+   "label": "Employee Grievances",
+   "link_to": "Employee Grievance",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "hr",
+   "label": "Training Programs",
+   "link_to": "Training Program",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Training Events",
+   "link_to": "Training Event",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Appraisals",
+   "link_to": "Appraisal",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "check",
+   "label": "Goals",
+   "link_to": "Goal",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Employee Skill Map",
+   "link_to": "Employee Skill Map",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Training Feedback",
+   "link_to": "Training Feedback",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "list-alt",
+   "label": "Training Results",
+   "link_to": "Training Result",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "calendar",
+   "label": "Appraisal Cycles",
+   "link_to": "Appraisal Cycle",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Grievance Types",
+   "link_to": "Grievance Type",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Appraisal Templates",
+   "link_to": "Appraisal Template",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Employee Grades",
+   "link_to": "Employee Grade",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "users",
+   "label": "Employee Groups",
+   "link_to": "Employee Group",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "HR Settings",
+   "link_to": "HR Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "setting-gear",
+   "label": "Payroll Settings",
+   "link_to": "Payroll Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Bulk Salary Structure Assignment",
+   "link_to": "Bulk Salary Structure Assignment",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "clipboard",
+   "label": "Attendance Fix Requests",
+   "link_to": "Attendance Request",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Bulk Leave Allocation",
+   "link_to": "Leave Control Panel",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Bulk Shift Assignment",
+   "link_to": "Shift Assignment Tool",
+   "type": "DocType"
+  }
+ ],
+ "title": "Workforce Suite",
+ "type": "Workspace"
+}
