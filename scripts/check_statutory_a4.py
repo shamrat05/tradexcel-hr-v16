@@ -16,6 +16,9 @@ import fitz
 from weasyprint import HTML
 
 ROOT = Path(__file__).resolve().parents[1]
+# Invocation as "python scripts/..." otherwise puts only /scripts on sys.path.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 MODULE = ROOT / "workforce_suite" / "workforce_suite"
 SPECS = json.loads((MODULE / "statutory_form_specs.json").read_text())
 OUTPUT = ROOT / "build" / "statutory_pdf_qa"
