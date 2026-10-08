@@ -64,7 +64,9 @@ def profile(data):
     doc=frappe.get_doc({'doctype':'Workforce Statutory Profile','company':'Example Company A','profile_version':'test-1',
         'effective_from':'2020-01-01','establishment_en':'TEST Establishment','establishment_bn':'পরীক্ষামূলক প্রতিষ্ঠান',
         'address_en':'TEST Address','address_bn':'পরীক্ষামূলক ঠিকানা','legal_reference':'TEST reviewed source only',
-        'review_notes':'TEST no legal certification'}).insert()
+        'review_notes':'TEST reviewed applicability',
+        'registration_applicability':'Required','registration_no':'TEST-REG-001',
+        'licence_applicability':'Not Applicable','licence_evidence':'TEST reviewed non-applicability evidence'}).insert()
     with pytest.raises(frappe.PermissionError):doc.submit()
     frappe.set_user(data['reviewer']);doc.reload();doc.submit();frappe.set_user('Administrator')
     return doc
@@ -114,7 +116,9 @@ def test_profile_four_eyes_effective_dates_and_bn_no_fallback(data):
     approved=profile(data);doc=layout('form_8',statutory_profile=approved.name)
     result=forms.preview_a4(doc.name,employee=data['person'],language='bn')
     assert 'পরীক্ষামূলক প্রতিষ্ঠান' in result['html'] and 'TEST Establishment' not in result['html']
-    approved_copy=frappe.get_doc({'doctype':'Workforce Statutory Profile','company':'Example Company B','profile_version':'1','effective_from':'2020-01-01','establishment_en':'TEST','address_en':'TEST','legal_reference':'TEST','review_notes':'TEST'}).insert()
+    approved_copy=frappe.get_doc({'doctype':'Workforce Statutory Profile','company':'Example Company B','profile_version':'1','effective_from':'2020-01-01','establishment_en':'TEST','address_en':'TEST','legal_reference':'TEST','review_notes':'TEST',
+        'registration_applicability':'Required','registration_no':'TEST-REG-002',
+        'licence_applicability':'Not Applicable','licence_evidence':'TEST evidence'}).insert()
     doc.statutory_profile=approved_copy.name
     with pytest.raises(frappe.ValidationError,match='match'):doc.save()
 
@@ -380,6 +384,8 @@ def test_profile_requirements_enforce_read_scope_and_submission_completeness(dat
         with pytest.raises(frappe.PermissionError):
             profile_missing_requirements(name)
         frappe.set_user(data["auditor"])
+        assert profile_missing_requirements(name)
+        frappe.set_user(data["unscoped"])
         with pytest.raises(frappe.PermissionError):
             profile_missing_requirements(name)
         frappe.set_user(data["reviewer"])
@@ -459,6 +465,9 @@ def test_profile_applicability_requires_reviewed_required_or_evidenced_not_appli
     finally:
         frappe.set_user("Administrator")
         if frappe.db.exists("Workforce Statutory Profile", doc.name):
+            current = frappe.get_doc("Workforce Statutory Profile", doc.name)
+            if current.docstatus == 1:
+                current.cancel()
             frappe.delete_doc("Workforce Statutory Profile", doc.name)
         frappe.db.commit()
 

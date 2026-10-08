@@ -45,12 +45,20 @@ def prepare_draft_profile(company, branch="", effective_from=""):
             frappe.throw(_("Branch must belong to the selected Company."))
     key = hashlib.sha256(f"{company}\0{branch or ''}".encode()).hexdigest()
     with frappe.cache.lock("workforce_statutory_profile_setup:" + key, timeout=60, blocking_timeout=10):
-        existing = frappe.get_all(
-            "Workforce Statutory Profile",
-            filters={"company": company, "branch": branch or "", "docstatus": ["!=", 2]},
-            pluck="name",
-            order_by="creation asc",
-        )
+        from frappe.query_builder.functions import IfNull
+        table = frappe.qb.DocType("Workforce Statutory Profile")
+        query = (frappe.qb.from_(table).select(table.name)
+                 .where((table.company == company) & (IfNull(table.branch, "") == (branch or ""))
+                        & (table.docstatus != 2))
+                 .orderby(table.creation).for_update())
+        try:
+            existing = query.run(pluck=True)
+        except frappe.QueryDeadlockError:
+            # A concurrent request may have committed after this transaction
+            # established its snapshot. Roll back only the read transaction,
+            # then retry the locking read once as a current read.
+            frappe.db.rollback()
+            existing = query.run(pluck=True)
         if existing:
             return {"created": False, "profiles": existing,
                     "missing_requirements": profile_missing_requirements(existing[0])}
