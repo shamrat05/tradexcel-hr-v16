@@ -1,6 +1,6 @@
 # Desk layout: measurement and fix — 2026-09-18
 
-Record of a reported desk misalignment on `/app/tradexcel-hr`, the measurement
+Record of a reported desk misalignment on `/app/workforce-suite`, the measurement
 that found the cause, and the fix. Written because two rounds of reasoning
 produced a wrong fix before measurement settled it.
 
@@ -21,8 +21,8 @@ from playwright.sync_api import sync_playwright
 # session sid minted via frappe.auth.LoginManager; see "Authentication" below
 ctx.add_cookies([{"name": "sid", "value": SID, "domain": "localhost", "path": "/"}])
 if block_our_css:
-    ctx.route("**/tradexcel_desk.css*", lambda route: route.abort())
-page.goto("http://localhost:8000/app/tradexcel-hr", wait_until="domcontentloaded")
+    ctx.route("**/workforce_desk.css*", lambda route: route.abort())
+page.goto("http://localhost:8000/app/workforce-suite", wait_until="domcontentloaded")
 page.wait_for_selector(".page-head")
 # then compare getBoundingClientRect().x for each landmark
 ```
@@ -74,7 +74,7 @@ within ~11px. The first fix widened `.page-head > .container` and
 `.page-container` entirely. That pulled everything except the navbar to x=0 and
 left a **148px** disagreement between the navbar and everything below it.
 
-## Root causes in `tradexcel_desk.css`
+## Root causes in `workforce_desk.css`
 
 1. `.page-container { padding-left/right: 24px }` — Frappe's `.page-container`
    has no padding of its own, and a desk page *is* `.content.page-container`
@@ -114,7 +114,7 @@ Website Settings.app_logo  →  Navbar Settings.app_logo  →  frappe.get_hooks(
 
 Neither setting is populated, so it fell through to
 `erpnext/hooks.py: app_logo_url = "/assets/erpnext/images/erpnext-logo.svg"`.
-`header.navbar .navbar-brand` is hidden in CSS. **To show a Tradexcel logo
+`header.navbar .navbar-brand` is hidden in CSS. **To show a Workforce logo
 instead of hiding it, set Desk > Website > Website Settings > App Logo** — that
 setting takes priority and needs no code change.
 
@@ -140,7 +140,7 @@ def bundled_asset(path, rtl=None):
 	return abs_url(path)
 ```
 
-The original `app_include_css = ["/assets/tradex_hr/css/tradexcel_desk.css"]`
+The original `app_include_css = ["/assets/workforce_suite/css/workforce_desk.css"]`
 started with `/assets` and had no hash, so the browser legitimately reused a
 stale copy for 12 hours. No amount of reloading from the app could help.
 
@@ -152,18 +152,18 @@ Frappe discovers bundles by filename — source files must literally be named
 `**/*.bundle.{js,css}`.
 
 ```bash
-git mv tradex_hr/public/css/tradexcel_desk.css \
-       tradex_hr/public/css/tradex_hr.bundle.css
+git mv workforce_suite/public/css/workforce_desk.css \
+       workforce_suite/public/css/workforce_suite.bundle.css
 # hooks.py
-app_include_css = ["tradex_hr.bundle.css"]
-bench build --app tradex_hr
+app_include_css = ["workforce_suite.bundle.css"]
+bench build --app workforce_suite
 ```
 
 Result:
 
 ```
 sites/assets/assets.json
-  "tradex_hr.bundle.css": "/assets/tradex_hr/dist/css/tradex_hr.bundle.2P673ZWD.css"
+  "workforce_suite.bundle.css": "/assets/workforce_suite/dist/css/workforce_suite.bundle.2P673ZWD.css"
 ```
 
 The filename now carries a content hash, so **the URL changes whenever the CSS
@@ -173,8 +173,8 @@ once the name is content-addressed.
 ### Working on the CSS
 
 ```bash
-# edit tradex_hr/public/css/tradex_hr.bundle.css, then:
-cd ~/frappe-bench && bench build --app tradex_hr
+# edit workforce_suite/public/css/workforce_suite.bundle.css, then:
+cd ~/frappe-bench && bench build --app workforce_suite
 ```
 
 The hash changes, so even a long-lived Chrome profile picks it up on a normal
@@ -239,5 +239,5 @@ The bundle filename carries a content hash, so a CSS change produces a new URL
 and is picked up on a normal reload. Check which file the page requests:
 
 ```bash
-curl -s http://localhost:8000/app | grep -o 'tradex_hr.bundle[^"]*css'
+curl -s http://localhost:8000/app | grep -o 'workforce_suite.bundle[^"]*css'
 ```

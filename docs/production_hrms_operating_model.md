@@ -1,11 +1,11 @@
-# Tradexcel HRMS Production Operating Model
+# Workforce SuiteMS Production Operating Model
 
 ## Confirmed business structure
 
 ```text
-Tradexcel Ceramics Ltd.
-└── Tradexcel Headquarters (Headquarters)
-    └── TCL Factory (Branch)
+Example Company A
+└── Workforce Headquarters (Headquarters)
+    └── Example Factory (Branch)
 ```
 
 Branch types are intended to make the hierarchy readable from macro to micro:
@@ -41,10 +41,10 @@ Frappe business units.
 
 ## Effective-dated rule changes
 
-Current implementation (2026-09-17): `Tradexcel Policy Exception` supports
+Current implementation (2026-09-17): `Workforce Policy Exception` supports
 approved numeric exceptions for daily-paid worker payroll only. HR/Payroll
 Manager prepares a draft and presses **Preview Impact**; a different user with
-the Tradexcel Payroll Approver role submits it when no submitted slip is
+the Workforce Payroll Approver role submits it when no submitted slip is
 affected (Administrator is a setup bypass). The default effective date is
 tomorrow. Worker payroll resolves
 the rule for each attendance date, including mid-month rate and break changes.
@@ -83,21 +83,21 @@ Target operating model:
 
 ## User roles
 
-- Tradexcel Owner/Director
-- Tradexcel HR Manager
-- Tradexcel HR/Attendance Officer
-- Tradexcel Payroll Manager
-- Tradexcel Finance/Accounts Officer
-- Tradexcel Factory Supervisor
-- Tradexcel Branch Manager
-- Tradexcel Department Manager
-- Tradexcel Device/IT Administrator
-- Tradexcel Compliance Auditor
-- Tradexcel Employee/Worker
-- Tradexcel Attendance Correction Approver
-- Tradexcel Leave Approver
-- Tradexcel Payroll Approver
-- Tradexcel Import Reviewer
+- Workforce Owner/Director
+- Workforce Suite Manager
+- Workforce Suite/Attendance Officer
+- Workforce Payroll Manager
+- Workforce Finance/Accounts Officer
+- Workforce Factory Supervisor
+- Workforce Branch Manager
+- Workforce Department Manager
+- Workforce Device/IT Administrator
+- Workforce Compliance Auditor
+- Workforce Employee/Worker
+- Workforce Attendance Correction Approver
+- Workforce Leave Approver
+- Workforce Payroll Approver
+- Workforce Import Reviewer
 
 ## Approval boundaries
 

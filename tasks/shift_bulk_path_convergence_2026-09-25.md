@@ -5,7 +5,7 @@
 Started from `feat/bulk-salary-authority` at
 `549462588542d1d615f47e54220df1439a3e4d4a`; created
 `fix/converge-shift-bulk-path`. Frappe 16.34.0, ERPNext 16.35.0, HRMS
-16.19.0, Tradexcel HR 0.1.0 run on `hrms-v16.localhost` with MariaDB at
+16.19.0, Workforce Suite 0.1.0 run on `hrms-v16.localhost` with MariaDB at
 `127.0.0.1:3307`.
 
 Before editing, inspected the installed Employee Data Gaps report script and
@@ -28,11 +28,11 @@ Error Logs but no large-batch queue path.
 
 The native Tool remains canonical. PR #25's extension rechecks selected
 Employees against the native eligible Employee set at apply time and again in
-queued processing, rejects unsupported actions for Tradexcel operators, and
+queued processing, rejects unsupported actions for Workforce operators, and
 retains HRMS overlap validation, partial results and queue behavior.
 
 The old exception clone mixed scheduling with a separate reviewed policy
-decision. `Tradexcel Policy Exception` represents an effective, impact-previewed
+decision. `Workforce Policy Exception` represents an effective, impact-previewed
 exception which requires independent Payroll Approver submission for activation;
 the legacy clone fabricated a `preview_signature` and tied the exception to a
 Shift Assignment. This slice removes only automatic cloning from the old gap
@@ -59,7 +59,7 @@ constant/imports from `bulk_fix.py`. `resolve_gap()` returns the clear message
 Designation and Holiday List resolvers remain unchanged.
 
 Frappe 16.34 `frappe.desk.query_report.get_script()` loads the report's bundled
-`tradexcel_hr/report/employee_data_gaps/employee_data_gaps.js` first when it
+`workforce_suite/report/employee_data_gaps/employee_data_gaps.js` first when it
 exists; `Report.javascript` is only fallback. The install-time copy was an
 unused duplicate because this standard report is reloaded from its JSON and
 skipped by the custom-report installer. Removed that dead install constant and
@@ -80,9 +80,9 @@ continues to cover Branch/Department/Company tampering, queue revalidation,
 unsupported actions, partial results and operator Workspace access.
 
 Focused report, resolver, Workspace and native Shift Tool tests passed:
-**25 passed**. The complete Tradexcel suite passed: **575 passed, 0 failed,
+**25 passed**. The complete Workforce suite passed: **575 passed, 0 failed,
 0 skipped**. Python `compileall`, parsing all 62 app JSON files, Node 24.15.0
-syntax checking, Node 24.15.0 `bench build --app tradex_hr`, and
+syntax checking, Node 24.15.0 `bench build --app workforce_suite`, and
 `git diff --check` passed. Asset build emitted only the existing Browserslist
 database age warning.
 

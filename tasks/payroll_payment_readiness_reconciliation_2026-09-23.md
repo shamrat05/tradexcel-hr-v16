@@ -29,7 +29,7 @@ The Payroll Manager can prepare the native draft using existing Payroll Entry wr
 
 ## Read-only staging evidence
 
-Site: `hrms-v16.localhost`, company: `Tradexcel Ceramics Ltd.`
+Site: `hrms-v16.localhost`, company: `Example Company A`
 
 - 240 currently Active Employee records: 208 Cash, 2 Bank, 30 blank; 0 Cheque.
 - Both Bank-mode employees have `bank_name`; both lack `bank_ac_no`.

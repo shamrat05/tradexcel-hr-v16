@@ -15,7 +15,7 @@ Biometric devices were excluded from the audit by request (no terminal connected
 the repository**, existing only on this machine. The assignment we maintain held
 the same number.
 
-They happened to agree (67/67 compared on `tradex_source_employee_id`, 0
+They happened to agree (67/67 compared on `workforce_source_employee_id`, 0
 disagreements), so no wage was ever wrong. But two homes for one number is a
 defect regardless: on a clean checkout payroll would have reported "staff source
 salary is missing" for everyone.
@@ -28,8 +28,8 @@ explicit fallback seed when an assignment has no base, and logs when it is used.
 
 | Source | Split | Verdict |
 | --- | --- | --- |
-| Selevo VPS, `tradex` org (67 employees' latest rows) | **Basic 59.92 / HRA 29.96 / Medical 4.99 / Conveyance 4.99 / ENT 0.13** | **the truth** |
-| `TCL Standard` structure | 60/30/5/5 | ✅ correct |
+| Selevo VPS, `workforce` org (67 employees' latest rows) | **Basic 59.92 / HRA 29.96 / Medical 4.99 / Conveyance 4.99 / ENT 0.13** | **the truth** |
+| `Example Monthly` structure | 60/30/5/5 | ✅ correct |
 | `payroll_rules.DEFAULT_COMPONENTS` | 50/25/10/10/5 **+ Food Allowance** | ❌ **fabricated** |
 | `run_payroll._source_earnings` abbrs | `BASIC` / `CONV` | ❌ inconsistent with the components (`BS` / `CON`) |
 
@@ -47,7 +47,7 @@ earlier periods**, not current — the latest-row analysis is unambiguous.
    and any formula that is not `base * <factor>` (other than the attendance-based
    daily-wage case) raises instead of being guessed.
 
-Verified: `TCL Standard` 130,000 → BS 78,000 / HRA 39,000 / MED 6,500 / CON 6,500,
+Verified: `Example Monthly` 130,000 → BS 78,000 / HRA 39,000 / MED 6,500 / CON 6,500,
 total exactly 130,000.
 
 ### 8 — The payroll error handler discarded the whole batch
@@ -70,15 +70,15 @@ existing `ensure_*` pattern. **Proven**: all five deleted, function re-run,
 
 ### 13 — Dead code
 
-- `WORKER_STRUCTURE = "TCL Factory Daily Wage Worker Structure"` — a structure
+- `WORKER_STRUCTURE = "Example Factory Daily Wage Worker Structure"` — a structure
   name that no longer exists. Defined and never referenced. Removed.
 - `configured_components()` and the `calculate_wage` import — became unused once
   the structure took over the split. Removed.
 
 ### 14 — `app_email` and `app_description`
 
-`app_email` was `admin@tradex.com` — the **retired Selevo's** address, and it
-once accidentally became a device `device_code`. Now `hr@tradexcel.com`.
+`app_email` was `admin@workforce.com` — the **retired Selevo's** address, and it
+once accidentally became a device `device_code`. Now `support@example.com`.
 
 `app_description` described the app as an *"integration for SelevoHR"*. Selevo is
 retired and this app **is** the HR system, so it now says what it is.
@@ -87,7 +87,7 @@ retired and this app **is** the HR system, so it now says what it is.
 
 Of 31 files named `test_*.py` in `sync/`, **8 contained no test function at all** —
 they called `frappe.init()`, printed, and asserted **nothing**, while pytest
-collected and executed them. One referenced `tradex-hr-management`, a workspace
+collected and executed them. One referenced `workforce-hr-management`, a workspace
 name that no longer exists.
 
 **Fixed:** all 8 moved to `sync/quarantine/investigation_scripts/`. Their useful
@@ -115,7 +115,7 @@ The 6 remaining unversioned tests deliberately stay unversioned: they test
 | 9 | **46 employees have `employment_type = Worker` but hold monthly structures** (Foreman 30,000; Shift Incharge 23,000). Payroll would resolve them to the 350/day policy. Monthly or daily? |
 | 5 | **Tax / PF / gratuity** — 0 Income Tax Slabs, no deductions configured |
 | 10 | **All 5 payroll policies have `salary_structure = NULL`** — the link exists and is empty, so nothing derives the structure |
-| — | **2 employees have no component split** (TCL-0026, TCL-0038) — gross known, split unknown |
+| — | **2 employees have no component split** (COMPANY_A-0026, COMPANY_A-0038) — gross known, split unknown |
 
 ## Still open — operational
 

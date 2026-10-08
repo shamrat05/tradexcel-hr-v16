@@ -17,7 +17,7 @@ removed. The report now navigates to the native Shift Assignment Tool, native
 Bulk Salary Structure Assignment, native Employee Transfer/Promotion, or
 Employee List. The native tools rebuild and validate their own selections.
 
-A synthetic Tradexcel HR/Attendance Officer limited to one Company and Branch
+A synthetic Workforce Suite/Attendance Officer limited to one Company and Branch
 could previously receive a synthetic Employee in another Branch from the raw
 SQL Employee Data Gaps report. The report now binds Employee IDs resolved by
 the existing Frappe permission-aware scope helper. A zero-Employee scope
@@ -26,7 +26,7 @@ truncates at Frappe's default list page size.
 
 The old report classified pay using Salary Structure names containing “Wage”
 and Employee `employment_type`. It now resolves the effective submitted SSA and
-the linked Salary Structure's explicit `custom_tradex_pay_basis`; historical
+the linked Salary Structure's explicit `custom_workforce_pay_basis`; historical
 assignment count is informational and same-date conflicts follow the canonical
 resolver. Active shift coverage is checked on the report date, not by any
 historical assignment.
@@ -34,7 +34,7 @@ historical assignment.
 Installed Frappe Data Import uses target DocType `import` permission and
 `Importer.update_record` calls the existing Employee `.save()` validation.
 The synthetic direct-update probe was rejected by the lifecycle guard.
-Tradexcel HR Manager lacks Employee import and Data Import create, so broad
+Workforce Suite Manager lacks Employee import and Data Import create, so broad
 import enablement remains fail-closed. The framework's background deadlock
 retry does not carry its initial `user`; review this before delegating Data
 Import to custom roles. No real import was run.
@@ -47,7 +47,7 @@ The Report JSON `javascript` metadata changed, so a fresh staging
 passed; sizes and full SHA-256 values are in `BACKUPS.md`. Standard
 `bench --site hrms-v16.localhost migrate` and `clear-cache` completed. The
 installed Report has empty saved JavaScript metadata and the canonical
-`tradexcel-hr` Workspace still exists. No direct Report SQL edit was used.
+`workforce-suite` Workspace still exists. No direct Report SQL edit was used.
 
 ## Validation
 
@@ -56,7 +56,7 @@ installed Report has empty saved JavaScript metadata and the canonical
   focused set: **29 passed**.
 - Post-migration report-focused set: **16 passed**.
 - Final focused set after navigation/filter regression updates: **28 passed**.
-- Node 24.15.0 syntax check and `bench build --app tradex_hr`: passed.
+- Node 24.15.0 syntax check and `bench build --app workforce_suite`: passed.
 - Full suite before the fixture cleanup correction: **597 passed, 0 skipped,
   70 warnings**. Compileall, 61 tracked JSON parses and diff check passed.
 - Final synthetic scan found two orphan test-owned Contacts, with zero Users,

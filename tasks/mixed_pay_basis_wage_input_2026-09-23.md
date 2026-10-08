@@ -17,20 +17,20 @@ The financial authority is now:
 ```text
 submitted Salary Structure Assignment (effective date + base)
         ↓
-assigned Salary Structure.custom_tradex_pay_basis
+assigned Salary Structure.custom_workforce_pay_basis
         ↓
 Monthly Salary | Daily Wage | explicit blocker
 ```
 
 `Employee.employment_type`, branch, department, designation and naming are not
-financial pay-basis authorities. `Tradexcel Payroll Policy.daily_wage` remains
+financial pay-basis authorities. `Workforce Payroll Policy.daily_wage` remains
 available for policy comparison/legacy review, but the new production input
 path never uses it to calculate money. SSA `base` is the only daily-rate source.
 
 ## Implemented
 
-- `custom_tradex_pay_basis` on native Salary Structure, populated only from the
-  declarative YAML values (`TCL Standard`, `TCL Daily Wage`, `EFL Standard`).
+- `custom_workforce_pay_basis` on native Salary Structure, populated only from the
+  declarative YAML values (`Example Monthly`, `Example Daily Wage`, `Example Secondary Monthly`).
 - `resolve_pay_basis()` with explicit `UNRESOLVED`, `CONFLICT`, and
   `MID_PERIOD_CHANGE` outcomes. Same-effective-date assignment corruption and
   mixed-period changes fail closed.
@@ -105,7 +105,7 @@ metadata-only hook was corrected to use `db.set_value`; it does not cancel linke
 Salary Structures or touch payroll documents.
 
 Post-migration metadata is present on all three declared structures. Current
-TCL staging still has the old linked `TCL Daily Wage` child formula and is
+COMPANY_A staging still has the old linked `Example Daily Wage` child formula and is
 therefore intentionally blocked. Current September Attendance inspection finds
 238 employees in scope, with 159 `ATTENDANCE_UNMARKED` Daily Wage blockers. The
 assignment population is 159 Daily Wage and 64 Monthly Salary employees; 15
@@ -139,7 +139,7 @@ Settings change was made.
 - Full app suite before Phase B: **208 passed, 2 skipped, 2 warnings**.
 - Staging has no configured LWP/PPL Leave Types; those cases are delegated to
   native HRMS semantics and remain a configuration/test-data gate.
-- Compilation: **passed** with `/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q tradex_hr`.
+- Compilation: **passed** with `/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q workforce_suite`.
 - `git diff --check`: **passed**.
 - Temporary native records: explicitly cleaned by exact generated names; no
   real Salary Slip or Payroll Entry was submitted.
@@ -187,10 +187,10 @@ Current read-only staging inspection for September 2026:
 
 Phase B verification:
 
-- Focused rerun on 2026-09-23: `FRAPPE_TEST_SITE=hrms-v16.localhost FRAPPE_TEST_SITES_PATH=/home/sanchita/frappe-bench-v16/sites env/bin/pytest apps/tradex_hr/tradex_hr/tests/test_native_payroll.py` from the bench root: **4 passed, 1 warning** (Frappe `txt` deprecation warning).
+- Focused rerun on 2026-09-23: `FRAPPE_TEST_SITE=hrms-v16.localhost FRAPPE_TEST_SITES_PATH=/home/sanchita/frappe-bench-v16/sites env/bin/pytest apps/workforce_suite/workforce_suite/tests/test_native_payroll.py` from the bench root: **4 passed, 1 warning** (Frappe `txt` deprecation warning).
 - Focused Phase A + Phase B tests: **28 passed, 3 warnings**.
 - Full app suite: **214 passed, 2 skipped, 3 warnings**.
-- Compilation: **passed** with `/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q tradex_hr`.
+- Compilation: **passed** with `/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q workforce_suite`.
 - `git diff --check`: **passed**.
 - Staging test records: explicitly cleaned; no synthetic records remain.
 - Production touched: **NO**.
@@ -198,7 +198,7 @@ Phase B verification:
 - Submitted real Salary Slip: **NO**.
 
 Remaining gates are operational/configuration work: resolve the 159 missing
-Daily Wage Attendance records, replace the unsafe submitted legacy `TCL Daily
+Daily Wage Attendance records, replace the unsafe submitted legacy `COMPANY_A Daily
 Wage` structure through a new effective-dated native structure/assignment, and
 later complete tax/accounting/payment controls. LWP/PPL parity remains
 delegated to native HRMS and needs real configured Leave Types before it can be
@@ -218,15 +218,15 @@ Verified pre-migration backup with files:
 - Private files SHA-256: 7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65fe
 - Site config SHA-256: 904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73
 
-Read-only staging preflight found the current Tradexcel Payroll Approval Workflow active with draft review states; no custom_tradex_run_key exists. Payroll Entry and Salary Slip counts are both zero. An attempted grouped aggregate through the Frappe query API was rejected as unsupported; it made no writes and was not used as evidence.
+Read-only staging preflight found the current Workforce Payroll Approval Workflow active with draft review states; no custom_workforce_run_key exists. Payroll Entry and Salary Slip counts are both zero. An attempted grouped aggregate through the Frappe query API was rejected as unsupported; it made no writes and was not used as evidence.
 
 Hardening changes in progress: native submit/cancel Workflow states, review eligibility gated on native slip-job completion, managed monthly company identity, Payroll Entry and Salary Slip server guards, permission ordering, Daily Wage preflight/atomic materialization. No real payroll or Salary Slip is being submitted.
 
-- First staging migration stopped safely in the app after-migrate Workflow setup because the action pre-pass still expected four-field transition tuples. Read-only checks show the managed fields were not yet installed and Payroll Entry/Salary Slip remain at zero. The valid Tradexcel HR Workspace still exists; the sync only removed a lowercase orphan slug. Corrected the tuple iteration before retrying migration.
+- First staging migration stopped safely in the app after-migrate Workflow setup because the action pre-pass still expected four-field transition tuples. Read-only checks show the managed fields were not yet installed and Payroll Entry/Salary Slip remain at zero. The valid Workforce Suite Workspace still exists; the sync only removed a lowercase orphan slug. Corrected the tuple iteration before retrying migration.
 
 - The second staging migration correctly rejected blank Workflow State allow_edit values as mandatory. Assigning the reviewer, director, and approver roles for those states; no records were created.
 
-- The later migration attempt synchronized app metadata but stopped during Frappe's orphan Workspace deletion: the staging default queue already held over 550 delete_dynamic_links jobs and no workers were online. No payroll records were touched. Completed app-owned role/workflow/field convergence directly on staging after the pre-migration backup. The interrupted sync left the HR Workspace under its old title-based name; renamed it with Frappe to the app's canonical tradexcel-hr name and reran ensure_workspace().
+- The later migration attempt synchronized app metadata but stopped during Frappe's orphan Workspace deletion: the staging default queue already held over 550 delete_dynamic_links jobs and no workers were online. No payroll records were touched. Completed app-owned role/workflow/field convergence directly on staging after the pre-migration backup. The interrupted sync left the HR Workspace under its old title-based name; renamed it with Frappe to the app's canonical workforce-suite name and reran ensure_workspace().
 - That convergence exposed a v16-required Workspace.type field missing from the existing installer; set it to Workspace before saving. The canonical workspace and report/workspace test set now pass.
 - Focused Phase A suite: 17 passed. Full app suite: 225 passed, 2 skipped. Compile and final diff checks are run after review.
 - Staging payroll population was unchanged. The synthetic lifecycle test cleaned its Payroll Entry, draft Salary Slip, derived Additional Salary, Attendance, Attendance Period, Salary Structure/Assignment, and three role-specific users with Company User Permissions. No real Salary Slip or accounting entry was submitted/created.
@@ -249,12 +249,12 @@ Hardening changes in progress: native submit/cancel Workflow states, review elig
 ### Phase B — Payroll Readiness operator flow
 
 - Branch: `feat/payroll-readiness-operator-flow`, based on hardened PR #6 head `a2edf9f`. Final head: `e513a9ee86a278d912bb6ea0694c2adc6a4e37a1`.
-- Stacked PR: [#7](https://github.com/shamrat05/tradexcel-hr-v16/pull/7), base `feat/native-payroll-draft-orchestration`; open and unmerged.
-- Surface: standard app-owned Script Report `Tradexcel Payroll Readiness`, with Company and Payroll Month filters, one row per in-scope employee, human-readable blockers, and links to canonical Attendance, Attendance Request, and Salary Structure Assignment records.
+- Stacked PR: [#7](https://github.com/shamrat05/workforce-suite/pull/7), base `feat/native-payroll-draft-orchestration`; open and unmerged.
+- Surface: standard app-owned Script Report `Workforce Payroll Readiness`, with Company and Payroll Month filters, one row per in-scope employee, human-readable blockers, and links to canonical Attendance, Attendance Request, and Salary Structure Assignment records.
 - Readiness actions recalculate on the server and enforce named-user, role, company, employee, and native permission scope. The report client never supplies a trusted READY flag.
 - The migration preview is read-only. It shows current SSA/structure/rate, Attendance and assignment conflicts, and a proposed zero/non-prorated Daily Wage and Overtime shape. No effective date is chosen automatically; absent an approved date it returns `DECISION_REQUIRED`.
 - Workspace `Run Monthly Payroll` now opens the report. Native Payroll Entry remains accessible as `Payroll Entries (Advanced)`.
-- Staging report evidence for TCL September 2026: 238 unique employees, 63 ready, 175 needing attention; findings include 159 unmarked Daily Wage Attendance records, 159 unsafe legacy Daily Wage structures, and 16 employees without applicable submitted SSAs. Findings may overlap. No employee data was auto-fixed.
+- Staging report evidence for COMPANY_A September 2026: 238 unique employees, 63 ready, 175 needing attention; findings include 159 unmarked Daily Wage Attendance records, 159 unsafe legacy Daily Wage structures, and 16 employees without applicable submitted SSAs. Findings may overlap. No employee data was auto-fixed.
 - Report execution was approximately 1.4–1.9 seconds in the direct staging checks; query count was not measured.
 
 ### Staging backup and synchronization

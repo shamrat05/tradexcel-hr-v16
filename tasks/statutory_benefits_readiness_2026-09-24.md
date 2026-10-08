@@ -2,7 +2,7 @@
 
 ## Scope
 
-This stacked feature records reviewed, effective-dated PF, institutional Progoti, and group-insurance applicability and employee participation. It does not create a benefit fund, enrollment, salary deduction, contribution, remittance, or legal configuration for TCL/EFL. Native Gratuity and Full & Final remain in the existing exit flow.
+This stacked feature records reviewed, effective-dated PF, institutional Progoti, and group-insurance applicability and employee participation. It does not create a benefit fund, enrollment, salary deduction, contribution, remittance, or legal configuration for COMPANY_A/COMPANY_B. Native Gratuity and Full & Final remain in the existing exit flow.
 
 ## Legal/source review
 
@@ -31,7 +31,7 @@ Before standard staging migration, `bench --site hrms-v16.localhost backup --wit
 
 ## Staging audit (read-only, 2026-09-24)
 
-- Active Employees: TCL 240, EFL 2 (operational counts only).
+- Active Employees: COMPANY_A 240, COMPANY_B 2 (operational counts only).
 - No `Employee.provident_fund_account` field exists in this installed site schema.
 - Salary Components: 4 Deduction, 0 Employer Contribution; the only PF-like component is `Provident Fund (Employee)` (Deduction).
 - Submitted Salary Structure Assignments: 227. No Salary Structure currently has employer-contribution rows; no Salary Structure has deduction rows.
@@ -41,8 +41,8 @@ Before standard staging migration, `bench --site hrms-v16.localhost backup --wit
 ## Verification record
 
 - Site-backed focused readiness, separation, and native integration tests: 30 passed; follow-up unit suite: 10 passed.
-- Full Tradexcel suite: 436 passed, 2 skipped, 31 warnings. The first full run exposed a dict-row access bug in the batched payroll path; a regression test was added and the final full run passed.
-- Python `compileall` passed; both new DocType JSON files parsed; `node --check` was not needed because no JavaScript changed; `bench build --app tradex_hr` passed using the already-installed Node 24.15.0 runtime; `git diff --check` passed.
+- Full Workforce suite: 436 passed, 2 skipped, 31 warnings. The first full run exposed a dict-row access bug in the batched payroll path; a regression test was added and the final full run passed.
+- Python `compileall` passed; both new DocType JSON files parsed; `node --check` was not needed because no JavaScript changed; `bench build --app workforce_suite` passed using the already-installed Node 24.15.0 runtime; `git diff --check` passed.
 - Standard staging migration was run after a fresh `--with-files` backup. Database gzip and public/private file archives passed integrity checks; cache cleared. No manual metadata convergence was used.
 - Synthetic Benefit Rule Set, Enrollment, component, employee, and company records were explicitly cleaned; post-cleanup count is zero. A pre-existing disposable wage-test company/employee fixture was also removed through the repository's guarded synthetic cleanup helper; the synthetic-company/employee count is zero.
 - Installed HRMS v16 has a material accounting boundary: `PayrollEntry.make_accrual_jv_entry()` requests earnings and deductions, but not `employer_contributions`. PF/Progoti participation therefore fails closed at `STATUTORY_BENEFIT_ACCOUNTING_PATH_REVIEW_REQUIRED`; no custom Journal Entry or claimed remittance is created.

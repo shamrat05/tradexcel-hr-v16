@@ -28,7 +28,7 @@ A synthetic company integration test created and cleaned up native records. It p
 3. A lower retroactive component result is rejected during native Arrear validation with RETRO_OVERPAYMENT_DECISION_REQUIRED; no Additional Salary is created.
 4. Native cancellation is blocked after consumption. Before consumption, cancelling the parent cancels its generated Additional Salary.
 
-Test artifacts use a disposable Tradexcel Finalization Test <token> company and are explicitly cleaned; cleanup verifies the company and company-linked records are gone. The new test reads Payroll Settings and skips if the site is not already configured with Payroll Based On Leave.
+Test artifacts use a disposable Workforce Finalization Test <token> company and are explicitly cleaned; cleanup verifies the company and company-linked records are gone. The new test reads Payroll Settings and skips if the site is not already configured with Payroll Based On Leave.
 
 Unit tests cover cross-employee/company/period rejection, future-target blocking, explicit company scope, maker self-approval, independent approver validation, Daily Wage review status, Arrear source bounds, and no automatic recovery.
 
@@ -43,7 +43,7 @@ The synthetic integration test's `finally` cleanup removed its company-linked do
 ## Verification
 
 - Focused correction, target-timing, role-safety, accrual-component and native workflow integration: 43 passed, 6 upstream deprecation warnings.
-- Full Tradexcel app suite: 383 passed, 2 skipped, 18 upstream deprecation warnings.
+- Full Workforce app suite: 383 passed, 2 skipped, 18 upstream deprecation warnings.
 - compileall passed; `node --check` passed; `git diff --check` passed.
 - Native Frappe `apply_workflow` was exercised with disposable users: maker submitted for approval, self-approval was denied, an out-of-company approver was denied, and the same-company Payroll Approver completed native Arrear approval and created native Additional Salary.
 - The approver receives only Salary Slip read/create and company-scoped Employee/Salary Structure read access required by native HRMS preview mapping. Salary Slip write, cancel, delete, and submit remain denied.

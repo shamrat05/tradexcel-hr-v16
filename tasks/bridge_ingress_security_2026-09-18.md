@@ -56,7 +56,7 @@ wip/preserve-hardening-clone-20260918  b699333  (Desktop/ working tree)
 ```
 
 Both pushed. Full mirrors plus all-refs bundles and uncommitted patches also sit
-at `Desktop/tradex_hr_backup_20260918/bridge_clones_20260918/`. Secret scan of
+at `Desktop/workforce_suite_backup_20260918/bridge_clones_20260918/`. Secret scan of
 both patches: clean. `data/senseface_hrms.db` (the attendance store) was already
 git-ignored and was not committed.
 

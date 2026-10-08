@@ -1,0 +1,76 @@
+/* Keep Desk usable on wide laptop and desktop screens. Frappe's default
+   centred max-width wastes space for HR lists, reports and action boards.
+
+   Rules learned the hard way — do not reintroduce either:
+
+   1. Do NOT add padding to `.page-container`. A desk page IS
+      `.content.page-container`, and both `.page-head` and the sidebar
+      (`.layout-side-section`) live inside it. Padding there shifts the whole
+      page, sidebar included, to the right.
+
+   2. Widen every container TOGETHER. `.page-head > .container` is not matched
+      by a direct-child selector on `.page-container`, and
+      `header.navbar .container` sits outside `.page-container` entirely. Widen
+      some and not the others and the regions land on different left edges —
+      measured as a 148px offset between the navbar brand and the page head at a
+      1600px viewport.
+
+   Widening only is safe: Bootstrap's own container padding still supplies the
+   inset, so nothing touches the screen edge. */
+
+.page-container,
+header.navbar .container,
+.page-head > .container,
+.page-body.container,
+.layout-main-section-wrapper,
+.layout-main-section,
+.workspace-page,
+.workspace-container {
+	max-width: none !important;
+	width: 100% !important;
+}
+
+.layout-main-section {
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+}
+
+/* `.layout-side-section` (the expanded left menu) is col-lg-2 — a PERCENTAGE of
+   the container. Widening the container to full bleed inflates it with the
+   screen: measured 214px stock -> 264px at 1600px and rising. Pin it near
+   Frappe's stock proportion; the `col` beside it absorbs the reclaimed width. */
+.layout-side-section {
+	max-width: 215px;
+}
+
+/* Full bleed puts the search bar, help menu and user avatar on a different
+   vertical line from the content below. Match the page head and the content
+   card instead of picking an arbitrary inset: measured, `.page-head > .container`
+   pads 15px and `.layout-main-section` ends 15px from the container edge, so the
+   navbar uses the same 15px and the avatar lines up with the card's right edge.
+   At 24px the avatar sat 9px inside the card; at the stock 16px it sat 8px
+   outside it, which reads as "cut off". */
+header.navbar .container {
+	padding-left: 15px !important;
+	padding-right: 15px !important;
+}
+
+/* Frappe sets `scrollbar-gutter: stable`, which reserves the scrollbar's width
+   on the RIGHT only. At stock's centred layout the page gutters were wide enough
+   that this was invisible; with a full-bleed layout the card nearly touches the
+   edges, so the reserved strip made the right gap measure 30px against 15px on
+   the left (measured, sidebar collapsed). Reserving on both edges makes the
+   frame symmetric without moving the navbar out of line with the content. */
+html {
+	scrollbar-gutter: stable both-edges;
+}
+
+/* These custom Desk pages use Bootstrap cards and tables. Bootstrap's default
+   light surfaces do not follow Frappe's dark theme, so bind their surfaces and
+   text to the native Desk theme tokens. Keep this scoped to the two pages. */
+.workforce-live-locations .card,
+.workforce-mobile-attendance .card {
+	color: var(--text-color);
+	background-color: var(--card-bg);
+	border-color: var(--border-color);
+}

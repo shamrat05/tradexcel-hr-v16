@@ -1,5 +1,0 @@
-{
- "doctype":"DocType","name":"Tradexcel Maternity Leave Application","module":"Tradexcel HR","istable":1,"editable_grid":1,"engine":"InnoDB",
- "field_order":["leave_application"],
- "fields":[{"fieldname":"leave_application","fieldtype":"Link","label":"Leave Application","options":"Leave Application","reqd":1,"in_list_view":1}]
-}

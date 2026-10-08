@@ -11,7 +11,7 @@ work targets `hrms-v16.localhost` on the isolated MariaDB endpoint
 - `MASTER_PARENT_BRANCH`: `feat/bulk-attendance-corrections`
 - Parent PR: #28, open/draft/unmerged, based on `fix/converge-shift-bulk-path`
 - Accepted attendance focused tests: **10 passed**
-- `ACCEPTED_BASELINE_PASS_COUNT`: **585 passed, 0 skipped** (full Tradexcel suite
+- `ACCEPTED_BASELINE_PASS_COUNT`: **585 passed, 0 skipped** (full Workforce suite
   rerun on the accepted attendance head on 2026-09-26; 64 warnings)
 - Acceptance: the source-backed native Attendance Request draft and independent
   approval path, Employee scope checks, maker/checker, consumed-payroll guards,
@@ -48,7 +48,7 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 
 - The accepted head was clean and descended from `2ebf51b223090a891b42976ea2e036e996ff37fd`.
 - Installed apps: Frappe 16.34.0, ERPNext 16.35.0, HRMS 16.19.0,
-  Tradexcel HR 0.1.0. The shell defaults to Node 20; the installed Node
+  Workforce Suite 0.1.0. The shell defaults to Node 20; the installed Node
   24.15.0 binary is under `/home/sanchita/.nvm/versions/node/v24.15.0/bin`.
 - `git ls-files` found 390 tracked files: 222 Python, 27 JavaScript, 63 JSON,
   60 Markdown, plus other source/configuration files. A source inventory and
@@ -71,11 +71,11 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
   Company-filtered SQL without the report Employee-scope helper. The latter
   also loads salary values while allowing the attendance role. Reproduce and
   resolve these boundaries before using either as an Action Board data source.
-- **Closed by PR #33:** the D audit found `Tradexcel Payroll Register` read Salary Slips with Company-only SQL
+- **Closed by PR #33:** the D audit found `Workforce Payroll Register` read Salary Slips with Company-only SQL
   and no cancelled-state boundary. Reproduce record-scope/state behavior before
   using that older register for financial drill-through.
 - The Shift Assignment Tool's custom action restriction still keys on presence
-  of a Tradexcel role; mixed native/custom-role compatibility requires the
+  of a Workforce role; mixed native/custom-role compatibility requires the
   dedicated regression identified by the master campaign.
 - Pagination hypothesis checked in the D report follow-up: installed native
   `get_list` returns all 21 synthetic slips without an explicit limit. No
@@ -86,7 +86,7 @@ does not get an empty PR. Final commit SHAs belong to Git/GitHub.
 - F: installed `boot.get_sidebar_items` and `WorkspaceSidebar` already filter
   native links using `DeskViews.is_item_allowed`. A source-backed sidebar named
   for the app Module replaces automatic module enumeration and can link the
-  canonical `tradexcel-hr` home. Inspect native route resolution before removing
+  canonical `workforce-suite` home. Inspect native route resolution before removing
   the existing rail; preserve the separate theme and app-tile IIFEs.
 - G: distinguish per-Employee and per-payroll-entry cards with a readable native
   identity/period label during the usability pass. API items already retain

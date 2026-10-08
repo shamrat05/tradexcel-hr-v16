@@ -1,0 +1,12 @@
+{
+ "doctype": "Desktop Icon",
+ "name": "Workforce Suite",
+ "label": "Workforce Suite",
+ "app": "workforce_suite",
+ "standard": 1,
+ "icon_type": "App",
+ "link_type": "Workspace Sidebar",
+ "logo_url": "/assets/workforce_suite/images/workforce-hr.svg",
+ "hidden": 0,
+ "modified": "2026-09-30 00:00:00"
+}

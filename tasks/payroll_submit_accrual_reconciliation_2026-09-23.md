@@ -22,7 +22,7 @@ Payment remains unavailable for managed Payroll Entries.
 - Frappe v16's `extend_doctype_class` adds a narrow Payroll Entry preflight.
   Unmanaged Payroll Entries delegate unchanged to HRMS. Managed payroll requires
   an explicitly company-scoped user, a submitted Payroll Entry in
-  `Tradexcel Payroll Approved`, completed native draft Salary Slips, reconciled
+  `Workforce Payroll Approved`, completed native draft Salary Slips, reconciled
   prior accruals on retry, and current financial readiness. The method then
   delegates to native `submit_salary_slips()` exactly once.
 - HRMS calls `SalarySlip.submit()` inside its batch helper with
@@ -79,7 +79,7 @@ mode; HRMS committed the isolated fixture. That test company was explicitly
 removed before continuing:
 
 ```text
-Tradexcel Finalization Test E9B9B7F09AC8EF40C9E869BBA87C637CCA1A8983AD27CED959580E35
+Workforce Finalization Test E9B9B7F09AC8EF40C9E869BBA87C637CCA1A8983AD27CED959580E35
 Payroll Entries: 1
 Salary Slips remaining at cleanup: 0
 Journal Entries: 2
@@ -98,16 +98,16 @@ cleanup had also left synthetic ledger rows for two older committed attempts.
 Three exact test-company scopes were cleaned:
 
 ```text
-Tradexcel Finalization Test 8A81BEE761EB0F5B2523BCE6565B1430725AEDB2260E937A94D96372
-Tradexcel Finalization Test 8E55BC27AAE6141540D18BBFD12F4494708D3ED7324838E57F9209D9
-Tradexcel Finalization Test E9B9B7F09AC8EF40C9E869BBA87C637CCA1A8983AD27CED959580E35
+Workforce Finalization Test 8A81BEE761EB0F5B2523BCE6565B1430725AEDB2260E937A94D96372
+Workforce Finalization Test 8E55BC27AAE6141540D18BBFD12F4494708D3ED7324838E57F9209D9
+Workforce Finalization Test E9B9B7F09AC8EF40C9E869BBA87C637CCA1A8983AD27CED959580E35
 ```
 
 The fixture cleanup now removes records by the unique company link, cancels and
 deletes its synthetic payroll documents, removes its GL Entry rows created by
 the native accrual/cancellation path, deletes nested company masters deepest
 first, and only then removes the Company. It refuses any name outside the
-`Tradexcel Finalization Test ` prefix. Post-cleanup staging queries returned
+`Workforce Finalization Test ` prefix. Post-cleanup staging queries returned
 zero matching Companies, Accounts, Cost Centers, and GL Entries. A fresh
 end-to-end integration run passed and asserted zero remaining Account, Cost
 Center, Warehouse, and GL Entry rows for its test company. The full app suite
@@ -124,7 +124,7 @@ also left no synthetic Test Companies or finalization test company artifacts.
 - Direct managed submit, unapproved Payroll Entry, blocked financial readiness,
   cross-company access, missing payable cost center, and pre-payment blocking
   are covered.
-- `make_accrual_jv_entry()` remains upstream HRMS behavior. Tradexcel contains
+- `make_accrual_jv_entry()` remains upstream HRMS behavior. Workforce contains
   no custom Journal Entry creation path.
 
 ## Verification record
@@ -142,7 +142,7 @@ PR remains open/unmerged; no production action is part of this change.
 
 ## Post-review Salary Slip permission correction
 
-PR #9 review found that granting Salary Slip submit permission to Tradexcel Payroll Manager also allowed a standalone or unmanaged Salary Slip to reach native submission. The server hook now limits users whose submit authority comes only from Tradexcel Payroll Manager or Tradexcel Payroll Approver to an approved, managed Payroll Entry batch. Managed direct submission remains blocked; the native Payroll Entry batch uses Frappe's via_payroll_entry flag and is rechecked for approval and current financial readiness.
+PR #9 review found that granting Salary Slip submit permission to Workforce Payroll Manager also allowed a standalone or unmanaged Salary Slip to reach native submission. The server hook now limits users whose submit authority comes only from Workforce Payroll Manager or Workforce Payroll Approver to an approved, managed Payroll Entry batch. Managed direct submission remains blocked; the native Payroll Entry batch uses Frappe's via_payroll_entry flag and is rechecked for approval and current financial readiness.
 
 Payroll Approver no longer has Salary Slip submit permission. Payroll Manager retains the native submit permission required by HRMS batch submission. Users who also hold another role with an explicit Salary Slip submit DocPerm retain that independent native authority; Administrator and System Manager behavior remains unchanged. The role-only restriction decision is cached for the request so batch processing does not query role permissions per employee.
 

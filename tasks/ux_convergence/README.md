@@ -1,12 +1,12 @@
-# Tradexcel UX convergence — resume here
+# Workforce UX convergence — resume here
 
 Campaign: **TXUX-260930**. We are simplifying operator routes and presentation around native Frappe v16 records. This is a sequence of focused reviews/PRs, not a replacement Desk or business engine.
 
 ## Current integrated base and next checkpoint
 
 - **Current shared branch:** `feature/hrms-v16-hr-only`, exactly `9ba1e9c185f2e01964d28b650b48f797927f68da`. Wave 0 → Wave A integration checkpoint **PASSED**; Wave 0 is **COMPLETE / INTEGRATED**.
-- TXUX-260930-000: **COMPLETE / ACCEPTED / INTEGRATED**. [PR #53](https://github.com/shamrat05/tradexcel-hr-v16/pull/53) **MERGED**; accepted head `830c599b19a6074c58f2a9b37977f336d1fe61d4`, normal merge commit `e03ba50cfe436769fddf3083c4ee6811b7876146`.
-- TXUX-260930-001: **COMPLETE / ACCEPTED / INTEGRATED**. [PR #54](https://github.com/shamrat05/tradexcel-hr-v16/pull/54) **MERGED**; accepted head `deff8fa06002518d16960af6b3b567fffc62bf29`, normal merge commit `9ba1e9c185f2e01964d28b650b48f797927f68da`. Its P01 planning and M01 PR-body corrections are accepted.
+- TXUX-260930-000: **COMPLETE / ACCEPTED / INTEGRATED**. [PR #53](https://github.com/shamrat05/workforce-suite/pull/53) **MERGED**; accepted head `830c599b19a6074c58f2a9b37977f336d1fe61d4`, normal merge commit `e03ba50cfe436769fddf3083c4ee6811b7876146`.
+- TXUX-260930-001: **COMPLETE / ACCEPTED / INTEGRATED**. [PR #54](https://github.com/shamrat05/workforce-suite/pull/54) **MERGED**; accepted head `deff8fa06002518d16960af6b3b567fffc62bf29`, normal merge commit `9ba1e9c185f2e01964d28b650b48f797927f68da`. Its P01 planning and M01 PR-body corrections are accepted.
 - **Historical release foundation only:** PR #52 / `1a194240b7312609f0dbcf4195558a54bddcca8c`. Do not start Wave A from that stale SHA.
 - Remote CI **did not pass**: #53 run `36636332224` and #54 run `36641903787` failed before any steps (**FAILURE / BLOCKED BEFORE STEPS**). Real device/staff UAT remains unresolved; production approval is not implied.
 - M02 synchronizes this status only. After it is reviewed/integrated, verify and record the resulting shared-base SHA, then separately authorize 002 / WORKSPACE, 004 / LIST and 009 / MOBILE as flat branches from **that same exact integrated SHA**. It will include this status commit and descend from `9ba1e9c185f2e01964d28b650b48f797927f68da`; do not assume the SHA stays unchanged after integration.

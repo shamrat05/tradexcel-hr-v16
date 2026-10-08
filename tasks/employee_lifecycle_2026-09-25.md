@@ -9,7 +9,7 @@ employment, payroll, or history ledger and has no schema migration.
 - Cross-company Employee Transfer uses HRMS's `create_new_employee_id` path.
 - A Promotion changing CTC requires a submitted SSA for that Employee, effective
   on the promotion date, in the Employee's current Company, with an explicit
-  `custom_tradex_pay_basis` on the linked Salary Structure.
+  `custom_workforce_pay_basis` on the linked Salary Structure.
 - A recorded relieving date cannot be removed or changed, and a completed
   `Left` Employee cannot be reactivated to model a rehire. Ordinary exit-related
   Employee metadata remains maintainable. Native new-ID transfer cancellation
@@ -21,7 +21,7 @@ employment, payroll, or history ledger and has no schema migration.
 - The intended DB is the existing `/home/sanchita/mariadb-v16` data directory
   on `127.0.0.1:3307`; it was started without changing site config or touching
   the system MariaDB on 3306. `list-apps` reports Frappe 16.34, ERPNext 16.35,
-  HRMS 16.19, and `tradex_hr`.
+  HRMS 16.19, and `workforce_suite`.
 - A fresh `--with-files` backup was taken at 2026-09-25 11:14 Asia/Dhaka before
   migration. Database gzip and both file archives passed integrity checks;
   full sizes and hashes are recorded in `BACKUPS.md`.
@@ -41,7 +41,7 @@ were changed. No PR was merged.
 ## PR #20 hardening — 2026-09-25
 
 - Provisioned native Employee Transfer and Employee Promotion permissions for
-  `Tradexcel HR Manager`; Owner/Director and Compliance Auditor remain read-only.
+  `Workforce Suite Manager`; Owner/Director and Compliance Auditor remain read-only.
   No native HR User/Manager role was added to the custom-role path.
 - Added scoped Employee/Company checks for Transfer, Promotion, and SSA. Existing
   Employee company, branch, department, designation, grade, employment type,
@@ -49,7 +49,7 @@ were changed. No PR was merged.
   Transfer/Promotion submit context. New Employee creation and separation-only
   status/relieving-date edits remain valid.
 - SSA remains the native salary authority. HR Manager can save a draft but cannot
-  submit. A different `Tradexcel Payroll Approver` can submit; owner-based
+  submit. A different `Workforce Payroll Approver` can submit; owner-based
   maker/checker also blocks a User who holds both roles. The before-submit guard
   remains active when an HRMS bulk helper saves with ignored permissions.
 - Transfer/Promotion cancellation blocks submitted Attendance, overlapping or
@@ -64,7 +64,7 @@ were changed. No PR was merged.
   grade and employment type, so the guard covers those fields too.
 - Pre-migration staging audit: no Employee Transfer or Employee Promotion rows;
   no custom DocPerm rows for either doctype; no SSA Workflow; 227 submitted SSAs.
-  Native SSA DocPerm gave HR Manager/HR User submit, while Tradexcel HR Manager
+  Native SSA DocPerm gave HR Manager/HR User submit, while Workforce Suite Manager
   had draft create/write only and Payroll Approver had no row. The migrated
   matrix now gives Payroll Approver write/submit/cancel without create.
 - A fresh `--with-files` backup was verified and recorded before standard
@@ -77,7 +77,7 @@ were changed. No PR was merged.
   denial, financial Promotion/SSA reversal ordering, and cancellation after
   Attendance or a later movement. The completed Employee Separation test and
   Joiner/Daily Wage/payroll/maternity integrations all pass.
-- Clean final Tradexcel suite: `557 passed, 2 skipped`. Compileall, all 58 app
+- Clean final Workforce suite: `557 passed, 2 skipped`. Compileall, all 58 app
   JSON files, and `git diff --check` pass. No JS/assets changed. Synthetic
   lifecycle Users, User Permissions, Employees, Transfers, Promotions, and SSAs
   were verified absent after cleanup; zero Transfer/Promotion rows remain.
@@ -131,7 +131,7 @@ were changed. No PR was merged.
 - Role integration reproduced two defects and verifies their fixes. First,
   native SSA cancellation did not enforce Company User Permission; its
   `before_cancel` now explicitly checks Employee and Company scope, and the
-  in-scope Payroll Approver is denied cancellation of an EFL assignment. Site
+  in-scope Payroll Approver is denied cancellation of an COMPANY_B assignment. Site
   tests also prove that a later submitted SSA blocks cancellation of its
   predecessor. Second, HRMS seeds the initial Internal Work History row for any nonempty Transfer or
   Promotion detail, even Employment Type; the scoped native context now permits
@@ -145,7 +145,7 @@ were changed. No PR was merged.
   are recorded in `BACKUPS.md`.
 - Closure test evidence: lifecycle focused tests `22 passed`; separation,
   onboarding/joiner, maternity, native payroll lifecycle, adjustment, and payroll
-  finalization regression batch `28 passed`; final Tradexcel suite `563 passed,
+  finalization regression batch `28 passed`; final Workforce suite `563 passed,
   2 skipped`. The suite also ran `compileall`, all 59 app JSON files parsed, and
   `git diff --check`. No assets changed. GitHub PR #20 has no reported workflow
   or status checks; local staging results are not CI.

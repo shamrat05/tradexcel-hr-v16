@@ -1,0 +1,29 @@
+{
+ "actions": [],
+ "autoname": "ATT-PER-.YYYY.-.#####",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["company", "from_date", "to_date", "status", "revision", "attendance_hash", "finalized_by", "finalized_at", "notes"],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "from_date", "fieldtype": "Date", "label": "From Date", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "to_date", "fieldtype": "Date", "label": "To Date", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Open\nReviewing\nFinalized\nReopened", "default": "Open", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "revision", "fieldtype": "Int", "label": "Revision", "default": "0", "read_only": 1},
+  {"fieldname": "attendance_hash", "fieldtype": "Data", "label": "Native Attendance Version", "read_only": 1, "hidden": 1},
+  {"fieldname": "finalized_by", "fieldtype": "Link", "label": "Finalized By", "options": "User", "read_only": 1},
+  {"fieldname": "finalized_at", "fieldtype": "Datetime", "label": "Finalized At", "read_only": 1},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "module": "Workforce Suite",
+ "name": "Workforce Attendance Period",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "export": 1, "print": 1, "report": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "export": 1, "print": 1, "report": 1},
+  {"role": "Workforce Suite/Attendance Officer", "read": 1, "write": 1, "create": 1, "export": 1, "print": 1, "report": 1},
+  {"role": "Workforce Payroll Manager", "read": 1, "export": 1, "print": 1, "report": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

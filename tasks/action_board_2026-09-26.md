@@ -6,7 +6,7 @@ Parent: `fix/employee-linked-scope`, PR #34,
 
 ## Existing home and native extension point
 
-The canonical `tradexcel-hr` Workspace previously led with headcount/punch cards
+The canonical `workforce-suite` Workspace previously led with headcount/punch cards
 and overview charts. These were informational, not this user's unresolved work.
 No new Workspace, SPA, task ledger or approval database is introduced.
 
@@ -88,8 +88,8 @@ verified backup `20260926_181032-hrms-v16_localhost-` preceded standard migratio
 and cache clear. This is a metadata convergence correction, not a business data
 migration. No ad-hoc SQL or manual block edit was used.
 
-Node **24.15.0** syntax check and `bench build --app tradex_hr` passed. Compileall,
-all **61** tracked JSON files and diff check passed. Full `env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q
+Node **24.15.0** syntax check and `bench build --app workforce_suite` passed. Compileall,
+all **61** tracked JSON files and diff check passed. Full `env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests -q
 --disable-warnings --tb=short`: **607 passed, 0 failed, 0 skipped**, 80 warnings,
 429.77 seconds. Three new tests; the old overview-card assertion was replaced by
 the new native block contract, not silently deleted.

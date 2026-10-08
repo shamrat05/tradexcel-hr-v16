@@ -1,0 +1,285 @@
+{
+ "doctype": "DocType",
+ "name": "Workforce Statutory Benefit Rule Set",
+ "module": "Workforce Suite",
+ "autoname": "naming_series:",
+ "naming_series": "TSBR-.YYYY.-.#####",
+ "allow_rename": 0,
+ "is_submittable": 1,
+ "track_changes": 1,
+ "sort_field": "effective_from",
+ "sort_order": "DESC",
+ "field_order": [
+  "naming_series",
+  "title",
+  "company",
+  "branch",
+  "legal_regime",
+  "benefit_type",
+  "applicability",
+  "effective_from",
+  "effective_to",
+  "pf_trigger_status",
+  "trigger_evidence",
+  "reviewed_permanent_worker_count",
+  "written_demand_worker_count",
+  "worker_count_as_of",
+  "minimum_permanent_workers_required",
+  "written_demand_numerator",
+  "written_demand_denominator",
+  "institution_registration_reference",
+  "policy_reference",
+  "policy_effective_from",
+  "policy_effective_to",
+  "employee_component",
+  "employer_component",
+  "legal_review_notes",
+  "sources",
+  "reviewed_by",
+  "reviewed_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "TSBR-.YYYY.-.#####",
+   "default": "TSBR-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch / Establishment",
+   "options": "Branch",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "legal_regime",
+   "fieldtype": "Select",
+   "label": "Legal Regime",
+   "options": "Bangladesh Labour Act\nBangladesh EPZ Labour Act\nCompany PF / Service Rules\nOther Reviewed Regime",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "benefit_type",
+   "fieldtype": "Select",
+   "label": "Benefit Type",
+   "options": "Provident Fund\nProgoti Pension\nGroup Insurance",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "applicability",
+   "fieldtype": "Select",
+   "label": "Reviewed Applicability",
+   "options": "Review Required\nApplicable\nNot Applicable",
+   "default": "Review Required",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Effective To"
+  },
+  {
+   "fieldname": "pf_trigger_status",
+   "fieldtype": "Select",
+   "label": "PF Trigger Review",
+   "options": "Not Determined\nNot Triggered\nWritten Demand Received\nInstitutional Progoti Exemption\nEPZ Mandatory Rule\nOther Legal Review",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund'",
+   "default": "Not Determined"
+  },
+  {
+   "fieldname": "trigger_evidence",
+   "fieldtype": "Small Text",
+   "label": "Reviewed Trigger / Exemption Evidence",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund'"
+  },
+  {
+   "fieldname": "reviewed_permanent_worker_count",
+   "fieldtype": "Int",
+   "label": "Reviewed Permanent Worker Count",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund'",
+   "description": "Legal evidence only. Never derived from Employee records."
+  },
+  {
+   "fieldname": "written_demand_worker_count",
+   "fieldtype": "Int",
+   "label": "Workers Submitting Written Demand",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund' && doc.pf_trigger_status == 'Written Demand Received'",
+   "description": "Reviewed evidence only. Never derived from Employee records."
+  },
+  {
+   "fieldname": "worker_count_as_of",
+   "fieldtype": "Date",
+   "label": "Count As Of",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund'"
+  },
+  {
+   "fieldname": "minimum_permanent_workers_required",
+   "fieldtype": "Int",
+   "label": "Minimum Permanent Workers Required",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund' && doc.pf_trigger_status == 'Written Demand Received'",
+   "description": "Versioned legal parameter; reviewed from this rule-set source."
+  },
+  {
+   "fieldname": "written_demand_numerator",
+   "fieldtype": "Int",
+   "label": "Written Demand Fraction Numerator",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund' && doc.pf_trigger_status == 'Written Demand Received'",
+   "description": "Versioned legal parameter; do not derive from Employee records."
+  },
+  {
+   "fieldname": "written_demand_denominator",
+   "fieldtype": "Int",
+   "label": "Written Demand Fraction Denominator",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund' && doc.pf_trigger_status == 'Written Demand Received'",
+   "description": "Versioned legal parameter; do not derive from Employee records."
+  },
+  {
+   "fieldname": "institution_registration_reference",
+   "fieldtype": "Data",
+   "label": "NPA Institutional Registration Reference",
+   "depends_on": "eval:doc.benefit_type == 'Progoti Pension'"
+  },
+  {
+   "fieldname": "policy_reference",
+   "fieldtype": "Data",
+   "label": "Approved Insurance Policy Reference",
+   "depends_on": "eval:doc.benefit_type == 'Group Insurance'"
+  },
+  {
+   "fieldname": "policy_effective_from",
+   "fieldtype": "Date",
+   "label": "Policy Effective From",
+   "depends_on": "eval:doc.benefit_type == 'Group Insurance'"
+  },
+  {
+   "fieldname": "policy_effective_to",
+   "fieldtype": "Date",
+   "label": "Policy Effective To",
+   "depends_on": "eval:doc.benefit_type == 'Group Insurance'"
+  },
+  {
+   "fieldname": "employee_component",
+   "fieldtype": "Link",
+   "label": "Employee Salary Component",
+   "options": "Salary Component",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund' || doc.benefit_type == 'Progoti Pension'"
+  },
+  {
+   "fieldname": "employer_component",
+   "fieldtype": "Link",
+   "label": "Employer Salary Component",
+   "options": "Salary Component",
+   "depends_on": "eval:doc.benefit_type == 'Provident Fund' || doc.benefit_type == 'Progoti Pension'"
+  },
+  {
+   "fieldname": "legal_review_notes",
+   "fieldtype": "Small Text",
+   "label": "Legal / Plan Review Notes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sources",
+   "fieldtype": "Table",
+   "label": "Official / Approved Sources",
+   "options": "Workforce Statutory Source",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1,
+   "allow_on_submit": 0
+  },
+  {
+   "fieldname": "reviewed_at",
+   "fieldtype": "Datetime",
+   "label": "Approved At",
+   "read_only": 1,
+   "allow_on_submit": 0
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Workforce Suite Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Workforce Owner/Director",
+   "read": 1,
+   "write": 1,
+   "submit": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Workforce Payroll Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Workforce Finance/Accounts Officer",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Workforce Compliance Auditor",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ]
+}

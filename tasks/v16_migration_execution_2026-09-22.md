@@ -1,4 +1,4 @@
-# Tradexcel HR v16 staging migration — 2026-09-22
+# Workforce Suite v16 staging migration — 2026-09-22
 
 ## Scope and safety
 
@@ -8,7 +8,7 @@
 - Staging site: `hrms-v16.localhost`.
 - Staging MariaDB: separate database on port `3307`.
 - The isolated bench default site is set to `hrms-v16.localhost`, so
-  `http://localhost:8001/app/tradexcel-hr` resolves to this staging site.
+  `http://localhost:8001/app/workforce-suite` resolves to this staging site.
 - A fresh source backup was taken before migration and recorded in `BACKUPS.md`.
 
 ## Runtime installed
@@ -18,7 +18,7 @@
 | Frappe | 16.34.0 | version-16 |
 | ERPNext | 16.35.0 | version-16 |
 | Frappe HRMS | 16.19.0 | version-16 |
-| tradex_hr | 0.1.0 | feature/hrms-v16-hr-only |
+| workforce_suite | 0.1.0 | feature/hrms-v16-hr-only |
 
 Frappe HRMS v16 declares ERPNext v16 as a required Frappe dependency. ERPNext is
 therefore installed in the bench even though the user-facing navigation is HR-only;
@@ -47,8 +47,8 @@ credentials. The source backup remains unchanged.
 | Leave Application | 7 |
 | Leave Allocation | 1,190 |
 | Shift Assignment | 237 |
-| Tradexcel Biometric Device | 2 |
-| Tradexcel Employee Biometric | 221 |
+| Workforce Biometric Device | 2 |
+| Workforce Employee Biometric | 221 |
 
 The zero Salary Slip count matches the source site at backup time; the migration
 did not invent or recreate payroll slips.
@@ -60,8 +60,8 @@ did not invent or recreate payroll slips.
    standard report/chart”. Existing app-owned legacy standard reports are safely
    converted during migration; records owned by another module are not deleted.
 2. Report roles are normalized into child rows before document construction.
-3. The title-named `Tradexcel HR` workspace is retired. Only the canonical public
-   `tradexcel-hr` workspace remains.
+3. The title-named `Workforce Suite` workspace is retired. Only the canonical public
+   `workforce-suite` workspace remains.
 4. A persistent grouped HR navigation rail is included in the Desk bundle:
    248px expanded, 64px icon-only collapsed, active route highlighting, keyboard
    buttons, accessible labels, and grouped Home/People/Time/Leave/Payroll/
@@ -73,8 +73,8 @@ did not invent or recreate payroll slips.
 - Custom app v16 non-site-mutating tests: **130 passed, 6 skipped**.
 - JavaScript syntax check passed with Node 24.
 - Focused dashboard/navigation tests passed.
-- Staging Desk login and `/app/tradexcel-hr` returned HTTP 200 and loaded the
-  hashed `tradex_hr` JS/CSS assets.
+- Staging Desk login and `/app/workforce-suite` returned HTTP 200 and loaded the
+  hashed `workforce_suite` JS/CSS assets.
 - Chrome DevTools MCP is not configured in this environment, so screenshot,
   computed-style and accessibility-tree checks remain a manual staging step.
 
@@ -104,7 +104,7 @@ Before a staging migration:
 5. Inspect the default/short/long queues by site and job type; confirm a healthy normal worker before migration.
 6. Check free disk space and keep the source commit recorded with the migration result.
 
-Frappe v16 queues delete_dynamic_links jobs during document cleanup. Do not patch Frappe, make cleanup synchronous in Tradexcel, or clear Redis queues to force migration success. Worker availability is an operational prerequisite.
+Frappe v16 queues delete_dynamic_links jobs during document cleanup. Do not patch Frappe, make cleanup synchronous in Workforce, or clear Redis queues to force migration success. Worker availability is an operational prerequisite.
 
 ### Queue diagnosis
 
@@ -120,11 +120,11 @@ The earlier staging backlog contained 567 queued jobs: 556 default-queue delete_
 - Config SHA-256: 904f5adc249a1b178eb7f108ddb38b88c9ba13766931e7dd6de4b6837eeddd73.
 - gzip -t and tar archive listings passed.
 - Standard bench migrate exited 0 and executed after_migrate. No direct ensure_* calls or manual metadata convergence were used.
-- clear-cache exited 0. bench build --app tradex_hr passed with Node 24.15.0.
+- clear-cache exited 0. bench build --app workforce_suite passed with Node 24.15.0.
 
 ### Restore rehearsal
 
-A disposable site, payroll-migration-check-20260923.localhost, was restored from the verified staging backup using the bench restore path and migrated with standard bench migrate. Workers were running during migration. The app metadata smoke check passed: the three promoted reports load as Standard Script Reports in Tradexcel HR; the remaining four stay custom Query Reports. The report API smoke checks are recorded in ui_report_runtime_audit_2026-09-22.md. No production site was touched, and no salary slip or accounting entry was submitted or created by this rehearsal.
+A disposable site, payroll-migration-check-20260923.localhost, was restored from the verified staging backup using the bench restore path and migrated with standard bench migrate. Workers were running during migration. The app metadata smoke check passed: the three promoted reports load as Standard Script Reports in Workforce Suite; the remaining four stay custom Query Reports. The report API smoke checks are recorded in ui_report_runtime_audit_2026-09-22.md. No production site was touched, and no salary slip or accounting entry was submitted or created by this rehearsal.
 
 Status: STANDARD BENCH MIGRATE = PROVEN on staging and the disposable restored site. This is deployment rehearsal evidence, not production approval.
 

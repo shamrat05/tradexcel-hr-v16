@@ -67,7 +67,7 @@ and empty-harness cleanup are included in the final regression.
 
 Final acceptance:
 - Focused native/report/persona/bulk/lifecycle regression: **23 passed**, 26 warnings.
-- Full `env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q
+- Full `env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests -q
   --disable-warnings --tb=short`: **604 passed, 0 failed, 0 skipped**, 77 warnings,
   422.06 seconds. Previous accepted count: 602; two new tests, none removed.
 - Bench Python compileall, all **61** tracked JSON files, and `git diff --check`

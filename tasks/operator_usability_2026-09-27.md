@@ -48,7 +48,7 @@ actual staff language review remains UAT.
 
 - 18 focused tests passed (11 warnings): operator UI, Action Board/native scope,
   attendance correction integration, maker/checker and native navigation.
-- Node 24 syntax and `bench build --app tradex_hr` passed.
+- Node 24 syntax and `bench build --app workforce_suite` passed.
 - Fresh verified `backup --with-files`: `20260927_001652-hrms-v16_localhost-`.
   Gzip/public/private tar integrity, exact sizes and SHA-256 are in `BACKUPS.md`.
 - Standard migrate and cache clear converged the versioned Custom HTML Block

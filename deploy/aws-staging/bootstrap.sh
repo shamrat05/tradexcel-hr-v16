@@ -14,15 +14,15 @@ if [ "$(uname -m)" != "x86_64" ]; then
 fi
 
 SITE_NAME="${SITE_NAME:-hrms-staging.localhost}"
-PROJECT_NAME="${PROJECT_NAME:-tradexcel}"
+PROJECT_NAME="${PROJECT_NAME:-workforce}"
 HTTP_PORT="${HTTP_PORT:-8080}"
-WORKDIR="${WORKDIR:-/opt/tradexcel-frappe}"
+WORKDIR="${WORKDIR:-/opt/workforce-frappe}"
 FRAPPE_DOCKER_SHA="e08b50ca057139c6e8c9117838ee3f5c5ee64a37"
 FRAPPE_VERSION="v16.34.0"
 ERPNEXT_VERSION="v16.35.0"
 HRMS_VERSION="v16.19.0"
 CUSTOM_APP_BRANCH="deploy/aws-free-staging"
-IMAGE_NAME="tradexcel-hr"
+IMAGE_NAME="workforce-suite"
 IMAGE_TAG="16.34.0-aws-staging"
 
 echo "Installing host prerequisites..."
@@ -62,7 +62,7 @@ git fetch --all --tags --prune
 git checkout --detach "${FRAPPE_DOCKER_SHA}"
 
 echo
-read -r -s -p "GitHub token with read access to shamrat05/tradexcel-hr-v16: " GITHUB_TOKEN
+read -r -s -p "GitHub token with read access to shamrat05/workforce-suite: " GITHUB_TOKEN
 echo
 if [ -z "${GITHUB_TOKEN}" ]; then
   echo "A read-only GitHub token is required because the app repository is private."
@@ -83,7 +83,7 @@ cat > "${APPS_JSON}" <<EOF
     "branch": "${HRMS_VERSION}"
   },
   {
-    "url": "https://x-access-token:${GITHUB_TOKEN}@github.com/shamrat05/tradexcel-hr-v16.git",
+    "url": "https://x-access-token:${GITHUB_TOKEN}@github.com/shamrat05/workforce-suite.git",
     "branch": "${CUSTOM_APP_BRANCH}"
   }
 ]
@@ -165,7 +165,7 @@ if ! dc exec -T backend test -d "/home/frappe/frappe-bench/sites/${SITE_NAME}" >
 
   dc exec -T backend bench --site "${SITE_NAME}" install-app erpnext
   dc exec -T backend bench --site "${SITE_NAME}" install-app hrms
-  dc exec -T backend bench --site "${SITE_NAME}" install-app tradex_hr
+  dc exec -T backend bench --site "${SITE_NAME}" install-app workforce_suite
 fi
 
 dc exec -T backend bench --site "${SITE_NAME}" migrate

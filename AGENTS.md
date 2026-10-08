@@ -1,4 +1,4 @@
-# Tradexcel HR source-only agent rules
+# Workforce Suite source-only agent rules
 
 ## Start here
 
@@ -16,8 +16,8 @@ migration were rehearsed in September 2026; production recovery is unproven.
 
 ## Canonical checkout — do not work anywhere else
 
-- **For this v16 repository, edit only:** `/home/sanchita/frappe-bench-v16/apps/tradex_hr` (WSL). The older `/home/sanchita/frappe-bench/apps/tradex_hr` has a different remote and is a historical checkout.
-- A second clone exists at `/mnt/c/Users/Sanchita/Desktop/tradexcel-hr-audit-app` (Windows, reached through `/mnt/c`). Treat it as a stale read-only reference. Do not edit, commit, or branch there. It holds no unique content.
+- **For this v16 repository, edit only:** `/home/sanchita/frappe-bench-v16/apps/workforce_suite` (WSL). The older `/home/sanchita/frappe-bench/apps/workforce_suite` has a different remote and is a historical checkout.
+- A second clone exists at `/mnt/c/Users/Sanchita/Desktop/workforce-suite-audit-app` (Windows, reached through `/mnt/c`). Treat it as a stale read-only reference. Do not edit, commit, or branch there. It holds no unique content.
 - Line endings are pinned to LF by `.gitattributes`. If `git status` reports the entire tree modified with equal insertion and deletion counts, that is a CRLF artifact, not real work. Confirm with `git diff --ignore-cr-at-eol` before acting on it.
 
 - This repository contains the Frappe custom app, **not** the live bench/site or the standalone SenseFace listener. Never read or copy `sites/`, `sync/data/`, tokens, backups, payroll exports or employee records into this repository or an agent prompt.
@@ -30,10 +30,10 @@ migration were rehearsed in September 2026; production recovery is unproven.
 
 ## v16 repository handoff
 
-- For tasks explicitly targeting `shamrat05/tradexcel-hr-v16`, the checkout is `/home/sanchita/frappe-bench-v16/apps/tradex_hr`. The separate `/home/sanchita/frappe-bench/apps/tradex_hr` checkout has a different Git remote; verify the target repository and branch before editing.
-- Prefer codebase-memory MCP for code discovery. For this WSL checkout, pass `\\wsl.localhost\Ubuntu\home\sanchita\frappe-bench-v16\apps\tradex_hr`; if indexing/search fails, use `rg` and report the MCP failure. Use Context7 before relying on Frappe/HRMS behavior.
+- For tasks explicitly targeting `shamrat05/workforce-suite`, the checkout is `/home/sanchita/frappe-bench-v16/apps/workforce_suite`. The separate `/home/sanchita/frappe-bench/apps/workforce_suite` checkout has a different Git remote; verify the target repository and branch before editing.
+- Prefer codebase-memory MCP for code discovery. For this WSL checkout, pass `\\wsl.localhost\Ubuntu\home\sanchita\frappe-bench-v16\apps\workforce_suite`; if indexing/search fails, use `rg` and report the MCP failure. Use Context7 before relying on Frappe/HRMS behavior.
 - Use Serena for semantic symbols/references when the graph is insufficient; call `initial_instructions` before coding, and start Codex from this WSL repo so Serena auto-activates the correct checkout. Use Sequential Thinking only for genuinely multi-step or high-risk reasoning.
-- Payroll authority is the effective submitted Salary Structure Assignment plus its Salary Structure's explicit `custom_tradex_pay_basis`; the assignment `base` is the Daily Wage rate. Never infer money from Employment Type or raw Employee Checkin. The target Daily Wage path is current finalized native Attendance through native Additional Salary into native Payroll Entry/Salary Slip; do not call draft orchestration production-ready until its full reconciliation, retry and permission gates pass. Keep global Payroll Settings unchanged unless the company policy explicitly requires it.
+- Payroll authority is the effective submitted Salary Structure Assignment plus its Salary Structure's explicit `custom_workforce_pay_basis`; the assignment `base` is the Daily Wage rate. Never infer money from Employment Type or raw Employee Checkin. The target Daily Wage path is current finalized native Attendance through native Additional Salary into native Payroll Entry/Salary Slip; do not call draft orchestration production-ready until its full reconciliation, retry and permission gates pass. Keep global Payroll Settings unchanged unless the company policy explicitly requires it.
 - Native `PayrollEntry.create_salary_slips()` can commit internally. Integration tests must track and explicitly clean up only their synthetic documents, then verify cleanup; do not rely on savepoint rollback alone.
 - Run site-backed tests from `/home/sanchita/frappe-bench-v16` so Frappe resolves `sites/` correctly. Keep real payroll unsubmitted and production untouched; document each implementation in the existing relevant task note.
 - After code is pushed, review pasted code-reviewer findings as proposals: validate them against project rules, concrete boundary cases, and current Frappe/HRMS behavior in Context7; implement justified fixes or additions, and explain any finding that is invalid or conflicts with project invariants.
@@ -87,9 +87,9 @@ migration were rehearsed in September 2026; production recovery is unproven.
 
 - Submitted Attendance is the approved work-time source; raw Employee Checkin evidence is never counted directly as legal or payroll hours.
 - Legal work-time scope and limits are explicit, source-linked, effective-dated, and company/establishment-scoped; Employment Type and payroll pay basis do not determine legal coverage.
-- Native Overtime Type, Overtime Slip, Additional Salary, Holiday List, Leave Policy, and Leave Allocation remain canonical. Tradexcel validates configuration/readiness and does not calculate overtime money or allocate statutory leave.
+- Native Overtime Type, Overtime Slip, Additional Salary, Holiday List, Leave Policy, and Leave Allocation remain canonical. Workforce validates configuration/readiness and does not calculate overtime money or allocate statutory leave.
 - Statutory hours include positive approved working_hours on Present, Half Day, and Work From Home Attendance; positive hours on Absent/On Leave are a data-integrity conflict. Raw Employee Checkin evidence is never counted directly.
-- Native overtime duration must cover daily and weekly hours above the approved statutory normal limits. Tradexcel checks evidence only and never computes OT money.
+- Native overtime duration must cover daily and weekly hours above the approved statutory normal limits. Workforce checks evidence only and never computes OT money.
 - A native Holiday List holiday accounts for a calendar date without Attendance when checking week completeness; do not manufacture Attendance for holidays. Load the full 52-week holiday range for rolling checks.
 - Casual/Sick leave readiness accepts either a sufficient effective submitted Leave Policy Assignment or a submitted Leave Allocation covering the period. Annual-leave statutory accrual remains review-only until native parity is proven.
 - Payroll Approver Additional Salary sourced from Overtime Slip must match the slip's native component/amount calculation at currency precision and cannot duplicate an active slip/component row. Preserve native Payroll Correction and Arrear provenance.

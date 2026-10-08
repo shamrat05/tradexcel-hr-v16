@@ -4,7 +4,7 @@
 
 ## Scope
 
-Create a separate Frappe/ERPNext/HRMS v16 staging bench and site, migrate a verified copy of the current HR data, and make the Tradexcel HR workspace/navigation usable without changing the current v15 site. ERPNext remains installed as an HRMS dependency, but the visible product surface is HR-focused. No production cutover is included in this phase.
+Create a separate Frappe/ERPNext/HRMS v16 staging bench and site, migrate a verified copy of the current HR data, and make the Workforce Suite workspace/navigation usable without changing the current v15 site. ERPNext remains installed as an HRMS dependency, but the visible product surface is HR-focused. No production cutover is included in this phase.
 
 ## Safety boundaries
 
@@ -18,7 +18,7 @@ Create a separate Frappe/ERPNext/HRMS v16 staging bench and site, migrate a veri
 ## Architecture decisions
 
 1. Use Frappe/ERPNext/HRMS v16 branches with matching major versions.
-2. Keep `tradex_hr` as a separate custom app, with a v16 dependency branch and no duplicated native HR ledgers.
+2. Keep `workforce_suite` as a separate custom app, with a v16 dependency branch and no duplicated native HR ledgers.
 3. Keep ERPNext installed but hide non-HR workspaces and restrict non-HR roles; HRMS payroll still relies on ERPNext services.
 4. Use the existing Workspace as the HR command center and add a persistent 248px navigation rail with a 64px icon-only mode through the custom app bundle.
 5. Make navigation data-driven and route only to verified DocTypes, reports, pages, and workspaces.
@@ -31,7 +31,7 @@ Create a separate Frappe/ERPNext/HRMS v16 staging bench and site, migrate a veri
 - [ ] Create and push the dedicated custom-app branch `feature/hrms-v16-hr-only`.
 - [ ] Update only the custom app's Frappe/ERPNext dependency range for v16 and add compatibility tests.
 - [ ] Provision a separate v16 bench/site with Python 3.14 and Node 24; do not touch `hrms.localhost`.
-- [ ] Install matching Frappe, ERPNext, HRMS, and `tradex_hr` v16 branches.
+- [ ] Install matching Frappe, ERPNext, HRMS, and `workforce_suite` v16 branches.
 
 ### Checkpoint: v16 foundation
 

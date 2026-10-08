@@ -6,7 +6,7 @@ This slice started from `feat/financial-report-scope` at
 `f1bf90c5e41ee7c1b6f6bacaccb8f994d4493467` and created the stacked branch
 `feat/persona-access-foundation`. It establishes repeatable site-backed tests
 for native Frappe Users, Roles, User Permissions, Employee links, reports and
-the existing `tradexcel-hr` Workspace. It does not add an identity, persona or
+the existing `workforce-suite` Workspace. It does not add an identity, persona or
 ACL DocType/table, and does not provision real users.
 
 ## Installed Frappe behavior
@@ -17,12 +17,12 @@ Workspace endpoints remain the authorities. Populated Company, Branch and
 Department User Permissions combine as native query constraints; the combined
 Branch-A + Department-B fixture returns no Employee when no record matches
 both. With no Company User Permission, Frappe does not infer company scope from
-a Tradexcel role. Staging has strict User Permissions disabled, so blank link
+a Workforce role. Staging has strict User Permissions disabled, so blank link
 values continue to follow framework-native matching; this is a company data
 and configuration/UAT decision, not changed here.
 
-The public `tradexcel-hr` Workspace has no role restriction and is therefore
-listed for users allowed into the Tradexcel HR module. `get_desktop_page`
+The public `workforce-suite` Workspace has no role restriction and is therefore
+listed for users allowed into the Workforce Suite module. `get_desktop_page`
 filters DocType shortcuts using read permission and Report shortcuts using
 report-role visibility; a Report shortcut can still be visible when its
 referenced DocType denies the actual endpoint. Number Cards and charts apply
@@ -31,11 +31,11 @@ endpoint authorization.
 
 ## Synthetic persona contract
 
-`tradex_hr/tests/persona_uat.py` defines a reusable test-only harness. It makes
+`workforce_suite/tests/persona_uat.py` defines a reusable test-only harness. It makes
 unique System Users with native Has Role children and Company/Branch/Department
 User Permissions, optionally links a synthetic Employee through `Employee.user_id`,
 and explicitly deletes and verifies only its marker-owned records. Integration
-tests cover all 15 Tradexcel roles, two Companies, multiple Branches and
+tests cover all 15 Workforce roles, two Companies, multiple Branches and
 Departments, Company-only and unscoped users, combined scope, linked/unlinked
 Workers, and selected dual-role combinations. No native HR Manager or System
 Manager role is used by the personas; System Manager is only a control where
@@ -96,7 +96,7 @@ fixed:
 
 ## Workspace audit
 
-The `tradexcel-hr` Workspace remains a public mixed overview/navigation page,
+The `workforce-suite` Workspace remains a public mixed overview/navigation page,
 not a role-specific Action Board. In the test payload it has 47 shortcuts;
 Frappe removes links that fail its shortcut-level visibility checks. Measured
 synthetic persona examples: HR Manager 35 visible / 12 inaccessible, Payroll
@@ -151,7 +151,7 @@ change was made.
 
 Focused permission/report/lifecycle tests passed: 12 passed; after the final
 Workspace assertion, the persona integration passed 1 passed. The final
-complete Tradexcel suite passed: 571 passed, 0 skipped. Python compileall,
+complete Workforce suite passed: 571 passed, 0 skipped. Python compileall,
 parsing all 62 app JSON files and `git diff --check` passed. The persona harness
 explicitly cleans synthetic Users, User Permissions and Employees in dependency
 order and asserts their absence. A post-suite native Frappe query found zero

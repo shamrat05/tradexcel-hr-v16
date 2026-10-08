@@ -49,12 +49,12 @@ why the old report endpoint admitted an otherwise permitted caller. The
 post-fix tests use the real `frappe.desk.query_report.run` endpoint.
 
 Before the Worker DocPerm change, an unlinked synthetic
-`Tradexcel Employee/Worker` with only a Company User Permission could list both
+`Workforce Employee/Worker` with only a Company User Permission could list both
 synthetic employees' `Employee Checkin`, `Leave Allocation`, and
 `Leave Application` rows. Company permission is not transitive across the
 Employee Link. This was reproduced in site tests before role setup convergence.
 
-The fix adds `tradex_hr/tradexcel_hr/report_scope.py`. It calls Company access
+The fix adds `workforce_suite/workforce_suite/report_scope.py`. It calls Company access
 validation, resolves Employee IDs with native `frappe.get_list()` under the
 caller, then applies optional Branch/Department filters as narrowing constraints.
 Each Script Report binds that tuple into its SQL; an empty permitted set returns
@@ -113,7 +113,7 @@ Focused report/security batch: `42 passed, 2 skipped`. The first complete run
 found one obsolete report-source assertion expecting `Source Salary Pending`;
 it was replaced with assertions for canonical pay-basis resolution and removal
 of legacy inference. Corrected focused report tests: `5 passed`. Final clean
-Tradexcel suite: `566 passed, 2 skipped`. Python compileall, all 58 app JSON
+Workforce suite: `566 passed, 2 skipped`. Python compileall, all 58 app JSON
 files, and `git diff --check` pass. No JS/assets changed.
 
 After the suite, zero test-marker Users, User Permissions, Employees,
@@ -126,13 +126,13 @@ or SSAs remained.
   Joiners and Leavers, Pay Component Register, Payroll Variance, and Shift
   Coverage.
 - `hooks.py` still overrides `frappe.desk.query_report.run` with
-  `tradex_hr.report_filters.run`. Runtime audit found exactly those four
+  `workforce_suite.report_filters.run`. Runtime audit found exactly those four
   app-owned Query Reports; `normalise_query_report_filters()` checks for
   `report_type == "Query Report"` and provides safe defaults/clear errors.
   Script Reports do not use this wrapper. Keep it until the remaining Query
   Reports are converted or no longer require normalization; the global hook is
   an upgrade-coupling item for that future reports slice.
-- `tradex_hr/tradexcel_hr/payroll_setup.py` functions
+- `workforce_suite/workforce_suite/payroll_setup.py` functions
   `classify_employees()`, `ensure_factory_assignments()`, and
   `setup_payroll_configuration()` have no callers outside that module and are
   not hooked or whitelisted. They include an Employment Type derivation, a

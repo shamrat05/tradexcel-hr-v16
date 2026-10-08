@@ -61,7 +61,7 @@ ported into `fix/release-lineage-security-closure` on top of #42, preserving lat
 scope/privacy/performance work. Do not blindly merge old #3 after accepting this
 correction. It remains open; no historical branch was rewritten or closed.
 
-[PR #43](https://github.com/shamrat05/tradexcel-hr-v16/pull/43) exposes the seven
+[PR #43](https://github.com/shamrat05/workforce-suite/pull/43) exposes the seven
 already-existing commits from `fix/v16-production-readiness` to
 `fix/payroll-p0-safety` (`e39068819a20569319f0b21a1d81cd7e5ccfd995`). No commit
 was added to that historical branch. #43 is open/draft/mergeable and precedes #4.
@@ -81,7 +81,7 @@ remote CI PASS. No rerun or account-setting workaround was attempted. Phase K
 remains **BLOCKED** until remote checks execute and the separate framework/source
 and external release gates are resolved.
 
-Correction publication: [PR #44](https://github.com/shamrat05/tradexcel-hr-v16/pull/44)
+Correction publication: [PR #44](https://github.com/shamrat05/workforce-suite/pull/44)
 is open/draft/mergeable, base `test/release-readiness-contract`, head
 `fix/release-lineage-security-closure`. Eventual order is **#2 → #43 → #4 … #42
 → #44**; old #3 is superseded by #44, while #1 remains independent docs.

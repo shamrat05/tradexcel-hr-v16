@@ -5,7 +5,7 @@ data-affecting operation, not a plug-and-play swap.
 
 ## Why it breaks
 
-`TradexcelEmployeeBiometric.validate()` computes
+`WorkforceEmployeeBiometric.validate()` computes
 
 ```python
 self.assignment_key = sha256(f"{serial}\0{biometric_id}")
@@ -29,8 +29,8 @@ queued as `unmapped`.
 2. Record the current state first:
    ```sql
    SELECT d.device_code, d.device_serial, COUNT(*) AS mappings
-     FROM `tabTradexcel Employee Biometric` a
-     JOIN `Tradexcel Biometric Device` d ON d.name = a.device
+     FROM `tabWorkforce Employee Biometric` a
+     JOIN `Workforce Biometric Device` d ON d.name = a.device
     WHERE d.device_code = '<device>'
     GROUP BY d.device_code, d.device_serial;
    ```
@@ -49,8 +49,8 @@ queued as `unmapped`.
    of truth for what it has enrolled.
 5. **Verify before trusting it:**
    ```sql
-   SELECT COUNT(*) FROM `tabTradexcel Employee Biometric` a
-     JOIN `Tradexcel Biometric Device` d ON d.name = a.device
+   SELECT COUNT(*) FROM `tabWorkforce Employee Biometric` a
+     JOIN `Workforce Biometric Device` d ON d.name = a.device
     WHERE d.enabled = 1 AND d.device_serial = '<new serial>';
    ```
    and confirm the worker's resolver returns one key per PIN with none ambiguous.

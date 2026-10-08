@@ -3,7 +3,7 @@
 Parent: accepted attendance branch `feat/bulk-attendance-corrections` at
 `5d30ce89d1d96532cbf10847d226a23559ec0afd` (draft PR #28). Work branch:
 `refactor/runtime-portability`. The isolated site has Frappe 16.34.0,
-ERPNext 16.35.0, HRMS 16.19.0 and tradex_hr 0.1.0 on MariaDB
+ERPNext 16.35.0, HRMS 16.19.0 and workforce_suite 0.1.0 on MariaDB
 `127.0.0.1:3307`. Accepted full-suite baseline: 585 passed, 0 skipped.
 
 ## Source/runtime audit
@@ -30,14 +30,14 @@ device UAT remains open. The old app bridge contract was stale and is updated.
 | `payroll_setup.py` | Dormant one-off migration utility | Repository-wide caller search found no importer. It contained hardcoded wage/company/classification, direct Employee mutation, submitted SSA creation, `ignore_permissions` and commit. Removed from the importable package; never executed. |
 | `salary_excel.py` | Dormant one-off salary importer | No production caller. It embedded old company/source paths and could write salary authority. Removed; never executed. |
 | `salary_setup.py` and `salary_setup.yaml` | Explicit historical company migration utility/spec | Not called by generic install after this change. Kept so historical provenance is visible, but the helper now requires an explicit currency. It must never be run against real staging data without a separate reviewed migration. |
-| `branch_setup.py` | Active `after_migrate` metadata and business-data mutation | Kept only neutral Branch custom fields. Removed hardcoded TCL/EFL rename, address and hierarchy writes. Cleared the old company default in metadata. Existing Branch records are untouched. |
+| `branch_setup.py` | Active `after_migrate` metadata and business-data mutation | Kept only neutral Branch custom fields. Removed hardcoded COMPANY_A/COMPANY_B rename, address and hierarchy writes. Cleared the old company default in metadata. Existing Branch records are untouched. |
 | `install.py` | Active install/migrate and dashboard convergence | Removed automatic historic pay-basis seeding and two company-specific Number Cards. Standard migration removes those app-owned cards. No Employee, wage or SSA is manufactured by generic install. |
 | `field_attendance_service.py` | Active field-duty allowance path | Removed BDT fallback; Company currency must be configured. No amount or pay-basis rule changed. |
 | `biometric/worker.py` | Active packaged worker | Removed old-bench/Windows SQLite and guessed device defaults. Persistent state and site must be explicit; HTTP bridge is default when no SQLite path is configured. No device was contacted in this audit. |
-| `tradex_hr.bundle.js` custom rail | Active legacy navigation | Left for phase F, where native Workspace parity and browser behavior can be measured first. |
+| `workforce_suite.bundle.js` custom rail | Active legacy navigation | Left for phase F, where native Workspace parity and browser behavior can be measured first. |
 | `bulk_fix.py` | Active Employee-data mutation | Left for bulk closure phase D; this phase does not alter another workflow's security contract. |
 
-Tradexcel branding remains. Historical task notes and the explicit salary
+Workforce branding remains. Historical task notes and the explicit salary
 specification retain company names as historical data, not generic runtime
 defaults. README and AGENTS status were corrected without rewriting the old
 September 18 snapshot.
@@ -62,7 +62,7 @@ were not asserted by those digests.
 ## Tests and remaining proof
 
 Focused portability/pay-basis/worker/dashboard tests: **35 passed**. Full
-Tradexcel suite: **593 passed, 0 skipped**, 64 warnings in 445.43 seconds,
+Workforce suite: **593 passed, 0 skipped**, 64 warnings in 445.43 seconds,
 above the accepted 585-pass baseline. `compileall` passed, 61 app JSON files
 parsed, and `git diff --check` passed. The added focused tests created no
 synthetic database records; the full suite uses its existing explicit fixture

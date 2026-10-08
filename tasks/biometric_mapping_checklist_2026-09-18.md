@@ -7,15 +7,15 @@ Root finding that governs everything: the bridge worker resolves a punch with
 
 ```sql
 -- sync/reliable_bridge_worker.py::_employee_map()
-FROM `tabTradexcel Employee Biometric` a
-JOIN `tabTradexcel Biometric Device` d ON d.name = a.device
+FROM `tabWorkforce Employee Biometric` a
+JOIN `tabWorkforce Biometric Device` d ON d.name = a.device
 WHERE a.enabled = 1 AND d.enabled = 1
   AND d.device_serial IS NOT NULL AND d.device_serial != ''
   AND a.biometric_id IS NOT NULL AND a.biometric_id != ''
 -- then key = (device_serial, biometric_id); accepted ONLY if exactly one match
 ```
 
-So the entire flow needs **`Tradexcel Employee Biometric` + a real device serial +
+So the entire flow needs **`Workforce Employee Biometric` + a real device serial +
 `enabled = 1` on both**. It does **not** read `Employee.attendance_device_id`.
 
 End-to-end chain:
@@ -23,7 +23,7 @@ End-to-end chain:
 ```
 Device (ADMS; server address = ours) → bridge /iclock/cdata → SQLite `attendance`
   → worker polls /api/v1/attendance → key = (serial_number, PIN)
-  → Tradexcel Employee Biometric → Employee Checkin → HRMS auto-attendance
+  → Workforce Employee Biometric → Employee Checkin → HRMS auto-attendance
 ```
 
 ---
@@ -44,10 +44,10 @@ rows on the two live NYU devices**. The other 13 belong to the now-inactive
 `tcl_ho` terminal and are not imported.
 
 Verified before import: all 221 match a Frappe Employee via
-`tradex_source_employee_id`, with **PIN identical in 221/221** cases and **zero
+`workforce_source_employee_id`, with **PIN identical in 221/221** cases and **zero
 duplicate PINs** within either device (even when lowercased).
 
-Imported into `Tradexcel Employee Biometric` with `source = "Selevo Import"` and
+Imported into `Workforce Employee Biometric` with `source = "Selevo Import"` and
 `source_reference` recording the Selevo employee id, so the lineage survives.
 
 ## A3. PINs are device-specific — **DONE (no action needed)**
@@ -86,7 +86,7 @@ without a real punch.
 **Residual risk:** if a terminal sends UTC while the bridge parses it as Dhaka,
 every punch shifts by 6 hours and attendance is silently wrong.
 
-## A6. Head-office device code is `admin@tradex.com` — **DONE**
+## A6. Head-office device code is `admin@workforce.com` — **DONE**
 
 *Reviewer: confirmed.* The docname is derived from `device_code`
 (`autoname = field:device_code`), so this was a document rename. Safe at this
@@ -191,7 +191,7 @@ database and the check-in writer stubbed, so **nothing is written to Frappe**.
 
 ### Regression guard, and proof that it works
 
-`tradex_hr/tests/test_biometric_worker_contract.py` asserts that the resolver's
+`workforce_suite/tests/test_biometric_worker_contract.py` asserts that the resolver's
 value exposes the keys `_insert_checkin` reads, that no `(serial, PIN)` is
 ambiguous, and that the real writer runs against the real resolver shape.
 
@@ -221,10 +221,10 @@ machine. The biometric runtime has now been packaged into the app:
 
 | Canonical (versioned) | Purpose |
 | --- | --- |
-| `tradex_hr/tradexcel_hr/biometric/worker.py` | the worker (fixed) |
-| `tradex_hr/tradexcel_hr/biometric/state_store.py` | sync state store |
-| `tradex_hr/tests/test_biometric_worker_contract.py` | contract guard |
-| `tradex_hr/tests/test_reliable_bridge.py`, `test_state_store.py` | were unversioned in `sync/` |
+| `workforce_suite/workforce_suite/biometric/worker.py` | the worker (fixed) |
+| `workforce_suite/workforce_suite/biometric/state_store.py` | sync state store |
+| `workforce_suite/tests/test_biometric_worker_contract.py` | contract guard |
+| `workforce_suite/tests/test_reliable_bridge.py`, `test_state_store.py` | were unversioned in `sync/` |
 
 `sync/reliable_bridge_worker.py` and `sync/state_store.py` are now **thin shims**
 that import the app modules, so `start_biometric_bridge.bat` and the existing
@@ -232,7 +232,7 @@ launchers keep working unchanged. Verified after the move:
 
 - `../env/bin/python ../sync/reliable_bridge_worker.py --help` → OK
 - `from reliable_bridge_worker import process_punches` resolves to
-  `tradex_hr.tradexcel_hr.biometric.worker`
+  `workforce_suite.workforce_suite.biometric.worker`
 - the unversioned `sync/` tests still pass through the shim (10 passed)
 - the versioned app suite: **13 passed**
 

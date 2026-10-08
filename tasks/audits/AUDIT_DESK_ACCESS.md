@@ -1,6 +1,6 @@
 # Read-only specialist: daily usability, access and people lifecycle
 
-Inspect `AGENTS.md`, `tasks/plan.md`, `tradex_hr/install.py`, `tradex_hr/api.py`, `tradex_hr/role_setup.py`, workspace/report definitions, and relevant JS. No live site or browser data is available. No writes, shell, external paths or network.
+Inspect `AGENTS.md`, `tasks/plan.md`, `workforce_suite/install.py`, `workforce_suite/api.py`, `workforce_suite/role_setup.py`, workspace/report definitions, and relevant JS. No live site or browser data is available. No writes, shell, external paths or network.
 
 Walk a concrete day for a branch manager, HR clerk, payroll preparer and worker: open Action Board, click a count, filter their branch/company, correct missing punch, request leave, approve, revise salary, print/export, see errors. Find false buttons, duplicate routes, unscoped SQL/reports/exports, Administrator-only dead ends, self-approval, hidden actions without server authorization, monolithic UI, nonfunctional ESS, or unnecessary custom duplicate of native HRMS bulk tools. Check whether docs claim features absent in code.
 

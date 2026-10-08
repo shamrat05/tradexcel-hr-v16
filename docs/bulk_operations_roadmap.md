@@ -1,4 +1,4 @@
-# Tradexcel HR operations roadmap
+# Workforce Suite operations roadmap
 
 The comprehensive proposed delivery plan is now `tasks/plan.md` with `tasks/capability-map.md`, `tasks/todo.md`, and `tasks/opencode_handoff.md` at the bench root. This file records the earlier implementation slice; use the new task checklist for remaining work.
 
@@ -16,7 +16,7 @@ First-slice verification: 12 focused pytest checks pass, including Frappe Desk r
 
 ## Capability map and delivery order
 
-| Area | Native record/tool | Missing Tradexcel layer | State |
+| Area | Native record/tool | Missing Workforce layer | State |
 | --- | --- | --- | --- |
 | Shift bulk/rotation | Shift Assignment Tool, Shift Schedule, roster | conflict preview, scoped patterns, exception overrides, old-assignment closure, 90-day regeneration | Native Desk links and read-only overlap/missing coverage board added; custom layer pending |
 | Leave annual allocation | Leave Control Panel, Leave Policy Assignment, Leave Allocation | policy cohorts, preview, exceptions, year-end carry/expiry/encashment | Native Desk link added; custom layer pending |

@@ -6,8 +6,8 @@ No identities, individual pay amounts or bank numbers are included.
 
 ## Fresh staging counts
 
-- Tradexcel Ceramics Ltd.: 240 active Employees; authority {"Monthly Salary": 64, "effective_submitted_assignment": 223, "Daily Wage": 159, "UNRESOLVED": 17, "No submitted Salary Structure Assignment applies on 2026-09-27": 17}; 237 active submitted Shift Assignments; 5 without active assignment/default; 0 overlapping active-assignment Employees.
-- Elegance Footwear Ltd.: 2 active Employees; authority {"Monthly Salary": 2, "effective_submitted_assignment": 2}; 0 active submitted Shift Assignments; 0 without active assignment/default; 0 overlapping active-assignment Employees.
+- Example Company A: 240 active Employees; authority {"Monthly Salary": 64, "effective_submitted_assignment": 223, "Daily Wage": 159, "UNRESOLVED": 17, "No submitted Salary Structure Assignment applies on 2026-09-27": 17}; 237 active submitted Shift Assignments; 5 without active assignment/default; 0 overlapping active-assignment Employees.
+- Example Company B: 2 active Employees; authority {"Monthly Salary": 2, "effective_submitted_assignment": 2}; 0 active submitted Shift Assignments; 0 without active assignment/default; 0 overlapping active-assignment Employees.
 
 | Native/configuration record | Count | State |
 | --- | ---: | --- |
@@ -37,30 +37,30 @@ No identities, individual pay amounts or bank numbers are included.
 | Salary Structure | 3 | docstatus: {"1": 3} |
 | Salary Structure Assignment | 227 | docstatus: {"1": 227} |
 | Shift Assignment | 237 | docstatus: {"1": 237}; status: {"Active": 237} |
-| Tradex Mobile Event | 15 | docstatus: {"0": 15}; status: {"Created": 15} |
-| Tradexcel Attendance Period | 0 | docstatus: {}; status: {} |
-| Tradexcel Attendance Policy | 1 | docstatus: {"1": 1} |
-| Tradexcel Biometric Device | 2 | docstatus: {"0": 2} |
-| Tradexcel Employee Biometric | 221 | docstatus: {"0": 221} |
-| Tradexcel Field Duty | 1 | docstatus: {"1": 1}; status: {"Approved": 1} |
-| Tradexcel Flexible Work Policy | 0 | docstatus: {} |
-| Tradexcel Location Ping | 6 | docstatus: {"0": 6} |
-| Tradexcel Maternity Review | 0 | docstatus: {} |
-| Tradexcel Maternity Rule Set | 0 | docstatus: {} |
-| Tradexcel Maternity Separation Review | 0 | docstatus: {} |
-| Tradexcel Operational Day Override | 0 | docstatus: {} |
-| Tradexcel Payroll Policy | 5 | docstatus: {"0": 5} |
-| Tradexcel Policy Exception | 0 | docstatus: {} |
-| Tradexcel Statutory Benefit Enrollment | 0 | docstatus: {} |
-| Tradexcel Statutory Benefit Rule Set | 0 | docstatus: {} |
-| Tradexcel Statutory Rule Set | 0 | docstatus: {}; workflow_state: {} |
-| Tradexcel Wage Floor Classification | 0 | docstatus: {} |
-| Tradexcel Wage Floor Rule Set | 0 | docstatus: {} |
-| Tradexcel Working Time Classification | 0 | docstatus: {} |
-| Tradexcel Working Time Rule Set | 0 | docstatus: {} |
-| Tradexcel Workplace Welfare Review | 0 | docstatus: {} |
+| Workforce Mobile Event | 15 | docstatus: {"0": 15}; status: {"Created": 15} |
+| Workforce Attendance Period | 0 | docstatus: {}; status: {} |
+| Workforce Attendance Policy | 1 | docstatus: {"1": 1} |
+| Workforce Biometric Device | 2 | docstatus: {"0": 2} |
+| Workforce Employee Biometric | 221 | docstatus: {"0": 221} |
+| Workforce Field Duty | 1 | docstatus: {"1": 1}; status: {"Approved": 1} |
+| Workforce Flexible Work Policy | 0 | docstatus: {} |
+| Workforce Location Ping | 6 | docstatus: {"0": 6} |
+| Workforce Maternity Review | 0 | docstatus: {} |
+| Workforce Maternity Rule Set | 0 | docstatus: {} |
+| Workforce Maternity Separation Review | 0 | docstatus: {} |
+| Workforce Operational Day Override | 0 | docstatus: {} |
+| Workforce Payroll Policy | 5 | docstatus: {"0": 5} |
+| Workforce Policy Exception | 0 | docstatus: {} |
+| Workforce Statutory Benefit Enrollment | 0 | docstatus: {} |
+| Workforce Statutory Benefit Rule Set | 0 | docstatus: {} |
+| Workforce Statutory Rule Set | 0 | docstatus: {}; workflow_state: {} |
+| Workforce Wage Floor Classification | 0 | docstatus: {} |
+| Workforce Wage Floor Rule Set | 0 | docstatus: {} |
+| Workforce Working Time Classification | 0 | docstatus: {} |
+| Workforce Working Time Rule Set | 0 | docstatus: {} |
+| Workforce Workplace Welfare Review | 0 | docstatus: {} |
 
-There are **0 enabled non-Administrator System Users**, 0 with Tradexcel roles;
+There are **0 enabled non-Administrator System Users**, 0 with Workforce roles;
 1 Company User Permission, 0 Branch and 0 Department permissions. Synthetic
 personas are engineering evidence, not configured real staff. All 16,077
 Attendance records are draft; submitted work-hour and finalization coverage

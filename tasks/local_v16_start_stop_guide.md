@@ -32,7 +32,7 @@ repository:
 
 ```sh
 cd /home/sanchita/frappe-bench-v16
-cat > /tmp/tradex-hr-v16-Procfile <<'EOF'
+cat > /tmp/workforce-hr-v16-Procfile <<'EOF'
 redis_cache: redis-server config/redis_cache.conf
 web: bench serve --port 8001
 socketio: bench socketio
@@ -41,7 +41,7 @@ schedule: bench schedule
 worker: bench worker 1>> logs/worker.log 2>> logs/worker.error.log
 EOF
 PATH=/home/sanchita/.nvm/versions/node/v24.15.0/bin:$PATH \
-  bench start -p /tmp/tradex-hr-v16-Procfile
+  bench start -p /tmp/workforce-hr-v16-Procfile
 ```
 
 Node 24 is required by the asset watcher; the system Node 20 makes `watch`
@@ -73,7 +73,7 @@ running before this session, leave it running.
 ## Verified on 2026-09-25
 
 The v16 database answered through the site's configured connection,
-`list-apps` reported Frappe 16.34 / ERPNext 16.35 / HRMS 16.19 / `tradex_hr`,
+`list-apps` reported Frappe 16.34 / ERPNext 16.35 / HRMS 16.19 / `workforce_suite`,
 the full local bench processes started with the commands above, and the site
 returned HTTP 200. The Redis config emits a Linux memory-overcommit warning;
 it did not prevent startup. No sysctl or site configuration was changed.

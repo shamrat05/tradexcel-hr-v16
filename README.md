@@ -1,8 +1,8 @@
-# Tradexcel HR — start here
+# Workforce Suite — start here
 
 ## Current v16 engineering status — 2026-09-27
 
-The active repository is `/home/sanchita/frappe-bench-v16/apps/tradex_hr`,
+The active repository is `/home/sanchita/frappe-bench-v16/apps/workforce_suite`,
 stacked on open draft PRs. The isolated staging site is `hrms-v16.localhost`
 with MariaDB on `127.0.0.1:3307`. The latest accepted full suite passed **653 tests, 0 skipped**. The integrated mobile/lineage correction is documented in
 [`release security closure`](tasks/release_lineage_security_closure_2026-09-27.md). Native bulk
@@ -15,7 +15,7 @@ engineering campaign and resume point are in
 Native Employee, Attendance Request/Attendance, Leave, Shift, Salary Structure
 Assignment, Payroll Entry/Salary Slip, and accounting records remain the
 authorities. Pay basis comes from the effective submitted assignment's Salary
-Structure field `custom_tradex_pay_basis`; no Employment Type or Branch
+Structure field `custom_workforce_pay_basis`; no Employment Type or Branch
 heuristic may decide pay. The app's payroll and biometric worker source is
 versioned here; the SenseFace listener is a separate repository.
 
@@ -35,7 +35,7 @@ and live read-only audits before using any number below.
 
 ---
 
-**Frappe custom app for Tradexcel Ceramics Ltd. and Elegance Footwear Ltd.**
+**Frappe custom app for Example Company A and Example Company B**
 Replaced a previous custom system (Selevo). This README is the entry point: it
 says where things are and **exactly what is done and what is not.**
 
@@ -64,7 +64,7 @@ that date — re-read them before trusting them (see *Checking current state*).
 | --- | --- |
 | **Biometric mapping** | **221** employee↔PIN assignments across 2 devices. Verified through the worker's real code: 221 resolved, 0 ambiguous, 0 mis-attributed |
 | **Salary components** | 7 global components, created once and reused |
-| **Salary structures** | 3 templates: `TCL Standard`, `EFL Standard`, `TCL Daily Wage` |
+| **Salary structures** | 3 templates: `Example Monthly`, `Example Secondary Monthly`, `Example Daily Wage` |
 | **Salary assignments** | **226** assignments, 226 distinct employees, 0 duplicates |
 | **Payroll split** | Verified against the VPS: 60/30/5/5. `structure_earnings()` produces exact figures |
 | **Attendance pipeline** | 16,077 Attendance, 22,293 Checkins. Auto-attendance enabled on both shift types |
@@ -89,7 +89,7 @@ that date — re-read them before trusting them (see *Checking current state*).
 | --- | --- | --- |
 | **7** | **The 46 "Workers" on monthly salaries** | `employment_type = Worker` but they hold monthly structures (Foreman 30,000; Shift Incharge 23,000). Payroll would resolve them to the **350/day** policy. Monthly or daily? |
 | **8** | **Tax / PF / gratuity policy** | Nothing configured. Net pay is knowingly incomplete until decided |
-| **9** | **Two employees with no split** | TCL-0026 Tania Akter (15,000), TCL-0038 Rifat Hossain (25,000) — gross known, components unknown |
+| **9** | **Two employees with no split** | COMPANY_A-0026 Tania Akter (15,000), COMPANY_A-0038 Rifat Hossain (25,000) — gross known, components unknown |
 | **10** | **Link structures to policies** | All 5 policies have `salary_structure = NULL`, so nothing derives the structure |
 
 ---
@@ -105,10 +105,10 @@ cd ~/frappe-bench && bench --site hrms.localhost mariadb -e "
 select (select count(*) from tabEmployee) employees,
        (select count(*) from \`tabSalary Structure Assignment\`) assignments,
        (select count(*) from \`tabSalary Slip\`) slips,
-       (select count(*) from \`tabTradexcel Employee Biometric\`) biometric;"
+       (select count(*) from \`tabWorkforce Employee Biometric\`) biometric;"
 
 # the test suite
-cd ~/frappe-bench && env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests/ -q
+cd ~/frappe-bench && env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests/ -q
 ```
 
 Read `BACKUPS.md` before any destructive operation.
@@ -119,10 +119,10 @@ Read `BACKUPS.md` before any destructive operation.
 
 | What | Where |
 | --- | --- |
-| **Canonical checkout** | `/home/sanchita/frappe-bench/apps/tradex_hr` (WSL) — the only tree to edit |
-| Windows mirror (read-only) | `Desktop/tradexcel-hr-audit-app` |
-| Repositories | `github.com/shamrat05/tradexcel-hr`, `github.com/shamrat05/SenseFace-HRMS-Bridge` |
-| Backups | `Desktop/tradex_hr_backup_20260918/`, indexed in `BACKUPS.md` |
+| **Canonical checkout** | `/home/sanchita/frappe-bench/apps/workforce_suite` (WSL) — the only tree to edit |
+| Windows mirror (read-only) | `Desktop/workforce-suite-audit-app` |
+| Repositories | `github.com/shamrat05/workforce-suite`, `github.com/shamrat05/SenseFace-HRMS-Bridge` |
+| Backups | `Desktop/workforce_suite_backup_20260918/`, indexed in `BACKUPS.md` |
 | VPS source data | `Desktop/selevo_vps_backup_20260917/selevo_postgres_all.sql.gz` |
 | Bridge | `Desktop/Projects/SenseFace-HRMS-Bridge` (canonical, on `main`) |
 
@@ -130,16 +130,16 @@ Read `BACKUPS.md` before any destructive operation.
 
 | Module | What it does |
 | --- | --- |
-| `tradexcel_hr/salary_setup.yaml` | **Salary config source of truth** — components, structures, formulas |
-| `tradexcel_hr/salary_setup.py` | Idempotent installer; converges, never duplicates |
-| `tradexcel_hr/salary_excel.py` | Xcel export + assignment importer |
-| `tradexcel_hr/run_payroll.py` | Creates draft salary slips from policy + assignment |
-| `tradexcel_hr/payroll_rules.py` | Wage maths (fallback constants only — structure wins) |
-| `tradexcel_hr/payroll_policy.py` | Resolves the policy for an employee |
-| `tradexcel_hr/effective_policy_rules.py` | Deterministic override precedence |
-| `tradexcel_hr/deduction_rules.py` | Deductions + totals (honours `do_not_include_in_total`) |
-| `tradexcel_hr/biometric/worker.py` | Bridge punch → Employee Checkin |
-| `tradexcel_hr/biometric/state_store.py` | Sync cursors and event log |
+| `workforce_suite/salary_setup.yaml` | **Salary config source of truth** — components, structures, formulas |
+| `workforce_suite/salary_setup.py` | Idempotent installer; converges, never duplicates |
+| `workforce_suite/salary_excel.py` | Xcel export + assignment importer |
+| `workforce_suite/run_payroll.py` | Creates draft salary slips from policy + assignment |
+| `workforce_suite/payroll_rules.py` | Wage maths (fallback constants only — structure wins) |
+| `workforce_suite/payroll_policy.py` | Resolves the policy for an employee |
+| `workforce_suite/effective_policy_rules.py` | Deterministic override precedence |
+| `workforce_suite/deduction_rules.py` | Deductions + totals (honours `do_not_include_in_total`) |
+| `workforce_suite/biometric/worker.py` | Bridge punch → Employee Checkin |
+| `workforce_suite/biometric/state_store.py` | Sync cursors and event log |
 | `install.py` | `after_migrate`: roles, workflows, reports, charts, workspace, property setters |
 | `api.py` | Whitelisted device RPCs |
 

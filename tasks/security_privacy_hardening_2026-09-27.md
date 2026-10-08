@@ -9,7 +9,7 @@ Branch: `fix/security-privacy-hardening`. Local isolated v16 staging only.
   identifiers to Attendance Officer, Factory Supervisor and Branch/Department
   Manager. Employee native field permission level 1 now protects `ctc`,
   `bank_ac_no`, `iban`. Native HR/System Manager and intended financial readers
-  retain access; only native HR/System Manager and Tradexcel HR Manager write
+  retain access; only native HR/System Manager and Workforce Suite Manager write
   these fields. This adds no document access. Operational + Employee role union
   does not reveal the fields. Native API and list-field filtering are tested;
   native print/export field permissions remain authoritative.
@@ -30,7 +30,7 @@ Branch: `fix/security-privacy-hardening`. Local isolated v16 staging only.
   request identity and native eligibility are checked at dispatch and execution.
   Native processing, savepoints and private result handling remain in `super()`.
   Tool read is the native action-access permission; no singleton write grant.
-- Mixed native HR User + Tradexcel HR Manager was incorrectly restricted to
+- Mixed native HR User + Workforce Suite Manager was incorrectly restricted to
   Assign Shift. Native-role precedence now works in Python and form JS.
   Custom-only operators still cannot schedule/process requests.
 - `get_live_locations` returned an out-of-scope synthetic location; supervisor

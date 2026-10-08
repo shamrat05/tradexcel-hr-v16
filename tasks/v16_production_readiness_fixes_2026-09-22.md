@@ -7,15 +7,15 @@ changed.
 ## Implemented
 
 - Company-sensitive reports now resolve an explicit company or the current
-  user's Frappe default. There is no silent fallback to Tradexcel Ceramics
-  Ltd. EFL remains a separate legal company; TCL Head Office and TCL Factory
-  remain branches under TCL.
+  user's Frappe default. There is no silent fallback to Example Company A
+  Ltd. COMPANY_B remains a separate legal company; COMPANY_A Head Office and Example Factory
+  remain branches under COMPANY_A.
 - The four company-required Script Reports validate Company read permission
   before their raw SQL runs.
 - The seven native Query Reports were exercised through Frappe's real
   `frappe.desk.query_report.run()` path with JSON-style filters. They remain
   native Query Reports; no unnecessary Script Report conversion was made.
-- The Tradexcel HR Desktop tile is normalized to `/desk/tradexcel-hr` in the
+- The Workforce Suite Desktop tile is normalized to `/desk/workforce-suite` in the
   current tab without changing Frappe core or other external links.
 - HR rail report links now pass initial filters through native
   `frappe.route_options`; query strings are no longer embedded into the route
@@ -65,17 +65,17 @@ changed.
 - Python compilation passed.
 - JavaScript syntax checks passed for the navigation and mobile page.
 - Staging assets rebuilt successfully with Node 24 (`bench build --app
-  tradex_hr`) and the staging cache was cleared. The installed system Node 20
+  workforce_suite`) and the staging cache was cleared. The installed system Node 20
   is below the Frappe v16 engine requirement, so the build used an isolated
   Node 24 runner and did not change the system Node installation.
 - All five app-owned Script Reports are present on staging as standard Script
-  Reports with module `Tradexcel HR`.
+  Reports with module `Workforce Suite`.
 
 ## Still configuration-owned before go-live
 
-- An Administrator must assign the fifteen Tradexcel roles to real named
+- An Administrator must assign the fifteen Workforce roles to real named
   users. No user identities were invented or granted access by this change.
-- Each non-admin user's Company User Permission must be tested for TCL or EFL.
+- Each non-admin user's Company User Permission must be tested for COMPANY_A or COMPANY_B.
 - Contabo must serve the mobile page over HTTPS before GPS/camera testing in
   the field. Localhost is a secure-context exception.
 - Face matching remains biometric evidence, not a mathematically perfect
@@ -98,11 +98,11 @@ was:
 
 ```text
 cd /home/sanchita/frappe-bench-v16
-env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests/test_field_attendance_service.py -q
+env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests/test_field_attendance_service.py -q
 20 passed
 ```
 
-Stacked PR: `https://github.com/shamrat05/tradexcel-hr-v16/pull/3`, with base
+Stacked PR: `https://github.com/shamrat05/workforce-suite/pull/3`, with base
 `fix/v16-production-readiness` and head `fix/mobile-offline-time-integrity`.
 It is intentionally not merged. Android airplane-mode E2E was not run because
 no ADB device was available; this remains a release gate, not a development
@@ -120,7 +120,7 @@ Caller audit found:
 | --- | --- | --- |
 | `sync/run_payroll.py` | Untracked compatibility shim to the app runner | Kept as a forwarding shim; CLI now requires explicit site context |
 | Desktop `run_payroll.bat` | Still invokes the old untracked shim without site arguments | Deliberately not changed in this app-repo commit; it now fails closed and must be pointed explicitly at the v16 bench before operator use |
-| `sync/rebuild_tradex.py` | Imports the shim and calls the public runner | Existing-context calls remain valid; an uninitialized call now fails closed instead of selecting the v15 site |
+| `sync/rebuild_workforce.py` | Imports the shim and calls the public runner | Existing-context calls remain valid; an uninitialized call now fails closed instead of selecting the v15 site |
 | `sync/smoke_manual_payroll_drafts.py` | Uses draft helpers only | Unchanged; it remains a rollback-only smoke utility |
 | `sync/audit_salary_coverage.py` | Uses source-salary helpers for comparison | Preserved; source JSON is audit-only and never a payroll input |
 | app tests | Previously covered only `_create_manual_slip` | Added preflight and orchestration regression coverage |
@@ -159,9 +159,9 @@ Verification on this branch:
 
 ```text
 cd /home/sanchita/frappe-bench-v16
-env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests/test_payroll_safety.py apps/tradex_hr/tradex_hr/tests/test_payroll_draft.py apps/tradex_hr/tradex_hr/tests/test_payroll_rules.py -q
+env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests/test_payroll_safety.py apps/workforce_suite/workforce_suite/tests/test_payroll_draft.py apps/workforce_suite/workforce_suite/tests/test_payroll_rules.py -q
 21 passed
 
-env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q
+env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests -q
 174 passed, 2 skipped
 ```

@@ -12,7 +12,7 @@ mergeable on the expected base.
   captured 80 hours earlier was stripped by the implicit 72-hour fallback,
   including its selfie/GPS payload, before the server's configured 120-hour
   maximum could load.
-- A site-backed test using synthetic scoped personas showed both a Tradexcel
+- A site-backed test using synthetic scoped personas showed both a Workforce
   HR/Attendance Officer and Branch Manager could POST a mobile Checkin for a
   different scoped Employee. A second test showed `attach_selfie()` accepted
   another owned private File and changed the Checkin's canonical selfie URL.
@@ -67,7 +67,7 @@ to call `_assert_employee_self`.
 
 Full: 666 passed, 0 skipped, 109 warnings. Compileall passed; 61 tracked app
 JSON files parsed; all app source checks passed (239 Python, 61 JSON, 30 JS).
-Node 24.15.0 syntax check, `bench build --app tradex_hr`, staging release smoke
+Node 24.15.0 syntax check, `bench build --app workforce_suite`, staging release smoke
 (13 standard reports, DB port 3307) and `git diff --check` passed.
 
 Tests use unique synthetic Users, Files, Employees, Checkins, Field Duty and

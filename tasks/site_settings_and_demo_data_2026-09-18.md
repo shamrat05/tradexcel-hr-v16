@@ -77,7 +77,7 @@ def clear_demo_data():
 ```
 
 `Global Defaults.demo_company = "Shamrat (Demo)"`, but `tabCompany` contains
-only `Tradexcel Ceramics Ltd.` and `Elegance Footwear Ltd.`. The demo company was
+only `Example Company A` and `Example Company B`. The demo company was
 removed at some point without running the cleanup, so
 `create_transaction_deletion_record("Shamrat (Demo)")` cannot resolve the company
 and the whole transaction rolls back.
@@ -90,7 +90,7 @@ appear in the Company list.
 
 `Global Defaults.default_company = "Shamrat"` — also a company that no longer
 exists. It is currently harmless because the effective default comes from
-`tabDefaultValue.company = "Tradexcel Ceramics Ltd."`, but it should be cleaned
+`tabDefaultValue.company = "Example Company A"`, but it should be cleaned
 up alongside.
 
 ### Options
@@ -109,7 +109,7 @@ suppliers present, so there is nothing real interleaved with them.
 
 **Backup first.** `bench --site hrms.localhost backup --with-files` produced a
 2.8 MiB database dump plus public/private files, mirrored to
-`Desktop/tradex_hr_backup_20260918/site_backup_before_demo_removal/`.
+`Desktop/workforce_suite_backup_20260918/site_backup_before_demo_removal/`.
 
 **Frappe's own path was proven impossible before touching data.** A trial
 (cancelled and rolled back) showed every doctype refuses to cancel, because the
@@ -134,7 +134,7 @@ Deleted, in dependency order:
 | Submitted transactions | Payment Entry 5, Sales Invoice 5, Purchase Invoice 6, Sales Order 5, Purchase Order 10 (**31 docs**, plus their child tables) |
 | Ledger rows for the phantom company | GL Entry 42, Payment Ledger Entry 16, Stock Ledger Entry 16 (Repost Item Valuation 0) |
 | Demo masters | Customer 3, Supplier 3, Item 10, plus `Demo Item Group`, `Demo Customer Group`, `Demo Supplier Group` |
-| Stale pointers | `demo_company` → empty, `default_company` `Shamrat` → `Tradexcel Ceramics Ltd.` |
+| Stale pointers | `demo_company` → empty, `default_company` `Shamrat` → `Example Company A` |
 
 **Verified after:**
 
@@ -143,8 +143,8 @@ Deleted, in dependency order:
 | Transactions under the phantom company | 0 |
 | Ledger rows under the phantom company | 0 |
 | Documents named like `%Demo%` | 0 |
-| Global Defaults | `demo_company` empty, `default_company = Tradexcel Ceramics Ltd.` |
-| `tabDefaultValue.company` | `Tradexcel Ceramics Ltd.` (now consistent with the above) |
+| Global Defaults | `demo_company` empty, `default_company = Example Company A` |
+| `tabDefaultValue.company` | `Example Company A` (now consistent with the above) |
 | Real data | 2 companies, 241 Employees, 10 Warehouses — unchanged |
 | Site health | `/login` 200, `/api/method/ping` 200, no error-log entries |
 
@@ -170,4 +170,4 @@ up the new value without a server restart.
 
 It previously read `Shamrat`, a company that does not exist — a latent bug that
 would surface wherever `Global Defaults.default_company` is consulted. It is now
-set to `Tradexcel Ceramics Ltd.`, matching the effective `tabDefaultValue.company`.
+set to `Example Company A`, matching the effective `tabDefaultValue.company`.

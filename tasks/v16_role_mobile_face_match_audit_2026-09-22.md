@@ -7,12 +7,12 @@ environment were not changed.
 
 ## Findings
 
-- All 15 `Tradexcel *` roles exist.
+- All 15 `Workforce *` roles exist.
 - All 15 have zero assignments to real Frappe Users (`Has Role.parenttype =
   User`). Role rows attached to Reports and Pages are not user assignments.
-- `Tradex Mobile Event`, `Tradexcel Attendance Policy`, and the
-  `tradexcel-mobile-attendance` Page exist.
-- `Tradex Face Match Settings` is a Single DocType. It was present in source
+- `Workforce Mobile Event`, `Workforce Attendance Policy`, and the
+  `workforce-mobile-attendance` Page exist.
+- `Workforce Face Match Settings` is a Single DocType. It was present in source
   but had not been migrated into the staging schema before this audit.
 - The staging site had no face model files. A test policy named
   `LOCAL FACE DISTANCE TEST - DELETE` and the single face-match setting were
@@ -31,7 +31,7 @@ environment were not changed.
 
 ## Implementation guard
 
-Saving enabled `Tradex Face Match Settings` now validates all of the following:
+Saving enabled `Workforce Face Match Settings` now validates all of the following:
 
 - the optional OpenCV provider is installed in the active bench environment;
 - both configured model paths are site-relative;

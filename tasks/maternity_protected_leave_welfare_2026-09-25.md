@@ -9,7 +9,7 @@ Parent: `feat/flexible-factory-work-policy` at `d80d2c94a6f8b4cfff8d568d8950fb99
 
 This change adds source-linked, company-scoped maternity Rule Sets, restricted employee-specific Maternity Reviews, an independent maternity separation review, and an establishment-level Workplace Welfare Review. Native Leave Application, Attendance, Leave Ledger, Employee Separation, Full & Final, and Payroll remain authoritative.
 
-Maternity eligibility and actual delivery evidence are restricted to Tradexcel HR Manager and Owner/Director. Payroll Readiness receives generic finding codes and messages only. The implementation does not infer pregnancy from gender and stores no diagnosis, medical narrative, or child identity data.
+Maternity eligibility and actual delivery evidence are restricted to Workforce Suite Manager and Owner/Director. Payroll Readiness receives generic finding codes and messages only. The implementation does not infer pregnancy from gender and stores no diagnosis, medical narrative, or child identity data.
 
 Maternity salary payment is deliberately not automated. The read-only inspection returns no amount and reports a review state. Monthly gross / divisor, average wages / actual days worked, or manual legal review are explicit Rule Set configurations; no salary component is selected by name heuristics. No Additional Salary or Journal Entry is created.
 
@@ -23,7 +23,7 @@ Official amendment: [Bangladesh Labour (Amendment) Act, 2026](https://bdlaws.min
 
 Separate regime: [Bangladesh EPZ Labour Act, Chapter III](https://bdlaws.minlaw.gov.bd/act-1285/act-chapter-print-2175.html). It has distinct maternity durations and wage-average treatment. Rule Sets require an explicit regime; no general-Labour-Act fallback is provided.
 
-Welfare source: [BDLaws, Bangladesh Labour Act](https://bdlaws.minlaw.gov.bd/act-print-952.html), sections 89 and 94. The code accepts reviewed workforce counts and evidence as inputs; it does not assert that the statutory thresholds apply to TCL or EFL.
+Welfare source: [BDLaws, Bangladesh Labour Act](https://bdlaws.minlaw.gov.bd/act-print-952.html), sections 89 and 94. The code accepts reviewed workforce counts and evidence as inputs; it does not assert that the statutory thresholds apply to COMPANY_A or COMPANY_B.
 
 These references are source provenance for configuration design, not a legal applicability decision for either company.
 
@@ -31,7 +31,7 @@ These references are source provenance for configuration design, not a legal app
 
 The most recent read-only site audit found one Leave Type with maternity-like naming, five Leave Allocations, and zero Leave Applications. These are counts only; existing Leave configuration and allocations were not changed.
 
-The new Maternity Rule Set, Maternity Review, and Workplace Welfare tables are not installed on the local site because no migration was run. Consequently the site has no operative rules or cases from this feature. Operational branch employee counts previously observed were EFL H.O. 2, TCL without branch 1, TCL Factory 227, and Tradexcel HQ 12; these are operational counts only, not legal worker counts.
+The new Maternity Rule Set, Maternity Review, and Workplace Welfare tables are not installed on the local site because no migration was run. Consequently the site has no operative rules or cases from this feature. Operational branch employee counts previously observed were COMPANY_B H.O. 2, COMPANY_A without branch 1, Example Factory 227, and Workforce HQ 12; these are operational counts only, not legal worker counts.
 
 ## Native Leave proof
 
@@ -49,14 +49,14 @@ A synthetic company, employee, Leave Type, Leave Period, Leave Allocation, Leave
 
 Focused maternity and native Payroll Readiness tests: 32 passed.
 Native Leave integration on the local site: passed; synthetic records cleaned.
-Full Tradexcel suite: 532 passed, 3 skipped, 36 upstream deprecation warnings.
+Full Workforce suite: 532 passed, 3 skipped, 36 upstream deprecation warnings.
 Compileall, all-app JSON validation, JavaScript syntax, build, and diff checks are recorded in the completion report.
 
 No migration, site configuration change, production access, real employee maternity data, real Leave mutation, or real payroll mutation was performed. The original local MariaDB on 127.0.0.1:3307 remained the configured site database; the app returned HTTP 200.
 
 ## Follow-up verification — 2026-09-25
 
-The initial source-only status above records the state before the authorized v16 staging migration. The standard `bench --site hrms-v16.localhost migrate` and `clear-cache` have since completed. All four requested DocTypes and their tables now exist on staging. The linked `Tradexcel Maternity Leave Application` child DocType was also installed and its controller resolves under Tradexcel HR.
+The initial source-only status above records the state before the authorized v16 staging migration. The standard `bench --site hrms-v16.localhost migrate` and `clear-cache` have since completed. All four requested DocTypes and their tables now exist on staging. The linked `Workforce Maternity Leave Application` child DocType was also installed and its controller resolves under Workforce Suite.
 
 The first migration found stale child-DocType metadata registered under Frappe Core and removed that orphan. A versioned pre-model-sync patch now repairs the module on stale rows or imports the source child DocType when absent, preserving existing child rows. The native Leave link integration passed after the migration retry.
 
@@ -64,4 +64,4 @@ The migrated synthetic integration exercised DocPerm rows, Frappe `has_permissio
 
 The full-suite run exposed two remaining Employee Separation references to a nonexistent `Employee Separation.relieving_date`. Both the separation submission and Full and Final hooks now read the canonical `Employee.relieving_date`. The native separation and statutory-exit regression cases passed after the fix.
 
-Final verification: focused maternity tests 34 passed; native maternity integration 2 passed; all 59 Tradexcel app JSON files parsed; compileall passed; final full Tradexcel suite 542 passed, 2 skipped, 39 upstream deprecation warnings. No production site, real employee, payroll, or Leave records were changed.
+Final verification: focused maternity tests 34 passed; native maternity integration 2 passed; all 59 Workforce app JSON files parsed; compileall passed; final full Workforce suite 542 passed, 2 skipped, 39 upstream deprecation warnings. No production site, real employee, payroll, or Leave records were changed.

@@ -49,13 +49,13 @@ Permissions; period Company must match the selected Company. Policy mode
 requires a readable submitted Leave Policy. The latest-period lookup checks
 Company access before invoking HRMS. Native HR users without Company read
 DocPerm retain native tool access through Frappe's User Permission evaluation;
-pure Tradexcel HR Managers need explicit Company scope.
+pure Workforce Suite Managers need explicit Company scope.
 An additional `before_submit` hook on native Leave Policy Assignment prevents
 the same draft-policy bypass through the direct per-record API. It leaves the
 native assignment and allocation documents authoritative and adds no approval
 record.
 
-Tradexcel HR Manager is the sole custom entitlement administrator for this
+Workforce Suite Manager is the sole custom entitlement administrator for this
 tool. The minimum extra native permissions are Leave Control Panel read;
 Leave Allocation submit on top of existing draft rights; Leave Policy
 Assignment read/create/write/submit; and select/read on Leave Policy, Leave
@@ -89,7 +89,7 @@ direct metadata SQL was used.
 
 Focused native leave integration: 1 passed. The broader persona, role,
 company, report and working-time suite passed 40 tests before the last
-Company/period/policy checks. The final serial full Tradexcel suite passed
+Company/period/policy checks. The final serial full Workforce suite passed
 **594 tests, 0 skipped, 66 warnings**. A prior overlapping site-backed run
 had one `tabSeries` deadlock in an unrelated separation test; that test passed
 alone and the subsequent exclusive full run passed. Python compileall, all

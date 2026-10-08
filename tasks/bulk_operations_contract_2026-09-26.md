@@ -6,19 +6,19 @@ configuration. Native Frappe/HRMS documents remain the only ledgers.
 
 | Domain | Classification | Canonical route and boundary |
 | --- | --- | --- |
-| Shift | NATIVE_SECURED | HRMS Shift Assignment Tool, with the Tradexcel selected-Employee scope extension; submitted native Shift Assignment. |
-| Salary / SSA | DRAFT_NATIVE_WORKFLOW | HRMS Bulk Salary Structure Assignment surface prepares draft native SSAs for Tradexcel makers; independent Payroll Approver submits. |
+| Shift | NATIVE_SECURED | HRMS Shift Assignment Tool, with the Workforce selected-Employee scope extension; submitted native Shift Assignment. |
+| Salary / SSA | DRAFT_NATIVE_WORKFLOW | HRMS Bulk Salary Structure Assignment surface prepares draft native SSAs for Workforce makers; independent Payroll Approver submits. |
 | Attendance correction | DRAFT_NATIVE_WORKFLOW | Daily Attendance Board prepares draft native Attendance Requests; independent approver submits, allowing HRMS to create/update native Attendance. |
 | Leave entitlement | NATIVE_SECURED | HRMS Leave Control Panel, with selected-Employee scope and reviewed Leave Policy/Period configuration. No invented entitlement. |
-| Overtime | DRAFT_NATIVE_WORKFLOW | Tradexcel preview prepares draft native Overtime Slips; Payroll Approver submits and HRMS produces native Additional Salary. |
+| Overtime | DRAFT_NATIVE_WORKFLOW | Workforce preview prepares draft native Overtime Slips; Payroll Approver submits and HRMS produces native Additional Salary. |
 | Employee master data | INTENTIONALLY_PER_RECORD | Native Employee form for ordinary fields; native Transfer/Promotion for guarded lifecycle fields. Frappe Data Import remains System Manager-controlled pending its queued authorization review. |
 | Onboarding / import | INTENTIONALLY_PER_RECORD | Native Job Opening → Applicant → Offer → Onboarding → Employee, or reviewed direct hire. Native Data Import is available only to its authorized administrator. |
 | Transfer | INTENTIONALLY_PER_RECORD | Native Employee Transfer and Internal Work History. No direct bulk Employee department/branch rewrite. |
 | Promotion | INTENTIONALLY_PER_RECORD | Native Employee Promotion and Internal Work History, with submitted SSA for financial changes. |
 | Exits | INTENTIONALLY_PER_RECORD | Native Employee Separation, relieving date, and Full and Final Statement. No mass exit action without an approved need. |
 | Payroll blockers | ALREADY_COMPLETE | Resolve each at its authority: Attendance Request, Shift Assignment Tool, SSA, Overtime Slip, tax/account setup, native Payroll Entry or payment evidence. No “fix everything” endpoint. |
-| Statutory classification | BLOCKED_CONFIGURATION | Explicit reviewed, effective-dated classification in existing Tradexcel review DocTypes. Legal scope and rates require an owner/legal decision. |
-| Benefit enrollment | BLOCKED_CONFIGURATION | Explicit reviewed enrollment snapshots in existing Tradexcel DocTypes; native payroll/accounting remain financial authority. |
+| Statutory classification | BLOCKED_CONFIGURATION | Explicit reviewed, effective-dated classification in existing Workforce review DocTypes. Legal scope and rates require an owner/legal decision. |
+| Benefit enrollment | BLOCKED_CONFIGURATION | Explicit reviewed enrollment snapshots in existing Workforce DocTypes; native payroll/accounting remain financial authority. |
 
 ## Employee Data Gaps convergence
 
@@ -52,7 +52,7 @@ report convergence tests.
 Installed Frappe `DataImport.validate_doctype` requires import permission on
 the target DocType. `Importer.update_record` loads the existing Employee and
 saves it through normal validation; an existing Employee's guarded lifecycle
-field update was rejected in a synthetic site-backed test. Tradexcel HR Manager
+field update was rejected in a synthetic site-backed test. Workforce Suite Manager
 currently lacks Employee `import` and Data Import `create`, so no custom role
 was granted general import access in this phase. Frappe's background-job retry
 path warrants a focused security review before broader import provisioning:

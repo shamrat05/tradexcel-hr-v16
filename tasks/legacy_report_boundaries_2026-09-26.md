@@ -8,7 +8,7 @@ current stack; earlier reviewed report PRs are not rewritten.
 ## Reproduced baseline
 
 Synthetic native Employees, Checkins, a submitted SSA and a draft Salary Slip
-were created under scoped Tradexcel roles and explicitly removed afterwards.
+were created under scoped Workforce roles and explicitly removed afterwards.
 No real record values were printed or modified.
 
 - Attendance Officer + Company/Branch/Department permissions: Workforce Anomaly
@@ -63,7 +63,7 @@ implicit pagination necessarily truncated this runtime was too strong.
   verified; exact sizes/SHA-256 are in `BACKUPS.md`.
 - Standard `bench migrate` and `clear-cache` completed. Both affected Reports
   remain standard Script Reports with empty saved JavaScript; canonical
-  `tradexcel-hr` Workspace is present. No direct metadata SQL was used.
+  `workforce-suite` Workspace is present. No direct metadata SQL was used.
 - Node 24 syntax and app build passed. Compileall, 61 JSON parses and
   `git diff --check` passed before final full-suite execution.
 - Both `SOLRPT` and `SOLPAGE` markers were zero for Users, User Permissions,
@@ -94,7 +94,7 @@ run is required before commit.
 
 The fresh full run completed: **602 passed, 0 failed, 0 skipped**, 74 warnings
 in 417.00 seconds. Command from the v16 bench:
-`env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q --disable-warnings`.
+`env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests -q --disable-warnings`.
 Compileall, all 61 tracked JSON parses, Node 24 syntax and `git diff --check`
 also passed. The earlier Node 24 app build and standard migration remain the
 applicable evidence; no further asset or metadata changes followed them.

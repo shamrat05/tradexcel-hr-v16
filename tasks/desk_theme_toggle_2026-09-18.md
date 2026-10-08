@@ -28,7 +28,7 @@ make() {
 }
 ```
 
-Shipped as `tradex_hr/public/js/tradex_hr.bundle.js`, referenced by bundle name
+Shipped as `workforce_suite/public/js/workforce_suite.bundle.js`, referenced by bundle name
 so the filename is content-hashed (see the asset-caching section of
 `desk_layout_verification_2026-09-18.md`).
 
@@ -93,7 +93,7 @@ frappe.xcall("frappe.core.doctype.user.user.switch_theme", { theme: label });
 | --- | --- |
 | at load | button present in the user menu list, not breadcrumbs |
 | SPA nav → Employee / Attendance / workspace | survives each |
-| full page load → `/app/employee`, `/app/tradexcel-hr` | survives each |
+| full page load → `/app/employee`, `/app/workforce-suite` | survives each |
 | click | `dark → light`, tooltip flips to "Switch to Dark theme" |
 | theme restored, session logged out afterwards | yes |
 

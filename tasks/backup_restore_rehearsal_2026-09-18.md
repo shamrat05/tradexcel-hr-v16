@@ -35,7 +35,7 @@ or schema-only) without needing a second site.
 | --- | --- |
 | Backup file | `20260918_185348-hrms_localhost-database.sql.gz`, 2.8 MiB |
 | `gzip -t` integrity | **OK, not corrupt** |
-| Critical tables present as `CREATE TABLE` | Employee, Attendance, Salary Slip, Tradexcel Employee Biometric, Tradexcel Biometric Device — all **present** |
+| Critical tables present as `CREATE TABLE` | Employee, Attendance, Salary Slip, Workforce Employee Biometric, Workforce Biometric Device — all **present** |
 
 ### Contents verified by counting rows inside the dump
 
@@ -43,8 +43,8 @@ or schema-only) without needing a second site.
 | --- | --- | --- | --- |
 | `tabCompany` | 2 | 2 | matches |
 | `tabEmployee` | 241 | 241 | matches |
-| `tabTradexcel Biometric Device` | 2 | 2 | matches |
-| `tabTradexcel Employee Biometric` | **0** | 221 | expected — the dump predates the import |
+| `tabWorkforce Biometric Device` | 2 | 2 | matches |
+| `tabWorkforce Employee Biometric` | **0** | 221 | expected — the dump predates the import |
 
 So the dump holds the real data, not just the schema.
 
@@ -75,7 +75,7 @@ The earlier 2026-09-18 result remains accurate for that original host: it was a 
 - Target: payroll-migration-check-20260923.localhost in the disposable v16 bench database.
 - Restore: completed through the normal bench restore path.
 - Migration: completed through standard bench migrate with a normal worker running; after_migrate completed.
-- Smoke: app and report metadata loaded. Three file-backed Tradexcel Script Reports were standard/module-owned; four retained Query Report definitions. HTTP report calls passed for the three reports with empty filters and for all seven with their declared filters.
+- Smoke: app and report metadata loaded. Three file-backed Workforce Script Reports were standard/module-owned; four retained Query Report definitions. HTTP report calls passed for the three reports with empty filters and for all seven with their declared filters.
 - No manual ensure_* calls, queue deletion, production-site operation, real payroll submission, or accounting entry creation was part of the rehearsal.
 
 The staging and disposable-site migration evidence, including the verified fresh backup checksums, is recorded in v16_migration_execution_2026-09-22.md. This later rehearsal closes the restore boot/migrate gap for the v16 staging environment only; it does not certify production recovery readiness.

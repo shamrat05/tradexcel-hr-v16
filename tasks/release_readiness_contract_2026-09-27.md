@@ -27,7 +27,7 @@ the isolated v16 bench. No test framework creates a second business ledger.
 ## Fresh install and restore actually executed
 
 Created **sol-neutral-20260927.localhost** using a separate database/user on the
-isolated MariaDB 3307 socket. Installed Frappe → ERPNext → HRMS → Tradexcel from
+isolated MariaDB 3307 socket. Installed Frappe → ERPNext → HRMS → Workforce from
 current local versioned app sources, with a random disposable Administrator
 password never exported. Neutral smoke passed: no Company, Employee, Branch,
 Salary Structure, SSA, payroll, leave entitlement or legal/flexible policy created.
@@ -99,7 +99,7 @@ Frappe installed: **11 passed**. Site-focused release contracts: **12 passed**.
 No app JS changed in this phase, so no redundant asset build; Node 24 checks
 cover all tracked JS. Full final suite/cleanup and GitHub status follow below.
 
-A final runtime-source scan found no hardcoded `350`, TCL Factory/company names,
+A final runtime-source scan found no hardcoded `350`, Example Factory/company names,
 absolute migration paths, custom rail, or `query_report.run` override in app
 Python/JS/CSS outside tests. Historical docs and explicitly synthetic fixtures
 retain contextual names. No critical implementation exists only in bench sync.
@@ -174,7 +174,7 @@ ported into `fix/release-lineage-security-closure` on top of #42, preserving lat
 scope/privacy/performance work. Do not blindly merge old #3 after accepting this
 correction. It remains open; no historical branch was rewritten or closed.
 
-[PR #43](https://github.com/shamrat05/tradexcel-hr-v16/pull/43) exposes the seven
+[PR #43](https://github.com/shamrat05/workforce-suite/pull/43) exposes the seven
 already-existing commits from `fix/v16-production-readiness` to
 `fix/payroll-p0-safety` (`e39068819a20569319f0b21a1d81cd7e5ccfd995`). No commit
 was added to that historical branch. #43 is open/draft/mergeable and precedes #4.
@@ -194,7 +194,7 @@ remote CI PASS. No rerun or account-setting workaround was attempted. Phase K
 remains **BLOCKED** until remote checks execute and the separate framework/source
 and external release gates are resolved.
 
-Correction publication: [PR #44](https://github.com/shamrat05/tradexcel-hr-v16/pull/44)
+Correction publication: [PR #44](https://github.com/shamrat05/workforce-suite/pull/44)
 is open/draft/mergeable, base `test/release-readiness-contract`, head
 `fix/release-lineage-security-closure`. Eventual order is **#2 → #43 → #4 … #42
 → #44**; old #3 is superseded by #44, while #1 remains independent docs.

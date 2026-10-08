@@ -1,7 +1,7 @@
 # Statutory applicability review integrity
 
 The employee-specific legal applicability decision is made by an authorized
-Tradexcel Owner/Director with explicit company scope. The creator of the
+Workforce Owner/Director with explicit company scope. The creator of the
 Employee Separation cannot approve or mark their own separation as outside
 worker scope, even if they also hold the Owner/Director role. Administrator
 remains an administrative bypass.

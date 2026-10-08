@@ -1,16 +1,16 @@
 # Checkout consolidation — 2026-09-18
 
-Execution report for consolidating the Tradexcel HR working trees onto a single
+Execution report for consolidating the Workforce Suite working trees onto a single
 canonical checkout, and removing the false-diff that had been masking real state.
 
 ## Problem found
 
-Two independent clones of `shamrat05/tradexcel-hr` existed and had diverged:
+Two independent clones of `shamrat05/workforce-suite` existed and had diverged:
 
 | Clone | Path | HEAD before | Reported dirty |
 | --- | --- | --- | --- |
-| Windows mirror | `/mnt/c/Users/Sanchita/Desktop/tradexcel-hr-audit-app` | `93e66ad` (`main`) | 78 files, 4 untracked |
-| WSL bench | `/home/sanchita/frappe-bench/apps/tradex_hr` | `2c45bb2` (`fix/device-rpc-authorization`) | 2 files, 2 untracked |
+| Windows mirror | `/mnt/c/Users/Sanchita/Desktop/workforce-suite-audit-app` | `93e66ad` (`main`) | 78 files, 4 untracked |
+| WSL bench | `/home/sanchita/frappe-bench/apps/workforce_suite` | `2c45bb2` (`fix/device-rpc-authorization`) | 2 files, 2 untracked |
 
 Three risks fell out of this:
 
@@ -23,14 +23,14 @@ Three risks fell out of this:
    the unpushed local branch `fix/device-rpc-authorization`, which had no remote
    tracking. `main` (`93e66ad`) contained none of it.
 3. **The Windows clone was not the runtime.** `~/frappe-bench/sites/apps.txt`
-   lists `tradex_hr`, so Frappe loads the WSL bench directory only. Edits in the
+   lists `workforce_suite`, so Frappe loads the WSL bench directory only. Edits in the
    Windows tree could never affect the running app.
 
 ## Actions taken
 
 1. **Backup before any change.** Created a verified bundle of the full bench
    repository plus copies of the four Desktop-only files:
-   `Desktop/tradex_hr_backup_20260918/` (bundle v2 format; `git bundle verify`
+   `Desktop/workforce_suite_backup_20260918/` (bundle v2 format; `git bundle verify`
    reported *"records a complete history"*). Pre-change HEADs recorded in
    `bench_HEAD_before.txt` / `desktop_HEAD_before.txt`.
 2. **Rescued the four Windows-only files into the canonical tree.** Three were

@@ -1,6 +1,6 @@
 > Historical 2026-09-17 snapshot. The v16 bench has no `sync/` runtime; do not follow the old sync audit commands below. Current source-backed checks are `scripts/release_smoke.py`, `scripts/run_release_integration.sh` and [the release contract](../tasks/release_readiness_contract_2026-09-27.md). Current configuration counts are in [the Business Configuration Gate](../tasks/business_configuration_gate_2026-09-26.md).
 
-# Tradexcel HR launch gate — 17 September 2026
+# Workforce Suite launch gate — 17 September 2026
 
 This is a site-specific audit, not a claim that the system is production-ready.
 Run `sync/audit_hrms_readiness.py` and `sync/audit_all_salary_slips.py` from the
@@ -21,7 +21,7 @@ bench's `sites` directory whenever data or configuration changes.
 - 124 worker draft slips across August/September have zero gross pay (66 in
   September). These require punch/identity/leave/reconciliation review; do not
   auto-pay or invent wages.
-- Only two enabled Users and no assigned Tradexcel-specific roles were found.
+- Only two enabled Users and no assigned Workforce-specific roles were found.
   A role or workflow definition alone does not grant anybody authority.
 - Administrator can create a User, assign multiple roles to that User, and add
   User Permission records for Company, Branch, or Department. The payroll
@@ -36,7 +36,7 @@ bench's `sites` directory whenever data or configuration changes.
 Frappe HR already has Employee Onboarding/Promotion/Transfer/Separation,
 Full and Final Statement, Leave Application, Attendance Request, Salary Slip,
 and Data Import for bulk inserts/updates. They are **not** configured and
-end-to-end verified for Tradexcel merely because their DocTypes are installed.
+end-to-end verified for Workforce merely because their DocTypes are installed.
 
 1. **Money gate:** reconcile zero-wage drafts and salary assignment coverage;
    choose the tax year/slab, company PF/gratuity decisions, payment accounts,
@@ -49,9 +49,9 @@ end-to-end verified for Tradexcel merely because their DocTypes are installed.
    formats; exercise promotion, transfer, leave, attendance regularization and
    full-and-final on sample employees. Do not rebuild standard flows needlessly.
 4. **Scale gate:** use standard Data Import for reviewed bulk inserts/updates;
-   add preview, row-level validation, dry-run and rollback for Tradexcel-specific
+   add preview, row-level validation, dry-run and rollback for Workforce-specific
    mass rules. The legacy Selevo bulk importer is **not** safe as the future
-   incremental feed: it matches by name, invents missing dates, and assumes TCL.
+   incremental feed: it matches by name, invents missing dates, and assumes COMPANY_A.
 5. **Decision gate:** a daily queue should group missing punches, duplicate PINs,
    unmatched employees, zero/negative wages, late/OT anomalies, and leave
    conflicts, with owner, due date, evidence and resolution. A dashboard count
@@ -66,7 +66,7 @@ and restore tests pass.
 ## Administrator access setup
 
 In Desk, open **User** to create/enable a login and attach its Employee record.
-One User can hold several Tradexcel roles; assign only the responsibilities that
+One User can hold several Workforce roles; assign only the responsibilities that
 person actually performs. Use **User Permission** for the permitted Company,
 Branch, and Department; use **Role Permission Manager** to inspect DocType
 actions. Test with that user's own login—Administrator bypasses ordinary

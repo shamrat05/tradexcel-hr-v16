@@ -4,7 +4,7 @@
 
 Implemented on `feat/bulk-attendance-corrections`, starting at `2ebf51b223090a891b42976ea2e036e996ff37fd`, stacked on `fix/converge-shift-bulk-path`. The work adds one-day bulk preparation of native Attendance Requests from the Daily Attendance Board. Native Attendance remains the final payable record. No generic bulk framework or second attendance ledger was added.
 
-Runtime used: Frappe 16.34.0, ERPNext 16.35.0, HRMS 16.19.0, Tradexcel HR 0.1.0, staging MariaDB `127.0.0.1:3307`.
+Runtime used: Frappe 16.34.0, ERPNext 16.35.0, HRMS 16.19.0, Workforce Suite 0.1.0, staging MariaDB `127.0.0.1:3307`.
 
 ## Native behavior relied on
 
@@ -16,7 +16,7 @@ Installed HRMS sources inspected:
 - `apps/frappe/frappe/desk/doctype/bulk_update/bulk_update.py`: `submit_cancel_or_update_docs`, used by native List View bulk submit.
 - `apps/hrms/hrms/hr/doctype/employee_checkin/employee_checkin.py`: Checkins are evidence and not payable Attendance.
 
-Native Attendance Request validates the Employee and date span, resolves shifts, rejects overlapping requests, and produces warnings for holidays, approved leave, unchanged status, or existing Attendance. Submission applies its supported result through native Attendance creation/update. Cancellation cancels Attendance linked by the Request. The custom approver's broad Attendance write permission would be needed for that cancellation path, so Tradexcel Attendance Correction Approver is submit-only; native HR roles retain native behavior.
+Native Attendance Request validates the Employee and date span, resolves shifts, rejects overlapping requests, and produces warnings for holidays, approved leave, unchanged status, or existing Attendance. Submission applies its supported result through native Attendance creation/update. Cancellation cancels Attendance linked by the Request. The custom approver's broad Attendance write permission would be needed for that cancellation path, so Workforce Attendance Correction Approver is submit-only; native HR roles retain native behavior.
 
 ## Baseline defect and corrected report semantics
 
@@ -26,7 +26,7 @@ The report now exposes optional Branch and Department filters. Server-side rows 
 
 ## Bulk flow and authorization
 
-`tradex_hr/tradexcel_hr/attendance_corrections.py` exposes two POST APIs: a read-only server preview and a draft preparation action. It accepts only one date and these mappings:
+`workforce_suite/workforce_suite/attendance_corrections.py` exposes two POST APIs: a read-only server preview and a draft preparation action. It accepts only one date and these mappings:
 
 - Present → native reason `On Duty`, not half day.
 - Half Day → native reason `On Duty`, `half_day=1`, native `half_day_date` set to the selected day.
@@ -40,15 +40,15 @@ Preview integration cases include out-of-Branch, out-of-Department, cross-Compan
 
 ## Maker/checker and native approval
 
-Before the maker/checker guard, Frappe's role union gave a synthetic combined HR Manager + Attendance Correction Approver both create and submit permissions. A site-backed regression temporarily bypasses only the Tradexcel submit guard on a synthetic draft and proves that native submission succeeds for its owner and creates Attendance. With the guard restored, the same combined user cannot submit its own draft. A separate Attendance Correction Approver can submit, has no create permission, and is rechecked against current employee scope at submit.
+Before the maker/checker guard, Frappe's role union gave a synthetic combined HR Manager + Attendance Correction Approver both create and submit permissions. A site-backed regression temporarily bypasses only the Workforce submit guard on a synthetic draft and proves that native submission succeeds for its owner and creates Attendance. With the guard restored, the same combined user cannot submit its own draft. A separate Attendance Correction Approver can submit, has no create permission, and is rechecked against current employee scope at submit.
 
-The native List View bulk submit endpoint `frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs` was exercised. It called HRMS `AttendanceRequest.on_submit`, which created one submitted Attendance for a missing date and updated an existing submitted Absent record in place. A synthetic failing Tradexcel Attendance hook prevented the overwrite before the native submit proceeded, proving the project Attendance validation is not bypassed by HRMS's `db_set` update path.
+The native List View bulk submit endpoint `frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs` was exercised. It called HRMS `AttendanceRequest.on_submit`, which created one submitted Attendance for a missing date and updated an existing submitted Absent record in place. A synthetic failing Workforce Attendance hook prevented the overwrite before the native submit proceeded, proving the project Attendance validation is not bypassed by HRMS's `db_set` update path.
 
 Custom Attendance Correction Approver cancellation was removed. HRMS cancellation calls native Attendance cancellation, for which granting Attendance write would also expose direct Attendance mutation. Administrator control cancellation proves the native relationship behavior; custom approvers use submit-only review. Cancellation and submission both check for a submitted Salary Slip overlapping the request date.
 
 ## Finalization and payroll-consumed history
 
-A synthetic finalized `Tradexcel Attendance Period` was created with the live attendance hash. After native request approval changed Attendance, the live hash differed while the stored finalized hash remained unchanged. No auto-refresh occurs.
+A synthetic finalized `Workforce Attendance Period` was created with the live attendance hash. After native request approval changed Attendance, the live hash differed while the stored finalized hash remained unchanged. No auto-refresh occurs.
 
 A second site-backed test created a disposable company, Employee, submitted SSA, Salary Structure, and an actual native submitted Salary Slip using HRMS `make_salary_slip` and the normal `submit()` controller path. Against that submitted slip, Attendance Request submission and cancellation both raised the payroll-consumed validation. The Salary Slip remained submitted throughout the assertions, was not changed by the Attendance Request, and was explicitly removed before its dependent synthetic masters. This standalone synthetic slip did not use Payroll Entry or create an accounting accrual; full managed payroll integration is already covered by existing repository tests.
 
@@ -58,9 +58,9 @@ Role metadata changed: Attendance Correction Approver now has Employee select/re
 
 ## Tests and cleanup
 
-Latest final full suite: `585 passed, 0 skipped` (`pytest apps/tradex_hr/tradex_hr/tests -q`). Final focused attendance correction integration: `3 passed`; attendance unit + integration: `10 passed`. The broader focused run also passed 109 relevant attendance, reporting, persona, maternity, mobile/biometric, and boundary tests before the final incremental synthetic holiday/leave additions; the full suite was rerun after those additions.
+Latest final full suite: `585 passed, 0 skipped` (`pytest apps/workforce_suite/workforce_suite/tests -q`). Final focused attendance correction integration: `3 passed`; attendance unit + integration: `10 passed`. The broader focused run also passed 109 relevant attendance, reporting, persona, maternity, mobile/biometric, and boundary tests before the final incremental synthetic holiday/leave additions; the full suite was rerun after those additions.
 
-Python compileall, JSON parsing, `git diff --check`, Node 24 syntax validation, and `bench build --app tradex_hr` passed. The build emitted only the existing outdated Browserslist data notice.
+Python compileall, JSON parsing, `git diff --check`, Node 24 syntax validation, and `bench build --app workforce_suite` passed. The build emitted only the existing outdated Browserslist data notice.
 
 Synthetic cleanup explicitly removes Users, User Permissions, Employees, Attendance Requests, Attendance, Checkins, Attendance Periods, Holiday List Assignments/Lists, Leave Applications, Leave Allocations/Periods, Salary Slips, Salary Structure Assignments, Salary Structures, Salary Components, and the disposable payroll Company. Leave Ledger Entry rows for synthetic Leave Applications/Allocations are asserted absent. Tests use explicit cleanup because native operations can commit.
 

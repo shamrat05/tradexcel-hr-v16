@@ -28,28 +28,28 @@ structures instead of 28**, and one place to change a split.
 | Overtime Pay | OT | — | per Payroll Policy |
 
 A Salary Component is a **global master**; a structure references it. That is why
-adding `EFL Standard` required no new components — only a second wrapper.
+adding `Example Secondary Monthly` required no new components — only a second wrapper.
 
 ### Structures (3)
 
 | Structure | Company | Pay basis | Earnings |
 | --- | --- | --- | --- |
-| `TCL Standard` | Tradexcel Ceramics Ltd. | Monthly | BS 60% · HRA 30% · MED 5% · CON 5% · ENT 0 |
-| `EFL Standard` | Elegance Footwear Ltd. | Monthly | identical split, same components |
-| `TCL Daily Wage` | Tradexcel Ceramics Ltd. | Daily | DW `base × payment_days` · OT |
+| `Example Monthly` | Example Company A | Monthly | BS 60% · HRA 30% · MED 5% · CON 5% · ENT 0 |
+| `Example Secondary Monthly` | Example Company B | Monthly | identical split, same components |
+| `Example Daily Wage` | Example Company A | Daily | DW `base × payment_days` · OT |
 
-**Why a separate EFL structure when the arithmetic is identical:** Frappe
+**Why a separate COMPANY_B structure when the arithmetic is identical:** Frappe
 validates that a structure's company matches the employee's. A shared structure
-is rejected for the two Elegance Footwear staff. The components remain shared;
+is rejected for the two Example Company B staff. The components remain shared;
 only the wrapper differs. This costs nothing and avoids falsifying their company.
 
 ### Assignments (226)
 
 | Structure | Company | Count | Base range |
 | --- | --- | --- | --- |
-| `TCL Daily Wage` | Tradexcel Ceramics Ltd. | **159** | 350 (flat gross daily rate) |
-| `TCL Standard` | Tradexcel Ceramics Ltd. | **65** | 10,000 – 90,000 |
-| `EFL Standard` | Elegance Footwear Ltd. | **2** | 40,000 – 130,000 |
+| `Example Daily Wage` | Example Company A | **159** | 350 (flat gross daily rate) |
+| `Example Monthly` | Example Company A | **65** | 10,000 – 90,000 |
+| `Example Secondary Monthly` | Example Company B | **2** | 40,000 – 130,000 |
 
 Verified: **226 assignments, 226 distinct employees, 0 duplicates.**
 
@@ -57,10 +57,10 @@ Verified: **226 assignments, 226 distinct employees, 0 duplicates.**
 
 | File | Purpose |
 | --- | --- |
-| `tradexcel_hr/salary_setup.yaml` | single source of truth — components, structures, formulas |
-| `tradexcel_hr/salary_setup.py` | idempotent installer; converges, never duplicates |
-| `tradexcel_hr/salary_excel.py` | Xcel export + assignment importer |
-| `Desktop/.../tradexcel_salary.xlsx` | README, Structures, Staff, Workers, Excluded sheets |
+| `workforce_suite/salary_setup.yaml` | single source of truth — components, structures, formulas |
+| `workforce_suite/salary_setup.py` | idempotent installer; converges, never duplicates |
+| `workforce_suite/salary_excel.py` | Xcel export + assignment importer |
+| `Desktop/.../workforce_salary.xlsx` | README, Structures, Staff, Workers, Excluded sheets |
 
 ## How this stays maintainable
 
@@ -113,7 +113,7 @@ so the spec cannot silently reference a phantom field. Only real fields are set:
 
 ## Two employees excluded
 
-`TCL-0026` (Tania Akter, 15,000) and `TCL-0038` (Rifat Hossain, 25,000) have a
+`COMPANY_A-0026` (Tania Akter, 15,000) and `COMPANY_A-0038` (Rifat Hossain, 25,000) have a
 gross in the VPS but **no component breakdown**, so their split cannot be
 derived. Excluded by owner instruction and listed on the workbook's `Excluded`
 sheet.
@@ -130,7 +130,7 @@ relying on it.
 - Backup taken immediately before the import:
   `20260918_215210-hrms_localhost-database.sql.gz` (2,812,235 bytes,
   sha256 `9ceb1d2ee0ca8e73`), copied to
-  `Desktop/tradex_hr_backup_20260918/site_backup_before_salary_import/`.
+  `Desktop/workforce_suite_backup_20260918/site_backup_before_salary_import/`.
 - The live write was one deliberate operation. Earlier dry runs used
   `commit=False` — see the mistake recorded below.
 

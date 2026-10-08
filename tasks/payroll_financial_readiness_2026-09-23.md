@@ -29,10 +29,10 @@ readiness. Unmanaged Salary Slips keep native HRMS behavior.
   actual Salary Structure has a variable tax component require that employee's
   SSA slab. The same company may therefore contain taxable and untaxed
   structures without false slab blockers. For taxable slips the service checks
-  the effective submitted slab, Tradexcel review status and native
+  the effective submitted slab, Workforce review status and native
   `current_payroll_period`. A valid zero tax amount is accepted.
 - Native tax slab provenance is stored in five app-owned Custom Fields. Only a
-  named System Manager or Tradexcel Owner/Director can approve a submitted slab
+  named System Manager or Workforce Owner/Director can approve a submitted slab
   with a source reference. System Manager and Administrator remain intentionally
   organization-wide; Owner/Director approval requires an explicit Company User
   Permission. Payroll Managers cannot approve tax configuration. The controlled
@@ -123,10 +123,10 @@ The database gzip and both file archives passed integrity checks. Standard
 manual metadata convergence was used. Frappe ran its normal orphan Workspace
 cleanup and queued its normal search-index rebuild.
 
-`bench build --app tradex_hr` and `clear-cache` passed using the already
+`bench build --app workforce_suite` and `clear-cache` passed using the already
 installed Node 24.15.0 runtime (the default WSL shell selects Node 20, which is
 below Frappe v16's engine requirement). The served app bundle is
-`tradex_hr.bundle.TAYVRSUG.js`. JavaScript syntax checks passed.
+`workforce_suite.bundle.TAYVRSUG.js`. JavaScript syntax checks passed.
 
 Final focused tests: 61 passed. Full suite: 286 passed, 2 skipped. Compile,
 JavaScript syntax and git diff --check passed. A disposable synthetic company

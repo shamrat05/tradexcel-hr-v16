@@ -85,23 +85,23 @@ Native execution-time scope/state checks and private per-user completion remain.
 
 Exact methods are enumerated and resolved against installed callables in
 `test_actor_bound_methods_match_installed_callable_names`:
-- ShiftAssignmentTool / TradexcelShiftAssignmentToolMixin: `_bulk_assign`,
+- ShiftAssignmentTool / WorkforceShiftAssignmentToolMixin: `_bulk_assign`,
   `_bulk_process_shift_requests`.
-- BulkSalaryStructureAssignment / TradexcelBulkSalaryStructureAssignmentMixin:
+- BulkSalaryStructureAssignment / WorkforceBulkSalaryStructureAssignmentMixin:
   `_bulk_assign_structure`; custom `_bulk_prepare_drafts`.
-- `tradex_hr.tradexcel_hr.overtime_bulk._prepare_now`.
-- `tradex_hr.tradexcel_hr.field_attendance_service.settle_field_duty_allowance`.
+- `workforce_suite.workforce_suite.overtime_bulk._prepare_now`.
+- `workforce_suite.workforce_suite.field_attendance_service.settle_field_duty_allowance`.
 - `hrms.payroll.doctype.payroll_entry.payroll_entry`:
   `create_salary_slips_for_employees`, `submit_salary_slips_for_employees`.
 - `hrms.hr.doctype.overtime_slip.overtime_slip`:
   `create_overtime_slips_for_employees`, `submit_overtime_slips_for_employees`.
 - Native `run_doc_method`, `execute_action`, List `_bulk_action`, and Data Import
-  `start_import` only for explicit HR DocTypes/app-owned Tradexcel DocTypes;
+  `start_import` only for explicit HR DocTypes/app-owned Workforce DocTypes;
   Data Import uses the native reference_doctype. Unrelated ToDo/accounting/setup
   wrappers are not denied by this hook. Installed Leave Control Panel is
   synchronous; existing extension revalidates selection without a new queue.
 
-An actual harmless Frappe retry executed twice without Tradexcel denial. Installed
+An actual harmless Frappe retry executed twice without Workforce denial. Installed
 outer job-context cleanup can still raise AttributeError after recursive retry;
 this unrelated framework defect was not patched or disguised as a successful job.
 
@@ -151,7 +151,7 @@ Final focused commands used bench `env/bin/python -m pytest` with `-q
 module including native OUT API → quarantine → scoped review → after-commit
 settlement dispatch passed **4 tests**. No artificial allowance rate was needed.
 Pure CI subset: **11 passed**. Source checks: 238 Python files, 61 JSON files,
-30 JavaScript files; Node 24.15.0 syntax and `bench build --app tradex_hr` passed.
+30 JavaScript files; Node 24.15.0 syntax and `bench build --app workforce_suite` passed.
 Compileall and `git diff --check` passed. Staging release smoke passed again after
 final migration. The first full suite passed 652; a final full run includes the
 additional OUT API integration test and narrowed installed reviewer permission.
@@ -164,7 +164,7 @@ a remembered local explanation. No action was rerun to evade it.
 ## Final accepted validation
 
 **653 passed, 0 skipped**, 103 warnings, 496.49 seconds, using:
-`env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q --disable-warnings --tb=short`
+`env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests -q --disable-warnings --tb=short`
 from the v16 bench. Baseline was 629; no security regression was deleted to pass.
 Actual 31-row isolated native RQ execution and changed-scope rejection passed as
 part of that full suite. Final compileall, all JSON/JS source checks, asset build,
@@ -187,7 +187,7 @@ change remains untouched. Local staging DB/Redis/web/Socket.IO are running;
 HTTP 200 verified. Production, real Users/User Permissions/Employees/Checkins/
 Attendance/payroll/accounting and approved business/legal values remain unchanged.
 
-Correction [PR #44](https://github.com/shamrat05/tradexcel-hr-v16/pull/44) is
+Correction [PR #44](https://github.com/shamrat05/workforce-suite/pull/44) is
 open/draft/mergeable on #42. One atomic code commit is followed only by a small
 documentation commit recording the newly available PR number/run identity.
 The first natural Actions run is 36304838645; remote CI is not claimed passed.

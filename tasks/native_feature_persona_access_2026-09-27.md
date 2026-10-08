@@ -10,19 +10,19 @@
 
 ## 2. Root cause of flaw in PR #49 persona proof
 
-In PR #49, `tradex_hr/tests/test_hr_workspace_ui.py` defined `PERSONA_ROLES["hr_manager"] = ["Tradexcel HR Manager", "HR Manager"]`. By assigning the native ERPNext/HRMS `HR Manager` role to the test user, the test bypassed the project's strict custom-role-only persona architecture. As a result, the UI catalog exposed many native features, but Desk route access had not been verified under genuine Tradexcel-only custom roles (`assert_only_tradexcel_roles`).
+In PR #49, `workforce_suite/tests/test_hr_workspace_ui.py` defined `PERSONA_ROLES["hr_manager"] = ["Workforce Suite Manager", "HR Manager"]`. By assigning the native ERPNext/HRMS `HR Manager` role to the test user, the test bypassed the project's strict custom-role-only persona architecture. As a result, the UI catalog exposed many native features, but Desk route access had not been verified under genuine Workforce-only custom roles (`assert_only_workforce_roles`).
 
 ## 3. Full role-isolation verification
 
-All persona fixtures and test cases strictly enforce `assert_only_tradexcel_roles(user)`. No native HR or administrative roles (`HR Manager`, `HR User`, `System Manager`, `Expense Approver`, `Interviewer`) are assigned to any Tradexcel persona, whether in tests or in standard role setup. All access is governed strictly by custom Tradexcel roles:
-- `Tradexcel HR Manager`
-- `Tradexcel HR/Attendance Officer`
-- `Tradexcel Employee/Worker`
+All persona fixtures and test cases strictly enforce `assert_only_workforce_roles(user)`. No native HR or administrative roles (`HR Manager`, `HR User`, `System Manager`, `Expense Approver`, `Interviewer`) are assigned to any Workforce persona, whether in tests or in standard role setup. All access is governed strictly by custom Workforce roles:
+- `Workforce Suite Manager`
+- `Workforce Suite/Attendance Officer`
+- `Workforce Employee/Worker`
 - and related scoped custom roles.
 
 ## 4. Code permission constants
 
-In `tradex_hr/role_setup.py`:
+In `workforce_suite/role_setup.py`:
 ```python
 PERMISSION_FIELDS = (
     "select", "read", "write", "create", "delete", "submit", "cancel",
@@ -39,81 +39,81 @@ Note: `EDIT_PERMS` does **NOT** include `delete`, `submit`, `cancel`, `amend`, o
 
 ## 5. Exact effective permission matrix for newly added/managed DocTypes
 
-The following table reflects the exact code truth from `STANDARD_PERMISSION_MATRIX` in `tradex_hr/role_setup.py`:
+The following table reflects the exact code truth from `STANDARD_PERMISSION_MATRIX` in `workforce_suite/role_setup.py`:
 
 | DocType | Role | Exact Permission Flags | Changed by PR #50 |
 | :--- | :--- | :--- | :---: |
-| `Department` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Department` | Tradexcel HR/Attendance Officer | `select`, `read` | YES |
-| `Department` | Tradexcel Branch Manager | `select`, `read` | YES |
-| `Department` | Tradexcel Department Manager | `select`, `read` | YES |
-| `Department` | Tradexcel Factory Supervisor | `select`, `read` | YES |
-| `Department` | Tradexcel Payroll Manager | `select`, `read` | YES |
-| `Department` | Tradexcel Compliance Auditor | `select`, `read` | YES |
-| `Branch` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Branch` | Tradexcel HR/Attendance Officer | `select`, `read` | YES |
-| `Branch` | Tradexcel Branch Manager | `select`, `read` | YES |
-| `Branch` | Tradexcel Department Manager | `select`, `read` | YES |
-| `Branch` | Tradexcel Factory Supervisor | `select`, `read` | YES |
-| `Branch` | Tradexcel Payroll Manager | `select`, `read` | YES |
-| `Branch` | Tradexcel Compliance Auditor | `select`, `read` | YES |
-| `Designation` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Designation` | Tradexcel HR/Attendance Officer | `select`, `read` | YES |
-| `Designation` | Tradexcel Branch Manager | `select`, `read` | YES |
-| `Designation` | Tradexcel Department Manager | `select`, `read` | YES |
-| `Designation` | Tradexcel Factory Supervisor | `select`, `read` | YES |
-| `Designation` | Tradexcel Payroll Manager | `select`, `read` | YES |
-| `Designation` | Tradexcel Compliance Auditor | `select`, `read` | YES |
-| `Employee Grade` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Employee Group` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Holiday List` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Holiday List` | Tradexcel HR/Attendance Officer | `select`, `read` | YES |
-| `Holiday List Assignment` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
-| `Leave Block List` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Overtime Type` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Overtime Type` | Tradexcel HR/Attendance Officer | `select`, `read` | YES |
-| `Expense Claim` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
-| `Expense Claim Type` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Purpose of Travel` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Compensatory Leave Request` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
-| `Job Requisition` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
-| `Interview Type` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Employee Referral` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
-| `Appointment Letter` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
-| `Appointment Letter Template` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Employee Grievance` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
-| `Grievance Type` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Training Program` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
-| `Training Event` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
-| `Training Feedback` | Tradexcel HR Manager | `select`, `read`, `report`, `export`, `print` | YES |
-| `Training Result` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
-| `Appraisal` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
-| `Appraisal Cycle` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
-| `Appraisal Template` | Tradexcel HR Manager | `select`, `read` | YES |
-| `Goal` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
-| `Employee Skill Map` | Tradexcel HR Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
+| `Department` | Workforce Suite Manager | `select`, `read` | YES |
+| `Department` | Workforce Suite/Attendance Officer | `select`, `read` | YES |
+| `Department` | Workforce Branch Manager | `select`, `read` | YES |
+| `Department` | Workforce Department Manager | `select`, `read` | YES |
+| `Department` | Workforce Factory Supervisor | `select`, `read` | YES |
+| `Department` | Workforce Payroll Manager | `select`, `read` | YES |
+| `Department` | Workforce Compliance Auditor | `select`, `read` | YES |
+| `Branch` | Workforce Suite Manager | `select`, `read` | YES |
+| `Branch` | Workforce Suite/Attendance Officer | `select`, `read` | YES |
+| `Branch` | Workforce Branch Manager | `select`, `read` | YES |
+| `Branch` | Workforce Department Manager | `select`, `read` | YES |
+| `Branch` | Workforce Factory Supervisor | `select`, `read` | YES |
+| `Branch` | Workforce Payroll Manager | `select`, `read` | YES |
+| `Branch` | Workforce Compliance Auditor | `select`, `read` | YES |
+| `Designation` | Workforce Suite Manager | `select`, `read` | YES |
+| `Designation` | Workforce Suite/Attendance Officer | `select`, `read` | YES |
+| `Designation` | Workforce Branch Manager | `select`, `read` | YES |
+| `Designation` | Workforce Department Manager | `select`, `read` | YES |
+| `Designation` | Workforce Factory Supervisor | `select`, `read` | YES |
+| `Designation` | Workforce Payroll Manager | `select`, `read` | YES |
+| `Designation` | Workforce Compliance Auditor | `select`, `read` | YES |
+| `Employee Grade` | Workforce Suite Manager | `select`, `read` | YES |
+| `Employee Group` | Workforce Suite Manager | `select`, `read` | YES |
+| `Holiday List` | Workforce Suite Manager | `select`, `read` | YES |
+| `Holiday List` | Workforce Suite/Attendance Officer | `select`, `read` | YES |
+| `Holiday List Assignment` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
+| `Leave Block List` | Workforce Suite Manager | `select`, `read` | YES |
+| `Overtime Type` | Workforce Suite Manager | `select`, `read` | YES |
+| `Overtime Type` | Workforce Suite/Attendance Officer | `select`, `read` | YES |
+| `Expense Claim` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
+| `Expense Claim Type` | Workforce Suite Manager | `select`, `read` | YES |
+| `Purpose of Travel` | Workforce Suite Manager | `select`, `read` | YES |
+| `Compensatory Leave Request` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
+| `Job Requisition` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
+| `Interview Type` | Workforce Suite Manager | `select`, `read` | YES |
+| `Employee Referral` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
+| `Appointment Letter` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
+| `Appointment Letter Template` | Workforce Suite Manager | `select`, `read` | YES |
+| `Employee Grievance` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
+| `Grievance Type` | Workforce Suite Manager | `select`, `read` | YES |
+| `Training Program` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
+| `Training Event` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
+| `Training Feedback` | Workforce Suite Manager | `select`, `read`, `report`, `export`, `print` | YES |
+| `Training Result` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
+| `Appraisal` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `submit`, `report`, `export`, `print` | YES |
+| `Appraisal Cycle` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
+| `Appraisal Template` | Workforce Suite Manager | `select`, `read` | YES |
+| `Goal` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
+| `Employee Skill Map` | Workforce Suite Manager | `select`, `read`, `write`, `create`, `report`, `export`, `print` | YES |
 
 Correction Notice: Neither `delete` nor `cancel` was granted on any of these DocTypes. Master dependencies receive strictly `select` and `read` (no `export`, `print`, or mutation flags).
 
 ## 6. Non-HR-Manager dependency grants
 
 PR #50 also provisioned read/select access to organizational master dependencies for non-HR-manager operational roles:
-- `Department`, `Branch`, `Designation`: Granted `{"select", "read"}` to `Tradexcel HR/Attendance Officer`, `Tradexcel Branch Manager`, `Tradexcel Department Manager`, `Tradexcel Factory Supervisor`, `Tradexcel Payroll Manager`, and `Tradexcel Compliance Auditor`.
+- `Department`, `Branch`, `Designation`: Granted `{"select", "read"}` to `Workforce Suite/Attendance Officer`, `Workforce Branch Manager`, `Workforce Department Manager`, `Workforce Factory Supervisor`, `Workforce Payroll Manager`, and `Workforce Compliance Auditor`.
   - **Rationale**: Needed for link pickers, attendance roster views, organizational filters, and departmental report execution across all operational Desk personas.
-- `Holiday List` and `Overtime Type`: Granted `{"select", "read"}` to `Tradexcel HR/Attendance Officer`.
+- `Holiday List` and `Overtime Type`: Granted `{"select", "read"}` to `Workforce Suite/Attendance Officer`.
   - **Rationale**: Needed for shift planning and overtime reconciliation inspection.
 - **Safety**: None of these roles received `write`, `create`, `delete`, `submit`, `cancel`, `amend`, or `share` on these masters.
 
 ## 7. Expense Claim status
 
-- **Maker Rights**: CONVERGED for `Tradexcel HR Manager` (`select`, `read`, `write`, `create`, `report`, `export`, `print`). HR can draft, view, and prepare claims.
-- **Checker Rights**: UNRESOLVED / DECISION_REQUIRED. Submit and cancel permissions are intentionally omitted. In native HRMS, claim approval belongs to `Expense Approver`. Tradexcel has deliberately not assigned native `Expense Approver` to any persona. A future owner decision must establish which Tradexcel role, if any, receives native Expense Claim final approval authority and under what scope/workflow.
+- **Maker Rights**: CONVERGED for `Workforce Suite Manager` (`select`, `read`, `write`, `create`, `report`, `export`, `print`). HR can draft, view, and prepare claims.
+- **Checker Rights**: UNRESOLVED / DECISION_REQUIRED. Submit and cancel permissions are intentionally omitted. In native HRMS, claim approval belongs to `Expense Approver`. Workforce has deliberately not assigned native `Expense Approver` to any persona. A future owner decision must establish which Workforce role, if any, receives native Expense Claim final approval authority and under what scope/workflow.
 - **Verdict**: `EXPENSE CLAIM APPROVAL DECISION_REQUIRED`.
 
 ## 8. Employee Advance technical rationale
 
 - **Native Behavior**: In pinned HRMS v16.19.0, Employee Advance submission validates and establishes an approved employee advance against an accounting account and participates in later payment and accounting settlement. Native final submit/cancel authority belongs to `Expense Approver`.
-- **Status**: Tradexcel has not mapped that authority to a custom persona. Kept removed from Home shortcuts; `DECISION_REQUIRED`.
+- **Status**: Workforce has not mapped that authority to a custom persona. Kept removed from Home shortcuts; `DECISION_REQUIRED`.
 
 ## 9. Travel Request technical rationale
 
@@ -139,54 +139,54 @@ PR #50 also provisioned read/select access to organizational master dependencies
   1. `Number of Employees on Leave (Today)`
   2. `Number of Employees on Leave (This Month)`
   3. `Expense Claims (This Month)`
-  (Note: The dead `Holidays in this month` card was removed from `tradex_hr/install.py` and `tradexcel_hr.json` because upstream HRMS defines `type = Custom` with `document_type = null`, causing Frappe core to restrict it from all non-System-Manager personas).
+  (Note: The dead `Holidays in this month` card was removed from `workforce_suite/install.py` and `workforce_suite.json` because upstream HRMS defines `type = Custom` with `document_type = null`, causing Frappe core to restrict it from all non-System-Manager personas).
 - **Quick Lists (3)**:
   1. `Open Leave Requests` (`Leave Application`, filter `{"status": "Open"}`)
   2. `Attendance Requests to Review` (`Attendance Request`, filter `{"docstatus": 0}`)
   3. `Draft Expense Claims` (`Expense Claim`, filter `{"docstatus": 0, "approval_status": "Draft"}`)
-  (Note: `Shift Requests to Review` was removed from the Home layout because `Shift Request` read permission is denied for all operational personas; `Expense Claims to Review` was renamed to `Draft Expense Claims` for workflow truth, reflecting that `Tradexcel HR Manager` holds maker rights only and final checker rights remain unresolved/DECISION_REQUIRED).
+  (Note: `Shift Requests to Review` was removed from the Home layout because `Shift Request` read permission is denied for all operational personas; `Expense Claims to Review` was renamed to `Draft Expense Claims` for workflow truth, reflecting that `Workforce Suite Manager` holds maker rights only and final checker rights remain unresolved/DECISION_REQUIRED).
 - **Common Actions (12)**:
   `Employee Directory`, `Today's Attendance`, `Attendance Summary`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Expense Claims`, `Run Monthly Payroll`, `Salary Setup Coverage`, `Job Applicants`, `Field Duties`, `Final Settlements`.
-- **Custom Blocks (1)**: `Tradexcel Work Needing Attention`.
+- **Custom Blocks (1)**: `Workforce Work Needing Attention`.
 - **Charts (0)**.
 
 ### Server Permission-Filtered Desktop Page (`get_desktop_page`):
-- **Tradexcel HR Manager**:
+- **Workforce Suite Manager**:
   - Number Cards (3): `Number of Employees on Leave (Today)`, `Number of Employees on Leave (This Month)`, `Expense Claims (This Month)`.
   - Quick Lists (3): `Open Leave Requests`, `Attendance Requests to Review`, `Draft Expense Claims`.
   - Common Actions (11): `Employee Directory`, `Today's Attendance`, `Attendance Summary`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Expense Claims`, `Salary Setup Coverage`, `Job Applicants`, `Field Duties`, `Final Settlements`. (`Run Monthly Payroll` filtered).
-- **Tradexcel HR/Attendance Officer**:
+- **Workforce Suite/Attendance Officer**:
   - Number Cards (2): `Number of Employees on Leave (Today)`, `Number of Employees on Leave (This Month)`.
   - Quick Lists (2): `Open Leave Requests`, `Attendance Requests to Review`.
   - Common Actions (7): `Employee Directory`, `Today's Attendance`, `Attendance Summary`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Field Duties`.
-- **Tradexcel Payroll Manager**:
+- **Workforce Payroll Manager**:
   - Number Cards (0).
   - Quick Lists (0).
   - Common Actions (4): `Employee Directory`, `Run Monthly Payroll`, `Salary Setup Coverage`, `Final Settlements`.
-- **Tradexcel Finance/Accounts Officer**:
+- **Workforce Finance/Accounts Officer**:
   - Number Cards (0).
   - Quick Lists (0).
   - Common Actions (3): `Employee Directory`, `Salary Setup Coverage`, `Final Settlements`.
-- **Tradexcel Branch Manager**:
+- **Workforce Branch Manager**:
   - Number Cards (2): `Number of Employees on Leave (Today)`, `Number of Employees on Leave (This Month)`.
   - Quick Lists (2): `Open Leave Requests`, `Attendance Requests to Review`.
   - Common Actions (6): `Employee Directory`, `Today's Attendance`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Field Duties`.
-- **Tradexcel Employee/Worker**:
-  - `"tradexcel-hr"` workspace is not visible (`"tradexcel-hr"` not in `get_workspaces()["pages"]`).
+- **Workforce Employee/Worker**:
+  - `"workforce-suite"` workspace is not visible (`"workforce-suite"` not in `get_workspaces()["pages"]`).
 
 ### Route Authorization Verification:
 Every visible Common Action shortcut across all 5 personas is verified against actual server-returned shortcut records (`desktop_page["shortcuts"]["items"]`), matching its exact destination:
 - `Employee Directory` -> `Employee` -> `DocType`
-- `Today's Attendance` -> `Tradexcel Daily Attendance Board` -> `Report`
+- `Today's Attendance` -> `Workforce Daily Attendance Board` -> `Report`
 - `Attendance Summary` -> `Daily Attendance Summary` -> `Report`
 - `Attendance Fix Requests` -> `Attendance Request` -> `DocType`
-- `Mobile Attendance` -> `tradexcel-mobile-attendance` -> `Page`
+- `Mobile Attendance` -> `workforce-mobile-attendance` -> `Page`
 - `Leave Requests` -> `Leave Application` -> `DocType`
 - `Expense Claims` -> `Expense Claim` -> `DocType`
-- `Run Monthly Payroll` -> `Tradexcel Payroll Readiness` -> `Report` (Note: Points to Report `Tradexcel Payroll Readiness`, NOT `Payroll Entry`)
-- `Salary Setup Coverage` -> `Tradexcel Salary Coverage Board` -> `Report`
+- `Run Monthly Payroll` -> `Workforce Payroll Readiness` -> `Report` (Note: Points to Report `Workforce Payroll Readiness`, NOT `Payroll Entry`)
+- `Salary Setup Coverage` -> `Workforce Salary Coverage Board` -> `Report`
 - `Job Applicants` -> `Job Applicant` -> `DocType`
-- `Field Duties` -> `Tradexcel Field Duty` -> `DocType`
+- `Field Duties` -> `Workforce Field Duty` -> `DocType`
 - `Final Settlements` -> `Full and Final Statement` -> `DocType`
 
 - DocType targets have `frappe.has_permission(doctype, 'read') == True`.
@@ -194,11 +194,11 @@ Every visible Common Action shortcut across all 5 personas is verified against a
 - Page targets are in `DeskViews.get_allowed_pages()`.
 
 ### Action Board Metrics vs. Native Number Cards:
-The custom block `Tradexcel Work Needing Attention` renders operational metrics (`Active Employees`, `Today Present`, `Unassigned Biometric Users`) and action queue lists (`Attendance Fix Requests`, `Leave Applications`, `Field Duty Applications`). These are custom Action Board elements and must not be conflated with native Workspace Number Cards or Quick Lists.
+The custom block `Workforce Work Needing Attention` renders operational metrics (`Active Employees`, `Today Present`, `Unassigned Biometric Users`) and action queue lists (`Attendance Fix Requests`, `Leave Applications`, `Field Duty Applications`). These are custom Action Board elements and must not be conflated with native Workspace Number Cards or Quick Lists.
 
 ## 13. Scope proof for newly enabled native DocTypes
 
-Scope dimensions and isolation were verified with synthetic records across `Tradexcel Ceramics Ltd.` (Company A) and `Elegance Footwear Ltd.` (Company B):
+Scope dimensions and isolation were verified with synthetic records across `Example Company A` (Company A) and `Example Company B` (Company B):
 - **`Expense Claim`**: Scoped directly by `Company` User Permission via `company` link. Scoped user sees Company A record and cannot see Company B record in `get_list`. Direct read on Company B record raises `frappe.PermissionError`.
 - **`Appraisal`**: Scoped directly by `Company` User Permission via `company` link. Scoped user sees Company A record and cannot see Company B record in `get_list`. Direct read on Company B record raises `frappe.PermissionError`.
 - **`Employee Grievance`**: DocType has no direct `company` field; links to `Employee` via `raised_by` and `employee_responsible`. Scoped by `Employee` User Permission. Scoped user sees Employee A record and cannot see Employee B record in `get_list`. Direct read raises `frappe.PermissionError`.
@@ -206,10 +206,10 @@ Scope dimensions and isolation were verified with synthetic records across `Trad
 
 ## 14. Shift and worker security
 
-- `Shift Request` and `Shift Schedule Assignment` remain strictly denied for `Tradexcel HR Manager`.
-- `Shift Request` remains strictly denied for `Tradexcel HR/Attendance Officer`.
+- `Shift Request` and `Shift Schedule Assignment` remain strictly denied for `Workforce Suite Manager`.
+- `Shift Request` remains strictly denied for `Workforce Suite/Attendance Officer`.
 - `Shift Requests to Review` is filtered from native Quick Lists for all operational roles.
-- `Tradexcel Employee/Worker` cannot see or access the administrative `tradexcel-hr` workspace.
+- `Workforce Employee/Worker` cannot see or access the administrative `workforce-suite` workspace.
 
 ## 15. Frappe core sidebar truth
 
@@ -225,15 +225,15 @@ Scope dimensions and isolation were verified with synthetic records across `Trad
   - `test_workspace_layout_and_progressive_disclosure`: Passed (verifies 3 Number Cards and 3 Quick Lists on Home).
   - `test_curated_sidebar_sections_and_targets_exist`: Passed.
   - `test_curated_navigation_does_not_promote_excluded_features`: Passed.
-  - `test_tradexcel_only_personas_and_permission_enforcement`: Passed.
+  - `test_workforce_only_personas_and_permission_enforcement`: Passed.
   - `test_quick_list_native_permission_filtering`: Passed (asserts server payload for Quick Lists and Number Cards).
-  - `test_tradexcel_persona_workspace_and_shortcut_authorization` (5 parameterized tests):
-    - `hr_manager` (`Tradexcel HR Manager`): 3 Number Cards, 3 Quick Lists, 11 Common Actions (`Run Monthly Payroll` filtered). All visible targets verified authorized.
-    - `attendance_officer` (`Tradexcel HR/Attendance Officer`): 2 Number Cards, 2 Quick Lists, 7 Common Actions (`Employee Directory`, `Today's Attendance`, `Attendance Summary`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Field Duties`). All visible targets verified authorized.
-    - `payroll_manager` (`Tradexcel Payroll Manager`): 0 Number Cards, 0 Quick Lists, 4 Common Actions (`Employee Directory`, `Run Monthly Payroll`, `Salary Setup Coverage`, `Final Settlements`). All visible targets verified authorized.
-    - `finance` (`Tradexcel Finance/Accounts Officer`): 0 Number Cards, 0 Quick Lists, 3 Common Actions (`Employee Directory`, `Salary Setup Coverage`, `Final Settlements`). All visible targets verified authorized.
-    - `branch_manager` (`Tradexcel Branch Manager`): 2 Number Cards, 2 Quick Lists, 6 Common Actions (`Employee Directory`, `Today's Attendance`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Field Duties`). All visible targets verified authorized.
-  - `test_expense_claim_maker_checker_boundary`: Passed (asserts maker rights and proves no Tradexcel role holds submit).
+  - `test_workforce_persona_workspace_and_shortcut_authorization` (5 parameterized tests):
+    - `hr_manager` (`Workforce Suite Manager`): 3 Number Cards, 3 Quick Lists, 11 Common Actions (`Run Monthly Payroll` filtered). All visible targets verified authorized.
+    - `attendance_officer` (`Workforce Suite/Attendance Officer`): 2 Number Cards, 2 Quick Lists, 7 Common Actions (`Employee Directory`, `Today's Attendance`, `Attendance Summary`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Field Duties`). All visible targets verified authorized.
+    - `payroll_manager` (`Workforce Payroll Manager`): 0 Number Cards, 0 Quick Lists, 4 Common Actions (`Employee Directory`, `Run Monthly Payroll`, `Salary Setup Coverage`, `Final Settlements`). All visible targets verified authorized.
+    - `finance` (`Workforce Finance/Accounts Officer`): 0 Number Cards, 0 Quick Lists, 3 Common Actions (`Employee Directory`, `Salary Setup Coverage`, `Final Settlements`). All visible targets verified authorized.
+    - `branch_manager` (`Workforce Branch Manager`): 2 Number Cards, 2 Quick Lists, 6 Common Actions (`Employee Directory`, `Today's Attendance`, `Attendance Fix Requests`, `Mobile Attendance`, `Leave Requests`, `Field Duties`). All visible targets verified authorized.
+  - `test_expense_claim_maker_checker_boundary`: Passed (asserts maker rights and proves no Workforce role holds submit).
   - `test_record_scope_user_permission_isolation`: Passed (Employee scope).
   - `test_new_native_features_scope_and_record_isolation`: Passed (Expense Claim, Appraisal, Grievance, Compensatory Leave scope).
 - **Focused Suites**:

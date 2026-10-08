@@ -1,8 +1,8 @@
-# "Deadlock Occurred" on the Tradexcel HR desk — 2026-09-18
+# "Deadlock Occurred" on the Workforce Suite desk — 2026-09-18
 
 ## Symptom
 
-Browsing `/app/tradexcel-hr` intermittently showed:
+Browsing `/app/workforce-suite` intermittently showed:
 
 ```
 Deadlock Occurred
@@ -60,7 +60,7 @@ frappe.db.commit()
 
 So every session write touches `tabSessions` *and* the session user's
 `tabUser` row. Two `Administrator` sessions therefore write the same `tabUser`
-row, and the Tradexcel HR workspace fires a burst of parallel requests (6 number
+row, and the Workforce Suite workspace fires a burst of parallel requests (6 number
 cards, 7 charts, reports), each its own transaction — plenty of opportunity for
 one transaction's commit to invalidate another's read view.
 

@@ -5,12 +5,12 @@ Correction branch `fix/mobile-review-settlement-actor` is stacked on PR #45
 
 ## Reproduced defect
 
-The flagged mobile OUT review endpoint accepted scoped Tradexcel HR Manager,
+The flagged mobile OUT review endpoint accepted scoped Workforce Suite Manager,
 HR/Attendance Officer, and Branch Manager users and queued
 `settle_field_duty_allowance` under the reviewer actor. Before the correction,
 all three real site-backed synthetic flows failed when the queued function ran:
 the settlement check recognized only Administrator, the linked Employee, or
-Tradexcel Attendance Correction Approver, then rejected the other legitimate
+Workforce Attendance Correction Approver, then rejected the other legitimate
 reviewers through the employee-self check.
 
 ## Correction

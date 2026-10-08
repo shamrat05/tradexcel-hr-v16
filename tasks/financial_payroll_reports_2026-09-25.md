@@ -5,7 +5,7 @@
 This slice started from PR #22 head `22105f0754dc12884848ffd466801b49187c68c9`
 on `feat/operational-report-scope` and was implemented on the stacked branch
 `feat/financial-report-scope`. PR #22 was not changed. The only reports in
-scope were Tradexcel Pay Component Register and Tradexcel Payroll Variance.
+scope were Workforce Pay Component Register and Workforce Payroll Variance.
 
 Before conversion, both were System Manager-only Query Reports. Real
 `frappe.desk.query_report.run` calls as synthetic custom-role users proved the
@@ -63,7 +63,7 @@ Salary Detail parity, Salary Slip totals, and historical Branch snapshots.
 Period membership continues to use the native Salary Slip `start_date`.
 
 Migration converged all four operational/financial reports to standard Script
-Reports. Runtime metadata shows zero Tradexcel HR Query Reports. The global
+Reports. Runtime metadata shows zero Workforce Suite Query Reports. The global
 `frappe.desk.query_report.run` override, `report_filters.py`, and the now-unused
 `GLOBAL_REPORT_ROLES` constant were removed. No other app-owned Query Report
 depends on the wrapper.
@@ -95,7 +95,7 @@ assert their absence. The site continued using MariaDB at `127.0.0.1:3307`.
 - Focused report/permission/payroll regression batch: 53 passed; the focused
   report/filter suite including full-month, partial-range, and month-end
   comparisons passed 21 tests.
-- Full Tradexcel suite: 570 passed, no skipped tests.
+- Full Workforce suite: 570 passed, no skipped tests.
 - `compileall`: passed.
 - All 63 app JSON files parsed; both report JavaScript files passed Node 24
   syntax checks.

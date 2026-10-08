@@ -25,7 +25,7 @@ backup followed by migration to install the new Attendance Period DocType.
   paid through submitted `Overtime Slip`/Additional Salary. Pending OT is a
   payroll-readiness issue, not an Attendance validity issue.
 - No native v16 Attendance Period finalize/reopen control was found, so the
-  small Tradexcel control document remains justified.
+  small Workforce control document remains justified.
 
 ## Separation implemented
 
@@ -49,7 +49,7 @@ integrity. No payroll calculation or Payroll Readiness UI was added.
 
 ## Daily wage native experiment
 
-Staging structure: `TCL Daily Wage`
+Staging structure: `Example Daily Wage`
 Assignment base: `Tk 350`
 Native generated working/payment days for the September test slip: `26/26`
 Configured formula: `base * payment_days`
@@ -72,7 +72,7 @@ payroll work.
 
 ## Attendance Period control
 
-`Tradexcel Attendance Period` is the minimal control document for company and
+`Workforce Attendance Period` is the minimal control document for company and
 exact date range. It stores status, revision, finalization user/time, and a
 fingerprint of payroll-relevant submitted Attendance fields only:
 
@@ -123,7 +123,7 @@ private-files.tar 7e39f916ff51d67098777943ebc7c8ab3e21e4e40e3c15a239a5745dccea65
 ```
 
 Migration completed successfully for `hrms-v16.localhost` only. The new
-`Tradexcel Attendance Period` DocType exists on staging.
+`Workforce Attendance Period` DocType exists on staging.
 
 ## Verification at final working head
 
@@ -142,7 +142,7 @@ Full app suite:
 Additional checks:
 
 ```text
-/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q tradex_hr: passed
+/home/sanchita/frappe-bench-v16/env/bin/python -m compileall -q workforce_suite: passed
 git diff --check: passed
 ```
 

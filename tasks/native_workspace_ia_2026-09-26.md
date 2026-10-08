@@ -9,8 +9,8 @@ Workspace link. Native sidebar JS resolves the current entity to a sidebar,
 keeps it while navigating its records and hides empty sections. No replacement
 navigation engine is needed.
 
-Current site already has a non-standard `Tradexcel HR` Workspace Sidebar with
-41 items, no app ownership and a Home link to `tradexcel-hr`. It is not maintained
+Current site already has a non-standard `Workforce Suite` Workspace Sidebar with
+41 items, no app ownership and a Home link to `workforce-suite`. It is not maintained
 by current installer source. The custom rail ignores persona permissions and
 its CSS hides the native desktop sidebar. Its separate theme and app-tile IIFEs
 must remain intact.
@@ -49,7 +49,7 @@ empty groups. Browser layout/keyboard/mobile UAT remains separate evidence.
 The first migration caught a fresh-install ordering defect: the sidebar's Home
 Link was saved before the canonical Workspace existed after orphan cleanup.
 Fixed by saving Workspace before sidebar and aligning bundled Workspace name to
-`tradexcel-hr`. Retried standard migration after another verified backup; no
+`workforce-suite`. Retried standard migration after another verified backup; no
 manual metadata SQL. Backups: `20260926_183119-hrms-v16_localhost-` and
 `20260926_183319-hrms-v16_localhost-` (exact sizes/hashes in BACKUPS.md).
 
@@ -60,7 +60,7 @@ Persona execution reproduced two navigation-only inconsistencies:
 - Department Manager and attendance/leave approvers had native HR permissions but
   no custom app DocType permission, so native module gating hid their home.
   The cross-module home now uses explicit native Workspace roles and no Module
-  restriction, with `app=tradex_hr`. Sidebar metadata remains app/module-owned.
+  restriction, with `app=workforce_suite`. Sidebar metadata remains app/module-owned.
   This grants no target permission and does not bypass Company scope. Worker and
   import-only users use their native surfaces rather than the management home.
 
