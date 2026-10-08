@@ -1,6 +1,7 @@
 """Scoped native Overtime Slip draft preparation, using disposable records only."""
 
 from __future__ import annotations
+import os
 
 import frappe
 import pytest
@@ -11,7 +12,7 @@ from workforce_suite.workforce_suite import overtime_bulk
 
 @pytest.fixture(scope="module", autouse=True)
 def site():
-    frappe.init(site="hrms-v16.localhost", sites_path="/home/sanchita/frappe-bench-v16/sites", force=True)
+    frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"), sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"), force=True)
     frappe.connect()
     frappe.set_user("Administrator")
     yield

@@ -24,8 +24,8 @@ def no_approved_working_time_rules(monkeypatch):
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()
@@ -264,7 +264,7 @@ def test_daily_component_change_changes_fingerprint_and_blocks_old_derived_input
 def test_native_payroll_creates_draft_entry_and_slip_from_finalized_daily_attendance(monkeypatch):
     employee = frappe.db.get_value(
         "Employee",
-        {"name": "HR-EMP-00225", "company": "Example Company A", "status": "Active"},
+        {"name": "TEST-WORKFORCE-DAILY", "company": "Example Company A", "status": "Active"},
         ["name", "employee_name", "company"],
         as_dict=True,
     )

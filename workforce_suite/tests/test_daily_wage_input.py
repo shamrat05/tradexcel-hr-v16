@@ -134,6 +134,7 @@ def test_daily_input_has_no_raw_checkin_dependency():
 
 
 def test_daily_rate_comes_from_resolved_assignment_not_policy(monkeypatch):
+    monkeypatch.setattr(daily_wage_input, "_attendance_rows", lambda *_args: [])
     monkeypatch.setattr(daily_wage_input, "resolve_pay_basis", lambda *_args: {
         "status": "Daily Wage", "employee": "EMP-1", "assignment": "SSA-1",
         "salary_structure": "Safe Daily", "base": 425,

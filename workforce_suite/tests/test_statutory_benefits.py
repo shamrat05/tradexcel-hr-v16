@@ -14,8 +14,8 @@ from workforce_suite.workforce_suite.statutory_benefits import _evaluate_employe
 @pytest.fixture(scope="module", autouse=True)
 def frappe_site():
 	frappe.init(
-		site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-		sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+		site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+		sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
 		force=True,
 	)
 	frappe.connect()
@@ -313,3 +313,8 @@ def test_historical_enrollment_rejects_branch_from_other_company(monkeypatch):
 		_validate_enrollment(
 			monkeypatch, rule_branch=None, employee_branch="Factory B", enrollment_branch="Factory A", end="2026-08-31", branch_company="COMPANY_B"
 		)
+
+
+@pytest.fixture(autouse=True)
+def fixed_review_date(monkeypatch):
+    monkeypatch.setattr(frappe.utils, "today", lambda: "2026-09-18")

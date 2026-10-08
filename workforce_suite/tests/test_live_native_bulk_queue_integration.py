@@ -1,4 +1,5 @@
 """Real RQ execution on an isolated test queue, using native bulk scheduling."""
+import os
 
 import subprocess
 import sys
@@ -13,8 +14,8 @@ def test_live_native_bulk_queue_revalidates_changed_scope(tmp_path):
     from frappe.utils.background_jobs import get_redis_conn
 
     frappe.init(
-        site="hrms-v16.localhost",
-        sites_path="/home/sanchita/frappe-bench-v16/sites",
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()
@@ -25,10 +26,10 @@ def test_live_native_bulk_queue_revalidates_changed_scope(tmp_path):
     shift = None
     original_errors = set(frappe.get_all("Error Log", pluck="name"))
     worker = tmp_path / "worker.py"
-    worker.write_text("""import sys, frappe
+    worker.write_text("""import os, sys, frappe
 from rq import Queue, Worker
 from frappe.utils.background_jobs import get_redis_conn
-frappe.init(site="hrms-v16.localhost",force=True)
+frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),force=True)
 connection=get_redis_conn()
 queue=Queue(sys.argv[1],connection=connection)
 Worker([queue],connection=connection).work(burst=True,with_scheduler=False,logging_level="ERROR")
@@ -38,7 +39,7 @@ Worker([queue],connection=connection).work(burst=True,with_scheduler=False,loggi
         with (tmp_path / "worker.log").open("a") as log:
             subprocess.run(
                 [sys.executable, str(worker), queue.name],
-                cwd="/home/sanchita/frappe-bench-v16/sites",
+                cwd=os.environ["FRAPPE_TEST_SITES_PATH"],
                 stdout=log,
                 stderr=log,
                 check=True,

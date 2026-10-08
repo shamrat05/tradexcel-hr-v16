@@ -12,8 +12,8 @@ import pytest
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()
@@ -175,7 +175,7 @@ def test_report_roles_and_company_branch_department_scope():
             }).insert(ignore_permissions=True))
             assert attendance.name and checkin.name
 
-        leave_type = frappe.db.get_value("Leave Type", {}, "name")
+        leave_type = frappe.db.get_value("Leave Type", {"is_lwp": 0}, "name")
         assert leave_type, "Site needs an existing native Leave Type for synthetic access proof"
         for employee in employees.values():
             allocation = _track(tracked, "Leave Allocation", frappe.get_doc({
@@ -325,7 +325,7 @@ def test_worker_native_doctype_access_is_own_employee_scoped():
             doc = frappe.get_doc({"doctype": doctype, "employee": employee, **extra}).insert(ignore_permissions=True)
             _track(tracked, doctype, doc)
             records[(doctype, employee)] = doc.name
-        leave_type = frappe.db.get_value("Leave Type", {}, "name")
+        leave_type = frappe.db.get_value("Leave Type", {"is_lwp": 0}, "name")
         assert leave_type
         for employee in (own, other):
             allocation = frappe.get_doc({

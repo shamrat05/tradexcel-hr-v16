@@ -8,7 +8,7 @@ import frappe
 from workforce_suite import install
 
 ROOT = Path(__file__).resolve().parents[1]
-FRAPPE = Path("/home/sanchita/frappe-bench-v16/apps/frappe/frappe")
+FRAPPE = Path(__file__).resolve().parents[3] / "frappe" / "frappe"
 
 class ProjectedDoc(frappe._dict):
     def set(self,key,value): self[key]=copy.deepcopy(value)

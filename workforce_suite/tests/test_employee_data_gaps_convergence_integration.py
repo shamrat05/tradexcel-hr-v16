@@ -1,6 +1,7 @@
 """Employee Data Gaps must scope rows and navigate to canonical native records."""
 
 from __future__ import annotations
+import os
 
 import json
 from pathlib import Path
@@ -15,7 +16,7 @@ from workforce_suite.workforce_suite.report_scope import permitted_employee_name
 
 @pytest.fixture(scope="module", autouse=True)
 def site():
-    frappe.init(site="hrms-v16.localhost", sites_path="/home/sanchita/frappe-bench-v16/sites", force=True)
+    frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"), sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"), force=True)
     frappe.connect()
     frappe.set_user("Administrator")
     yield

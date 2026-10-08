@@ -1,4 +1,5 @@
 """Installed native sidebar filtering, not a client-side role imitation."""
+import os
 import json
 from pathlib import Path
 
@@ -10,7 +11,7 @@ from workforce_suite.tests.persona_uat import PERSONA_ROLES, SyntheticPersonaHar
 
 @pytest.fixture(scope='module', autouse=True)
 def site():
-    frappe.init(site='hrms-v16.localhost', sites_path='/home/sanchita/frappe-bench-v16/sites', force=True)
+    frappe.init(site=os.environ.get('FRAPPE_TEST_SITE', 'test_workforce.localhost'), sites_path=os.environ.get('FRAPPE_TEST_SITES_PATH', './sites'), force=True)
     frappe.connect()
     frappe.set_user('Administrator')
     yield
@@ -60,7 +61,7 @@ def test_native_boot_sidebar_filters_every_persona_without_dead_links():
             pages = get_workspaces()['pages']
             workspaces = [row.name for row in pages]
             sidebars = get_sidebar_items(workspaces)
-            sidebar = sidebars.get('workforce hr', {})
+            sidebar = sidebars.get('workforce suite', {})
             links = [row for row in sidebar.get('items', []) if row['type'] == 'Link']
             targets = {row['link_to'] for row in links}
             matrix[key] = {'links': len(links), 'home': 'workforce-suite' in targets}

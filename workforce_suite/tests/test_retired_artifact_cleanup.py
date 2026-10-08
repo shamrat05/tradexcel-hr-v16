@@ -77,8 +77,8 @@ CANONICAL_CHARTS = (
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()
@@ -113,11 +113,11 @@ def _called_function_names(func) -> set[str]:
 
 def _synthetic_backup(
     tmp_path: Path,
-    site_name: str = "hrms-v16.localhost",
+    site_name: str | None = None,
     sql_content: bytes = b"CREATE TABLE synthetic (id int);\n",
     timestamp: str = "20260930_012059",
 ):
-    site_tag = site_name.replace(".", "_")
+    site_tag = (site_name or frappe.local.site).replace(".", "_")
     filename = f"{timestamp}-{site_tag}-database.sql.gz"
     backup_file = tmp_path / filename
     with gzip.open(backup_file, "wb") as gz:
@@ -129,10 +129,10 @@ def _synthetic_backup(
 
 def _synthetic_corrupt_backup(
     tmp_path: Path,
-    site_name: str = "hrms-v16.localhost",
+    site_name: str | None = None,
     timestamp: str = "20260930_012058",
 ):
-    site_tag = site_name.replace(".", "_")
+    site_tag = (site_name or frappe.local.site).replace(".", "_")
     filename = f"{timestamp}-{site_tag}-database.sql.gz"
     backup_file = tmp_path / filename
     # File containing arbitrary non-gzip bytes
@@ -145,10 +145,10 @@ def _synthetic_corrupt_backup(
 
 def _synthetic_truncated_backup(
     tmp_path: Path,
-    site_name: str = "hrms-v16.localhost",
+    site_name: str | None = None,
     timestamp: str = "20260930_012057",
 ):
-    site_tag = site_name.replace(".", "_")
+    site_tag = (site_name or frappe.local.site).replace(".", "_")
     filename = f"{timestamp}-{site_tag}-database.sql.gz"
     backup_file = tmp_path / filename
     # Create valid gzip bytes, then truncate before the 8-byte trailer
@@ -194,6 +194,7 @@ def _synthetic_card(
         "is_public": 1,
         "color": color,
         "show_percentage_stats": show_percentage_stats,
+        "currency": "BDT",  # explicit synthetic fingerprint, not a product default
     }
     if background_color is not None:
         fields["background_color"] = background_color
@@ -433,14 +434,14 @@ def test_production_allowlist_and_separate_test_injection():
     with pytest.raises(TypeError):
         install.plan_retired_dashboard_artifacts(candidates=[])  # type: ignore[call-arg]
 
-    # Calling dry-run production plan returns canonical eleven in removable
-    # (staging has no functional references).
+    # Fresh installs intentionally do not create retired artifacts. Validate
+    # the production allowlist independently of their deployed presence.
+    assert set(install.RETIRED_NUMBER_CARDS) == set(CANONICAL_CARDS)
+    assert set(install.RETIRED_DASHBOARD_CHARTS) == set(CANONICAL_CHARTS)
     plan = install.plan_retired_dashboard_artifacts()
-    removable_names = {item["name"] for item in plan["removable"]}
-    for name in CANONICAL_CARDS:
-        assert name in removable_names
-    for name in CANONICAL_CHARTS:
-        assert name in removable_names
+    existing = {name for name in (*CANONICAL_CARDS, *CANONICAL_CHARTS)
+                if frappe.db.exists("Number Card" if name in CANONICAL_CARDS else "Dashboard Chart", name)}
+    assert {item["name"] for item in plan["retained"] + plan["removable"]} <= existing
 
     # A customer-created lookalike is not part of the generic cleanup allowlist.
     alias_name = "Customer Prototype Card"

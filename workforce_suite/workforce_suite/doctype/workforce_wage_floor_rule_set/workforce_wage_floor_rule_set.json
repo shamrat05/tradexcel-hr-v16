@@ -15,7 +15,7 @@
   {"fieldname":"title","fieldtype":"Data","label":"Title","reqd":1,"in_list_view":1},
   {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
   {"fieldname":"branch","fieldtype":"Link","label":"Branch / Establishment","options":"Branch","description":"Blank means an explicitly reviewed company-wide establishment scope."},
-  {"fieldname":"jurisdiction","fieldtype":"Data","label":"Jurisdiction","default":"Bangladesh","reqd":1},
+  {"fieldname":"jurisdiction","fieldtype":"Data","label":"Jurisdiction","reqd":1},
   {"fieldname":"legal_regime","fieldtype":"Select","label":"Legal Regime","options":"Bangladesh Labour Act\nBangladesh EPZ Labour Act\nOther Reviewed Regime","reqd":1,"in_list_view":1},
   {"fieldname":"industry_sector","fieldtype":"Data","label":"Registered Industry Sector","reqd":1},
   {"fieldname":"establishment_reference","fieldtype":"Data","label":"DIFE / Establishment Reference","description":"Enter the reviewed license, registration, or establishment reference. Do not infer sector from company name."},

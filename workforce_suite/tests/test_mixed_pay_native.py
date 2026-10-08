@@ -16,8 +16,8 @@ from workforce_suite.workforce_suite.daily_wage_input import calculate_daily_wag
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
     )
     frappe.connect()
     yield
@@ -27,7 +27,7 @@ def site():
 def _employee():
     return frappe.db.get_value(
         "Employee",
-        {"name": "HR-EMP-00225", "company": "Example Company A", "status": "Active"},
+        {"name": "TEST-WORKFORCE-DAILY", "company": "Example Company A", "status": "Active"},
         ["name", "company"],
         as_dict=True,
     )
@@ -143,7 +143,7 @@ def test_native_payroll_dates_narrow_joiner_and_leaver_periods():
 
 
 def test_legacy_staging_daily_structure_remains_blocked():
-    result = calculate_daily_wage_input("HR-EMP-00225", "2026-09-01", "2026-09-30")
+    result = calculate_daily_wage_input("TEST-WORKFORCE-DAILY", "2026-09-01", "2026-09-30")
     if not frappe.db.exists("Salary Structure", "Example Daily Wage"):
         pytest.skip("Example Daily Wage is not configured on staging")
     assert result["status"] == "UNRESOLVED"

@@ -155,8 +155,8 @@ def test_failed_native_job_remains_visible_and_retryable_when_records_are_sound(
 @pytest.fixture
 def frappe_site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()

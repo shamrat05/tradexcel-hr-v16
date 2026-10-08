@@ -374,12 +374,44 @@ def inspect_attendance_payroll_boundary(
     return inspect_attendance_integrity(company, start_date, end_date, employee_ids)
 
 
+def native_attendance_fields(fields):
+    """Retain native fields and any installed optional establishment snapshots."""
+    meta = frappe.get_meta("Attendance")
+    return [field for field in fields
+            if field not in {"branch", "department"} or meta.has_field(field)]
+
+
+def attendance_employee_scope(rows):
+    """Batch native Employee scope when optional Attendance snapshots are absent.
+
+    Existing site snapshot columns remain authoritative when installed. This
+    fallback matches Daily Wage policy resolution on a native fresh v16 site.
+    """
+    missing = {field for field in ("branch", "department")
+               if not frappe.get_meta("Attendance").has_field(field)}
+    names = sorted({row.employee for row in rows})
+    if not missing or not names:
+        return rows
+    employees = {row.name: row for row in frappe.get_all(
+        "Employee", filters={"name": ["in", names]},
+        fields=["name", *sorted(missing)],
+    )}
+    for row in rows:
+        employee = employees.get(row.employee)
+        for field in missing:
+            row[field] = employee.get(field) if employee else None
+    return rows
+
+
 def get_native_period_state(company: str, start_date: str | date, end_date: str | date):
     start, end = _period_dates(start_date, end_date)
+    # Branch/Department are optional site customizations, not native v16
+    # Attendance columns. Missing optional fields hash as None consistently.
+    fields = native_attendance_fields(ATTENDANCE_FINGERPRINT_FIELDS)
     attendance = frappe.get_all(
         "Attendance",
         filters={"company": company, "attendance_date": ["between", [start, end]], "docstatus": 1},
-        fields=list(ATTENDANCE_FINGERPRINT_FIELDS),
+        fields=fields,
     )
     return attendance
 

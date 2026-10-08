@@ -16,7 +16,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate
 
 from workforce_suite.workforce_suite.attendance_payroll_boundary import (
-    require_finalized_attendance,
+    require_finalized_attendance, native_attendance_fields,
 )
 from workforce_suite.workforce_suite.pay_basis import DAILY, resolve_daily_rate, resolve_pay_basis
 from workforce_suite.workforce_suite.flexible_work import apply_policy_to_daily_wage
@@ -30,7 +30,7 @@ def _attendance_rows(employee: str, start: date, end: date) -> list[dict[str, An
             "attendance_date": ["between", [start, end]],
             "docstatus": 1,
         },
-        fields=["name", "attendance_date", "status", "leave_type", "leave_application", "half_day_status", "working_hours", "branch", "department"],
+        fields=native_attendance_fields(["name", "attendance_date", "status", "leave_type", "leave_application", "half_day_status", "working_hours", "branch", "department"]),
         order_by="attendance_date asc",
     )
 

@@ -30,6 +30,7 @@ import sys
 import frappe
 from frappe.installer import update_site_config
 from frappe.model.utils.rename_field import rename_field
+from frappe.model.rename_doc import rename_doc
 
 LEGACY_APP = "tradex_hr"
 TARGET_APP = "workforce_suite"
@@ -80,6 +81,8 @@ LEGACY_TOKEN = re.compile(r"tradexcel|tradex", re.IGNORECASE)
 
 
 def rebrand_identifier(value: str) -> str:
+    # Workspace/page slugs are identifiers, not customer-entered labels.
+    value = value.replace("tradexcel-hr", "workforce-suite").replace("tradex-hr", "workforce-suite")
     replacements = (
         ("Tradexcel HR", TARGET_MODULE),
         ("Tradex HR", TARGET_MODULE),
@@ -107,6 +110,9 @@ def _exists(doctype: str) -> bool:
 def _count(doctype: str) -> int | None:
     if not _exists(doctype):
         return None
+    # A Single has one logical document stored in tabSingles, not tab<DocType>.
+    if frappe.get_meta(doctype).issingle:
+        return 1
     return int(frappe.db.count(doctype))
 
 
@@ -176,11 +182,14 @@ def _metadata_names(doctype: str, legacy_app_doctypes: set[str]) -> list[str]:
         return []
 
     meta = frappe.get_meta(doctype)
+    # Workspace can have an app owner while its optional module is blank.
+    # Union both explicit ownership fields; never infer ownership from a label.
+    owned = set()
     if meta.has_field("module"):
-        return sorted(frappe.get_all(doctype, filters={"module": LEGACY_MODULE}, pluck="name"))
+        owned.update(frappe.get_all(doctype, filters={"module": LEGACY_MODULE}, pluck="name"))
     if meta.has_field("app"):
-        return sorted(frappe.get_all(doctype, filters={"app": LEGACY_APP}, pluck="name"))
-    return []
+        owned.update(frappe.get_all(doctype, filters={"app": LEGACY_APP}, pluck="name"))
+    return sorted(owned)
 
 
 def _rename_plan(legacy_doctypes: list[str]) -> dict[str, dict[str, str]]:
@@ -229,7 +238,7 @@ def _rename_one(doctype: str, old: str, new: str) -> None:
         return
     if frappe.db.exists(doctype, new):
         frappe.throw(f"Cannot migrate {doctype} {old!r}: target {new!r} already exists")
-    frappe.rename_doc(
+    rename_doc(
         doctype,
         old,
         new,
@@ -237,6 +246,9 @@ def _rename_one(doctype: str, old: str, new: str) -> None:
         ignore_permissions=True,
         show_alert=False,
         rebuild_search=False,
+        # The exact source-owned module is preflight-validated. v16 otherwise
+        # permits renaming only custom modules; retain standard ownership.
+        validate=doctype != "Module Def",
     )
 
 
@@ -343,7 +355,7 @@ def prepare(backup_file: str, expected_sha256: str | None = None) -> None:
         frappe.throw("A migration snapshot already exists; restore/review it before restarting prepare")
     legacy_doctypes, plan, backup = preflight(backup_file, expected_sha256, show_report=False)
 
-    app_counts = {name: int(frappe.db.count(name)) for name in legacy_doctypes if _exists(name)}
+    app_counts = {name: _count(name) for name in legacy_doctypes if _exists(name)}
     snapshot = {
         "version": 2,
         "site": frappe.local.site,
@@ -451,12 +463,40 @@ def _assert_field_values_copied(doctype: str, old_fieldname: str, new_fieldname:
         )
 
 
+def _ensure_import_reference_field() -> None:
+    """Preserve the known legacy import ID used by the biometric audit report.
+
+    This field was installed by the historical import, not generic setup. Copy
+    its actual metadata through Frappe; do not invent an ID or touch employees.
+    Unknown customer fields still fail closed instead of being guessed.
+    """
+    old = "tradex_source_employee_id"
+    new = "workforce_source_employee_id"
+    if frappe.get_meta("Employee", cached=False).get_field(new):
+        return
+    name = frappe.db.get_value("Custom Field", {"dt": "Employee", "fieldname": old}, "name")
+    if not name:
+        return
+    field = frappe.get_doc("Custom Field", name)
+    if field.fieldtype != "Data":
+        frappe.throw("Legacy employee import reference must be a Data field; review its customization")
+    from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+    definition = field.as_dict()
+    for key in ("name", "doctype", "dt", "owner", "creation", "modified", "modified_by", "docstatus", "idx"):
+        definition.pop(key, None)
+    definition["fieldname"] = new
+    if definition.get("insert_after"):
+        definition["insert_after"] = rebrand_identifier(definition["insert_after"])
+    create_custom_fields({"Employee": [definition]}, update=False)
+
+
 def finalize() -> None:
     snapshot = _read_snapshot()
     apps = frappe.get_installed_apps()
     if TARGET_APP not in apps or LEGACY_APP in apps:
         frappe.throw("installed_apps has not been switched cleanly to workforce_suite")
 
+    _ensure_import_reference_field()
     copied: list[tuple[str, str, str]] = []
     for doctype in sorted(_candidate_field_doctypes()):
         meta = frappe.get_meta(doctype, cached=False)

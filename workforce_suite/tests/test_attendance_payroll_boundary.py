@@ -124,3 +124,40 @@ def test_attendance_integrity_excludes_payroll_only_findings(monkeypatch):
 
     assert result["status"] == READY
     assert result["blockers"] == []
+
+
+def test_period_fingerprint_uses_only_installed_native_attendance_fields(monkeypatch):
+    from types import SimpleNamespace
+    from workforce_suite.workforce_suite import attendance_payroll_boundary as boundary
+    calls = []
+    monkeypatch.setattr(boundary.frappe, "get_meta", lambda _: SimpleNamespace(has_field=lambda field: field not in {"branch", "department"}))
+    monkeypatch.setattr(boundary.frappe, "get_all", lambda *args, **kwargs: calls.append(kwargs) or [])
+    assert boundary.get_native_period_state("Synthetic Co", "2026-09-01", "2026-09-30") == []
+    assert "branch" not in calls[0]["fields"] and "department" not in calls[0]["fields"]
+    assert {"employee", "working_hours", "status", "docstatus"} <= set(calls[0]["fields"])
+
+
+def test_optional_attendance_scope_uses_one_employee_batch_only_when_missing(monkeypatch):
+    from types import SimpleNamespace
+    import frappe
+    from workforce_suite.workforce_suite import attendance_payroll_boundary as boundary
+    calls = []
+    monkeypatch.setattr(boundary.frappe, "get_meta", lambda _: SimpleNamespace(has_field=lambda field: False))
+    monkeypatch.setattr(boundary.frappe, "get_all", lambda dt, **kwargs: calls.append((dt, kwargs)) or [frappe._dict(name="EMP-1", branch="Example Branch", department="Example Department")])
+    rows = [frappe._dict(employee="EMP-1"), frappe._dict(employee="EMP-1")]
+    assert boundary.attendance_employee_scope(rows)[0].branch == "Example Branch"
+    assert len(calls) == 1 and calls[0][1]["filters"]["name"] == ["in", ["EMP-1"]]
+    calls.clear()
+    monkeypatch.setattr(boundary.frappe, "get_meta", lambda _: SimpleNamespace(has_field=lambda field: True))
+    rows[0].branch = "Historical Snapshot"
+    assert boundary.attendance_employee_scope(rows)[0].branch == "Historical Snapshot"
+    assert calls == []
+
+
+def test_native_overtime_approver_grant_matches_reviewed_provenance_boundary():
+    from workforce_suite.role_setup import STANDARD_PERMISSION_MATRIX, READ_ONLY_PERMS
+    grant = STANDARD_PERMISSION_MATRIX["Additional Salary"]["Workforce Payroll Approver"]
+    assert grant == READ_ONLY_PERMS | {"create", "write", "submit"}
+    assert not {"cancel", "delete", "share"} & grant
+    from workforce_suite import hooks
+    assert "validate_overtime_generated_additional_salary" in str(hooks.doc_events["Additional Salary"])

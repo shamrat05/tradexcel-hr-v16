@@ -12,9 +12,12 @@ customer's legal identity, payroll basis or permissions from a built-in company 
 - Frappe HRMS v16
 - Python 3.14
 
-The tested pre-refactor version pins Frappe 16.34.0, ERPNext 16.35.0 and
-HRMS 16.19.0. The renamed package still requires its **own** fresh-install and
-restored-database integration acceptance before production rollout.
+The isolated white-label rehearsal uses Frappe 16.34.0, ERPNext 16.35.0 and
+HRMS 16.19.0. Fresh installation, restored-copy migration, data comparisons and
+post-migration recovery passed. The last full run was 807 passed / 3 failed;
+all three failed cases passed in the final focused rerun (6 passed). No full
+suite was repeated afterward at the owner's request. Actual Desk startup and
+browser/device/staff UAT remain unresolved. See the [rehearsal evidence](docs/white_label_migration.md#rehearsal-evidence--2026-10-08).
 
 ## App name and module
 
@@ -72,9 +75,9 @@ isolated restored database, and keep a verified backup and the original branch.
 
 The `White-label QA` GitHub Actions workflow checks Python compilation,
 JSON/TOML/YAML parsing, JavaScript syntax, neutral branding and pure migration
-mapping. The historical full integration-suite result predates this refactor;
-do not describe the renamed app as production-certified until a fresh v16 site
-and restored legacy site pass complete integration tests and UAT.
+mapping. The isolated renamed-app test and migration results are documented
+separately from remote CI. They do not establish production certification or
+replace outstanding browser/device/staff UAT.
 
 The original source branch retains the historical customer-specific audit
 notes and backup inventory. They are intentionally excluded from this

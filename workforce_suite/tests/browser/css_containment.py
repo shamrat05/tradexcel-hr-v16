@@ -8,7 +8,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[2]
-FRAPPE = Path("/home/sanchita/frappe-bench-v16/apps/frappe/frappe")
+FRAPPE = Path(__file__).resolve().parents[4] / "frappe" / "frappe"
 
 
 def test_collect_native_sidebar_candidate_measurements():

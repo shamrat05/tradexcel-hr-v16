@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[2]
-JQUERY=Path('/home/sanchita/frappe-bench-v16/apps/frappe/frappe/public/js/lib/jquery/jquery.min.js')
+JQUERY=Path(__file__).resolve().parents[4] / "frappe" / "frappe" / "public/js/lib/jquery/jquery.min.js"
 
 HARNESS=r'''
 window.__ = (text,args=[]) => text.replace(/\{(\d+)\}/g,(_,i)=>args[i]||'');

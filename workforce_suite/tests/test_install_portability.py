@@ -68,11 +68,11 @@ def test_salary_setup_refuses_packaged_company_defaults(tmp_path):
         salary_setup.load_spec()
 
     config = tmp_path / "salary.yaml"
-    config.write_text("company: YOUR_COMPANY_NAME\\ncurrency: USD\\ncomponents: []\\nstructures: []\\n")
+    config.write_text("company: YOUR_COMPANY_NAME\ncurrency: USD\ncomponents: []\nstructures: []\n")
     with pytest.raises(ValueError, match="real company"):
         salary_setup.load_spec(config)
 
-    config.write_text("company: Synthetic Test Company\\ncurrency: USD\\ncomponents: []\\nstructures: []\\n")
+    config.write_text("company: Synthetic Test Company\ncurrency: USD\ncomponents: []\nstructures: []\n")
     spec = salary_setup.load_spec(config)
     assert spec["company"] == "Synthetic Test Company"
 
@@ -99,3 +99,12 @@ def test_old_one_off_salary_importers_are_not_importable():
 def test_explicit_salary_spec_cannot_default_to_a_currency():
     with pytest.raises(frappe.ValidationError, match="needs a currency"):
         salary_setup.ensure_structures({"company": "Synthetic Company", "structures": []}, commit=False)
+
+
+def test_generic_legal_rules_require_explicit_jurisdiction_without_country_default():
+    import json
+    root = Path(__file__).resolve().parents[1] / "workforce_suite" / "doctype"
+    for name in ("workforce_statutory_rule_set", "workforce_wage_floor_rule_set"):
+        document = json.loads((root / name / (name + ".json")).read_text())
+        jurisdiction = next(field for field in document["fields"] if field["fieldname"] == "jurisdiction")
+        assert jurisdiction["reqd"] == 1 and not jurisdiction.get("default")

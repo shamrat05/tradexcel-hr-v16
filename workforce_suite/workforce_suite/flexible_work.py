@@ -8,6 +8,7 @@ from typing import Any
 import frappe
 from frappe.utils import cint, flt, getdate
 
+from workforce_suite.workforce_suite.attendance_payroll_boundary import native_attendance_fields, attendance_employee_scope
 from workforce_suite.workforce_suite.pay_basis import DAILY
 from workforce_suite.workforce_suite.company_context import assert_company_access
 
@@ -289,11 +290,11 @@ def inspect_mass_early_release_candidates(
     rows = frappe.get_all(
         "Attendance",
         filters={"company": company, "attendance_date": ["between", [getdate(from_date), getdate(to_date)]], "docstatus": 1},
-        fields=["employee", "attendance_date", "branch", "department", "status", "working_hours", "early_exit", "out_time"],
-        order_by="attendance_date asc, branch asc, department asc",
+        fields=native_attendance_fields(["employee", "attendance_date", "branch", "department", "status", "working_hours", "early_exit", "out_time"]),
+        order_by="attendance_date asc, employee asc",
     )
     return detect_mass_early_release_candidates(
-        rows, minimum_headcount=int(minimum_headcount),
+        attendance_employee_scope(rows), minimum_headcount=int(minimum_headcount),
         minimum_percentage=float(minimum_percentage),
         clustering_window_minutes=int(clustering_window_minutes),
         scope_level=scope_level,

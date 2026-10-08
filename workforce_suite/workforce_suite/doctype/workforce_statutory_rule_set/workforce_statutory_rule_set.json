@@ -10,7 +10,7 @@
   {"fieldname":"title","fieldtype":"Data","label":"Title","reqd":1,"in_list_view":1},
   {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
   {"fieldname":"branch","fieldtype":"Link","label":"Branch / Establishment","options":"Branch","in_list_view":1},
-  {"fieldname":"jurisdiction","fieldtype":"Select","label":"Jurisdiction","options":"Bangladesh\nOther","default":"Bangladesh","reqd":1},
+  {"fieldname":"jurisdiction","fieldtype":"Select","label":"Jurisdiction","options":"Bangladesh\nOther","reqd":1},
   {"fieldname":"legal_regime","fieldtype":"Select","label":"Legal Regime","options":"Bangladesh Labour Act\nBangladesh EPZ Labour Act\nApproved Company Service Rules\nOther / Legal Review","reqd":1,"in_list_view":1},
   {"fieldname":"effective_from","fieldtype":"Date","label":"Effective From","reqd":1,"in_list_view":1},
   {"fieldname":"effective_to","fieldtype":"Date","label":"Effective To"},

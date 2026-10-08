@@ -1,6 +1,7 @@
 """Site-backed permission and execution tests for HRMS' native bulk tool."""
 
 from __future__ import annotations
+import os
 
 import json
 
@@ -14,8 +15,8 @@ from workforce_suite.tests.persona_uat import PERSONA_ROLES, SyntheticPersonaHar
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site="hrms-v16.localhost",
-        sites_path="/home/sanchita/frappe-bench-v16/sites",
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()

@@ -1,4 +1,5 @@
 """Tests for native-first HR workspace layout, progressive disclosure, sidebar curation, and Workforce-only persona permissions."""
+import os
 import json
 from pathlib import Path
 
@@ -30,7 +31,7 @@ EXPECTED_COMMON_ACTION_ROUTES = {
 
 @pytest.fixture(scope="module", autouse=True)
 def site():
-    frappe.init(site="hrms-v16.localhost", sites_path="/home/sanchita/frappe-bench-v16/sites", force=True)
+    frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"), sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"), force=True)
     frappe.connect()
     frappe.set_user("Administrator")
     from unittest.mock import patch
@@ -364,7 +365,7 @@ def test_record_scope_user_permission_isolation():
             "hr_manager",
             [PERSONA_ROLES["hr_manager"]],
             company="Example Company A",
-            branch="Workforce Headquarters",
+            branch=frappe.db.get_value("Branch", {"company": "Example Company A"}, "name"),
         )
         assert_only_workforce_roles(hr_user_a)
 
@@ -374,7 +375,7 @@ def test_record_scope_user_permission_isolation():
         for emp in scoped_employees:
             assert emp["company"] == "Example Company A"
             if emp.get("branch"):
-                assert emp["branch"] == "Workforce Headquarters"
+                assert emp["branch"] == frappe.db.get_value("Branch", {"company": "Example Company A"}, "name")
 
         # Cross-company attempt: user should not be able to read records from unpermitted company
         unauthorized = frappe.get_list("Employee", filters={"company": ["!=", "Example Company A"]}, limit=5)

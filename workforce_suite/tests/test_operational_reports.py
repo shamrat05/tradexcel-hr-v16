@@ -16,9 +16,9 @@ def value(row, label):
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
         sites_path=os.environ.get(
-            "FRAPPE_TEST_SITES_PATH", os.path.expanduser("~/frappe-bench-v16/sites")
+            "FRAPPE_TEST_SITES_PATH", "./sites"
         ),
     )
     frappe.connect()
@@ -349,14 +349,12 @@ def test_payroll_variance_uses_adjacent_native_period_and_current_employee_scope
 
 @pytest.mark.parametrize("report_name", ["workforce_pay_component_register", "workforce_payroll_variance"])
 def test_financial_report_empty_employee_scope_never_falls_back(report_name, monkeypatch):
-    from workforce_suite.workforce_suite.report import (
-        workforce_pay_component_register,
-        workforce_payroll_variance,
-    )
+    from workforce_suite.workforce_suite.report.workforce_pay_component_register import workforce_pay_component_register
+    from workforce_suite.workforce_suite.report.workforce_payroll_variance import workforce_payroll_variance
 
     report = {
-        "workforce_pay_component_register": workforce_pay_component_register.workforce_pay_component_register,
-        "workforce_payroll_variance": workforce_payroll_variance.workforce_payroll_variance,
+        "workforce_pay_component_register": workforce_pay_component_register,
+        "workforce_payroll_variance": workforce_payroll_variance,
     }[report_name]
     monkeypatch.setattr(report, "resolve_company", lambda _filters: "Synthetic Co")
     monkeypatch.setattr(report, "permitted_employee_names", lambda _company: ())

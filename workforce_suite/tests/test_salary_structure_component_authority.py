@@ -13,8 +13,8 @@ COMPONENT = "Factory Day Rate"
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()
@@ -108,6 +108,7 @@ def test_invalid_daily_component_authority_fails_closed(monkeypatch, case, messa
 
 
 def test_disabled_daily_component_blocks_runtime_and_calculation_until_reenabled(monkeypatch):
+    monkeypatch.setattr(daily_wage_input, "_attendance_rows", lambda *_args: [])
     component_state = {"type": "Earning", "disabled": 1}
     monkeypatch.setattr(
         daily_wage_input,

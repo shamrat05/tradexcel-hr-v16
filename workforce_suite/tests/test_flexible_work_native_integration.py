@@ -17,8 +17,8 @@ from workforce_suite.workforce_suite.flexible_work_records import validate_opera
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()
@@ -218,7 +218,7 @@ def test_daily_wage_native_attendance_unit_parity_across_holiday_settings():
 
 
 def test_native_daily_wage_policy_changes_only_work_day_units():
-    employee = "HR-EMP-00225"
+    employee = "TEST-WORKFORCE-DAILY"
     if not frappe.db.exists("Employee", {"name": employee, "company": "Example Company A", "status": "Active"}):
         pytest.skip("Synthetic fixture employee is unavailable")
     savepoint = "flex_work_native_daily_wage"

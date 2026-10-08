@@ -26,7 +26,7 @@ def permitted_employee_query(user: str | None = None):
 
 
 EMPLOYEE_LINK_SCOPED_DOCTYPES = frozenset({
-    "Attendance Request", "Employee Checkin", "Salary Structure Assignment",
+    "Attendance", "Attendance Request", "Employee Checkin", "Salary Structure Assignment",
     "Shift Assignment", "Shift Schedule Assignment", "Shift Request",
     'Leave Policy Assignment', 'Leave Application', 'Full and Final Statement', 'Workforce Field Duty', 'Workforce Location Ping',
     "Workforce Mobile Event", "Leave Allocation", "Additional Salary", "Overtime Slip", "Workforce Employee Biometric",

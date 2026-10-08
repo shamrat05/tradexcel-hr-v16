@@ -1,10 +1,11 @@
 """Installed publisher/commit and native worker retry compatibility contract."""
+import os
 from unittest.mock import patch
 import frappe
 import pytest
 from workforce_suite.tests.persona_uat import SyntheticPersonaHarness, PERSONA_ROLES
-SITE = 'hrms-v16.localhost'
-SITES = '/home/sanchita/frappe-bench-v16/sites'
+SITE = os.environ.get('FRAPPE_TEST_SITE', 'test_workforce.localhost')
+SITES = os.environ.get('FRAPPE_TEST_SITES_PATH', './sites')
 
 
 def connect():

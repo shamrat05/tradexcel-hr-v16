@@ -71,7 +71,7 @@
 ## Verification commands
 
 ```bash
-cd /home/sanchita/frappe-bench-v16
+cd YOUR_BENCH
 env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests -q
 ```
 

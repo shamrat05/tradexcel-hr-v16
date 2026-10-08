@@ -26,11 +26,11 @@ def site():
     frappe = pytest.importorskip("frappe")
     import os
 
-    sites = os.environ.get("FRAPPE_TEST_SITES_PATH", os.path.expanduser("~/frappe-bench-v16/sites"))
+    sites = os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites")
     if not os.path.isdir(sites):
         pytest.skip("no bench sites directory")
     try:
-        frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"), sites_path=sites)
+        frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"), sites_path=sites)
         frappe.connect()
         frappe.set_user("Administrator")
     except Exception as exc:  # noqa: BLE001
@@ -83,14 +83,16 @@ def test_desk_route_has_no_dead_shortcuts(site):
     assert not dead, f"workspace shortcuts point at things that do not exist: {dead}"
 
 
-def test_salary_setup_spec_is_valid(site):
+def test_salary_setup_spec_is_valid(site, tmp_path):
     """The declarative spec must load and name only real Frappe fields."""
     import sys
 
     sys.path.insert(0, str(APP.parent))
     from workforce_suite.workforce_suite.salary_setup import load_spec
 
-    spec = load_spec()
+    config = tmp_path / "salary.yaml"
+    config.write_text("company: Example Company A\ncurrency: BDT\ncomponents:\n  - name: Synthetic Base\n    abbr: SYNB\n    type: Earning\n    fields: {depends_on_payment_days: true}\nstructures:\n  - name: Synthetic Monthly\n    earnings: [{salary_component: Synthetic Base, formula: base}]\n")
+    spec = load_spec(config)
     assert spec["components"], "no components declared"
     assert spec["structures"], "no structures declared"
     meta = site.get_meta("Salary Component")

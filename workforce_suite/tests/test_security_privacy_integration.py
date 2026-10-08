@@ -1,4 +1,5 @@
 """Reproduced native API privacy boundaries; synthetic records only."""
+import os
 
 import frappe
 import pytest
@@ -10,8 +11,8 @@ from workforce_suite.tests.persona_uat import SyntheticPersonaHarness, PERSONA_R
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site="hrms-v16.localhost",
-        sites_path="/home/sanchita/frappe-bench-v16/sites",
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()

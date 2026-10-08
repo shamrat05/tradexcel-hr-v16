@@ -1,4 +1,5 @@
 """Actual native personas, source adapters and Workspace block scope."""
+import os
 from unittest.mock import patch
 
 import frappe
@@ -9,7 +10,7 @@ from workforce_suite.tests.persona_uat import PERSONA_ROLES, SyntheticPersonaHar
 
 @pytest.fixture(scope="module", autouse=True)
 def site():
-    frappe.init(site="hrms-v16.localhost", sites_path="/home/sanchita/frappe-bench-v16/sites", force=True)
+    frappe.init(site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"), sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"), force=True)
     frappe.connect()
     frappe.set_user("Administrator")
     yield

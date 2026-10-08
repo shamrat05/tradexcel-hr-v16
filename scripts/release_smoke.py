@@ -12,12 +12,14 @@ import frappe
 parser = argparse.ArgumentParser()
 parser.add_argument('site')
 parser.add_argument('--neutral', action='store_true')
+parser.add_argument('--expected-db-port', type=int, help='Assert the explicit rehearsal database port')
 args = parser.parse_args()
 os.chdir(Path.cwd() / 'sites')
 frappe.init(site=args.site, force=True)
 frappe.connect()
 try:
-    assert int(frappe.conf.db_port) == 3307, 'This rehearsal requires isolated MariaDB 3307'
+    if args.expected_db_port is not None:
+        assert int(frappe.conf.db_port) == args.expected_db_port, 'Wrong rehearsal database port'
     assert set(('frappe', 'erpnext', 'hrms', 'workforce_suite')) <= set(frappe.get_installed_apps())
     frappe.set_user('Administrator')
     from frappe.model.base_document import get_controller
@@ -49,7 +51,7 @@ try:
                  'Workforce Flexible Work Policy')
         for dt in empty:
             assert frappe.db.count(dt) == 0, f'Neutral install manufactured {dt}'
-    print(json.dumps({'site': args.site, 'neutral': args.neutral, 'standard_reports': len(reports), 'extension_contract': 'PASS', 'db_port': 3307}))
+    print(json.dumps({'site': args.site, 'neutral': args.neutral, 'standard_reports': len(reports), 'extension_contract': 'PASS', 'db_port': int(frappe.conf.db_port or 3306)}))
 finally:
     frappe.db.rollback()
     frappe.destroy()

@@ -1150,7 +1150,7 @@ def remove_retired_dashboard_artifacts(
 
         bench --site <site> execute workforce_suite.install.remove_retired_dashboard_artifacts
         bench --site <site> execute workforce_suite.install.remove_retired_dashboard_artifacts \\
-            --kwargs "{'apply': True, 'backup_reference': '20260930_012059-hrms-v16_localhost-database.sql.gz', 'backup_checksum': 'eb661fcf35d258f2d79acda5ecd9b38e72cfd0c6385e897517223f9329bd8d9d'}"
+            --kwargs "{'apply': True, 'backup_reference': 'YOUR_VERIFIED-database.sql.gz', 'backup_checksum': 'YOUR_VERIFIED_SHA256'}"
 
     Every candidate is re-checked for live references and unchanged app
     ownership immediately before deletion; anything referenced, customized or

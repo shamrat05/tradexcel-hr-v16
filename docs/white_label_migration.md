@@ -232,19 +232,168 @@ The app should provide capabilities, validations, reusable workflows and
 company-scoped configuration—not a second copy of a specific customer's data.
 
 
-## Current evidence and release limitation
+## Rehearsal evidence — 2026-10-08
 
-The branch has dedicated GitHub Actions source validation (compilation,
-structured-file parsing, JS syntax and white-label source contracts). Those
-checks are necessary but **not sufficient** for a production-grade rename.
+This rehearsal used an independent bench, separate MariaDB/Redis endpoints,
+independent application clones and a restored **copy**. The original bench,
+checkout, database and uncommitted backup documentation were not changed.
+Private archives, record-level comparisons and logs remain outside Git.
 
-The original 653-test acceptance run occurred on the previous branded code,
-**not** on this renamed package. The code must still be exercised on both a
-fresh Frappe/ERPNext/HRMS site and an isolated restored legacy database to
-validate migrations, DocType controllers, workflows, integrations, background
-jobs and permissions.
+### Exact environment
 
-A company record whose legal name contains the old brand stays in the
-customer's database. The migration intentionally limits metadata renames to
-app-owned records. It does not rewrite employee, company, payroll, accounting
-or customer-entered descriptions.
+| Application | Version | Pinned source |
+| --- | --- | --- |
+| Frappe | 16.34.0 | `f1bdb53ac60cd96528b52de418f9459510acb5bd` |
+| ERPNext | 16.35.0 | `12cd563fb9a79731f75ae2a45b1446a0a2dd9e74` |
+| HRMS | 16.19.0 | `7e0fba4bf11a63ac7b21a717610e235310815c1a` |
+| Legacy application | 0.1.0 | `bb48574050214e364c73a15e38dce6128bea2f80` |
+| White-label starting branch | 0.1.0 | `fe4920da9faf1e571ae9f1b71f2a1c16502d3f90` |
+
+Python was 3.14.4 and asset checks/builds used Node 24.15.0 explicitly.
+The fixes and this evidence are in the enclosing branch commit. Its exact SHA
+is recorded in the final operator report; no recursive self-SHA is embedded.
+
+### Results and corrections
+
+- Source validation, renamed wiring and deterministic white-label scan passed.
+- Native fresh installation of all four applications passed without creating
+  Companies, Employees, wage structures, assignments or financial transactions.
+- Full database, public-file, private-file and configuration archives were
+  verified by complete decompression/archive reads and SHA-256 checksums.
+- A fresh pre-migration backup restored independently with matching protected
+  record hashes and file hashes. Restoration was demonstrated, not inferred
+  from gzip integrity.
+- Read-only preflight, prepare, native `bench migrate`, finalize and verify all
+  completed successfully on the independent restored site after corrections.
+- The tool handles Single DocTypes as logical documents, unions explicit app
+  and module ownership, and uses the installed v16 model-level rename API.
+  Only the exact preflight-owned standard Module Def skips its custom-module
+  rename restriction; other native validation remains enabled.
+- The historical imported Employee reference receives a metadata-preserving
+  generic Custom Field through Frappe's supported API. An incompatible field
+  type or an unknown missing target field fails closed. No identity is invented.
+- Thirty-three app-owned DocTypes, fifteen roles, nine renamed reports, two
+  Pages, seven Workflows and their thirty-one states migrated. Forty-eight
+  renamed custom-field value sets were copied and compared.
+- Comparisons covered thirty-four protected native tables and all thirty-three
+  app-owned documents. Counts, original values and relationships matched,
+  allowing only explicit role/workflow/DocType identity translations. Native
+  role synchronization regenerates child-row IDs; effective role membership
+  was compared separately.
+- The restored copy retained 277 Employees, 22,302 Employee Checkins, 16,080
+  Attendance, 235 Salary Structure Assignments, 1,191 Leave Allocations and 268
+  Shift Assignments. Existing Salary Slips, Payroll Entries and GL Entries were
+  zero in this backup; synthetic native payroll integration provides the
+  populated payroll-path evidence, not historical-payroll restoration evidence.
+- Customer Company names, employee values, salary configuration and historical
+  transactions were not rewritten. Old physical columns, retired dashboard
+  records and `custom_cf_12319_card` were preserved.
+- A new post-migration full backup restored successfully into a second copy:
+  protected hashes, app counts, metadata counts, public/private file hashes and
+  the historical Department column all matched.
+- The copied database contains no encrypted secret rows requiring an absent
+  encryption key. This is specific to the verified backup; other sites must
+  supply their actual encryption-key recovery material.
+- All thirty-three controllers, thirteen standard report entry points, one
+  hundred unique app hook targets, ninety-nine native scheduled methods and
+  seven Workflow definitions resolved. The old Python package was removed
+  from the isolated environment and remained unnecessary. Original live Redis
+  queues were not copied or executed; the isolated-worker regression passed.
+- Complete native asset build for Frappe, ERPNext, HRMS and Workforce Suite
+  passed. The initial missing ERPNext nested build dependency was corrected
+  only in the isolated environment.
+
+### Fresh-schema and authorization corrections
+
+Native v16 Attendance does not require site-customized Branch/Department
+columns. Financial provenance now selects those columns only when installed;
+operational scope uses one batched native Employee lookup when absent, while
+preserving existing Attendance snapshot values when present. No financial
+calculation, stored timestamp or finalized Attendance value changed.
+
+Fresh-install Attendance access now uses the existing Employee-linked query
+and direct-document scope hooks. This closes a branch-scope privacy gap rather
+than making browser visibility an authorization boundary.
+
+The source permission matrix now matches the copied site's existing Payroll
+Approver Additional Salary create/write/submit grant, required by native
+Overtime Slip submission. Existing native-provenance, scope and independent
+approval checks remain authoritative; cancel/delete/share are not added.
+This is a source permission-parity correction, not a claim that no permission
+metadata changed. Original-site permissions were untouched.
+
+Statutory and wage-floor jurisdiction fields no longer default to a country.
+An operator must explicitly configure jurisdiction; existing customer values
+and supported reviewed legal frameworks remain intact.
+
+### Test accounting
+
+The historical 653-test result is not evidence for this package. The renamed
+package was exercised on the isolated synthetic v16 site:
+
+| Run | Result | Interpretation |
+| --- | --- | --- |
+| Initial full run | 750 passed, 53 failed, 0 skipped | Exposed migration/test portability and fresh-schema defects; not acceptance. |
+| Last full run after corrections | 807 passed, 3 failed, 0 skipped | 810 collected tests; remaining failures identified precisely. |
+| Final fixed-regression run | 6 passed, 0 failed, 0 skipped | All three remaining failures plus the new jurisdiction regression and affected wage-floor integrations. |
+| Changed migration metadata regression without Frappe installed | 1 passed | Confirms the new pure test retains source-only CI portability. |
+
+The final three failures were two unit mocks accidentally querying site
+metadata and a native onboarding email render missing the isolated asset
+manifest. The mocks were isolated and the complete native assets were built;
+the failed cases then passed. Tests were not deleted or skipped to improve
+counts. At the owner's instruction, the already completed full suite was **not
+run again** after this focused correction. These are separate runs, not a
+fabricated final all-green full-suite result.
+
+Tests now select explicit disposable sites and sibling installed-source paths
+instead of the original workstation site, real employee fixture or bench path.
+`tests/conftest.py` rejects cross-site initialization during explicit rehearsal
+runs. Manual fixture setup also requires `workforce_rehearsal` and is not an
+install hook. Synthetic Company/currency/policy choices are test inputs only.
+
+For a new isolated integration run, configure the disposable site marker and
+explicit site path before invoking the suite:
+
+```bash
+bench --site YOUR_DISPOSABLE_SITE set-config workforce_rehearsal true
+export FRAPPE_TEST_SITE=YOUR_DISPOSABLE_SITE
+export FRAPPE_TEST_SITES_PATH="$PWD/sites"
+# On an empty disposable site only:
+bench --site "$FRAPPE_TEST_SITE" execute workforce_suite.tests.seed_integration_site.seed
+bench --site "$FRAPPE_TEST_SITE" execute workforce_suite.tests.seed_integration_site.extend
+bash apps/workforce_suite/scripts/run_release_integration.sh
+```
+
+Fixture setup is an explicitly invoked engineering utility, not generic
+product initialization. Keep scheduler/mail delivery disabled, use separate
+Redis and clean the disposable site after the run. The synthetic test site was
+backed up and reset natively after this rehearsal; restored migration evidence
+sites and private diagnostic backups were retained.
+
+### Backup evidence
+
+Detailed private manifests record all four artifact paths, timestamps, sizes
+and SHA-256 values. Representative database restore points are:
+
+| Purpose | Database archive | SHA-256 |
+| --- | --- | --- |
+| Independent pre-migration rehearsal | `20261008_100817-workforce-legacy_localhost-database.sql.gz` | `cb337a62be97559d74e325b3ae20869e640109ec504406c6ebb61bc3baf20682` |
+| Verified post-migration recovery | `20261008_110300-workforce-recovery_localhost-database.sql.gz` | `25623d177a3ebd6e6beccd5a08e280bb67e66edb2e80cfd4e783af3bb57be487` |
+
+These are isolated copies, not authorization to restore or migrate the original
+site. No backup, secret, employee export or private configuration is committed.
+
+### Remaining acceptance gates
+
+Actual isolated Desk browser verification was attempted with Chromium against
+the served application, not a mocked harness. Login succeeded, but repeated
+native setup/Desk navigation reached `/undefined`; stable page/layout/theme
+verification was not established. Native Desk setup/navigation diagnosis and
+real operator/browser/device UAT remain pending. No framework files were
+patched to hide this limitation.
+
+Remote workflow results must be read for the exact pushed head; local tests do
+not constitute a remote CI pass. Commercial licensing, clean-history
+packaging, customer deployment parity and physical-device/UAT acceptance remain
+separate release gates. This rehearsal is not production certification.

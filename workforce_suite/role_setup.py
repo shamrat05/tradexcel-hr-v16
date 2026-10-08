@@ -516,6 +516,9 @@ STANDARD_PERMISSION_MATRIX: Mapping[str, Mapping[str, set[str]]] = {
         "Workforce Compliance Auditor": READ_ONLY_PERMS,
     },
     "Additional Salary": {
+        # Match the existing reviewed-site grant required by native Overtime
+        # Slip submission. before_submit validates native provenance and scope.
+        "Workforce Payroll Approver": READ_ONLY_PERMS | {"create", "write", "submit"},
         "Workforce Owner/Director": READ_ONLY_PERMS,
         "Workforce Suite Manager": EDIT_PERMS,
         "Workforce Payroll Manager": EDIT_PERMS,

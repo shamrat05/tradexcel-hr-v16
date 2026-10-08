@@ -11,6 +11,9 @@ from frappe.model.document import Document
 from frappe.utils import flt, getdate, now_datetime
 
 from workforce_suite.workforce_suite.company_context import assert_company_access
+from workforce_suite.workforce_suite.attendance_payroll_boundary import (
+    native_attendance_fields, attendance_employee_scope,
+)
 from workforce_suite.workforce_suite.flexible_work import calculate_flexible_work_units
 
 
@@ -139,10 +142,11 @@ def build_operational_day_override_preview(doc):
     rows = frappe.get_all(
         "Attendance",
         filters={"company": doc.company, "attendance_date": day, "docstatus": 1},
-        fields=["name", "employee", "attendance_date", "status", "working_hours",
-                "half_day_status", "leave_type", "leave_application", "branch", "department"],
+        fields=native_attendance_fields(["name", "employee", "attendance_date", "status", "working_hours",
+                "half_day_status", "leave_type", "leave_application", "branch", "department"]),
         order_by="employee asc",
     )
+    rows = attendance_employee_scope(rows)
     scoped = [
         row for row in rows
         if (not doc.branch or row.branch == doc.branch)

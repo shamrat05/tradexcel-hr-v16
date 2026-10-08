@@ -16,8 +16,8 @@ from workforce_suite.workforce_suite import attendance_corrections
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
-        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
+        sites_path=os.environ.get("FRAPPE_TEST_SITES_PATH", "./sites"),
         force=True,
     )
     frappe.connect()
@@ -369,9 +369,11 @@ def test_maker_drafts_are_scoped_independently_approved_and_native_attendance_is
         assert frappe.db.get_value("Attendance", {"employee": employees["missing"], "attendance_date": day}, "name") is None
 
         # An in-scope independent approver delegates the actual effect to HRMS.
+        from workforce_suite.workforce_suite.attendance_payroll_boundary import native_attendance_fields
+
         before_hash = attendance_period_hash(frappe.get_all(
             "Attendance", filters={"employee": employees["missing"], "docstatus": 1},
-            fields=["employee", "attendance_date", "status", "leave_type", "leave_application", "half_day_status", "working_hours", "company", "branch", "department", "docstatus"],
+            fields=native_attendance_fields(["employee", "attendance_date", "status", "leave_type", "leave_application", "half_day_status", "working_hours", "company", "branch", "department", "docstatus"]),
         ))
         from workforce_suite.workforce_suite.attendance_payroll_boundary import current_attendance_period_hash
 
@@ -414,7 +416,7 @@ def test_maker_drafts_are_scoped_independently_approved_and_native_attendance_is
         assert created_attendance[0].attendance_request == request.name
         after_hash = attendance_period_hash(frappe.get_all(
             "Attendance", filters={"employee": employees["missing"], "docstatus": 1},
-            fields=["employee", "attendance_date", "status", "leave_type", "leave_application", "half_day_status", "working_hours", "company", "branch", "department", "docstatus"],
+            fields=native_attendance_fields(["employee", "attendance_date", "status", "leave_type", "leave_application", "half_day_status", "working_hours", "company", "branch", "department", "docstatus"]),
         ))
         assert before_hash != after_hash
         assert current_attendance_period_hash(company, day, day) != period.attendance_hash

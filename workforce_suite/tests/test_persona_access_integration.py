@@ -19,9 +19,9 @@ from workforce_suite.tests.persona_uat import (
 @pytest.fixture(scope="module", autouse=True)
 def site():
     frappe.init(
-        site=os.environ.get("FRAPPE_TEST_SITE", "hrms-v16.localhost"),
+        site=os.environ.get("FRAPPE_TEST_SITE", "test_workforce.localhost"),
         sites_path=os.environ.get(
-            "FRAPPE_TEST_SITES_PATH", "/home/sanchita/frappe-bench-v16/sites"
+            "FRAPPE_TEST_SITES_PATH", "./sites"
         ),
         force=True,
     )
