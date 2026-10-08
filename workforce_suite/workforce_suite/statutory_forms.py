@@ -154,6 +154,8 @@ def _read_attendance(layout, from_date: str, to_date: str, allowed: tuple[str, .
         order_by="employee asc, attendance_date asc",
         limit_page_length=MAX_PRINT_ROWS + 1,
     )
+    if len(records) > MAX_PRINT_ROWS:
+        frappe.throw(_("Too many attendance records for one printable register. Narrow the scope."))
     if layout.form_code != "form_34":
         return [dict(r) for r in records]
 
@@ -189,6 +191,8 @@ def _read_leave(layout, from_date: str, to_date: str, allowed: tuple[str, ...]):
         order_by="from_date asc, employee asc",
         limit_page_length=MAX_PRINT_ROWS + 1,
     )
+    if len(rows) > MAX_PRINT_ROWS:
+        frappe.throw(_("Too many leave records for one PDF. Narrow the reporting period."))
     return [dict(r) for r in rows]
 
 
