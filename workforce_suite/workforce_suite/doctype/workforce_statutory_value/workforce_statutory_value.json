@@ -1,0 +1,30 @@
+{
+ "doctype": "DocType",
+ "module": "Workforce Suite",
+ "engine": "InnoDB",
+ "track_changes": 0,
+ "allow_rename": 0,
+ "name": "Workforce Statutory Value",
+ "istable": 1,
+ "editable_grid": 1,
+ "field_order": [
+  "field_key",
+  "field_value"
+ ],
+ "fields": [
+  {
+   "fieldname": "field_key",
+   "fieldtype": "Data",
+   "label": "Field Key",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "field_value",
+   "fieldtype": "Small Text",
+   "label": "Value",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ]
+}

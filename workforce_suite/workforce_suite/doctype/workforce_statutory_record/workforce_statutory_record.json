@@ -1,0 +1,102 @@
+{
+ "doctype": "DocType",
+ "module": "Workforce Suite",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 0,
+ "name": "Workforce Statutory Record",
+ "autoname": "naming_series:",
+ "naming_series": "WSRR-.YYYY.-.#####",
+ "is_submittable": 1,
+ "field_order": [
+  "naming_series",
+  "company",
+  "layout",
+  "entry_date",
+  "reference_id",
+  "values",
+  "evidence_file",
+  "evidence_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "WSRR-.YYYY.-.#####",
+   "reqd": 1,
+   "default": "WSRR-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "layout",
+   "fieldtype": "Link",
+   "label": "Statutory Layout",
+   "options": "Workforce Statutory Print Layout",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "entry_date",
+   "fieldtype": "Date",
+   "label": "Record Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reference_id",
+   "fieldtype": "Data",
+   "label": "Reference / Worker Identifier",
+   "description": "Manual record identifier when applicable; do not invent."
+  },
+  {
+   "fieldname": "values",
+   "fieldtype": "Table",
+   "label": "Entered Source Values",
+   "options": "Workforce Statutory Value",
+   "reqd": 1
+  },
+  {
+   "fieldname": "evidence_file",
+   "fieldtype": "Attach",
+   "label": "Supporting Evidence",
+   "description": "Store files privately; configure Frappe file access for sensitive evidence."
+  },
+  {
+   "fieldname": "evidence_note",
+   "fieldtype": "Small Text",
+   "label": "Evidence / Review Notes (not printed)"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0,
+   "print": 1,
+   "export": 1
+  },
+  {
+   "role": "Workforce Compliance Auditor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0,
+   "print": 1,
+   "export": 1
+  }
+ ]
+}
