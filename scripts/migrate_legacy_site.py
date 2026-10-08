@@ -301,6 +301,43 @@ def preflight(
     return legacy_doctypes, plan, backup
 
 
+def _migrate_workflow_state_values() -> list[dict]:
+    """Translate only known app workflow-state values on native business documents.
+
+    Workflow State is a linked metadata document, but an HRMS document's
+    `workflow_state` is a Data field, not a Link. Frappe's metadata rename
+    does not update those values automatically.
+    """
+    from workforce_suite.approval_setup import WORKFLOWS
+
+    changes: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for workflow in WORKFLOWS.values():
+        doctype = workflow["document_type"]
+        if not _exists(doctype):
+            continue
+        meta = frappe.get_meta(doctype)
+        if not meta.has_field("workflow_state"):
+            continue
+        for state in workflow["states"]:
+            new = state[0]
+            old = _old_name(new)
+            key = (doctype, old)
+            if old == new or key in seen:
+                continue
+            seen.add(key)
+            count = int(frappe.db.count(doctype, {"workflow_state": old}))
+            if count:
+                frappe.db.set_value(
+                    doctype, {"workflow_state": old},
+                    "workflow_state", new, update_modified=False,
+                )
+                if frappe.db.count(doctype, {"workflow_state": old}):
+                    frappe.throw(f"Could not translate {doctype}.workflow_state {old!r}")
+                changes.append({"doctype": doctype, "old": old, "new": new, "count": count})
+    return changes
+
+
 def prepare(backup_file: str, expected_sha256: str | None = None) -> None:
     if _snapshot_path().exists():
         frappe.throw("A migration snapshot already exists; restore/review it before restarting prepare")
@@ -330,6 +367,10 @@ def prepare(backup_file: str, expected_sha256: str | None = None) -> None:
             for old, new in plan.get(doctype, {}).items():
                 _rename_one(doctype, old, new)
 
+        # Preserve native business records while translating only the
+        # exact metadata state values used by the app's former workflows.
+        snapshot["workflow_state_renames"] = _migrate_workflow_state_values()
+        _write_snapshot(snapshot)
         _update_app_fields()
         _switch_installed_app()
         frappe.clear_cache()
@@ -472,6 +513,9 @@ def verify() -> None:
 
     if _business_counts() != snapshot.get("business_counts", {}):
         errors.append("business-record counts do not match the pre-migration snapshot")
+    for change in snapshot.get("workflow_state_renames", []):
+        if frappe.db.count(change["doctype"], {"workflow_state": change["old"]}):
+            errors.append(f"legacy workflow state remains: {change['doctype']} {change['old']}")
     for old, count in snapshot.get("app_doctype_counts", {}).items():
         target = snapshot.get("doctype_map", {}).get(old)
         if not target or _count(target) != count:
