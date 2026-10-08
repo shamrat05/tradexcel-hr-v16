@@ -123,9 +123,25 @@ The source rename and installed-app rename are coupled: simply running
 6. Run all tests and business-count verification.
 7. Rehearse restore/rollback before touching a real customer site.
 
+### Phase 0 — read-only migration preflight
+
+From the bench root, replace the backup file placeholder with the exact
+`bench backup` database archive you verified. Preflight does not modify the
+database or installed-app registry:
+
+```bash
+env/bin/python apps/workforce_suite/scripts/migrate_legacy_site.py \
+  --site YOUR_SITE --phase preflight \
+  --backup-file sites/YOUR_SITE/private/backups/YOUR_VERIFIED-database.sql.gz
+```
+
+Review the listed planned DocType/role/workflow and patch-log renames. The tool
+verifies the backup gzip stream and computes its SHA-256. It cannot itself
+prove that the full site and files restore: rehearse that separately.
+
 ### Phase 1 — preserve and rename metadata
 
-From the bench root:
+Only after a clean preflight and successful independent restore rehearsal:
 
 ```bash
 env/bin/python apps/workforce_suite/scripts/migrate_legacy_site.py \
@@ -171,9 +187,6 @@ env/bin/python apps/workforce_suite/scripts/migrate_legacy_site.py \
 Finalize only copies a legacy-named column when the corresponding new generic
 field exists after model sync. It then checks business and app-owned row counts
 against the pre-migration snapshot.
-
-Old physical database columns are retained by default for rollback safety.
-Do not drop them on the first migration rehearsal.
 
 Old physical columns stay in place for recovery. This migration script has
 **no drop-column option**; do not delete them as part of the initial cutover.
