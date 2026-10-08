@@ -475,10 +475,12 @@ def main() -> int:
 
     if args.phase == "prepare" and not args.backup_file:
         parser.error("--backup-file is required before any database rename")
+    # Resolve paths before _enter_site changes cwd into bench/sites.
+    backup_file = str(Path(args.backup_file).expanduser().resolve()) if args.backup_file else None
     _enter_site(args.site)
     try:
         if args.phase == "prepare":
-            prepare(args.backup_file)
+            prepare(backup_file)
         elif args.phase == "finalize":
             finalize()
         else:
