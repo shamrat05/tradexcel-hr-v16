@@ -85,13 +85,15 @@ frappe.ui.form.on("Payroll Entry", {
 						].join(" "));
 						if (payment.payment_journal_entry) {
 							frm.add_custom_button(__("Open Payment Entry"), () =>
-								frappe.set_route("Form", "Journal Entry", payment.payment_journal_entry)
+								frappe.set_route("Form", "Journal Entry", payment.payment_journal_entry),
+                                __("Payment records")
 							);
 						}
 						const transaction = payment.bank_transactions && payment.bank_transactions[0];
 						if (transaction && transaction.name) {
 							frm.add_custom_button(__("Open Bank Transaction"), () =>
-								frappe.set_route("Form", "Bank Transaction", transaction.name)
+								frappe.set_route("Form", "Bank Transaction", transaction.name),
+                                __("Payment records")
 							);
 						}
 					}
