@@ -32,12 +32,21 @@ def data():
     other=h.create_employee('other','Example Company B',None,None)
     holiday=frappe.get_doc({'doctype':'Holiday List','holiday_list_name':'TEST STAT '+frappe.generate_hash(8),
         'from_date':'2020-01-01','to_date':'2027-12-31','holidays':[]}).insert()
+    holiday_assignments = []
     for employee in (person,other):
         company=frappe.db.get_value('Employee',employee,'company')
-        frappe.get_doc({'doctype':'Holiday List Assignment','applicable_for':'Employee','assigned_to':employee,
+        assignment = frappe.get_doc({'doctype':'Holiday List Assignment','applicable_for':'Employee','assigned_to':employee,
             'employee_company':company,'holiday_list':holiday.name,'from_date':'2020-01-01'}).insert().submit()
+        holiday_assignments.append(assignment.name)
     yield dict(h=h,reviewer=reviewer,auditor=auditor,unscoped=unscoped,worker=worker,person=person,other=other)
-    frappe.set_user('Administrator');frappe.db.rollback();h.cleanup()
+    frappe.set_user('Administrator');frappe.db.rollback()
+    for name in holiday_assignments:
+        if frappe.db.exists('Holiday List Assignment', name):
+            assignment = frappe.get_doc('Holiday List Assignment', name)
+            if assignment.docstatus == 1: assignment.cancel()
+            frappe.delete_doc('Holiday List Assignment', name)
+    if frappe.db.exists('Holiday List', holiday.name): frappe.delete_doc('Holiday List', holiday.name)
+    frappe.db.commit();h.cleanup()
     assert not frappe.db.exists('Employee',person) and not frappe.db.exists('Employee',other)
 
 
