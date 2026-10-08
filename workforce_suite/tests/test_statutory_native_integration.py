@@ -298,3 +298,43 @@ def test_branch_scoped_auditor_can_read_matching_manual_establishment(data):
     assert record.name in frappe.get_list('Workforce Statutory Record',pluck='name')
     record.check_permission('read')
     assert forms.preview_a4(doc.name,'2026-01-01','2026-12-31')['row_count']==1
+
+
+def test_explicit_draft_setup_is_repeatable_preserves_edits_and_never_approves(data):
+    from workforce_suite.workforce_suite.statutory_setup import prepare_draft_layout
+    branch = frappe.get_doc({'doctype':'Branch','branch':'TEST SETUP '+frappe.generate_hash(8),
+                             'company':'Example Company A'}).insert()
+    frappe.db.commit()
+    names = []
+    try:
+        first = prepare_draft_layout('Example Company A', 'form_8', '2026-10-01', branch.name)
+        names = first['layouts']; assert first['created'] and len(names) == 1
+        doc = frappe.get_doc('Workforce Statutory Print Layout', names[0])
+        assert doc.docstatus == 0 and not doc.statutory_profile and not doc.approved_by
+        assert not doc.title_bn and not doc.salary_mappings
+        doc.title = 'TEST administrator draft edit'; doc.columns[0].label_en = 'TEST custom label'; doc.save()
+        frappe.db.commit()
+        again = prepare_draft_layout('Example Company A', 'form_8', '2027-01-01', branch.name)
+        assert again == {'created': False, 'layouts': names}
+        doc.reload(); assert doc.title == 'TEST administrator draft edit'
+        assert doc.columns[0].label_en == 'TEST custom label' and str(doc.effective_from) == '2026-10-01'
+        assert len(frappe.get_all(doc.doctype, filters={'company':doc.company,'branch':branch.name})) == 1
+        with pytest.raises(frappe.ValidationError):
+            prepare_draft_layout('Example Company B', 'form_8', '2026-10-01', branch.name)
+        with pytest.raises(frappe.ValidationError):
+            prepare_draft_layout('Example Company A', 'form_32', '2026-10-01', branch.name)
+        with pytest.raises(frappe.ValidationError):
+            prepare_draft_layout('Example Company A', 'form_8', '', branch.name)
+        frappe.set_user(data['auditor'])
+        with pytest.raises(frappe.PermissionError):
+            prepare_draft_layout('Example Company B', 'form_8', '2026-10-01')
+        frappe.set_user(data['worker'])
+        with pytest.raises(frappe.PermissionError):
+            prepare_draft_layout('Example Company A', 'form_8', '2026-10-01')
+    finally:
+        frappe.set_user('Administrator'); frappe.db.rollback()
+        for name in names:
+            if frappe.db.exists('Workforce Statutory Print Layout', name):
+                frappe.delete_doc('Workforce Statutory Print Layout', name)
+        frappe.delete_doc('Branch', branch.name); frappe.db.commit()
+        assert all(not frappe.db.exists('Workforce Statutory Print Layout', n) for n in names)
