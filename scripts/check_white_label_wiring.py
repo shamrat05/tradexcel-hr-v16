@@ -84,7 +84,7 @@ for key, folder in (
     ("doctype_js", "js"), ("doctype_list_js", "js"),
 ):
     for value in _iter_strings(hooks.get(key, {})):
-        path = APP / "public" / value
+        path = APP / value
         if not path.is_file():
             fail(f"{key}: missing asset {value}")
 
