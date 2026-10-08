@@ -490,12 +490,43 @@ def _ensure_import_reference_field() -> None:
     create_custom_fields({"Employee": [definition]}, update=False)
 
 
+def _migrate_owned_desktop_logos(snapshot: dict) -> list[str]:
+    """Retarget only the packaged logo on preflight-owned, renamed icons.
+
+    Native JSON sync can preserve a newer database document's old asset URL.
+    Customer uploads/external logos and unrelated icons are never replaced.
+    """
+    old_logo = "/assets/tradex_hr/images/tradex-hr.svg"
+    new_logo = "/assets/workforce_suite/images/workforce-hr.svg"
+    changed = []
+    for name in snapshot.get("metadata_map", {}).get("Desktop Icon", {}).values():
+        if not frappe.db.exists("Desktop Icon", name):
+            frappe.throw(f"Renamed Desktop Icon is missing: {name}")
+        doc = frappe.get_doc("Desktop Icon", name)
+        if doc.logo_url != old_logo:
+            continue
+        if doc.app != TARGET_APP:
+            frappe.throw(f"Desktop Icon ownership changed; review before migrating its logo: {name}")
+        if not Path(frappe.get_app_path(TARGET_APP, "public", "images", "workforce-hr.svg")).is_file():
+            frappe.throw("The packaged Workforce Suite logo is missing")
+        previous = frappe.flags.in_import
+        frappe.flags.in_import = True  # Native metadata save must not export site state into source.
+        try:
+            doc.logo_url = new_logo
+            doc.save(ignore_permissions=True)
+        finally:
+            frappe.flags.in_import = previous
+        changed.append(name)
+    return changed
+
+
 def finalize() -> None:
     snapshot = _read_snapshot()
     apps = frappe.get_installed_apps()
     if TARGET_APP not in apps or LEGACY_APP in apps:
         frappe.throw("installed_apps has not been switched cleanly to workforce_suite")
 
+    logos = _migrate_owned_desktop_logos(snapshot)
     _ensure_import_reference_field()
     copied: list[tuple[str, str, str]] = []
     for doctype in sorted(_candidate_field_doctypes()):
@@ -531,7 +562,7 @@ def finalize() -> None:
             frappe.throw(f"App row-count mismatch {old!r} -> {new!r}: {expected} != {actual}")
 
     frappe.clear_cache()
-    print(json.dumps({"phase": "finalize", "copied_fields": copied, "business_counts": current_business}, indent=2))
+    print(json.dumps({"phase": "finalize", "copied_fields": copied, "desktop_logos": logos, "business_counts": current_business}, indent=2))
 
 
 def verify() -> None:

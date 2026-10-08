@@ -147,3 +147,49 @@ def test_import_reference_migration_refuses_incompatible_legacy_customization():
     preserve = _migration_function("_ensure_import_reference_field", frappe=fake)
     with pytest.raises(ValueError, match="Data field"):
         preserve()
+
+
+def test_packaged_desktop_logo_migration_preserves_customizations_and_retries(tmp_path):
+    from types import SimpleNamespace
+    packaged = tmp_path / "workforce-hr.svg"
+    packaged.write_text("<svg/>")
+    old_logo = "/assets/" + "trade" + "x_hr/images/" + "trade" + "x-hr.svg"
+    saves = []
+    docs = {
+        "Workforce Suite": SimpleNamespace(app="workforce_suite", logo_url=old_logo),
+        "Customized": SimpleNamespace(app="workforce_suite", logo_url="/files/customer-logo.svg"),
+        "Unrelated": SimpleNamespace(app="other_app", logo_url=old_logo),
+    }
+    for name, doc in docs.items():
+        doc.save = lambda name=name, **kwargs: saves.append((name, kwargs, flags.in_import))
+    flags = SimpleNamespace(in_import=False)
+    fake = SimpleNamespace(flags=flags, db=SimpleNamespace(exists=lambda *args: True),
+        get_doc=lambda dt, name: docs[name], get_app_path=lambda *args: str(packaged))
+    migrate = _migration_function("_migrate_owned_desktop_logos", frappe=fake, Path=Path, TARGET_APP="workforce_suite")
+    snapshot = {"metadata_map": {"Desktop Icon": {"old": "Workforce Suite", "old-custom": "Customized"}}}
+    assert migrate(snapshot) == ["Workforce Suite"]
+    assert docs["Workforce Suite"].logo_url == "/assets/workforce_suite/images/workforce-hr.svg"
+    assert docs["Customized"].logo_url == "/files/customer-logo.svg"
+    assert docs["Unrelated"].logo_url == old_logo
+    assert migrate(snapshot) == [] and len(saves) == 1
+    assert saves == [("Workforce Suite", {"ignore_permissions": True}, True)]
+    assert flags.in_import is False
+
+
+def test_desktop_logo_migration_refuses_missing_asset_or_changed_ownership(tmp_path):
+    from types import SimpleNamespace
+    import pytest
+    def reject(message):
+        raise ValueError(message)
+    old_logo = "/assets/" + "trade" + "x_hr/images/" + "trade" + "x-hr.svg"
+    doc = SimpleNamespace(app="other_app", logo_url=old_logo)
+    fake = SimpleNamespace(db=SimpleNamespace(exists=lambda *args: True), get_doc=lambda *args: doc,
+        throw=reject, get_app_path=lambda *args: str(tmp_path / "missing.svg"))
+    migrate = _migration_function("_migrate_owned_desktop_logos", frappe=fake, Path=Path, TARGET_APP="workforce_suite")
+    snapshot = {"metadata_map": {"Desktop Icon": {"old": "Workforce Suite"}}}
+    with pytest.raises(ValueError, match="ownership changed"):
+        migrate(snapshot)
+    doc.app = "workforce_suite"
+    with pytest.raises(ValueError, match="logo is missing"):
+        migrate(snapshot)
+    assert doc.logo_url == old_logo

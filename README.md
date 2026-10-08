@@ -14,10 +14,14 @@ customer's legal identity, payroll basis or permissions from a built-in company 
 
 The isolated white-label rehearsal uses Frappe 16.34.0, ERPNext 16.35.0 and
 HRMS 16.19.0. Fresh installation, restored-copy migration, data comparisons and
-post-migration recovery passed. The last full run was 807 passed / 3 failed;
-all three failed cases passed in the final focused rerun (6 passed). No full
-suite was repeated afterward at the owner's request. Actual Desk startup and
-browser/device/staff UAT remain unresolved. See the [rehearsal evidence](docs/white_label_migration.md#rehearsal-evidence--2026-10-08).
+post-migration recovery passed. The subsequent uninterrupted acceptance run
+passed **813 tests, 0 failed, 0 skipped**. Actual isolated Desk checks completed
+80 Administrator/scoped-HR combinations across fresh and migrated sites,
+desktop/phone widths and light/dark themes, with no uncaught JavaScript errors
+or document overflow. A stale migrated app-logo URL was corrected. Native
+Frappe sidebar image/setup issues and an HRMS restricted-user Settings request
+remain documented; physical-device and real staff UAT remain outstanding.
+See the [acceptance evidence](docs/white_label_migration.md#acceptance-follow-up--2026-10-08).
 
 ## App name and module
 

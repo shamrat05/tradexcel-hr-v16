@@ -188,6 +188,13 @@ Finalize only copies a legacy-named column when the corresponding new generic
 field exists after model sync. It then checks business and app-owned row counts
 against the pre-migration snapshot.
 
+Finalize also retargets the exact legacy packaged Desktop Icon logo URL on
+icons recorded as app-owned in the preflight snapshot. Native JSON sync can
+leave that URL unchanged when the database record is newer than the source.
+Customer-uploaded/external logos and unrelated icons are preserved; changed
+ownership or a missing packaged asset fails closed. The native document save
+runs in import mode so it cannot export site metadata into application source.
+
 Old physical columns stay in place for recovery. This migration script has
 **no drop-column option**; do not delete them as part of the initial cutover.
 
@@ -334,7 +341,7 @@ package was exercised on the isolated synthetic v16 site:
 | Run | Result | Interpretation |
 | --- | --- | --- |
 | Initial full run | 750 passed, 53 failed, 0 skipped | Exposed migration/test portability and fresh-schema defects; not acceptance. |
-| Last full run after corrections | 807 passed, 3 failed, 0 skipped | 810 collected tests; remaining failures identified precisely. |
+| Historical full run after corrections | 807 passed, 3 failed, 0 skipped | 810 collected tests; remaining failures identified precisely. |
 | Final fixed-regression run | 6 passed, 0 failed, 0 skipped | All three remaining failures plus the new jurisdiction regression and affected wage-floor integrations. |
 | Changed migration metadata regression without Frappe installed | 1 passed | Confirms the new pure test retains source-only CI portability. |
 
@@ -342,9 +349,10 @@ The final three failures were two unit mocks accidentally querying site
 metadata and a native onboarding email render missing the isolated asset
 manifest. The mocks were isolated and the complete native assets were built;
 the failed cases then passed. Tests were not deleted or skipped to improve
-counts. At the owner's instruction, the already completed full suite was **not
-run again** after this focused correction. These are separate runs, not a
-fabricated final all-green full-suite result.
+counts. At the owner's earlier instruction, the full suite was **not run again**
+immediately after that focused correction. Those were separate historical
+runs. The later explicit acceptance instruction authorized the uninterrupted
+full rerun recorded below; focused results were not substituted for it.
 
 Tests now select explicit disposable sites and sibling installed-source paths
 instead of the original workstation site, real employee fixture or bench path.
@@ -386,14 +394,152 @@ site. No backup, secret, employee export or private configuration is committed.
 
 ### Remaining acceptance gates
 
-Actual isolated Desk browser verification was attempted with Chromium against
-the served application, not a mocked harness. Login succeeded, but repeated
-native setup/Desk navigation reached `/undefined`; stable page/layout/theme
-verification was not established. Native Desk setup/navigation diagnosis and
-real operator/browser/device UAT remain pending. No framework files were
-patched to hide this limitation.
+The first browser attempt did not establish stable Desk verification. Its
+initial interpretation of `/undefined` as a navigation destination was
+incorrect; the instrumented follow-up below distinguishes the image request
+from actual main-frame navigation. This historical attempt is not acceptance
+evidence. No framework files were patched to hide the limitation.
 
 Remote workflow results must be read for the exact pushed head; local tests do
 not constitute a remote CI pass. Commercial licensing, clean-history
 packaging, customer deployment parity and physical-device/UAT acceptance remain
 separate release gates. This rehearsal is not production certification.
+
+## Acceptance follow-up — 2026-10-08
+
+This follow-up began at `0c82dbc4683af9ab8b5e1b1b9dfc62010df6507e`
+in the existing independent rehearsal bench. The original bench, checkout,
+database, customer backups and dirty backup documentation remained untouched.
+All three framework pins in the environment table above remained unchanged.
+
+### Navigation diagnosis and confirmed correction
+
+Chromium captured console errors, failed requests, response status/resource
+types, CDP request initiators, main-frame navigation and screenshots. Private
+server logs were retained alongside those captures. Comparison covered:
+
+- a clean Frappe/ERPNext/HRMS site without this app;
+- a fresh Workforce Suite site;
+- the migrated restored copy.
+
+On all three configured sites, login reached `/desk`. `/undefined` was a
+404 **Image** request, never a main-frame redirect. Instrumentation traced the
+generated `<img src="undefined">` to installed Frappe's
+`SidebarHeader.populate_dropdown_menu()` passing `{is_divider: true}` entries
+to `add_app_item()`, which expects an ordinary item with an icon URL. This is
+reproducible without Workforce Suite. Default App settings, native Desktop
+Icon/Sidebar routes, permission-filtered boot data and asset manifests did not
+establish an app redirect defect. No redirect shim or core patch was added.
+The native-only site selected `/desk` as its default path; both four-app sites
+selected native `/apps`, whose login flow reached Desk. System/User Default App
+values were blank and no stale legacy User Default App values were present.
+Each four-app site had exactly one app-owned Desktop Icon and Sidebar.
+
+A separate app migration defect **was** confirmed: the renamed Desktop Icon
+retained `/assets/tradex_hr/images/tradex-hr.svg`. The narrow finalize correction
+described above was applied to the backed-up restored copy and verified by
+actual Desk navigation. The packaged Workforce Suite logo loads, and its
+native Desktop Icon opens the existing Workforce Suite Workspace/Sidebar.
+Two pure regressions cover retry idempotence, customer/unrelated-logo
+preservation, import-mode save and fail-closed ownership/asset checks.
+
+Before native setup completion, clean HRMS and fresh Workforce Suite also
+reproduced a Frappe `Sidebar.toggle()` exception: its constructor returns early
+when `boot.setup_complete` is false, but the toggle then uses an absent sidebar
+element. Acceptance comparison used the supported native setup-completion
+procedure with explicit synthetic Company/country/currency configuration;
+it did not force boot flags or add a redirect. The initial wizard exception
+remains an upstream fresh-setup limitation, not a proven clean wizard journey.
+
+Development realtime initially used the wrong port/site identity. Restarting
+only the isolated services with the native development-server environment and
+using each site's own hostname resolved the Socket.IO request/namespace errors.
+No application or framework realtime code was changed.
+
+### Actual served-browser evidence
+
+The final matrix contains **80 checks**: fresh and migrated sites, Administrator
+and a synthetic Company-scoped Workforce Suite Manager without System Manager,
+1365px and 375px, light and dark, across Home, Employee List, unsaved Employee
+Form, unsaved Attendance Request Form and Employee Data Gaps report. Native
+Desktop Icon clicks opened the Workspace; native theme selection and Sidebar
+controls were used. Reports received an explicit permitted Company through
+native route options. No business form was saved.
+
+All 80 checks completed with zero uncaught JavaScript errors and zero
+document-level horizontal overflow. Administrator captures retain the upstream
+`/undefined` image 404. The ordinary HR user's native Employee form retains a
+403 from HRMS's unconditional `frappe.db.get_single_value("HR Settings",
+"emp_created_by")` call; the form remains accessible, but this is not an
+error-free ordinary-user console. Extra Settings permission was not granted.
+Both synthetic browser users and their Company User Permissions were deleted
+and their absence verified.
+
+### Uninterrupted full integration result
+
+After browser verification, the native release runner executed the entire test
+directory on the explicitly guarded disposable fresh site, without interruption,
+selection or skipping:
+
+```bash
+bash apps/workforce_suite/scripts/run_release_integration.sh \
+  --junitxml=/PRIVATE_EVIDENCE_DIRECTORY/full-integration.xml
+```
+
+The result was **813 passed, 0 failed, 0 errors, 0 skipped**, exit code **0**,
+in **676.30 seconds**. One warning was recorded by the runner, whose normal
+`--disable-warnings` option suppresses warning detail. The private full stdout/
+stderr and JUnit XML preserve the exact result. This includes the earlier three
+failed cases, the jurisdiction regression and both new logo-migration tests.
+No test was removed or skipped to obtain acceptance.
+
+The final restored-copy comparison passed across all **34 protected native
+tables** and **33 app-owned documents**: all counts matched, app records matched
+exactly, and there were no unexpected changed fields. Only one isolated
+Administrator's native `last_active`, `last_login` and `modified` fields changed
+during actual browser login. Customer records, roles and User Permissions were
+preserved. Original checkout/configuration hashes and all three upstream source
+worktrees remained unchanged.
+
+After retaining and verifying a fresh full backup of the synthetic test site,
+native reinstall removed its integration fixtures. A post-cleanup read-only
+check found all four apps installed and zero Company, Employee, Checkin,
+Attendance, Salary Component/Structure/Assignment, Additional Salary, Payroll
+Entry, Salary Slip, GL Entry, Leave Allocation and Shift Assignment records,
+plus zero temporary browser users/User Permissions. Scheduler remained paused
+and mail muted. The first cleanup invocation stopped at an empty-root-password
+CLI prompt; supplying the isolated server's empty password through stdin
+completed cleanup. Both command logs were retained. The migrated evidence copy
+and recovery archives were preserved; no original site was reset.
+
+Logs, screenshots, navigation/boot captures and test XML are private under
+`/home/sanchita/workforce-suite-rehearsal-20261008/acceptance-20261008/` and
+the sibling `logs/` directory. Customer data, passwords and raw diagnostics
+are not committed.
+
+### Upstream reproduction and safe resolution
+
+Use the exact pinned Frappe version in a disposable three-app site, finish
+native setup, log in as Administrator and inspect `/desk` with Chromium's
+Network filter `undefined`. Record resource type Image/404 and the unchanged
+main-frame route, then inspect the divider entries and rendering methods in
+`frappe/public/js/frappe/ui/sidebar/sidebar_header.js`. This independently
+reproduces the remaining asset defect. For the wizard issue, use an unconfigured
+clean site and retain its `Sidebar.toggle` stack before completing setup.
+
+Frappe's reported v16 sidebar-icon and workspace-navigation issues are related
+investigation leads, not proof that their root causes match this capture.
+The installed resolver already includes its multi-candidate fallback. The safe
+next step is an upstream divider/setup lifecycle correction followed by a
+separately pinned framework upgrade rehearsal, including this same browser
+matrix. Do not change core locally, suppress failures, invent `/undefined`
+redirects or broaden Settings access to make screenshots appear clean.
+
+Pinned source proof: [sidebar divider rendering](https://github.com/frappe/frappe/blob/f1bdb53ac60cd96528b52de418f9459510acb5bd/frappe/public/js/frappe/ui/sidebar/sidebar_header.js),
+[sidebar setup and resolution](https://github.com/frappe/frappe/blob/f1bdb53ac60cd96528b52de418f9459510acb5bd/frappe/public/js/frappe/ui/sidebar/sidebar.js),
+and [HRMS Employee settings request](https://github.com/frappe/hrms/blob/7e0fba4bf11a63ac7b21a717610e235310815c1a/hrms/public/js/erpnext/employee.js).
+Related reports examined: [v16 sidebar icons](https://github.com/frappe/frappe/issues/40074)
+and [workspace resolution](https://github.com/frappe/frappe/issues/39667).
+
+Physical devices, real staff UAT, customer deployment parity, clean-history
+packaging and commercial licensing remain separate acceptance gates.
