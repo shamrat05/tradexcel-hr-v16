@@ -61,7 +61,7 @@ def check_pdf(output: Path, orientation: str, expected_id: str):
     all_text = " ".join(p.get_text("text") for p in doc)
     # PDF extraction may insert line breaks after hyphens in narrow cells.
     # Ignore whitespace only: still require the complete worker identifier.
-    assert expected_id in re.sub(r"\\s+", "", all_text), (output, expected_id, all_text[-350:])
+    assert expected_id in re.sub(r"\s+", "", all_text), (output, expected_id, all_text[-350:])
     return len(doc)
 
 
