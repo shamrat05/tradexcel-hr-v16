@@ -76,6 +76,7 @@ def prepare_draft_profile(company, branch="", effective_from=""):
     return {"created": True, "profiles": [doc.name], "missing_requirements": missing}
 
 
+@frappe.whitelist()
 def profile_missing_requirements(profile_name):
     doc = frappe.get_doc("Workforce Statutory Profile", profile_name)
     fields = (
