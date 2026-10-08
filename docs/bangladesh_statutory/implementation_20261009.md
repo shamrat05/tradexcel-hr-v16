@@ -152,3 +152,8 @@ The establishment profile now records independent Registration Applicability and
 ## Site-backed verification — applicability and profile concurrency
 
 On the isolated disposable Frappe v16 site workforce-statutory.localhost (separate database and backup), the corrected applicability and profile-scope tests passed. The full Workforce Suite integration suite completed with **901 passed, 2 skipped, 1 warning**. The synthetic profile, layout, record and export fixtures were cleaned; the two synthetic setup Companies and four Employees remain only as the isolated suite prerequisites. No restored customer site was used or modified.
+
+
+## Form 40 technical completion — 2026-10-09
+
+Form 40 is now represented as a distinct protected catalog entry and print-layout option. It is sourced from the separate Form 40 register appearing after Form 39 in the inspected source page, with worker register identity, advance amount/payment date, requitals and collection dates, recovery completion date and remarks. It remains a manually reviewed draft until current-law applicability, employer evidence and legal approval are completed; no advance or repayment is inferred from payroll.

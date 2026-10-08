@@ -35,11 +35,11 @@ def _layout(form_code: str):
     return data
 
 
-def test_pdf_catalog_exactly_covers_all_29_dife_index_entries():
+def test_pdf_catalog_covers_all_catalog_entries():
     catalog = json.loads(SPECS.read_text(encoding="utf-8"))
     forms = catalog["entries"]
-    assert len(forms) == 29
-    assert len({x["id"] for x in forms}) == 29
+    assert len(forms) == 30
+    assert len({x["id"] for x in forms}) == 30
     assert catalog["pdfs_audited"] == 28
     assert catalog["pdf_pages"] == 48
     for form in forms:

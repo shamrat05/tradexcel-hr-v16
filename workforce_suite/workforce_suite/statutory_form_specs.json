@@ -3020,6 +3020,108 @@
       "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
+      "id": "form_40",
+      "form_title": "Register of Advance and Requital",
+      "ui_title": "Advance and Requital Register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/33f833ab5839418481e4364ee7c3188c.pdf",
+      "source_sha256": "387477e096134a13a40348cc16d0eea51ca7a80eabbc8185139664151d6377ce",
+      "source_pages": [
+        1
+      ],
+      "field_audit": "Distinct Form 40 register identified on the source page following Form 39: worker register identity, advance amount/payment date, requitals and collection dates, completion date and remarks.",
+      "legal_approved": false,
+      "source_issue": "Form 40 is a separate prescribed register embedded in the downloaded Form 39 source PDF. Current-law and employer applicability review remain required before official use.",
+      "columns": [
+        {
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "ক্রমিক নং",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1,
+          "required_value": true
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
+          "label_bn": "শ্রমিক রেজিস্টার নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1,
+          "required_value": false
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Worker name",
+          "label_bn": "শ্রমিকের নাম",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1,
+          "required_value": false
+        },
+        {
+          "field_key": "card_number",
+          "label_en": "Card/token",
+          "label_bn": "কার্ড বা টোকেন",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1,
+          "required_value": false
+        },
+        {
+          "field_key": "designation_department",
+          "label_en": "Designation/department",
+          "label_bn": "পদবি বা বিভাগ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1,
+          "required_value": false
+        },
+        {
+          "field_key": "advance_amount_date",
+          "label_en": "Advance amount and payment date",
+          "label_bn": "অগ্রিমের পরিমাণ ও প্রদানের তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2,
+          "required_value": false
+        },
+        {
+          "field_key": "requitals",
+          "label_en": "Requitals, amount and collection date",
+          "label_bn": "পরিশোধের সংখ্যা, পরিমাণ ও আদায়ের তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 3,
+          "required_value": false
+        },
+        {
+          "field_key": "recovered_on",
+          "label_en": "Recovery completion date",
+          "label_bn": "সম্পূর্ণ আদায়ের তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2,
+          "required_value": false
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "মন্তব্য",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2,
+          "required_value": false
+        }
+      ],
+      "implementation_status": "Technical draft with protected fields and reviewed manual-evidence workflow",
+      "translation_status": "Draft EN+BN; approved translation pending",
+      "currentness_status": "Pending current-law review"
+    },
+    {
       "id": "form_80",
       "form_title": "Half-yearly establishment return",
       "ui_title": "Half-yearly establishment return",
