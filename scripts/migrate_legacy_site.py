@@ -7,7 +7,7 @@ upgraded. Runtime/product code should not contain those identifiers.
 Run from the bench root after a verified fresh backup:
 
   env/bin/python apps/workforce_suite/scripts/migrate_legacy_site.py \
-      --site <site> --phase prepare --yes
+      --site <site> --phase prepare --yes --backup-file <verified-backup.sql.gz>
   bench --site <site> migrate
   env/bin/python apps/workforce_suite/scripts/migrate_legacy_site.py \
       --site <site> --phase finalize --yes
@@ -335,10 +335,13 @@ def _legacy_columns(doctype: str) -> list[str]:
             pluck=True,
         )
         return sorted({f for f in fields if f and LEGACY_TOKEN.search(f)})
-    try:
-        return sorted(c for c in frappe.db.get_table_columns(doctype) if LEGACY_TOKEN.search(c))
-    except Exception:
+    if meta.is_virtual:
         return []
+    try:
+        columns = frappe.db.get_table_columns(doctype)
+    except Exception as exc:
+        frappe.throw(f"Unable to inspect physical columns for {doctype}: {exc}")
+    return sorted(c for c in columns if LEGACY_TOKEN.search(c))
 
 
 def _remove_old_custom_field_metadata(doctype: str, old_fieldname: str) -> None:
@@ -352,7 +355,30 @@ def _remove_old_custom_field_metadata(doctype: str, old_fieldname: str) -> None:
         frappe.delete_doc("Custom Field", name, ignore_permissions=True, force=True)
 
 
-def finalize(drop_legacy_columns: bool = False) -> None:
+def _assert_field_values_copied(doctype: str, old_fieldname: str, new_fieldname: str) -> None:
+    meta = frappe.get_meta(doctype)
+    if meta.issingle:
+        if frappe.db.sql(
+            "select count(*) from tabSingles where doctype=%s and field=%s",
+            (doctype, old_fieldname),
+        )[0][0]:
+            frappe.throw(f"Single value field did not migrate: {doctype}.{old_fieldname}")
+        return
+    if not (re.fullmatch(r"[A-Za-z0-9_ ]+", doctype)
+            and re.fullmatch(r"[A-Za-z0-9_]+", old_fieldname)
+            and re.fullmatch(r"[A-Za-z0-9_]+", new_fieldname)):
+        frappe.throw("Unsafe SQL identifier in custom field migration")
+    mismatches = frappe.db.sql(
+        f"SELECT COUNT(*) FROM `tab{doctype}` "
+        f"WHERE NOT (`{old_fieldname}` <=> `{new_fieldname}`)"
+    )[0][0]
+    if mismatches:
+        frappe.throw(
+            f"Failed to preserve {mismatches} values: {doctype}.{old_fieldname} -> {new_fieldname}"
+        )
+
+
+def finalize() -> None:
     snapshot = _read_snapshot()
     apps = frappe.get_installed_apps()
     if TARGET_APP not in apps or LEGACY_APP in apps:
@@ -371,10 +397,10 @@ def finalize(drop_legacy_columns: bool = False) -> None:
                     f"refusing to discard data from {old_fieldname}"
                 )
             rename_field(doctype, old_fieldname, new_fieldname, validate=True)
+            _assert_field_values_copied(doctype, old_fieldname, new_fieldname)
             _remove_old_custom_field_metadata(doctype, old_fieldname)
             copied.append((doctype, old_fieldname, new_fieldname))
-            if drop_legacy_columns and not meta.issingle and frappe.db.has_column(doctype, old_fieldname):
-                frappe.db.drop_column(doctype, old_fieldname)
+            # Preserve old physical columns for audited rollback and recovery.
 
     # Do not alter arbitrary Custom Field labels/defaults/options. They may
     # contain a customer's *actual* registered company name, which is data.
@@ -412,9 +438,12 @@ def verify() -> None:
                 errors.append(f"renamed metadata missing: {doctype} {new}")
 
 
-    snapshot = _read_snapshot()
     if _business_counts() != snapshot.get("business_counts", {}):
         errors.append("business-record counts do not match the pre-migration snapshot")
+    for old, count in snapshot.get("app_doctype_counts", {}).items():
+        target = snapshot.get("doctype_map", {}).get(old)
+        if not target or _count(target) != count:
+            errors.append(f"app record count changed during migration: {old} -> {target}")
 
     if errors:
         for error in errors:
@@ -437,7 +466,7 @@ def main() -> int:
     parser.add_argument("--site", required=True)
     parser.add_argument("--phase", choices=("prepare", "finalize", "verify"), required=True)
     parser.add_argument("--yes", action="store_true")
-    parser.add_argument("--drop-legacy-columns", action="store_true")
+    # No destructive column-drop option. That is a separate approved project.
     parser.add_argument("--backup-file", help="Verified pre-migration database backup; required for prepare")
     args = parser.parse_args()
 
@@ -451,7 +480,7 @@ def main() -> int:
         if args.phase == "prepare":
             prepare(args.backup_file)
         elif args.phase == "finalize":
-            finalize(drop_legacy_columns=args.drop_legacy_columns)
+            finalize()
         else:
             verify()
         frappe.db.commit()
