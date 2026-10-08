@@ -1,14 +1,7 @@
-"""Declarative salary setup: create/converge Salary Components and Structures.
+"""Explicit, per-company salary-component/structure setup.
 
-Reads `salary_setup.yaml` (the single source of truth) and makes the site match
-it. Idempotent: run it any number of times, it converges rather than duplicating.
-
-    dry run :  python -c "from workforce_suite.workforce_suite.salary_setup import ..."
-    apply   :  ensure_salary_setup(commit=True)
-
-Deliberately separate from `payroll_setup.py`, which creates demo-ish defaults for
-the older migration structures. This module owns only the configuration declared
-in the YAML.
+This is an opt-in admin migration utility, never a default install hook.
+Callers must supply a reviewed YAML file outside the shared package.
 """
 
 from __future__ import annotations
@@ -17,14 +10,24 @@ import pathlib
 
 import frappe
 
-SPEC_PATH = pathlib.Path(__file__).with_name("salary_setup.yaml")
-
-
-def load_spec() -> dict:
+def load_spec(config_path: str | pathlib.Path | None = None) -> dict:
+    """Read an explicitly reviewed customer YAML. Never use packaged defaults."""
     import yaml
 
-    with open(SPEC_PATH, encoding="utf-8") as fh:
-        return yaml.safe_load(fh)
+    if config_path is None:
+        raise ValueError("An explicit company salary config path is required")
+    path = pathlib.Path(config_path).expanduser().resolve(strict=True)
+    with path.open(encoding="utf-8") as fh:
+        spec = yaml.safe_load(fh)
+    if not isinstance(spec, dict):
+        raise ValueError("Salary configuration must be a YAML mapping")
+    company = str(spec.get("company") or "").strip()
+    currency = str(spec.get("currency") or "").strip()
+    if not company or company in {"YOUR_COMPANY_NAME", "REPLACE_ME"}:
+        raise ValueError("Specify a real company name from the customer's own Company master")
+    if not currency:
+        raise ValueError("Company currency is required in salary setup config")
+    return spec
 
 
 def _component_defaults(spec_comp: dict) -> dict:
@@ -273,9 +276,9 @@ def ensure_retired(spec: dict, *, commit: bool) -> list[str]:
     return log
 
 
-def ensure_salary_setup(*, commit: bool = False) -> dict:
-    """Converge components, structures and retirements to match the spec."""
-    spec = load_spec()
+def ensure_salary_setup(*, config_path: str | pathlib.Path, commit: bool = False) -> dict:
+    """Converge only the explicitly supplied, approved company's specification."""
+    spec = load_spec(config_path)
     log = {"pay_basis": ensure_pay_basis_metadata(spec, commit=commit),
            "components": ensure_components(spec, commit=commit),
            "structures": ensure_structures(spec, commit=commit),

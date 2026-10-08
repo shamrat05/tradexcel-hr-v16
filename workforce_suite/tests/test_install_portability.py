@@ -57,10 +57,18 @@ def test_generic_runtime_has_no_salary_split_or_daily_component_name_authority()
     assert "ensure_salary_setup" not in setup_source
 
 
-def test_historical_salary_spec_names_its_daily_component_explicitly():
-    spec = salary_setup.load_spec()
-    daily = next(row for row in spec["structures"] if row["pay_basis"] == "Daily Wage")
-    assert daily["daily_wage_component"] == "Daily Wage"
+def test_salary_setup_refuses_packaged_company_defaults(tmp_path):
+    with pytest.raises(ValueError, match="explicit company salary config"):
+        salary_setup.load_spec()
+
+    config = tmp_path / "salary.yaml"
+    config.write_text("company: YOUR_COMPANY_NAME\\ncurrency: USD\\ncomponents: []\\nstructures: []\\n")
+    with pytest.raises(ValueError, match="real company"):
+        salary_setup.load_spec(config)
+
+    config.write_text("company: Synthetic Test Company\\ncurrency: USD\\ncomponents: []\\nstructures: []\\n")
+    spec = salary_setup.load_spec(config)
+    assert spec["company"] == "Synthetic Test Company"
 
 
 def test_after_migrate_salary_structure_fields_are_source_owned_only(monkeypatch):
