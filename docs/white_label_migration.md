@@ -75,6 +75,42 @@ was installed.
 
 Configure a synthetic Example Company only in test fixtures.
 
+## Bench preparation (on an isolated restored copy only)
+
+The current Git repository URL still has its historical slug. Only the Python
+app/package name is renamed in this branch; do not assume a repository named
+`shamrat05/workforce-suite` exists yet. The older AWS bootstrap on the
+separate deployment branch is **not** a white-label installer.
+
+Before running any database mutation, restore an existing site into a separate
+Frappe v16 bench. Keep the original checkout and backups elsewhere. From the
+bench root, stop web/worker processes during the one-time app identity change:
+
+```bash
+# Take and verify a real database + files backup before checking out new code.
+bench --site YOUR_SITE backup --with-files
+sha256sum sites/YOUR_SITE/private/backups/*database.sql.gz
+# Verify you can restore this backup to an independent test site.
+
+# In the isolated bench, not on the production source checkout:
+cd apps/tradex_hr
+git fetch origin
+git checkout refactor/workforce-suite-white-label
+cd ../..
+mv apps/tradex_hr apps/workforce_suite
+sed -i 's/^tradex_hr$/workforce_suite/' sites/apps.txt
+bench pip install -e apps/workforce_suite
+```
+
+These commands are for Linux. If the working directory is already called
+`apps/workforce_suite`, do not move it again. The bench's Python environment
+and `sites/apps.txt` must both recognize `workforce_suite` before `prepare`.
+The site's installed-app database entry must *still* be the legacy app until
+`prepare` switches it.
+
+The source rename and installed-app rename are coupled: simply running
+`bench migrate` on the new code **without** `prepare` is unsupported.
+
 ## Existing database migration
 
 **Never run this first on the only copy of a customer database.**
@@ -93,7 +129,8 @@ From the bench root:
 
 ```bash
 env/bin/python apps/workforce_suite/scripts/migrate_legacy_site.py \
-  --site YOUR_SITE --phase prepare --yes
+  --site YOUR_SITE --phase prepare --yes \
+  --backup-file sites/YOUR_SITE/private/backups/YOUR_VERIFIED-database.sql.gz
 ```
 
 The prepare phase:
@@ -107,8 +144,10 @@ The prepare phase:
 - preserves Company/Employee/Branch/payroll/attendance/leave business records.
 
 Frappe v16's DocType rename path also renames the backing database table and
-updates Link/Table metadata, which is why this must be a migration rather than
-a raw SQL/table-name search-and-replace.
+updates Link/Table metadata. DDL may commit even if a subsequent migration
+step fails; a Python rollback is **not** a substitute for a tested full backup.
+The script now checks an explicit backup file and refuses pre-existing rename
+conflicts before the first rename.
 
 ### Phase 2 — sync generic source
 
@@ -136,13 +175,9 @@ against the pre-migration snapshot.
 Old physical database columns are retained by default for rollback safety.
 Do not drop them on the first migration rehearsal.
 
-After a verified backup, successful full test run and restore rehearsal, they
-may be removed explicitly:
+Old physical columns stay in place for recovery. This migration script has
+**no drop-column option**; do not delete them as part of the initial cutover.
 
-```bash
-env/bin/python apps/workforce_suite/scripts/migrate_legacy_site.py \
-  --site YOUR_SITE --phase finalize --yes --drop-legacy-columns
-```
 
 ## Required tests before this becomes a sellable product
 
@@ -182,3 +217,21 @@ Examples of things that must remain configuration:
 
 The app should provide capabilities, validations, reusable workflows and
 company-scoped configuration—not a second copy of a specific customer's data.
+
+
+## Current evidence and release limitation
+
+The branch has dedicated GitHub Actions source validation (compilation,
+structured-file parsing, JS syntax and white-label source contracts). Those
+checks are necessary but **not sufficient** for a production-grade rename.
+
+The original 653-test acceptance run occurred on the previous branded code,
+**not** on this renamed package. The code must still be exercised on both a
+fresh Frappe/ERPNext/HRMS site and an isolated restored legacy database to
+validate migrations, DocType controllers, workflows, integrations, background
+jobs and permissions.
+
+A company record whose legal name contains the old brand stays in the
+customer's database. The migration intentionally limits metadata renames to
+app-owned records. It does not rewrite employee, company, payroll, accounting
+or customer-entered descriptions.
