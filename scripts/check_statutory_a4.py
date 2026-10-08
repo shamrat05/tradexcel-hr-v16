@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 from pathlib import Path
 import sys
 
@@ -55,7 +56,7 @@ def check_pdf(output: Path, orientation: str, expected_id: str):
                 output, page.number, word
             )
     all_text = " ".join(p.get_text("text") for p in doc)
-    assert expected_id in all_text, (output, expected_id, all_text[:300])
+    # Narrow PDF columns can wrap at hyphens without clipping any glyph.\n    assert expected_id in re.sub(r"\\s+", "", all_text), (output, expected_id, all_text[-350:])
     return len(doc)
 
 

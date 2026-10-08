@@ -135,49 +135,89 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/d1578b126dd14efda5e6959fc8e9efe0.pdf",
       "source_sha256": "f285869693118d4f5c93b6ef40d650d5f73b2b513be2a6caf7e92faf491be0bd",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "partial_manual_read_plus_full_2015_rules",
       "legal_approved": false,
-      "source_issue": "Source PDF is SHA-identical to Form 6; this cannot be approved as a distinct official form.",
+      "source_issue": "The linked standalone file duplicates Form 6, but the separate Form 6(A) columns are identified in the full 2015 Gazette; verify final legally current wording before approval.",
       "columns": [
         {
-          "field_key": "employee",
-          "label_en": "Employee",
-          "label_bn": "শ্রমিক",
+          "field_key": "serial_no",
+          "label_en": "Sl. No.",
+          "label_bn": "ক্রমিক নং",
+          "width_weight": 1,
           "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "fieldtype": "Data"
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
+          "label_bn": "শ্রমিক রেজিস্টারের ক্রমিক নং",
+          "width_weight": 1,
+          "required": true,
+          "fieldtype": "Data"
         },
         {
           "field_key": "employee_name",
-          "label_en": "Name",
-          "label_bn": "নাম",
+          "label_en": "Worker name",
+          "label_bn": "শ্রমিকের নাম",
+          "width_weight": 1,
           "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "fieldtype": "Data"
         },
         {
-          "field_key": "issue_date",
-          "label_en": "Issue date",
-          "label_bn": "প্রদানের তারিখ",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "document_type",
-          "label_en": "Document type",
-          "label_bn": "নথি",
+          "field_key": "age",
+          "label_en": "Age",
+          "label_bn": "বয়স",
+          "width_weight": 1,
           "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "fieldtype": "Data"
         },
         {
-          "field_key": "receipt_reference",
-          "label_en": "Acknowledgment",
-          "label_bn": "প্রাপ্তি স্বীকার",
+          "field_key": "nature_of_work",
+          "label_en": "Nature of work",
+          "label_bn": "কাজের প্রকৃতি",
+          "width_weight": 1,
           "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "fieldtype": "Data"
+        },
+        {
+          "field_key": "appointment_letter_issue_date",
+          "label_en": "Appointment letter issue date",
+          "label_bn": "নিয়োগপত্র প্রদানের তারিখ",
+          "width_weight": 1,
+          "required": false,
+          "fieldtype": "Data"
+        },
+        {
+          "field_key": "id_card_issue_date",
+          "label_en": "Identity card issue date",
+          "label_bn": "পরিচয়পত্র প্রদানের তারিখ",
+          "width_weight": 1,
+          "required": false,
+          "fieldtype": "Data"
+        },
+        {
+          "field_key": "service_book_issue_date",
+          "label_en": "Service book issue date",
+          "label_bn": "সার্ভিস বই প্রদানের তারিখ",
+          "width_weight": 1,
+          "required": false,
+          "fieldtype": "Data"
+        },
+        {
+          "field_key": "worker_signature",
+          "label_en": "Worker signature / thumbprint",
+          "label_bn": "শ্রমিকের স্বাক্ষর বা টিপসই",
+          "width_weight": 1,
+          "required": false,
+          "fieldtype": "Data"
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "মন্তব্য",
+          "width_weight": 1,
+          "required": false,
+          "fieldtype": "Data"
         }
       ]
     },
@@ -1199,7 +1239,7 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2a1b2ab3c15a4775a2185afc2d8c1af1.pdf",
       "source_sha256": "c08235e73f1ef84e48c264fcd6c586b7b88655888db41b53faae078975c270cd",
       "source_pages": 1,
-      "field_audit": "partial_manual_read",
+      "field_audit": "partially_checked_against_full_2015_rules",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
@@ -1239,6 +1279,14 @@
           "field_key": "branch",
           "label_en": "Section",
           "label_bn": "বিভাগ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "day_fri",
+          "label_en": "Friday",
+          "label_bn": "শুক্রবার",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
@@ -1287,14 +1335,6 @@
           "field_key": "day_thu",
           "label_en": "Thursday",
           "label_bn": "বৃহস্পতিবার",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "day_fri",
-          "label_en": "Friday",
-          "label_bn": "শুক্রবার",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
