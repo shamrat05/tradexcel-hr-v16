@@ -18,3 +18,27 @@ Generation records are immutable and say `Draft Generated`. They record actor/ti
 This branch adds native DocType metadata and therefore requires a supported migration **only on a backed-up, authorized site**. The completed fresh-site test used a disposable synthetic Frappe 16 bench; the original local HRMS was untouched. Before a real upgrade, back up database/public/private/config recovery material, rehearse restore, compare any existing draft layouts with the protected schemas, and review Company/Branch profiles. Old drafts with incomplete or conflicting schemas fail closed rather than being silently rewritten. No existing submitted Employee, Attendance, salary or financial document is modified by these adapters.
 
 Official use remains blocked pending current-law review, approved translations and completion of the prescribed variant/page geometries described in [coverage](coverage.md). Creating a layout or submitting evidence cannot override that gate.
+
+## Explicit first-use setup
+
+Open **Workforce Statutory Print Layout** through native search/list navigation.
+Use **Menu → Prepare Draft Layout**, select your permitted Company, optional
+Branch, source form and explicit draft effective date. The action creates one
+internal draft from protected reusable definitions or returns the existing
+configuration without replacing its labels, mappings, dates or administrator
+edits. It is never called during installation/migration. Repeated/concurrent
+requests reuse the same scope; existing approved layouts are not modified.
+
+This action does not infer legal applicability or create a reviewed establishment
+profile. Missing registration, address, signatory, statutory identity, salary
+mapping and Bangla heading remain review findings or editable configuration.
+Company-specific information comes from native records or explicit authorized
+configuration; it is not shipped in the application. External certificates are
+rejected as generated layouts.
+
+For a working Employee export, prepare Form 8, open an authorized Employee and
+choose the statutory Worker Register action. Preview the draft and its findings,
+then choose **Download A4 PDF** or **Editable DOCX working copy**. Form 8 requires
+no payroll date range. PDFs/DOCX download to your browser; configuration and
+immutable generation audit records remain native DocTypes. An internal draft
+is not a legally approved register or government filing.

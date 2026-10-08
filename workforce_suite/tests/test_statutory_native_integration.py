@@ -338,3 +338,38 @@ def test_explicit_draft_setup_is_repeatable_preserves_edits_and_never_approves(d
                 frappe.delete_doc('Workforce Statutory Print Layout', name)
         frappe.delete_doc('Branch', branch.name); frappe.db.commit()
         assert all(not frappe.db.exists('Workforce Statutory Print Layout', n) for n in names)
+
+
+def test_draft_setup_concurrent_blank_branch_requests_create_one_configuration():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from workforce_suite.workforce_suite.statutory_setup import prepare_draft_layout
+    frappe.set_user('Administrator'); frappe.db.rollback()
+    scope = {'company':'Example Company A','form_code':'form_19','branch':['is','not set']}
+    assert not frappe.get_all('Workforce Statutory Print Layout', filters=scope), 'Isolated setup scope must be empty'
+    barrier = Barrier(2); names = []
+    def request(branch):
+        frappe.init(site=os.environ['FRAPPE_TEST_SITE'], sites_path=os.environ['FRAPPE_TEST_SITES_PATH'])
+        frappe.connect(); frappe.set_user('Administrator')
+        try:
+            # Establish a pre-insert transaction snapshot in both requests.
+            # The action's locking current read must still see the winner.
+            frappe.get_all('Workforce Statutory Print Layout', filters=scope)
+            barrier.wait(timeout=10)
+            return prepare_draft_layout('Example Company A', 'form_19', '2026-10-01', branch)
+        finally:
+            frappe.db.rollback(); frappe.destroy()
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(request, value) for value in (None, '')]
+            results = [future.result(timeout=60) for future in futures]
+        names = sorted({name for result in results for name in result['layouts']})
+        assert len(names) == 1 and sum(result['created'] for result in results) == 1
+        assert len(frappe.get_all('Workforce Statutory Print Layout', filters=scope)) == 1
+    finally:
+        frappe.db.rollback()
+        # Only this test's initially empty, explicit synthetic scope is owned.
+        for row in frappe.get_all('Workforce Statutory Print Layout', filters=scope):
+            frappe.delete_doc('Workforce Statutory Print Layout', row.name)
+        frappe.db.commit()
+        assert not frappe.get_all('Workforce Statutory Print Layout', filters=scope)
