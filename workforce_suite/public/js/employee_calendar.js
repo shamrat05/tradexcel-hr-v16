@@ -10,6 +10,13 @@ Object.keys(WORKFORCE_CALENDAR_FORMS).forEach((doctype) => {
 			if (frm.is_new()) return;
 			const target = WORKFORCE_CALENDAR_FORMS[doctype](frm);
 			if (!target.employee) return;
+            if (doctype === "Employee") {
+                frm.add_custom_button(__("Worker ID draft"), () =>
+                    window.workforceStatutoryExport("form_6", {
+                        company: frm.doc.company, branch: frm.doc.branch,
+                        employee: frm.doc.name,
+                    }), __("Statutory drafts"));
+            }
 			frm.add_custom_button(__('Calendar'), () => show_employee_calendar(target.employee, target.name));
 		},
 	});

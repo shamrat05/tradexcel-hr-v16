@@ -99,7 +99,7 @@ async function open_print_options(frm, context = {}) {
     if (options.languages.includes("bn")) {
         fields.push({
             fieldname: "print_language", label: __("Print language"),
-            fieldtype: "Select", options: "English\\nবাংলা",
+            fieldtype: "Select", options: "English\nবাংলা",
             default: "English", reqd: 1
         });
     }
@@ -238,6 +238,10 @@ async function show_statutory_preview(frm, options, args) {
             const query = new URLSearchParams(safeArgs).toString();
             window.open(base + "?" + query, "_blank", "noopener,noreferrer");
         },
+    });
+    preview.add_custom_action(__("Editable DOCX working copy"), () => {
+        const base = "/api/method/workforce_suite.workforce_suite.statutory_forms.download_docx";
+        window.open(base + "?" + new URLSearchParams(safeArgs), "_blank", "noopener,noreferrer");
     });
     const frame = document.createElement("iframe");
     frame.setAttribute("title", __("Statutory A4 document preview"));
