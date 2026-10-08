@@ -39,10 +39,28 @@ def prepare_draft_layout(company, form_code, effective_from, branch=""):
     with frappe.cache.lock("workforce_statutory_setup:" + key, timeout=60, blocking_timeout=10):
         table = frappe.qb.DocType("Workforce Statutory Print Layout")
         from frappe.query_builder.functions import IfNull
-        existing = (frappe.qb.from_(table).select(table.name)
-                    .where((table.company == company) & (IfNull(table.branch, "") == branch)
-                           & (table.form_code == form_code) & (table.docstatus != 2))
-                    .orderby(table.creation).for_update().run(as_dict=True))
+        query = (frappe.qb.from_(table).select(table.name)
+                 .where((table.company == company) & (IfNull(table.branch, "") == branch)
+                        & (table.form_code == form_code) & (table.docstatus != 2))
+                 .orderby(table.creation).for_update())
+        try:
+            existing = query.run(as_dict=True)
+        except frappe.QueryDeadlockError:
+            # MariaDB can reject a locking read when the pre-lock snapshot
+            # predates the winning request. No writes have occurred here.
+            # Retry this read once in a fresh transaction while retaining the
+            # scope lock; never retry inserts or swallow a second failure.
+            frappe.db.rollback()
+            if not frappe.has_permission("Workforce Statutory Print Layout", "create"):
+                frappe.throw(_("You cannot configure statutory layouts."), frappe.PermissionError)
+            check_company(company)
+            frappe.get_doc("Company", company, for_update=True).check_permission("read")
+            if branch:
+                branch_doc = frappe.get_doc("Branch", branch, for_update=True)
+                branch_doc.check_permission("read")
+                if branch_doc.get("company") != company:
+                    frappe.throw(_("Branch must belong to the selected Company."))
+            existing = query.run(as_dict=True)
         if existing:
             for item in existing:
                 frappe.get_doc("Workforce Statutory Print Layout", item.name, for_update=True).check_permission("read")
