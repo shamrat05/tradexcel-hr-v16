@@ -427,3 +427,70 @@ def test_draft_setup_concurrent_blank_branch_requests_create_one_configuration()
             frappe.delete_doc('Workforce Statutory Print Layout', row.name)
         frappe.db.commit()
         assert not frappe.get_all('Workforce Statutory Print Layout', filters=scope)
+
+
+def test_profile_applicability_requires_reviewed_required_or_evidenced_not_applicable(data):
+    frappe.set_user("Administrator")
+    doc = frappe.get_doc({
+        "doctype": "Workforce Statutory Profile",
+        "company": "Example Company A",
+        "profile_version": "test-applicability",
+        "effective_from": "2026-10-01",
+        "establishment_en": "TEST Establishment",
+        "establishment_bn": "পরীক্ষামূলক প্রতিষ্ঠান",
+        "address_en": "TEST Address",
+        "address_bn": "পরীক্ষামূলক ঠিকানা",
+        "legal_reference": "TEST reviewed law",
+        "review_notes": "TEST reviewed applicability",
+        "registration_applicability": "Pending Review",
+        "licence_applicability": "Pending Review",
+    }).insert()
+    try:
+        frappe.set_user(data["reviewer"])
+        with pytest.raises(frappe.ValidationError, match="applicability review"):
+            doc.submit()
+        doc.reload()
+        doc.registration_applicability = "Required"
+        doc.registration_no = "TEST-REG-001"
+        doc.licence_applicability = "Not Applicable"
+        doc.licence_evidence = "TEST evidence: licence not applicable for this establishment"
+        doc.submit()
+        assert doc.docstatus == 1
+    finally:
+        frappe.set_user("Administrator")
+        if frappe.db.exists("Workforce Statutory Profile", doc.name):
+            frappe.delete_doc("Workforce Statutory Profile", doc.name)
+        frappe.db.commit()
+
+
+def test_concurrent_draft_profile_requests_create_one_profile_and_keep_scope(data):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from workforce_suite.workforce_suite.statutory_setup import prepare_draft_profile
+    frappe.set_user("Administrator")
+    scope = {"company": "Example Company A", "branch": ["is", "not set"]}
+    assert not frappe.get_all("Workforce Statutory Profile", filters=scope)
+    barrier = Barrier(2)
+    def request():
+        frappe.init(site=os.environ["FRAPPE_TEST_SITE"], sites_path=os.environ["FRAPPE_TEST_SITES_PATH"])
+        frappe.connect()
+        frappe.set_user("Administrator")
+        try:
+            frappe.get_all("Workforce Statutory Profile", filters=scope)
+            barrier.wait(timeout=10)
+            return prepare_draft_profile("Example Company A", effective_from="2026-10-01")
+        finally:
+            frappe.db.rollback()
+            frappe.destroy()
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = [future.result(timeout=60) for future in [pool.submit(request), pool.submit(request)]]
+        names = sorted({name for result in results for name in result["profiles"]})
+        assert len(names) == 1
+        assert sum(result["created"] for result in results) == 1
+    finally:
+        frappe.set_user("Administrator")
+        frappe.db.rollback()
+        for row in frappe.get_all("Workforce Statutory Profile", filters=scope):
+            frappe.delete_doc("Workforce Statutory Profile", row.name)
+        frappe.db.commit()

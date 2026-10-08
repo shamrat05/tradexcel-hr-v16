@@ -142,3 +142,8 @@ profiles. Focused source/branding/white-label checks: 56 passed.
 The remaining legal and source-data gates are unchanged: service-book and
 Forms 24/35/37/40 variants, complete Forms 80/81 aggregation, payment evidence,
 regulatory crosswalk, legal approval and real operator acceptance remain open.
+
+
+## Focused review correction — applicability and concurrency
+
+The establishment profile now records independent Registration Applicability and Licence Applicability states: Required, Not Applicable, or Pending Review. Submission rejects Pending Review, requires the reviewed number for Required, and requires non-applicability evidence for Not Applicable. Draft setup initializes both states to Pending Review and reports the outstanding review work. Concurrent draft-profile requests are covered by a separate-transaction regression; the existing cache lock remains the serialization mechanism. No legal applicability is inferred by the application.

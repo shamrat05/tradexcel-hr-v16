@@ -21,9 +21,22 @@ class WorkforceStatutoryProfile(Document):
         if self.owner == frappe.session.user:
             frappe.throw(_("A separate reviewer must approve establishment configuration."), frappe.PermissionError)
         unresolved = []
-        for fieldname in ("address_en", "registration_no", "legal_reference", "review_notes"):
+        for label, number_field, state_field, evidence_field in (
+            (_("registration"), "registration_no", "registration_applicability", "registration_evidence"),
+            (_("licence"), "licence_no", "licence_applicability", "licence_evidence"),
+        ):
+            state = (self.get(state_field) or "Pending Review").strip()
+            number = (self.get(number_field) or "").strip()
+            evidence = (self.get(evidence_field) or "").strip()
+            if state == "Pending Review":
+                unresolved.append(f"{label}: applicability review")
+            elif state == "Required" and not number:
+                unresolved.append(f"{label}: required value")
+            elif state == "Not Applicable" and not evidence:
+                unresolved.append(f"{label}: non-applicability evidence")
+        for fieldname in ("address_en", "legal_reference", "review_notes"):
             value = self.get(fieldname)
-            if not value or str(value).strip().lower().startswith("pending "):
+            if not value or str(value).strip().lower().startswith("pending"):
                 unresolved.append(fieldname)
         if unresolved:
             frappe.throw(_("Complete reviewed statutory fields before submission: {0}.").format(", ".join(unresolved)))

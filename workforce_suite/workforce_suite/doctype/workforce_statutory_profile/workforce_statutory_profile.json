@@ -18,7 +18,11 @@
   "address_en",
   "address_bn",
   "registration_no",
+  "registration_applicability",
+  "registration_evidence",
   "licence_no",
+  "licence_applicability",
+  "licence_evidence",
   "industry_en",
   "industry_bn",
   "signatory_en",
@@ -90,9 +94,35 @@
    "label": "Reviewed Registration Number"
   },
   {
+   "fieldname": "registration_applicability",
+   "fieldtype": "Select",
+   "label": "Registration Applicability",
+   "options": "Required\nNot Applicable\nPending Review",
+   "default": "Pending Review",
+   "reqd": 1
+  },
+  {
+   "fieldname": "registration_evidence",
+   "fieldtype": "Small Text",
+   "label": "Registration Applicability Evidence"
+  },
+  {
    "fieldname": "licence_no",
    "fieldtype": "Data",
    "label": "Reviewed Licence Number"
+  },
+  {
+   "fieldname": "licence_applicability",
+   "fieldtype": "Select",
+   "label": "Licence Applicability",
+   "options": "Required\nNot Applicable\nPending Review",
+   "default": "Pending Review",
+   "reqd": 1
+  },
+  {
+   "fieldname": "licence_evidence",
+   "fieldtype": "Small Text",
+   "label": "Licence Applicability Evidence"
   },
   {
    "fieldname": "industry_en",

@@ -59,7 +59,8 @@ def prepare_draft_profile(company, branch="", effective_from=""):
         if not address:
             missing.append({"field": "address_en", "message": _("Link a native Address to the Company.")})
         missing.extend([
-            {"field": "registration_no", "message": _("Enter the reviewed establishment registration number.")},
+            {"field": "registration_applicability", "message": _("Review whether registration is Required or Not Applicable and attach evidence.")},
+            {"field": "licence_applicability", "message": _("Review whether a licence is Required or Not Applicable and attach evidence.")},
             {"field": "legal_reference", "message": _("Add the reviewed law, gazette or evidence reference.")},
             {"field": "review_notes", "message": _("Record the applicability and independent review notes.")},
         ])
@@ -72,7 +73,9 @@ def prepare_draft_profile(company, branch="", effective_from=""):
             "establishment_en": company_doc.company_name,
             "address_en": address or "Pending native Company Address review",
             "legal_reference": "Pending legal applicability review",
-            "review_notes": "Complete registration, applicability and evidence review before submission.",
+            "review_notes": "Pending registration and licence applicability review",
+            "registration_applicability": "Pending Review",
+            "licence_applicability": "Pending Review",
         }).insert()
         frappe.db.commit()
         return {"created": True, "profiles": [doc.name], "missing_requirements": missing}
@@ -83,17 +86,26 @@ def profile_missing_requirements(profile_name):
     doc = frappe.get_doc("Workforce Statutory Profile", profile_name)
     doc.check_permission("read")
     check_company(doc.company)
-    fields = (
+    missing = []
+    for fieldname, message in (
         ("address_en", _("Link a native establishment Address.")),
-        ("registration_no", _("Enter the reviewed registration number.")),
         ("legal_reference", _("Add the applicable law, gazette or evidence reference.")),
         ("review_notes", _("Record applicability and independent review notes.")),
-    )
-    missing = []
-    for fieldname, message in fields:
+    ):
         value = doc.get(fieldname)
-        if not value or str(value).startswith("Pending "):
+        if not value or str(value).strip().lower().startswith("pending"):
             missing.append({"field": fieldname, "message": message})
+    for label, number_field, state_field, evidence_field in (
+        ("registration", "registration_no", "registration_applicability", "registration_evidence"),
+        ("licence", "licence_no", "licence_applicability", "licence_evidence"),
+    ):
+        state = doc.get(state_field) or "Pending Review"
+        if state == "Pending Review":
+            missing.append({"field": state_field, "message": _(f"Review {label} applicability before submission.")})
+        elif state == "Required" and not doc.get(number_field):
+            missing.append({"field": number_field, "message": _(f"Enter the reviewed {label} number.")})
+        elif state == "Not Applicable" and not doc.get(evidence_field):
+            missing.append({"field": evidence_field, "message": _(f"Record evidence for {label} non-applicability.")})
     if not doc.get("establishment_bn"):
         missing.append({"field": "establishment_bn", "message": _("Add the reviewed Bangla establishment name before Bangla export.")})
     if not doc.get("address_bn"):
