@@ -92,7 +92,9 @@ frappe.query_reports["Employee Data Gaps"] = {
         return value;
     },
     onload(report) {
-        report.page.add_inner_button(__("Review Matching Employees"), () => {
+        // Keep the current review task one click away. All other existing
+        // workflows stay discoverable in Frappe's native, responsive dropdown.
+        report.page.add_inner_button(__("Review Employees"), () => {
             const names = (report.data || []).map((row) => row.employee).filter(Boolean);
             if (!names.length) {
                 frappe.msgprint(__("No matching Employees need review."));
@@ -102,8 +104,20 @@ frappe.query_reports["Employee Data Gaps"] = {
             frappe.set_route("List", "Employee");
         });
 
+        const hr_maker = ["Workforce Suite Manager", "HR User", "HR Manager"]
+            .some((role) => frappe.user.has_role(role));
         const shift_maker = ["Workforce Suite Manager", "Workforce Suite/Attendance Officer", "HR User", "HR Manager"]
             .some((role) => frappe.user.has_role(role));
+        const more_actions = __("More actions");
+
+        // Frequent corrections first, then less-frequent employee workflows.
+        if (hr_maker) {
+            report.page.add_inner_button(__("Open Salary Assignment Tool"), () => {
+                frappe.route_options = { company: report.get_filter_value("company") };
+                frappe.set_route("Form", "Bulk Salary Structure Assignment");
+            }, more_actions);
+        }
+
         if (shift_maker) {
             report.page.add_inner_button(__("Open Bulk Shift Assignment"), () => {
                 const route_options = { start_date: frappe.datetime.get_today() };
@@ -113,17 +127,10 @@ frappe.query_reports["Employee Data Gaps"] = {
                 }
                 frappe.route_options = route_options;
                 frappe.set_route("Form", "Shift Assignment Tool");
-            });
+            }, more_actions);
         }
 
-        const hr_maker = ["Workforce Suite Manager", "HR User", "HR Manager"]
-            .some((role) => frappe.user.has_role(role));
         if (!hr_maker) return;
-
-        report.page.add_inner_button(__("Open Salary Assignment Tool"), () => {
-            frappe.route_options = { company: report.get_filter_value("company") };
-            frappe.set_route("Form", "Bulk Salary Structure Assignment");
-        });
 
         report.page.add_inner_button(__("Create Employee Transfer"), () => {
             const rows = report.data || [];
@@ -132,7 +139,7 @@ frappe.query_reports["Employee Data Gaps"] = {
                 return;
             }
             frappe.new_doc("Employee Transfer", { employee: rows[0].employee });
-        });
+        }, more_actions);
 
         report.page.add_inner_button(__("Create Employee Promotion"), () => {
             const rows = report.data || [];
@@ -141,10 +148,10 @@ frappe.query_reports["Employee Data Gaps"] = {
                 return;
             }
             frappe.new_doc("Employee Promotion", { employee: rows[0].employee });
-        });
+        }, more_actions);
 
         report.page.add_inner_button(__("View Employee Onboardings"), () => {
             frappe.set_route("List", "Employee Onboarding");
-        });
+        }, more_actions);
     },
 };

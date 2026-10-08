@@ -81,6 +81,6 @@ frappe.query_reports["Biometric ID Audit"] = {
 				__("Copy Biometric to Device"),
 				__("Queue Transfer")
 			);
-		});
+		}, __("Device actions"));
 	},
 };
