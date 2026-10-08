@@ -1,4 +1,4 @@
-"""Resolve the most specific editable TradeX payroll policy for an employee."""
+"""Resolve the most specific editable Workforce payroll policy for an employee."""
 
 from __future__ import annotations
 

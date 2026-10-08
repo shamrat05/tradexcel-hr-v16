@@ -442,18 +442,16 @@ def test_production_allowlist_and_separate_test_injection():
     for name in CANONICAL_CHARTS:
         assert name in removable_names
 
-    # Historical aliases are reportable but non-deletable in production.
-    # Create a synthetic alias that is in RETIRED_NUMBER_CARDS but not canonical.
-    alias_name = "TradeX Active Employees"
+    # A customer-created lookalike is not part of the generic cleanup allowlist.
+    alias_name = "Customer Prototype Card"
     alias_created = False
     if not frappe.db.exists("Number Card", alias_name):
         _synthetic_card(alias_name)
         alias_created = True
     try:
         alias_plan = install.plan_retired_dashboard_artifacts()
-        alias_items = {item["name"]: item["reason"] for item in alias_plan["retained"]}
-        assert alias_name in alias_items
-        assert "historical alias; non-deletable" in alias_items[alias_name]
+        candidates = {item["name"] for item in alias_plan["retained"] + alias_plan["removable"]}
+        assert alias_name not in candidates
     finally:
         if alias_created and frappe.db.exists("Number Card", alias_name):
             frappe.delete_doc("Number Card", alias_name, force=True, ignore_permissions=True)
@@ -873,10 +871,9 @@ def test_allowlist_and_fingerprints_cover_only_the_reviewed_canonical_artifacts(
     expected |= {("Dashboard Chart", name) for name in CANONICAL_CHARTS}
     assert set(install.RETIRED_ARTIFACT_FINGERPRINTS) == expected
 
-    # Historical aliases and prototype duplicates stay in the allowlist for
-    # reporting, but have no fingerprint and are therefore retained.
-    assert ("Number Card", "TradeX Active Employees") not in install.RETIRED_ARTIFACT_FINGERPRINTS
-    assert ("Dashboard Chart", "TradeX Checkins by Day") not in install.RETIRED_ARTIFACT_FINGERPRINTS
+    # Historical aliases are excluded from the generic app's allowlist.
+    assert ("Number Card", "Customer Prototype Card") not in install.RETIRED_ARTIFACT_FINGERPRINTS
+    assert ("Dashboard Chart", "Customer Prototype Chart") not in install.RETIRED_ARTIFACT_FINGERPRINTS
 
     # Native referenced cards are not candidates and never appear in a plan.
     native = (

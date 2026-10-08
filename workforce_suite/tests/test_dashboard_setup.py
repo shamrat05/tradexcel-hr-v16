@@ -53,26 +53,6 @@ def test_retired_artifacts_are_exactly_the_reviewed_allowlist():
         "Workforce Punches Logged",
         "Workforce Present Records",
         "Workforce Absent Records",
-        "TradeX Active Employees",
-        "TradeX Punches Logged",
-        "TradeX Present Records",
-        "TradeX Absent Records",
-        "Active Employees (All Companies)",
-        "Active Employees-3",
-        "Attendance Absent Logs-3",
-        "Attendance Absent Logs-4",
-        "Attendance Present Logs-3",
-        "Attendance Present Logs-4",
-        "COMPANY_B Active Employees",
-        "COMPANY_B Active Employees-1",
-        "Workforce COMPANY_B Active Employees",
-        "COMPANY_A Active Employees",
-        "COMPANY_A Active Employees-1",
-        "Workforce COMPANY_A Active Employees",
-        "Total Punches Logged-3",
-        "Total Punches Logged-4",
-        "TradeX COMPANY_B Active Employees",
-        "TradeX COMPANY_A Active Employees",
     }
     assert set(RETIRED_DASHBOARD_CHARTS) == {
         "Workforce Employees by Department",
@@ -82,13 +62,6 @@ def test_retired_artifacts_are_exactly_the_reviewed_allowlist():
         "Workforce Leave Allocated by Type",
         "Workforce Payroll by Month",
         "Workforce Checkins by Day",
-        "TradeX Employees by Department",
-        "TradeX Employees by Branch",
-        "TradeX Headcount by Company",
-        "TradeX Attendance Status",
-        "TradeX Leave Allocated by Type",
-        "TradeX Payroll by Month",
-        "TradeX Checkins by Day",
     }
 
 
@@ -206,7 +179,6 @@ def test_only_canonical_workspace_is_visible_in_desk_navigation():
     assert workspace_is_visible("workforce-suite") is True
     assert workspace_is_visible("workforce-hr") is False
     assert workspace_is_visible("HR") is False
-    assert workspace_is_visible("TradeX HR Management") is False
     assert workspace_is_visible("workforce-hr-management") is False
 
 

@@ -1,4 +1,4 @@
-"""Deterministic, configurable wage calculations used by TradeX payroll.
+"""Deterministic, configurable wage calculations used by Workforce payroll.
 
 The rules are intentionally data-only. Frappe documents and source API calls
 belong in the adapters around this module, which keeps the calculation easy to

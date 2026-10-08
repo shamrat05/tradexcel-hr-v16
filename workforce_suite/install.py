@@ -94,12 +94,9 @@ frappe.query_reports[\"Workforce Salary Coverage Board\"] = {
     },
 }
 
-LEGACY_REPORT_NAMES = {
-    "TradeX Daily Attendance Board": "Workforce Daily Attendance Board",
-    "TradeX Payroll Register": "Workforce Payroll Register",
-    "TradeX Salary Coverage Board": "Workforce Salary Coverage Board",
-    "TradeX Leave Balance Board": "Workforce Leave Balance Board",
-}
+# Legacy report aliases are migrated by scripts/migrate_legacy_site.py,
+# not by a generic app install (which must never mutate unknown customer reports).
+LEGACY_REPORT_NAMES = {}
 
 STANDARD_SCRIPT_REPORT_NAMES = (
     "Daily Attendance Summary",
@@ -152,43 +149,18 @@ def ensure_standard_script_reports() -> None:
 # operation that re-checks live references and unchanged app ownership first
 # (see ``remove_retired_dashboard_artifacts``).
 #
-# Canonical plus legacy-alias names cover historical installs. Prototype
-# duplicates were already explicitly retired by the original installer. Names
-# without a reliable unchanged-ownership fingerprint are retained rather than
-# guessed.
+# Only canonical generic artifacts remain in the product allowlist.
+# Existing customer-specific prototypes are left untouched by normal migrations.
+# Generic installations only own these eleven canonical retired UI artifacts.
+# Historic aliases are not product-level deletion targets.
 RETIRED_NUMBER_CARDS = (
-    # Managed cards retired by TXUX-260930-013.
     "Workforce Active Employees",
     "Workforce Punches Logged",
     "Workforce Present Records",
     "Workforce Absent Records",
-    # Their pre-rename aliases from older prototype installs.
-    "TradeX Active Employees",
-    "TradeX Punches Logged",
-    "TradeX Present Records",
-    "TradeX Absent Records",
-    # Prototype duplicates with company-specific or numbered variants.
-    "Active Employees (All Companies)",
-    "Active Employees-3",
-    "Attendance Absent Logs-3",
-    "Attendance Absent Logs-4",
-    "Attendance Present Logs-3",
-    "Attendance Present Logs-4",
-    "COMPANY_B Active Employees",
-    "COMPANY_B Active Employees-1",
-    "Workforce COMPANY_B Active Employees",
-    "COMPANY_A Active Employees",
-    "COMPANY_A Active Employees-1",
-    "Workforce COMPANY_A Active Employees",
-    "Total Punches Logged-3",
-    "Total Punches Logged-4",
-    "TradeX COMPANY_B Active Employees",
-    "TradeX COMPANY_A Active Employees",
 )
 
-
 RETIRED_DASHBOARD_CHARTS = (
-    # Managed charts retired by TXUX-260930-013.
     "Workforce Employees by Department",
     "Workforce Employees by Branch",
     "Workforce Headcount by Company",
@@ -196,14 +168,6 @@ RETIRED_DASHBOARD_CHARTS = (
     "Workforce Leave Allocated by Type",
     "Workforce Payroll by Month",
     "Workforce Checkins by Day",
-    # Their pre-rename aliases from older prototype installs.
-    "TradeX Employees by Department",
-    "TradeX Employees by Branch",
-    "TradeX Headcount by Company",
-    "TradeX Attendance Status",
-    "TradeX Leave Allocated by Type",
-    "TradeX Payroll by Month",
-    "TradeX Checkins by Day",
 )
 
 
@@ -780,8 +744,7 @@ LEGACY_WORKSPACE_NAMES = (
     # slug workspace so Desk has one unambiguous HR entry point.
     "Workforce Suite",
     "workforce-hr",
-    "TradeX HR Management",
-    "workforce-hr-management",
+        "workforce-hr-management",
 )
 CANONICAL_WORKSPACE_NAME = "workforce-suite"
 
@@ -1236,14 +1199,10 @@ def _require_cleanup_operator() -> None:
 
 
 def rename_legacy_reports() -> None:
-    """Retire old report names so Desk has one canonical Workforce route."""
-    for legacy_name, canonical_name in LEGACY_REPORT_NAMES.items():
-        if not frappe.db.exists("Report", legacy_name):
-            continue
-        if frappe.db.exists("Report", canonical_name):
-            frappe.delete_doc("Report", legacy_name, force=True, ignore_permissions=True)
-        else:
-            frappe.rename_doc("Report", legacy_name, canonical_name, force=True)
+    """Compatibility no-op. Historical source names belong to legacy migration."""
+    return
+
+
 
 def ensure_action_board_block() -> None:
     from pathlib import Path
