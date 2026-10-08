@@ -2,7 +2,7 @@ frappe.query_reports["Workforce Leave Balance Board"] = {
 	filters: [
 		{fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", default: (frappe.defaults && frappe.defaults.get_user_default && frappe.defaults.get_user_default("Company")) || "", reqd: 1},
 		{fieldname: "as_of_date", label: __("As Of Date"), fieldtype: "Date", default: frappe.datetime.get_today(), reqd: 1}
-	]
+	],
     onload(report) {
         report.page.add_inner_button(__("Form 9 leave register draft"), () => {
             const values = report.get_values ? report.get_values() : {};
