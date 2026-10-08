@@ -137,7 +137,7 @@
       "source_pages": 1,
       "field_audit": "partial_manual_read_plus_full_2015_rules",
       "legal_approved": false,
-      "source_issue": "The linked standalone file duplicates Form 6, but the separate Form 6(A) columns are identified in the full 2015 Gazette; verify final legally current wording before approval.",
+      "source_issue": "The linked standalone file is byte-identical to Form 6, but the separate Form 6(A) columns are identified in the full 2015 Gazette; verify final legally current wording before approval.",
       "columns": [
         {
           "field_key": "serial_no",
