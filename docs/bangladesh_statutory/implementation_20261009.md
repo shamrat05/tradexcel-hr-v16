@@ -147,3 +147,8 @@ regulatory crosswalk, legal approval and real operator acceptance remain open.
 ## Focused review correction — applicability and concurrency
 
 The establishment profile now records independent Registration Applicability and Licence Applicability states: Required, Not Applicable, or Pending Review. Submission rejects Pending Review, requires the reviewed number for Required, and requires non-applicability evidence for Not Applicable. Draft setup initializes both states to Pending Review and reports the outstanding review work. Concurrent draft-profile requests are covered by a separate-transaction regression; the existing cache lock remains the serialization mechanism. No legal applicability is inferred by the application.
+
+
+## Site-backed verification — applicability and profile concurrency
+
+On the isolated disposable Frappe v16 site workforce-statutory.localhost (separate database and backup), the corrected applicability and profile-scope tests passed. The full Workforce Suite integration suite completed with **901 passed, 2 skipped, 1 warning**. The synthetic profile, layout, record and export fixtures were cleaned; the two synthetic setup Companies and four Employees remain only as the isolated suite prerequisites. No restored customer site was used or modified.
