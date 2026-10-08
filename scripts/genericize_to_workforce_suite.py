@@ -57,6 +57,7 @@ LITERAL_REPLACEMENTS = (
     ("Tradexcel", "Workforce"),
     ("tradexcel", "workforce"),
     ("TRADEX", "WORKFORCE"),
+    ("TradeX", "Workforce"),
     ("Tradex", "Workforce"),
     ("tradex", "workforce"),
 )

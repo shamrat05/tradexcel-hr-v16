@@ -1,13 +1,9 @@
 app_name = "workforce_suite"
 app_title = "Workforce Suite"
 app_publisher = "Workforce"
-# Describes what the app *is*, not its migration history. It previously said
-# "integration for SelevoHR and SenseFace devices" — Selevo is the retired
-# system, and the app is the HR system now, not an integration to it.
-app_description = "Configurable, native-first Workforce SuiteMS workflows"
-# Was the placeholder admin@workforce.com, which is also the address the retired
-# Selevo used. Kept as a real support mailbox rather than a non-existent domain.
-app_email = "support@example.com"
+app_description = "Configurable, native-first HRMS workflows and controls"
+# Use a genuine vendor support contact before distributing this app.
+app_email = ""
 app_license = "MIT"
 
 app_include_css = ["workforce_suite.bundle.css"]
