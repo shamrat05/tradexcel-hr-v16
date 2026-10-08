@@ -1,0 +1,1969 @@
+{
+  "schema_version": 1,
+  "basis": "DIFE Khulna 2015 scans; draft UI column suggestions only, not certified legal transcriptions.",
+  "pdfs_audited": 28,
+  "pdf_pages": 48,
+  "defaults_are_nonbinding": true,
+  "entries": [
+    {
+      "id": "appointment_letter_sample",
+      "form_title": "Worker appointment letter sample",
+      "ui_title": "Appointment letter sample",
+      "kind": "Document",
+      "orientation": "Portrait",
+      "data_source": "Employee",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/60f48f0617dc4a5187ab6889dc4792a8.pdf",
+      "source_sha256": "26dfe9a42968d8681ea8e8b8dd09d81a42a346938874546b36bdaab566a20d50",
+      "source_pages": 3,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_6",
+      "form_title": "Worker identity card",
+      "ui_title": "Worker identity card",
+      "kind": "Document",
+      "orientation": "Portrait",
+      "data_source": "Employee",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2da6fa7f880f4621b264546c81e7d9d5.pdf",
+      "source_sha256": "f285869693118d4f5c93b6ef40d650d5f73b2b513be2a6caf7e92faf491be0bd",
+      "source_pages": 1,
+      "field_audit": "partial_manual_read",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "employee_name",
+          "label_en": "Worker name",
+          "label_bn": "শ্রমিকের নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee",
+          "label_en": "Employee ID",
+          "label_bn": "আইডি",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "designation",
+          "label_en": "Designation",
+          "label_bn": "পদবী",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "date_of_joining",
+          "label_en": "Joining date",
+          "label_bn": "যোগদান",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "department",
+          "label_en": "Department",
+          "label_bn": "বিভাগ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "branch",
+          "label_en": "Workplace",
+          "label_bn": "কর্মস্থল",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_6a",
+      "form_title": "Appointment, ID and service book issue register",
+      "ui_title": "Appointment and document issuance",
+      "kind": "Register",
+      "orientation": "Portrait",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/d1578b126dd14efda5e6959fc8e9efe0.pdf",
+      "source_sha256": "f285869693118d4f5c93b6ef40d650d5f73b2b513be2a6caf7e92faf491be0bd",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "Source PDF is SHA-identical to Form 6; this cannot be approved as a distinct official form.",
+      "columns": [
+        {
+          "field_key": "employee",
+          "label_en": "Employee",
+          "label_bn": "শ্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Name",
+          "label_bn": "নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "issue_date",
+          "label_en": "Issue date",
+          "label_bn": "প্রদানের তারিখ",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "document_type",
+          "label_en": "Document type",
+          "label_bn": "নথি",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "receipt_reference",
+          "label_en": "Acknowledgment",
+          "label_bn": "প্রাপ্তি স্বীকার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_7",
+      "form_title": "Worker service book",
+      "ui_title": "Service book",
+      "kind": "Document",
+      "orientation": "Portrait",
+      "data_source": "Employee",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/b3c0f14058f842feb32642452c076b9f.pdf",
+      "source_sha256": "05119612b7b1fa9787d39afbce4089c5e4f19d7fff903e0038b6c384be7f2b33",
+      "source_pages": 2,
+      "field_audit": "partial_manual_read",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "employee",
+          "label_en": "Employee",
+          "label_bn": "শ্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Name",
+          "label_bn": "নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "date_of_joining",
+          "label_en": "Joined",
+          "label_bn": "যোগদান",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "designation",
+          "label_en": "Designation",
+          "label_bn": "পদবী",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "department",
+          "label_en": "Department",
+          "label_bn": "বিভাগ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "service_change",
+          "label_en": "Change of service",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employer_signature",
+          "label_en": "Employer signature",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_8",
+      "form_title": "Worker register",
+      "ui_title": "Worker register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Employee",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/8553994b778845f08395a2cd94478d7e.pdf",
+      "source_sha256": "a300146e58bad22aec4c92e428e451814abe31e1aaeb57899900dca4412a40b1",
+      "source_pages": 1,
+      "field_audit": "partial_manual_read",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Register no.",
+          "label_bn": "শ্রমিক রেজিস্টার নং",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee",
+          "label_en": "Worker ID",
+          "label_bn": "শ্রমিক আইডি",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Name",
+          "label_bn": "নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "father_name",
+          "label_en": "Father's name",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "mother_name",
+          "label_en": "Mother's name",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "gender",
+          "label_en": "Gender",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "date_of_birth",
+          "label_en": "Date of birth",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "date_of_joining",
+          "label_en": "Joined",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "designation",
+          "label_en": "Designation",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "department",
+          "label_en": "Department",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "branch",
+          "label_en": "Workplace",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employment_type",
+          "label_en": "Category",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "status",
+          "label_en": "Status",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_9",
+      "form_title": "Leave register",
+      "ui_title": "Leave register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Leave Application",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/b55064e4ae13401dbeacdab3d6f7597f.pdf",
+      "source_sha256": "488daa3653fbd1b9216cc537a9743fdb6e042433e8ca6b39b29214aea8bddbbb",
+      "source_pages": 1,
+      "field_audit": "partial_manual_read",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "employee",
+          "label_en": "Employee",
+          "label_bn": "শ্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Name",
+          "label_bn": "নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "leave_type",
+          "label_en": "Leave type",
+          "label_bn": "ছুটির ধরন",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "from_date",
+          "label_en": "From",
+          "label_bn": "শুরু",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "to_date",
+          "label_en": "To",
+          "label_bn": "শেষ",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "total_leave_days",
+          "label_en": "Days",
+          "label_bn": "দিন",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "status",
+          "label_en": "Approval status",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_19",
+      "form_title": "Maternity benefits register",
+      "ui_title": "Maternity benefit register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/1c7068eb7dc04c17bbf4faa85753661b.pdf",
+      "source_sha256": "978b695027bb3106ff5c3da315b13b938e0b607e9ea38637e0fc32a6b5aed575",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "employee",
+          "label_en": "Employee",
+          "label_bn": "শ্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Name",
+          "label_bn": "নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "notice_date",
+          "label_en": "Notice date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "delivery_date",
+          "label_en": "Delivery date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "benefit_period",
+          "label_en": "Benefit period",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "benefit_amount",
+          "label_en": "Benefit amount",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "receipt",
+          "label_en": "Receipt",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_20",
+      "form_title": "Whitewashing register",
+      "ui_title": "Whitewashing register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/b5f4059493a54a7196c9c4f051c14af3.pdf",
+      "source_sha256": "a3d8547c29f90829825f66a033442226f36f4fc1b46e878ebfb6cf7c24b81bb0",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_22",
+      "form_title": "Firefighting training",
+      "ui_title": "Fire training register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/84c7ac8195c44eeeaabb644c5f5775e0.pdf",
+      "source_sha256": "77e6fd51d98583120f2886c525cf5fce5653ee6f448f04216e4c16d84d74973f",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_22a",
+      "form_title": "Fire drill register",
+      "ui_title": "Fire drill register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/7468059cc251419dae1856ce605e8c22.pdf",
+      "source_sha256": "a24e31b7ac847844e733c3c3b6b6209392bc77396e196d3c6a07a9d73abbd205",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_23",
+      "form_title": "PPE issuance register",
+      "ui_title": "PPE issue register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6baa84bb4360465887c6e7049de4be15.pdf",
+      "source_sha256": "72c7deff3f49773b172b9ff2be0578994b154e85930cda99b944d5f40baab977",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_24",
+      "form_title": "Lifting equipment inspection",
+      "ui_title": "Lifting equipment register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/e24267bdcc574095bd102cbc113d7cd9.pdf",
+      "source_sha256": "ae9339530396c867447157495ddccffdedc58d94b1d3b5c8a1553bdae71ba4be",
+      "source_pages": 2,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_25a",
+      "form_title": "Pressure vessel inspection",
+      "ui_title": "Pressure vessel inspection register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6cc87e0bdb56470787bc538b3cddd1e8.pdf",
+      "source_sha256": "fdb20ac16c2aa32ea6291a09026b1c04bd98d99c7710d21954cd736f4e82ff7f",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_26",
+      "form_title": "Hazardous work health inspection",
+      "ui_title": "Health examination record",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/ad59c9326bea48dea126616b74be81c4.pdf",
+      "source_sha256": "d4db73ddbc27eb284df5368977a998844cda6bb9f180895068ea144b1511c7a2",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_26a",
+      "form_title": "Hazardous work health inspection supplement",
+      "ui_title": "Health examination supplement",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6a6179ca4af046d78bfbdcec02408b04.pdf",
+      "source_sha256": "0f34dcf2376f4523167053a7aa642f7d7f16c6f8ffc552faa0e197f9588ba091",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_27",
+      "form_title": "Injury or death notice",
+      "ui_title": "Accident injury notice",
+      "kind": "Document",
+      "orientation": "Portrait",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/e1dba151a4824642a2f77543223ed996.pdf",
+      "source_sha256": "a7d417c6de68e99519c2ab725c15e6edf9036364a6d151cdc5845fc0c4998800",
+      "source_pages": 2,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_28",
+      "form_title": "Accident register and monthly report",
+      "ui_title": "Accident register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/79c2dbe021af4bf98f790260a40a96a3.pdf",
+      "source_sha256": "aeff313c2379cd8a25d83e3c2d219bb2142d6475895348462663eb77286b4fa2",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_32",
+      "form_title": "Building fitness certificate",
+      "ui_title": "Building fitness certificate (externally issued)",
+      "kind": "Evidence Only",
+      "orientation": "Portrait",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/55b4428f5cb24a11a9561701ae34155f.pdf",
+      "source_sha256": "b121710cf4ae81ce7cf121ee9f52f07c32bac6bb4f65ad0b42b3ca7ca85345d0",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_33",
+      "form_title": "Compensatory leave register",
+      "ui_title": "Compensatory leave register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2e04512bd50c46b78d45e6ec3349f35f.pdf",
+      "source_sha256": "094662fd42670c1d8c75ab8aa5fe1d14f947a89ef004f5765b2f3e682a93e390",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "employee",
+          "label_en": "Employee",
+          "label_bn": "শ্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Name",
+          "label_bn": "নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "work_date",
+          "label_en": "Holiday worked",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "leave_date",
+          "label_en": "Compensatory leave date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approver",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_34",
+      "form_title": "Daily attendance and overtime register",
+      "ui_title": "Daily attendance and overtime register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Attendance",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2a1b2ab3c15a4775a2185afc2d8c1af1.pdf",
+      "source_sha256": "c08235e73f1ef84e48c264fcd6c586b7b88655888db41b53faae078975c270cd",
+      "source_pages": 1,
+      "field_audit": "partial_manual_read",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "ক্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
+          "label_bn": "রেজিস্টার নং",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Worker name",
+          "label_bn": "শ্রমিকের নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_number",
+          "label_en": "Card no.",
+          "label_bn": "কার্ড নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "branch",
+          "label_en": "Section",
+          "label_bn": "বিভাগ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "day_sat",
+          "label_en": "Saturday",
+          "label_bn": "শনিবার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "day_sun",
+          "label_en": "Sunday",
+          "label_bn": "রবিবার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "day_mon",
+          "label_en": "Monday",
+          "label_bn": "সোমবার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "day_tue",
+          "label_en": "Tuesday",
+          "label_bn": "মঙ্গলবার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "day_wed",
+          "label_en": "Wednesday",
+          "label_bn": "বুধবার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "day_thu",
+          "label_en": "Thursday",
+          "label_bn": "বৃহস্পতিবার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "day_fri",
+          "label_en": "Friday",
+          "label_bn": "শুক্রবার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "total_work_hours",
+          "label_en": "Total hours",
+          "label_bn": "মোট কাজের ঘণ্টা",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_overtime_hours",
+          "label_en": "Approved OT hours",
+          "label_bn": "অনুমোদিত ওভারটাইম ঘণ্টা",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "overtime_hourly_rate",
+          "label_en": "Hourly OT rate",
+          "label_bn": "প্রতি ঘণ্টার মজুরি",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "overtime_pay",
+          "label_en": "OT payable",
+          "label_bn": "ওভারটাইম মজুরি",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_35_35a",
+      "form_title": "Night shift consent and withdrawal",
+      "ui_title": "Night work consent / withdrawal",
+      "kind": "Document",
+      "orientation": "Portrait",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/9b5dfaf878564feb914eea440562d70a.pdf",
+      "source_sha256": "db8bebbff885a4b7a4908e5e051de02a2c0d25dc3970ced7c514e14060ad6532",
+      "source_pages": 2,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "employee",
+          "label_en": "Employee",
+          "label_bn": "শ্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Name",
+          "label_bn": "নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "notice_date",
+          "label_en": "Consent/withdrawal date",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "shift",
+          "label_en": "Shift",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "consent",
+          "label_en": "Consent / withdrawal",
+          "label_bn": "সম্মতি",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "signed_by",
+          "label_en": "Worker signature",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_36",
+      "form_title": "Night work consent register",
+      "ui_title": "Night work consent register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/71f5b7d95de143f89fbc4cfa4b168a87.pdf",
+      "source_sha256": "816996c5a948ec8c1f869af7539cc7ef631c1d6e584cbf448bee5b76b1edec50",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "employee",
+          "label_en": "Employee",
+          "label_bn": "শ্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Name",
+          "label_bn": "নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "consent_date",
+          "label_en": "Consent date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "withdrawal_date",
+          "label_en": "Withdrawal date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "shift",
+          "label_en": "Night shift",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "evidence",
+          "label_en": "Evidence",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_37_37a_37b",
+      "form_title": "One-, two-, or three-shift schedules",
+      "ui_title": "Shift schedule notice variants",
+      "kind": "Document",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/348a2fee5ef5408f9d616552104d3c1a.pdf",
+      "source_sha256": "d8e8c50fe99cea8ea8a1f0643e6ec79fe27f5d4da09fc7a8f4aaad3587a2da0f",
+      "source_pages": 3,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "shift_name",
+          "label_en": "Shift name",
+          "label_bn": "শিফট",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "start_time",
+          "label_en": "Start time",
+          "label_bn": "শুরু",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "end_time",
+          "label_en": "End time",
+          "label_bn": "শেষ",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "break_time",
+          "label_en": "Break",
+          "label_bn": "বিরতি",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "workers",
+          "label_en": "Worker category",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "effective_from",
+          "label_en": "Effective date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_38",
+      "form_title": "Wage register and wage slip",
+      "ui_title": "Wage register and wage slip",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Salary Slip",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/56158e6356b64f1eb62c6c7f4f65cdd5.pdf",
+      "source_sha256": "2755a1f916756b64295bea0875f757dbccbac5bc373a4c37b477e1d68115da03",
+      "source_pages": 1,
+      "field_audit": "partial_manual_read",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "ক্রমিক",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
+          "label_bn": "রেজিস্টার নং",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_name",
+          "label_en": "Worker name",
+          "label_bn": "শ্রমিকের নাম",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "basic_wage",
+          "label_en": "Basic wage",
+          "label_bn": "মূল মজুরি",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "house_rent",
+          "label_en": "House rent",
+          "label_bn": "বাড়ী ভাড়া",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "transport",
+          "label_en": "Transport",
+          "label_bn": "যাতায়াত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "medical",
+          "label_en": "Medical",
+          "label_bn": "চিকিৎসা",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "food_allowance",
+          "label_en": "Food",
+          "label_bn": "খাদ্য ভাতা",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "attendance_bonus",
+          "label_en": "Attendance bonus",
+          "label_bn": "হাজিরা বোনাস",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "overtime_hours",
+          "label_en": "OT hours",
+          "label_bn": "অধিক কাজের ঘণ্টা",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "overtime_rate",
+          "label_en": "OT hourly rate",
+          "label_bn": "প্রতি ঘণ্টার OT হার",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "overtime_payment",
+          "label_en": "OT earned",
+          "label_bn": "প্রাপ্য অতিরিক্ত ভাতা",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "other_pay",
+          "label_en": "Other pay",
+          "label_bn": "অন্যান্য",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "gross_pay",
+          "label_en": "Gross",
+          "label_bn": "মোট",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "total_deduction",
+          "label_en": "Deductions",
+          "label_bn": "কর্তন",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "net_pay",
+          "label_en": "Net payment",
+          "label_bn": "মোট প্রদেয়",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "acknowledgement",
+          "label_en": "Worker acknowledgment",
+          "label_bn": "স্বাক্ষর",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_39",
+      "form_title": "Damage and loss wage deductions register",
+      "ui_title": "Damage/loss wage deduction register",
+      "kind": "Register",
+      "orientation": "Landscape",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/33f833ab5839418481e4364ee7c3188c.pdf",
+      "source_sha256": "387477e096134a13a40348cc16d0eea51ca7a80eabbc8185139664151d6377ce",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_80",
+      "form_title": "Half-yearly establishment return",
+      "ui_title": "Half-yearly establishment return",
+      "kind": "Return",
+      "orientation": "Portrait",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/d3f092899b2246419fc7c54107e83c06.pdf",
+      "source_sha256": "0d38a88a9f5387b00856d4656a6ff32632124d5cae9e4e377d137a02c38f26b2",
+      "source_pages": 1,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reporting_period",
+          "label_en": "Period",
+          "label_bn": "সময়কাল",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "establishment_name",
+          "label_en": "Establishment",
+          "label_bn": "প্রতিষ্ঠান",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_count",
+          "label_en": "Worker count",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "working_days",
+          "label_en": "Working days",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employer_signature",
+          "label_en": "Authorized signatory",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "form_81",
+      "form_title": "Annual establishment return",
+      "ui_title": "Annual establishment return; 11 source pages",
+      "kind": "Return",
+      "orientation": "Portrait",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/9a81f5a004e94e1597bd9740dc4d518e.pdf",
+      "source_sha256": "c99b5adc98806f972435d4106c26d2bbe7b1591553d0c494d3575359d5bdf3fb",
+      "source_pages": 11,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "11 source pages; page-by-page required-field transcription and mixed-layout assessment pending.",
+      "columns": [
+        {
+          "field_key": "reporting_year",
+          "label_en": "Year",
+          "label_bn": "বছর",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "establishment_name",
+          "label_en": "Establishment",
+          "label_bn": "প্রতিষ্ঠান",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "workforce_stats",
+          "label_en": "Workforce summary",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "wage_stats",
+          "label_en": "Wage summary",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "safety_stats",
+          "label_en": "Safety summary",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "signed_by",
+          "label_en": "Authorized signatory",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "schedule_7",
+      "form_title": "Establishment licence reference",
+      "ui_title": "Licence/schedule reference (externally issued)",
+      "kind": "Evidence Only",
+      "orientation": "Portrait",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/079c2b69a272450ea0af15542dcb7ca1.pdf",
+      "source_sha256": "48aebf3d81edae935dce20614290df32ec023e4cd114b155b91a67180c902650",
+      "source_pages": 3,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    },
+    {
+      "id": "rule_353",
+      "form_title": "Approved machinery layout plan reference",
+      "ui_title": "Machinery layout approval reference (missing PDF)",
+      "kind": "Evidence Only",
+      "orientation": "Portrait",
+      "data_source": "Manual",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/86a2fab679be47eaaff578ce392035c8.pdf",
+      "source_sha256": null,
+      "source_pages": 0,
+      "field_audit": "pending_transcription",
+      "legal_approved": false,
+      "source_issue": "Referenced PDF unavailable; store external approval, never generate official government certificate.",
+      "columns": [
+        {
+          "field_key": "reference_no",
+          "label_en": "Reference number",
+          "label_bn": "রেফারেন্স নং",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "record_date",
+          "label_en": "Record date",
+          "label_bn": "তারিখ",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "subject",
+          "label_en": "Subject",
+          "label_bn": "বিষয়",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "details",
+          "label_en": "Details",
+          "label_bn": "বিস্তারিত",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "approved_by",
+          "label_en": "Approval / Signatory",
+          "label_bn": "স্বাক্ষর",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        }
+      ]
+    }
+  ]
+}
