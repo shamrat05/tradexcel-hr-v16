@@ -19,6 +19,7 @@ def prepare_draft_layout(company, form_code, effective_from, branch=""):
     """
     if not frappe.has_permission("Workforce Statutory Print Layout", "create"):
         frappe.throw(_("You cannot configure statutory layouts."), frappe.PermissionError)
+    branch = branch or ""
     check_company(company)
     frappe.get_doc("Company", company).check_permission("read")
     if not effective_from:
@@ -32,14 +33,16 @@ def prepare_draft_layout(company, form_code, effective_from, branch=""):
     source = spec_for(form_code)
     if source["kind"] == "Evidence Only":
         frappe.throw(_("This source is external evidence, not an employer-generated form."))
-    filters = {"company": company, "branch": branch or "", "form_code": form_code,
-               "docstatus": ["!=", 2]}
     # Serialize the explicit setup action across users/tabs, without creating a
     # new completion/state table or retaining private information in Redis keys.
     key = hashlib.sha256(f"{company}\0{branch}\0{form_code}".encode()).hexdigest()
     with frappe.cache.lock("workforce_statutory_setup:" + key, timeout=60, blocking_timeout=10):
-        existing = frappe.get_all("Workforce Statutory Print Layout", filters=filters,
-                                  fields=["name"], order_by="creation asc")
+        table = frappe.qb.DocType("Workforce Statutory Print Layout")
+        from frappe.query_builder.functions import IfNull
+        existing = (frappe.qb.from_(table).select(table.name)
+                    .where((table.company == company) & (IfNull(table.branch, "") == branch)
+                           & (table.form_code == form_code) & (table.docstatus != 2))
+                    .orderby(table.creation).for_update().run(as_dict=True))
         if existing:
             for item in existing:
                 frappe.get_doc("Workforce Statutory Print Layout", item.name).check_permission("read")
