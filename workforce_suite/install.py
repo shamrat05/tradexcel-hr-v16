@@ -411,6 +411,8 @@ WORKSPACE_SHORTCUTS = [
     ("Working Time Reviews", "Workforce Working Time Classification", "DocType"),
     ("Maternity Reviews", "Workforce Maternity Review", "DocType"),
     ("Welfare Reviews", "Workforce Workplace Welfare Review", "DocType"),
+    ("Statutory Form Layouts", "Workforce Statutory Print Layout", "DocType"),
+    ("Statutory Evidence Records", "Workforce Statutory Record", "DocType"),
     ("Statutory Exit Rules", "Workforce Statutory Rule Set", "DocType"),
     ("Wage Floor Rules", "Workforce Wage Floor Rule Set", "DocType"),
     ("Benefit Rules", "Workforce Statutory Benefit Rule Set", "DocType"),
@@ -647,6 +649,7 @@ WORKSPACE_SECTIONS = (
     )),
     ("Compliance", "Review explicit applicability without inventing legal values.", (
         "Wage Floor Reviews", "Benefit Enrollments", "Working Time Reviews", "Maternity Reviews", "Welfare Reviews",
+        "Statutory Form Layouts", "Statutory Evidence Records",
     )),
     ("Reports", "Open the reviews allowed for your role and scope.", (
         "Anomaly Radar", "Payroll Register", "Payroll Variance", "Pay Component Register", "Biometric ID Audit",
