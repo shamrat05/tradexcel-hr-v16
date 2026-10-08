@@ -20,5 +20,12 @@ class WorkforceStatutoryProfile(Document):
     def before_submit(self):
         if self.owner == frappe.session.user:
             frappe.throw(_("A separate reviewer must approve establishment configuration."), frappe.PermissionError)
+        unresolved = []
+        for fieldname in ("address_en", "registration_no", "legal_reference", "review_notes"):
+            value = self.get(fieldname)
+            if not value or str(value).strip().lower().startswith("pending "):
+                unresolved.append(fieldname)
+        if unresolved:
+            frappe.throw(_("Complete reviewed statutory fields before submission: {0}.").format(", ".join(unresolved)))
         self.reviewed_by = frappe.session.user
         self.reviewed_at = now_datetime()

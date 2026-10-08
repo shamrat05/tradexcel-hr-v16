@@ -370,6 +370,29 @@ def test_draft_profile_setup_reuses_company_and_reports_review_gaps(data):
     frappe.delete_doc("Workforce Statutory Profile", profile_name)
     frappe.db.commit()
 
+def test_profile_requirements_enforce_read_scope_and_submission_completeness(data):
+    from workforce_suite.workforce_suite.statutory_setup import prepare_draft_profile, profile_missing_requirements
+    first = prepare_draft_profile("Example Company A", effective_from="2026-10-01")
+    name = first["profiles"][0]
+    try:
+        assert profile_missing_requirements(name)
+        frappe.set_user(data["worker"])
+        with pytest.raises(frappe.PermissionError):
+            profile_missing_requirements(name)
+        frappe.set_user(data["auditor"])
+        with pytest.raises(frappe.PermissionError):
+            profile_missing_requirements(name)
+        frappe.set_user(data["reviewer"])
+        doc = frappe.get_doc("Workforce Statutory Profile", name)
+        with pytest.raises(frappe.ValidationError, match="Complete reviewed statutory fields"):
+            doc.submit()
+    finally:
+        frappe.set_user("Administrator")
+        if frappe.db.exists("Workforce Statutory Profile", name):
+            frappe.delete_doc("Workforce Statutory Profile", name)
+        frappe.db.commit()
+
+
 def test_draft_setup_concurrent_blank_branch_requests_create_one_configuration():
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier

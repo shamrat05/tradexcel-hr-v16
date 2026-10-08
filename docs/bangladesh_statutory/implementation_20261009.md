@@ -122,3 +122,23 @@ aggregation, payment/rate evidence and the legal/regulatory crosswalk. These
 remain draft/legal-review gates. DOCX is documented as an editable working copy:
 native letterhead text is included, while PDF/HTML retains the configured native
 logo and Letter Head presentation.
+
+
+## Focused review correction — 2026-10-09
+
+The app-owned legacy logo repair was removed from generic install/after-migrate
+code. Historical asset recognition remains only in the explicitly invoked
+legacy migration finalization path, where ownership and asset existence are
+checked before changing a Desktop Icon. The white-label identifier contract
+therefore remains strict.
+
+Profile review findings now require native document read permission and the
+same Company scope check used by statutory exports. Submission rejects missing
+or unresolved placeholder values for address, registration, legal reference and
+review notes before recording reviewer approval. Draft-profile creation now
+uses a cache lock keyed by Company and Branch to prevent duplicate concurrent
+profiles. Focused source/branding/white-label checks: 56 passed.
+
+The remaining legal and source-data gates are unchanged: service-book and
+Forms 24/35/37/40 variants, complete Forms 80/81 aggregation, payment evidence,
+regulatory crosswalk, legal approval and real operator acceptance remain open.

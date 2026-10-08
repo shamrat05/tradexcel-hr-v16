@@ -43,42 +43,46 @@ def prepare_draft_profile(company, branch="", effective_from=""):
         branch_doc.check_permission("read")
         if branch_doc.get("company") != company:
             frappe.throw(_("Branch must belong to the selected Company."))
-    existing = frappe.get_all(
-        "Workforce Statutory Profile",
-        filters={"company": company, "branch": branch or "", "docstatus": ["!=", 2]},
-        pluck="name",
-        order_by="creation asc",
-    )
-    if existing:
-        return {"created": False, "profiles": existing,
-                "missing_requirements": profile_missing_requirements(existing[0])}
-    address = _native_company_address(company)
-    missing = []
-    if not address:
-        missing.append({"field": "address_en", "message": _("Link a native Address to the Company.")})
-    missing.extend([
-        {"field": "registration_no", "message": _("Enter the reviewed establishment registration number.")},
-        {"field": "legal_reference", "message": _("Add the applicable law, gazette or evidence reference.")},
-        {"field": "review_notes", "message": _("Record the applicability and independent review notes.")},
-    ])
-    doc = frappe.get_doc({
-        "doctype": "Workforce Statutory Profile",
-        "company": company,
-        "branch": branch or "",
-        "profile_version": "draft-1",
-        "effective_from": effective_from,
-        "establishment_en": company_doc.company_name,
-        "address_en": address or "Pending native Company Address review",
-        "legal_reference": "Pending legal applicability review",
-        "review_notes": "Complete registration, applicability and evidence review before submission.",
-    }).insert()
-    frappe.db.commit()
-    return {"created": True, "profiles": [doc.name], "missing_requirements": missing}
+    key = hashlib.sha256(f"{company}\0{branch or ''}".encode()).hexdigest()
+    with frappe.cache.lock("workforce_statutory_profile_setup:" + key, timeout=60, blocking_timeout=10):
+        existing = frappe.get_all(
+            "Workforce Statutory Profile",
+            filters={"company": company, "branch": branch or "", "docstatus": ["!=", 2]},
+            pluck="name",
+            order_by="creation asc",
+        )
+        if existing:
+            return {"created": False, "profiles": existing,
+                    "missing_requirements": profile_missing_requirements(existing[0])}
+        address = _native_company_address(company)
+        missing = []
+        if not address:
+            missing.append({"field": "address_en", "message": _("Link a native Address to the Company.")})
+        missing.extend([
+            {"field": "registration_no", "message": _("Enter the reviewed establishment registration number.")},
+            {"field": "legal_reference", "message": _("Add the reviewed law, gazette or evidence reference.")},
+            {"field": "review_notes", "message": _("Record the applicability and independent review notes.")},
+        ])
+        doc = frappe.get_doc({
+            "doctype": "Workforce Statutory Profile",
+            "company": company,
+            "branch": branch or "",
+            "profile_version": "draft-1",
+            "effective_from": effective_from,
+            "establishment_en": company_doc.company_name,
+            "address_en": address or "Pending native Company Address review",
+            "legal_reference": "Pending legal applicability review",
+            "review_notes": "Complete registration, applicability and evidence review before submission.",
+        }).insert()
+        frappe.db.commit()
+        return {"created": True, "profiles": [doc.name], "missing_requirements": missing}
 
 
 @frappe.whitelist()
 def profile_missing_requirements(profile_name):
     doc = frappe.get_doc("Workforce Statutory Profile", profile_name)
+    doc.check_permission("read")
+    check_company(doc.company)
     fields = (
         ("address_en", _("Link a native establishment Address.")),
         ("registration_no", _("Enter the reviewed registration number.")),

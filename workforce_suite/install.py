@@ -1301,26 +1301,6 @@ def ensure_workspace() -> None:
     ensure_workspace_sidebar(shortcuts)
 
 
-def ensure_owned_desktop_logo() -> int:
-    """Repair only the app-owned legacy packaged logo URL.
-
-    Native Desktop Icon remains the source of truth. Customer or other-app
-    logos are left untouched, and the operation is idempotent.
-    """
-    old_logo = "/assets/tradex_hr/images/tradex-hr.svg"
-    new_logo = "/assets/workforce_suite/images/workforce-hr.svg"
-    changed = 0
-    for name in frappe.get_all("Desktop Icon", filters={"app": "workforce_suite"}, pluck="name"):
-        doc = frappe.get_doc("Desktop Icon", name)
-        if doc.logo_url != old_logo:
-            continue
-        doc.logo_url = new_logo
-        doc.flags.ignore_permissions = True
-        doc.save()
-        changed += 1
-    return changed
-
-
 def ensure_property_setters() -> dict[str, int]:
     """Make the app's Property Setters reproducible.
 
@@ -1401,7 +1381,6 @@ def after_migrate():
     # backup_reference=...). See that function's docstring.
     rename_legacy_reports()
     ensure_workspace()
-    ensure_owned_desktop_logo()
     ensure_property_setters()
     frappe.db.commit()
     frappe.clear_cache()
