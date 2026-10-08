@@ -69,12 +69,12 @@ def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     renderer = load_renderer()
     jobs = [
-        ("form_6", 1, "SYN-EMP-0001"),
-        ("form_34", 48, "SYN-EMP-0048"),
-        ("form_38", 105, "SYN-EMP-0105"),
-        ("form_9", 85, "SYN-EMP-0085"),
+        ("form_6", 1, "employee_name", "SYN-EMP-0001"),
+        ("form_34", 48, "employee_name", "SYN-EMP-0048"),
+        ("form_38", 105, "employee_name", "SYN-EMP-0105"),
+        ("form_9", 85, "leave_requested", "SYN-LEAVE-0085"),
     ]
-    for code, count, final in jobs:
+    for code, count, marker_field, final in jobs:
         layout = form(code)
         rows = [
             {
@@ -83,8 +83,11 @@ def main():
             }
             for i in range(1, count + 1)
         ]
-        if code == "form_6":
-            rows[0]["employee_name"] = final
+        # The marker must be placed in an actual printable column. A Form 9
+        # draft has different columns than an employee ID card.
+        if not any(col["field_key"] == marker_field for col in layout["columns"]):
+            raise AssertionError(f"QA field {marker_field} missing in {code}")
+        rows[-1][marker_field] = final
         html = renderer(
             layout, rows, company_name="Synthetic Test Company",
             from_date="2026-10-01", to_date="2026-10-07", is_draft=True,
