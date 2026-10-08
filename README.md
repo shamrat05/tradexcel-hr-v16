@@ -80,6 +80,14 @@ The original source branch retains the historical customer-specific audit
 notes and backup inventory. They are intentionally excluded from this
 customer-distributable branch.
 
+## Distributing the generic product
+
+Do **not** make this original development repository public. Removing
+customer-specific notes from the current branch does **not** remove them from
+older Git commits. For commercial distribution, create a new clean-history
+repository containing only the reviewed generic snapshot and its approved
+license, excluding the legacy migration tools and customer-history branches.
+
 ## License
 
 The app currently declares `MIT` in its Frappe hooks, but this repository
