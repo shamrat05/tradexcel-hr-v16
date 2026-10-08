@@ -48,10 +48,10 @@ def normalize_period(
     if start > end or (end - start).days > 370:
         raise ValueError("Select a valid period of at most 371 days")
     if mode == "week":
-        # Form 34's ordered day columns are Saturday ... Friday.
-        if start.weekday() != 5 or (end - start).days != 6:
+        # Form 34's ordered day columns are Friday ... Thursday.
+        if start.weekday() != 4 or (end - start).days != 6:
             raise ValueError(
-                "Form 34 is a Saturday-Friday weekly register. "
+                "Form 34 is a Friday-Thursday weekly register. "
                 "For monthly or custom-range analysis use the native attendance report; "
                 "do not mislabel it as Form 34."
             )

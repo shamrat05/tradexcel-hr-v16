@@ -150,14 +150,14 @@ def test_employee_documents_use_employee_scope_without_date_prompt():
     assert normalize_period("form_6", "Employee", None, None) == ("", "")
 
 
-def test_attendance_form_week_is_saturday_to_friday_only():
+def test_attendance_form_week_is_friday_to_thursday_only():
     assert period_mode("form_34", "Attendance") == "week"
-    assert normalize_period("form_34", "Attendance", "2026-10-03", "2026-10-09") == (
-        "2026-10-03", "2026-10-09"
+    assert normalize_period("form_34", "Attendance", "2026-10-02", "2026-10-08") == (
+        "2026-10-02", "2026-10-08"
     )
-    with pytest.raises(ValueError, match="Saturday-Friday"):
-        normalize_period("form_34", "Attendance", "2026-10-01", "2026-10-07")
-    with pytest.raises(ValueError, match="Saturday-Friday"):
+    with pytest.raises(ValueError, match="Friday-Thursday"):
+        normalize_period("form_34", "Attendance", "2026-10-03", "2026-10-09")
+    with pytest.raises(ValueError, match="Friday-Thursday"):
         normalize_period("form_34", "Attendance", "2026-10-01", "2026-10-31")
 
 

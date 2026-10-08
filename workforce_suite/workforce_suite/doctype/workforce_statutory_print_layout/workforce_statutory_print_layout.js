@@ -106,24 +106,24 @@ async function open_print_options(frm, context = {}) {
 
     const today = frappe.datetime.get_today();
     const selectedWeek = (() => {
-        // Saturday is the first day shown on the Form 34 week grid.
+        // Friday is the first day shown on the source Form 34 week grid.
         const dow = new Date(today + "T12:00:00").getDay();
-        return frappe.datetime.add_days(today, -((dow + 1) % 7));
+        return frappe.datetime.add_days(today, -((dow + 2) % 7));
     })();
     const hasSelectedPeriod = Boolean(context.from_date && context.to_date);
     const isSelectedWeek = (() => {
         if (!hasSelectedPeriod) return false;
         const start = new Date(context.from_date + "T12:00:00");
         const end = new Date(context.to_date + "T12:00:00");
-        return start.getDay() === 6 &&
+        return start.getDay() === 5 &&
             Math.round((end.getTime() - start.getTime()) / 86400000) === 6;
     })();
 
     if (options.period_mode === "week" && !isSelectedWeek) {
         fields.push({
-            fieldname: "week_start", label: __("Week beginning (Saturday)"),
+            fieldname: "week_start", label: __("Week beginning (Friday)"),
             fieldtype: "Date", reqd: 1, default: selectedWeek,
-            description: __("Form 34 prints one Saturday–Friday week. The monthly attendance report remains separate.")
+            description: __("Form 34 prints one Friday–Thursday week. The monthly attendance report remains separate.")
         });
     } else if (options.period_mode === "range" && !hasSelectedPeriod) {
         fields.push(
@@ -193,8 +193,8 @@ async function open_print_options(frm, context = {}) {
         const args = {...context};
         if (options.period_mode === "week" && !isSelectedWeek) {
             const start = new Date(values.week_start + "T12:00:00");
-            if (start.getDay() !== 6) {
-                frappe.msgprint(__("Choose a Saturday for the Form 34 register."));
+            if (start.getDay() !== 5) {
+                frappe.msgprint(__("Choose a Friday for the Form 34 register."));
                 return;
             }
             args.from_date = values.week_start;
