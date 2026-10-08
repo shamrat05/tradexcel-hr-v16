@@ -17,10 +17,10 @@ class WorkforceStatutoryRecord(Document):
         if layout.company != self.company:
             frappe.throw(_("The statutory record Company must match its layout Company."))
         columns = {col.field_key: col for col in layout.columns}
-        if len(self.get("values") or []) > 80:
+        if len(self.get("entries") or []) > 80:
             frappe.throw(_("Split large evidence records into separate entries."))
         seen = set()
-        for field in self.get("values") or []:
+        for field in self.get("entries") or []:
             key = (field.field_key or "").strip()
             if not FIELD_KEY_RE.fullmatch(key) or key not in columns:
                 frappe.throw(_("Unknown statutory column key: {0}").format(key))
@@ -38,7 +38,7 @@ class WorkforceStatutoryRecord(Document):
     def _verify_for_submit(self, layout, columns):
         if layout.docstatus != 1:
             frappe.throw(_("Official evidence records require a reviewed, submitted print layout."))
-        vals = {x.field_key: x.field_value for x in self.get("values") or []}
+        vals = {x.field_key: x.field_value for x in self.get("entries") or []}
         for key, col in columns.items():
             if col.required_value and not (vals.get(key) or "").strip():
                 frappe.throw(_("Required statutory field {0} is empty.").format(col.label_en))

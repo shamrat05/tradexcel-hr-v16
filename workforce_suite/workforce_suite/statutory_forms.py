@@ -194,7 +194,7 @@ def _read_manual(layout, from_date: str, to_date: str):
     for name in names:
         record = frappe.get_doc("Workforce Statutory Record", name.name)
         record.check_permission("read")
-        row = {cell.field_key: cell.field_value for cell in record.values}
+        row = {cell.field_key: cell.field_value for cell in record.get("entries", [])}
         row["reference_no"] = row.get("reference_no") or record.reference_id
         row["record_date"] = row.get("record_date") or record.entry_date
         rows.append(row)

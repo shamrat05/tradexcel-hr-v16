@@ -14,7 +14,7 @@
   "layout",
   "entry_date",
   "reference_id",
-  "values",
+  "entries",
   "evidence_file",
   "evidence_note"
  ],
@@ -57,7 +57,7 @@
    "description": "Manual record identifier when applicable; do not invent."
   },
   {
-   "fieldname": "values",
+   "fieldname": "entries",
    "fieldtype": "Table",
    "label": "Entered Source Values",
    "options": "Workforce Statutory Value",
