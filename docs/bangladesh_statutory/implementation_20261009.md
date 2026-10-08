@@ -93,6 +93,6 @@ Statutory output branding now reuses native Company company_logo and the
 Company default_letter_head; a disabled native Letter Head is omitted. No
 second branding store was introduced. The feature remains partial: statutory
 variant completion, legal/translation approval, physical-device/staff UAT,
-CI workflow expansion and deployed parity remain open. Socket.IO and the
-legacy stored tradex_hr logo request require separate preview/runtime
-cleanup; /undefined remains the known upstream Frappe sidebar request.
+CI workflow expansion and deployed parity remain open. Socket.IO remains a separate preview/runtime service gate; the app-owned legacy
+Desktop Icon logo request was repaired idempotently to the packaged Workforce
+Suite asset. /undefined remains the known upstream Frappe sidebar request.
