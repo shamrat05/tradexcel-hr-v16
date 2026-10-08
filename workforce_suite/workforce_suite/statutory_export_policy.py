@@ -20,6 +20,10 @@ def period_mode(form_code: str, data_source: str) -> str:
         return "none"
     if form_code == WEEKLY_FORM:
         return "week"
+    if form_code == "form_80":
+        return "half-year"
+    if form_code == "form_81":
+        return "year"
     return "range"
 
 
@@ -47,6 +51,15 @@ def normalize_period(
     end = _iso(to_date, "To Date")
     if start > end or (end - start).days > 370:
         raise ValueError("Select a valid period of at most 371 days")
+    if form_code == "form_80" and not (
+        start.year == end.year and ((start.month, start.day, end.month, end.day) in
+                                   {(1, 1, 6, 30), (7, 1, 12, 31)})
+    ):
+        raise ValueError("Form 80 requires a complete January-June or July-December half-year")
+    if form_code == "form_81" and not (
+        start.year == end.year and (start.month, start.day, end.month, end.day) == (1, 1, 12, 31)
+    ):
+        raise ValueError("Form 81 requires one complete calendar year")
     if mode == "week":
         # Form 34's ordered day columns are Friday ... Thursday.
         if start.weekday() != 4 or (end - start).days != 6:
@@ -68,7 +81,10 @@ def available_languages(layout: object) -> tuple[str, ...]:
     if not columns or any(not get(col, "label_en") for col in columns):
         return ()
     english = ("en",)
-    if get(layout, "title_bn") and all(get(col, "label_bn") for col in columns):
+    notes_translated = all(not get(layout, field) or get(layout, field + "_bn")
+                           for field in ("header_note", "footer_note"))
+    sections_translated = all(not get(col, "section_key") or get(col, "section_bn") for col in columns)
+    if get(layout, "title_bn") and notes_translated and sections_translated and all(get(col, "label_bn") for col in columns):
         return english + ("bn",)
     return english
 

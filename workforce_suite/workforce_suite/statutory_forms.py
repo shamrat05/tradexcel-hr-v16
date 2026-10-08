@@ -17,7 +17,9 @@ from frappe.utils import getdate
 from workforce_suite.workforce_suite.statutory_export_policy import (
     available_languages, normalize_period, period_mode, validate_language,
 )
-from workforce_suite.workforce_suite.company_context import assert_company_access
+from workforce_suite.workforce_suite.statutory_access import check_company, checked_profile
+from workforce_suite.workforce_suite.statutory_schema import validate_schema, missing_findings, reconcile_wages, money
+from workforce_suite.workforce_suite.statutory_native_data import supplemental, approved_overtime, leave_balances, payment_evidence
 from workforce_suite.workforce_suite.report_scope import (
     permitted_employee_names, permitted_salary_slips,
 )
@@ -57,12 +59,12 @@ def available_print_layouts(form_code: str, company: str, branch: str = ""):
     spec_for(form_code)
     if not company:
         frappe.throw(_("Select a Company in the current report first."))
-    assert_company_access(company, require_explicit_scope=True)
+    check_company(company)
     if not frappe.has_permission("Workforce Statutory Print Layout", "read"):
         frappe.throw(_("You are not allowed to print statutory layouts."), frappe.PermissionError)
     records = frappe.get_list(
         "Workforce Statutory Print Layout",
-        filters={"form_code": form_code, "company": company},
+        filters={"form_code": form_code, "company": company, "docstatus": ["!=", 2]},
         fields=["name", "title", "branch", "docstatus", "orientation", "template_version"],
         order_by="modified desc",
         limit_page_length=100,
@@ -110,7 +112,13 @@ def _scope_employees(
     if employee and include_all:
         frappe.throw(_("Choose either one employee or all matching employees."))
     if layout.data_source == "Manual":
-        if employee or department or employment_type or branch:
+        from frappe.permissions import get_user_permissions
+        scopes = get_user_permissions(frappe.session.user)
+        if scopes.get("Department") or (scopes.get("Branch") and not layout.branch):
+            frappe.throw(_("Manual establishment returns need a permitted establishment layout; whole-company evidence is not available to a narrowed scope."), frappe.PermissionError)
+        if branch and branch != layout.branch:
+            frappe.throw(_("Manual evidence Branch must match its establishment layout."), frappe.PermissionError)
+        if employee or department or employment_type:
             frappe.throw(_("These worker filters do not apply to manually entered evidence."))
         return ()
     if layout.branch and branch and layout.branch != branch:
@@ -161,7 +169,7 @@ def _read_employees(company: str, from_date: str, to_date: str, allowed: tuple[s
         filters={"company": company, "name": ["in", allowed]},
         fields=["name", "employee_name", "employee_number", "designation",
                 "department", "branch", "status", "date_of_birth", "date_of_joining",
-                "gender", "employment_type"],
+                "gender", "employment_type", "permanent_address"],
         order_by="name asc", limit_page_length=MAX_PRINT_ROWS + 1,
     )
     return [dict(
@@ -169,7 +177,7 @@ def _read_employees(company: str, from_date: str, to_date: str, allowed: tuple[s
         employee_number=x.employee_number, designation=x.designation,
         department=x.department, branch=x.branch, status=x.status,
         date_of_birth=x.date_of_birth, date_of_joining=x.date_of_joining,
-        gender=x.gender, employment_type=x.employment_type,
+        gender=x.gender, employment_type=x.employment_type, permanent_address=x.permanent_address,
     ) for x in records]
 
 
@@ -201,29 +209,44 @@ def _read_attendance(layout, from_date: str, to_date: str, allowed: tuple[str, .
     for r in records:
         row = groups.setdefault(r.employee, {
             "employee": r.employee, "employee_name": r.employee_name,
-            "total_work_hours": 0,
+            "total_work_hours": money(0), "_attendance": [],
         })
+        row["_attendance"].append(r.name)
         key = days[getdate(r.attendance_date).weekday()]
+        if float(r.working_hours or 0) < 0:
+            frappe.throw(_("Negative submitted work hours require correction before printing."))
+        if float(r.working_hours or 0) > 0 and r.status not in {"Present", "Half Day", "Work From Home"}:
+            frappe.throw(_("Positive work hours on non-work Attendance require correction before printing."))
+        if key in row:
+            frappe.throw(_("Multiple Attendance records for one day require an explicit shift-aware legal review."))
         row[key] = r.working_hours if r.working_hours is not None else ""
-        if r.working_hours is not None:
-            row["total_work_hours"] += float(r.working_hours)
+        if r.working_hours is not None and r.status in {"Present", "Half Day", "Work From Home"}:
+            row["total_work_hours"] += money(r.working_hours)
     # These are actual native worker identifiers, not assumed legal register
     # numbers. Never substitute an Employee ID for a statutory register ID.
     identities = frappe.get_list(
         "Employee",
         filters={"company": layout.company, "name": ["in", list(groups)]},
-        fields=["name", "employee_number", "branch"],
+        fields=["name", "designation"],
         limit_page_length=MAX_PRINT_ROWS + 1,
     ) if groups else []
     person_index = {person.name: person for person in identities}
+    overtime, ot_findings = approved_overtime(layout, tuple(groups), from_date, to_date)
     output = []
     for serial, employee_id in enumerate(sorted(groups), 1):
         row = groups[employee_id]
         person = person_index.get(employee_id)
         row["serial_no"] = serial
         if person:
-            row["employee_number"] = person.employee_number
-            row["branch"] = person.branch
+            row["designation"] = person.designation
+        ot = overtime.get(employee_id)
+        row["_findings"] = list(ot_findings)
+        if ot:
+            row["approved_overtime_hours"] = ot["hours"]
+            row["_overtime"] = ot["sources"]
+            if ot["complete"]:
+                row["overtime_pay"] = ot["amount"]
+
         output.append(row)
     return output
 
@@ -243,15 +266,34 @@ def _read_leave(layout, from_date: str, to_date: str, allowed: tuple[str, ...]):
     )
     if len(rows) > MAX_PRINT_ROWS:
         frappe.throw(_("Too many leave records for one PDF. Narrow the reporting period."))
-    # Form 9 draft fields use native submitted leave history only. Annual
-    # opening/balances, approval date, and legal classifications still require
-    # independent evidence: never invent them from total_leave_days.
+    balance_cache = {}
+    profile = checked_profile(layout, from_date, to_date)
+    types = ({"annual_requested": profile.annual_leave_type,
+              "casual_requested": profile.casual_leave_type,
+              "sick_requested": profile.sick_leave_type} if profile else {})
+    from hrms.hr.doctype.leave_application.leave_application import get_number_of_leave_days
     output = []
     for record in rows:
+        if record.status != "Approved":
+            continue
+        doc = frappe.get_doc("Leave Application", record.name)
+        doc.check_permission("read")
+        first = max(getdate(from_date), getdate(doc.from_date))
+        last = min(getdate(to_date), getdate(doc.to_date))
+        days = get_number_of_leave_days(doc.employee, doc.leave_type, first, last,
+                                       doc.half_day, doc.half_day_date)
+        cache_key = (record.employee, str(last))
+        if cache_key not in balance_cache:
+            balance_cache[cache_key] = leave_balances(layout, (record.employee,), from_date, str(last))
+        balances, findings = balance_cache[cache_key]
         row = dict(record)
-        row["leave_requested"] = record.leave_type
-        if record.status == "Approved":
-            row["granted_days"] = record.total_leave_days
+        row.update(balances.get(record.employee, {}))
+        row["_findings"] = list(findings)
+        row["_leave_application"] = record.name
+        row["granted_days"] = days
+        for key, leave_type in types.items():
+            if record.leave_type == leave_type:
+                row[key] = f"{first} — {last} ({days})"
         output.append(row)
     return output
 
@@ -265,13 +307,17 @@ def _read_salary_slips(layout, from_date: str, to_date: str, allowed: tuple[str,
     )
     if len(slips) > MAX_PRINT_ROWS:
         frappe.throw(_("Too many salary slips for one printable register."))
-    mapped = {
-        col.field_key: col.salary_component
-        for col in layout.columns
-        if col.field_key in COMPONENT_KEYS and col.salary_component
-    }
+    mapped = {}
+    for col in list(layout.columns) + list(layout.get("salary_mappings") or []):
+        if col.field_key in COMPONENT_KEYS and col.salary_component:
+            mapped.setdefault(col.field_key, []).append(col.salary_component)
+    components = [component for values in mapped.values() for component in values]
+    if len(components) != len(set(components)):
+        frappe.throw(_("Duplicate earning mappings would double-count native wages."))
     output = []
     for index, r in enumerate(slips, 1):
+        if getdate(r.start_date) < getdate(from_date) or getdate(r.end_date) > getdate(to_date):
+            frappe.throw(_("The selected period cuts a submitted Salary Slip. Use its complete payroll period; wages are never prorated by this export."))
         # Parent passed the native permission-aware list query.
         slip = frappe.get_doc("Salary Slip", r.name)
         slip.check_permission("read")
@@ -281,9 +327,33 @@ def _read_salary_slips(layout, from_date: str, to_date: str, allowed: tuple[str,
             total_deduction=r.total_deduction, net_pay=r.net_pay,
             start_date=r.start_date, end_date=r.end_date,
         )
-        details = list(slip.get("earnings", [])) + list(slip.get("deductions", []))
-        for key, component in mapped.items():
-            row[key] = sum(float(x.amount or 0) for x in details if x.salary_component == component)
+        details = list(slip.get("earnings", []))
+        included = [x for x in details if not x.get("do_not_include_in_total")]
+        try:
+            reconcile_wages([x.amount for x in included], slip.gross_pay, slip.total_deduction, slip.net_pay,
+                            precision=slip.precision("gross_pay") or 2, loan_repayment=slip.get("total_loan_repayment"))
+        except ValueError as exc:
+            frappe.throw(str(exc))
+        unknown = {x.salary_component for x in included if money(x.amount) != 0} - set(components)
+        if unknown:
+            frappe.throw(_("Map every included earning component before producing the wage register: {0}").format(", ".join(sorted(unknown))))
+        for key, group in mapped.items():
+            row[key] = sum((money(x.amount) for x in included if x.salary_component in group), money(0))
+        row["total_deduction"] = money(slip.total_deduction) + money(slip.get("total_loan_repayment"))
+        if abs(sum((money(x.amount) for x in slip.deductions if not x.get("do_not_include_in_total")), money(0)) - money(slip.total_deduction)) > money(1).scaleb(-(slip.precision("gross_pay") or 2)):
+            frappe.throw(_("Salary Slip deduction rows do not reconcile with their native total."))
+        row["_payment_status"] = payment_evidence(slip, allowed)
+        row["_findings"] = [{"code": "PAYMENT_EVIDENCE", "message": "Submitted wages are not proof of payment or worker acknowledgement. Review native Finance reconciliation and receipt evidence."}]
+        overtime, ot_findings = approved_overtime(layout, (r.employee,), str(r.start_date), str(r.end_date))
+        row["_findings"].extend(ot_findings)
+        ot = overtime.get(r.employee)
+        if ot:
+            row["overtime_hours"] = ot["hours"]
+            row["_overtime"] = ot["sources"]
+            if ot["complete"] and "overtime_payment" in mapped:
+                if abs(money(row["overtime_payment"]) - ot["amount"]) > money(1).scaleb(-(slip.precision("gross_pay") or 2)):
+                    frappe.throw(_("Salary Slip overtime does not reconcile with submitted native overtime amounts."))
+
         output.append(row)
     return output
 
@@ -294,7 +364,7 @@ def _read_manual(layout, from_date: str, to_date: str):
         filters={
             "company": layout.company, "layout": layout.name,
             "entry_date": ["between", [from_date, to_date]],
-            "docstatus": ["in", [0, 1]] if not layout.docstatus else 1,
+            "docstatus": 1,
         },
         fields=["name"], order_by="entry_date asc, name asc",
         limit_page_length=MAX_PRINT_ROWS + 1,
@@ -306,6 +376,7 @@ def _read_manual(layout, from_date: str, to_date: str):
         record = frappe.get_doc("Workforce Statutory Record", name.name)
         record.check_permission("read")
         row = {cell.field_key: cell.field_value for cell in record.get("entries", [])}
+        row["_manual_record"] = record.name
         row["reference_no"] = row.get("reference_no") or record.reference_id
         row["record_date"] = row.get("record_date") or record.entry_date
         rows.append(row)
@@ -334,15 +405,17 @@ def _print_context(
 ):
     layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
     layout.check_permission("read")
-    assert_company_access(layout.company, require_explicit_scope=True)
+    check_company(layout.company)
     try:
         start, end = normalize_period(layout.form_code, layout.data_source, from_date, to_date)
         language = validate_language(layout, language)
     except ValueError as exc:
         frappe.throw(str(exc))
-    if start and layout.effective_from and end < str(layout.effective_from):
+    if layout.docstatus == 2:
+        frappe.throw(_("Cancelled templates cannot be exported."))
+    if start and layout.effective_from and start < str(layout.effective_from):
         frappe.throw(_("This template version is not effective during the selected period."))
-    if start and layout.effective_to and start > str(layout.effective_to):
+    if start and layout.effective_to and end > str(layout.effective_to):
         frappe.throw(_("This template has expired for the selected period."))
 
     spec = spec_for(layout.form_code)
@@ -353,6 +426,12 @@ def _print_context(
     if layout.docstatus and not spec["legal_approved"]:
         frappe.throw(_("A government-reviewed template is required before official printing."))
 
+    try:
+        validate_schema(spec, layout.columns)
+    except ValueError as exc:
+        frappe.throw(str(exc))
+    profile = checked_profile(layout, start, end, language)
+
     allowed = _scope_employees(
         layout, employee=employee, branch=branch,
         department=department, employment_type=employment_type,
@@ -361,6 +440,39 @@ def _print_context(
     rows = _source_rows(layout, start, end, allowed)
     if len(rows) > MAX_PRINT_ROWS:
         frappe.throw(_("Too many records for a single printable document."))
+    evidence = supplemental(layout, allowed, start, end) if layout.data_source != "Manual" else {}
+    persons = {r["employee"]: r for r in _read_employees(layout.company, start, end, allowed)} if layout.form_code == "form_9" else {}
+    for index, row in enumerate(rows, 1):
+        row["serial_no"] = row.get("serial_no") or index
+        facts = evidence.get(row.get("employee"), {})
+        row.update(facts)
+        if layout.form_code == "form_34":
+            row["designation_card"] = " / ".join(str(x) for x in (row.get("designation"), facts.get("card_no")) if x)
+        if layout.form_code == "form_9":
+            for key in ("employee_name", "designation", "department", "date_of_joining"):
+                row[key] = persons.get(row.get("employee"), {}).get(key)
+            for key in ("worker_register_no", "card_no"):
+                if not row.get(key):
+                    row.setdefault("_findings", []).append({"code": "WORKER_ID_MISSING", "message": "Review the worker register and card identifiers; Employee ID was not substituted."})
+        if layout.data_source == "Employee":
+            row["worker_name"] = row.get("employee_name")
+            row["worker_name_and_nid"] = (row.get("employee_name", "") + " / " + facts["national_id"]) if facts.get("national_id") else ""
+            row["sex_dob_age"] = " / ".join(str(row.get(k) or "") for k in ("gender", "date_of_birth"))
+            row["designation_grade"] = " / ".join(str(x) for x in (row.get("designation"), facts.get("grade")) if x)
+            row["appointment_date"] = row.get("date_of_joining")
+            row["job_title"] = row.get("designation")
+            row["place_of_work"] = row.get("branch")
+        if profile and layout.data_source == "Manual":
+            for key, value in {"establishment": profile.establishment_bn if language == "bn" else profile.establishment_en,
+                               "registration_no": profile.registration_no, "licence_no": profile.licence_no,
+                               "mailing_address": profile.address_bn if language == "bn" else profile.address_en,
+                               "industry": profile.industry_bn if language == "bn" else profile.industry_en}.items():
+                row.setdefault(key, value)
+    findings = missing_findings(spec, rows)
+    for row in rows:
+        findings.extend(row.get("_findings", []))
+    if not profile:
+        findings.append({"code": "PROFILE_MISSING", "message": "Configure a reviewed establishment profile; Company name alone does not establish registration, address or legal applicability."})
     columns = list(layout.columns)
     if layout.docstatus:
         if not rows:
@@ -370,15 +482,22 @@ def _print_context(
                 if col.required_value and row.get(col.field_key) in (None, ""):
                     frappe.throw(_("Missing {0} on row {1}.").format(col.label_en, i))
 
-    company_name = frappe.db.get_value("Company", layout.company, "company_name")
+    company_name = ((profile.establishment_bn if language == "bn" else profile.establishment_en)
+                    if profile else frappe.db.get_value("Company", layout.company, "company_name"))
+    company_address = (profile.address_bn if language == "bn" else profile.address_en) if profile else ""
+    signatory = ((profile.signatory_bn if language == "bn" else profile.signatory_en) or "") if profile else ""
     html = render_html(
         layout, rows, company_name=company_name or layout.company,
+        company_address=company_address, signatory=signatory,
         from_date=start, to_date=end, is_draft=layout.docstatus != 1,
         language=language,
     )
     return layout, html, {
         "rows": rows, "company_name": company_name or layout.company,
-        "from_date": start, "to_date": end, "language": language,
+        "from_date": start, "to_date": end, "language": language, "findings": findings,
+        "company_address": company_address, "signatory": signatory,
+        "scope": {"employee": employee, "branch": branch or layout.branch, "department": department,
+                  "employment_type": employment_type, "include_all": include_all},
     }
 
 
@@ -387,7 +506,7 @@ def export_options(layout_name: str):
     """Only render controls applicable to this saved layout."""
     layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
     layout.check_permission("read")
-    assert_company_access(layout.company, require_explicit_scope=True)
+    check_company(layout.company)
     return {
         "company": layout.company,
         "branch": layout.branch or "",
@@ -409,15 +528,15 @@ def preview_a4(
     department: str = "", employment_type: str = "", include_all: int = 0,
 ):
     """Render the selected authorization-scoped draft or approved layout."""
-    _, html, _ = _print_context(
+    _, html, data = _print_context(
         layout_name, from_date, to_date, language=language,
         employee=employee, branch=branch, department=department,
         employment_type=employment_type, include_all=bool(int(include_all)),
     )
-    return {"html": html}
+    return {"html": html, "findings": data["findings"], "status": "Draft", "row_count": len(data["rows"])}
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def download_a4(
     layout_name: str, from_date: str = "", to_date: str = "",
     language: str = "en", employee: str = "", branch: str = "",
@@ -426,7 +545,7 @@ def download_a4(
     """Always render on A4 with orientation selected by reviewed layout."""
     from frappe.utils.pdf import get_pdf
 
-    layout, html, _ = _print_context(
+    layout, html, data = _print_context(
         layout_name, from_date, to_date, language=language,
         employee=employee, branch=branch, department=department,
         employment_type=employment_type, include_all=bool(int(include_all)),
@@ -436,18 +555,20 @@ def download_a4(
         "margin-top": "9mm", "margin-bottom": "12mm",
         "margin-left": "8mm", "margin-right": "8mm",
         "print-media-type": "",
+        "footer-right": "[page] / [topage]", "footer-font-size": "8",
     }
     payload = get_pdf(html, options)
+    _audit_generation(layout, data, "PDF", payload)
     safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", layout.form_code)
     frappe.local.response.filename = (
-        f"{safe_name}_{language}_{from_date or 'employee'}_{to_date or 'document'}.pdf"
+        f"{safe_name}_{data['language']}_{data['from_date'] or 'employee'}_{data['to_date'] or 'document'}.pdf"
     )
     frappe.local.response.filecontent = payload
     frappe.local.response.type = "pdf"
 
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def download_docx(
     layout_name: str, from_date: str = "", to_date: str = "",
     language: str = "en", employee: str = "", branch: str = "",
@@ -464,8 +585,38 @@ def download_docx(
     payload = render_docx(
         layout, data["rows"], company_name=data["company_name"],
         from_date=data["from_date"], to_date=data["to_date"], language=data["language"],
+        company_address=data["company_address"], signatory=data["signatory"],
     )
+    _audit_generation(layout, data, "DOCX", payload)
     safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", layout.form_code)
     frappe.local.response.filename = f"{safe_name}_{language}_working_copy.docx"
     frappe.local.response.filecontent = payload
     frappe.local.response.type = "download"
+
+
+def _audit_generation(layout, data, output_format, payload):
+    """Record provenance, not sensitive cells or a false filing/payment status."""
+    import hashlib
+    from frappe.utils import now_datetime
+    references = []
+    for row in data["rows"]:
+        references.append({key: row[key] for key in (
+            "employee", "salary_slip", "_attendance", "_overtime", "_evidence", "_leave_application", "_manual_record"
+        ) if key in row})
+    previous = getattr(frappe.flags, "statutory_generation", False)
+    frappe.flags.statutory_generation = True
+    try:
+        audit = frappe.get_doc({
+            "doctype": "Workforce Statutory Export", "company": layout.company, "branch": layout.branch,
+            "layout": layout.name, "template_version": layout.template_version, "source_sha256": layout.source_sha256,
+            "scope_json": json.dumps({**data["scope"], "from_date": data["from_date"], "to_date": data["to_date"],
+                                      "references": references}, default=str),
+            "language": data["language"], "output_format": output_format,
+            "payload_sha256": hashlib.sha256(payload).hexdigest(), "generated_by": frappe.session.user,
+            "generated_at": now_datetime(), "status": "Draft Generated",
+        })
+        # The exporter already authorized layout, Company and every source.
+        # Clients cannot insert audit documents through REST or modify them.
+        audit.insert(ignore_permissions=True)
+    finally:
+        frappe.flags.statutory_generation = previous

@@ -33,7 +33,11 @@
   "footer_note",
   "columns",
   "approved_by",
-  "approved_at"
+  "approved_at",
+  "statutory_profile",
+  "header_note_bn",
+  "footer_note_bn",
+  "salary_mappings"
  ],
  "fields": [
   {
@@ -127,7 +131,8 @@
    "fieldname": "source_url",
    "fieldtype": "Data",
    "label": "Government PDF Source URL",
-   "read_only": 1
+   "read_only": 1,
+   "length": 512
   },
   {
    "fieldname": "source_sha256",
@@ -150,7 +155,7 @@
    "fieldname": "title_bn",
    "fieldtype": "Data",
    "label": "Bengali Print Heading",
-   "description": "Company-specific heading; edit here before submitting. Empty uses English."
+   "description": "Complete Bangla heading and labels are required; no English fallback."
   },
   {
    "fieldname": "title_en",
@@ -189,6 +194,30 @@
    "fieldtype": "Datetime",
    "label": "Approved At",
    "read_only": 1
+  },
+  {
+   "fieldname": "statutory_profile",
+   "fieldtype": "Link",
+   "label": "Reviewed Establishment Profile",
+   "options": "Workforce Statutory Profile"
+  },
+  {
+   "fieldname": "header_note_bn",
+   "fieldtype": "Small Text",
+   "label": "Company Heading (Bangla)"
+  },
+  {
+   "fieldname": "footer_note_bn",
+   "fieldtype": "Small Text",
+   "label": "Signature / Footer (Bangla)"
+  },
+  {
+   "fieldname": "salary_mappings",
+   "fieldtype": "Table",
+   "label": "Additional Earning Component Mappings",
+   "options": "Workforce Statutory Component Mapping",
+   "depends_on": "eval:doc.data_source == \"Salary Slip\"",
+   "description": "Explicit print-only grouping of native earning components. Each component is counted exactly once; this does not configure pay."
   }
  ],
  "permissions": [

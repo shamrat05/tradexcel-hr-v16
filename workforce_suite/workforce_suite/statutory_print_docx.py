@@ -50,18 +50,18 @@ def _table(doc, labels, keys, rows):
 
 def render_docx(
     layout, rows, *, company_name: str, from_date: str = "",
-    to_date: str = "", language: str = "en",
+    to_date: str = "", language: str = "en", company_address: str = "", signatory: str = "",
 ) -> bytes:
     from docx import Document
     from docx.enum.section import WD_ORIENT
-    from docx.shared import Mm, Pt
+    from docx.shared import Mm, Pt, RGBColor
 
     validate_language(layout, language)
     family = _value(layout, "form_family", "Register")
     if family == "Evidence Only":
         raise ValueError("An externally issued certificate cannot be generated")
     columns = list(_value(layout, "columns", []))
-    if not columns or len(columns) > 22:
+    if not columns or (len(columns) > 22 and family != "Return"):
         raise ValueError("DOCX expects 1-22 reviewed columns")
     orientation = _value(layout, "orientation")
     if orientation not in ("Portrait", "Landscape"):
@@ -78,64 +78,112 @@ def render_docx(
     section.bottom_margin = Mm(13)
 
     style = doc.styles["Normal"]
-    style.font.name = "Nirmala UI" if language == "bn" else "Arial"
+    style.font.name = "Noto Sans Bengali" if language == "bn" else "Arial"
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    fonts = style.element.get_or_add_rPr().get_or_add_rFonts()
+    fonts.set(qn("w:cs"), style.font.name)
+    fonts.set(qn("w:eastAsia"), style.font.name)
     style.font.size = Pt(9)
     style.paragraph_format.space_after = Pt(4)
+    for heading_name in ("Heading 1", "Heading 2"):
+        heading = doc.styles[heading_name]
+        heading.font.name = style.font.name
+        heading.font.color.rgb = RGBColor(0, 0, 0)
+        heading_fonts = heading.element.get_or_add_rPr().get_or_add_rFonts()
+        for language_font in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
+            heading_fonts.set(qn(language_font), style.font.name)
 
     suffix = "বাংলা সম্পাদনাযোগ্য খসড়া — সরকারি দাখিল নয়" if language == "bn" else "EDITABLE WORKING COPY — NOT AN OFFICIAL FILING"
     doc.add_heading(_text(_value(layout, "title_bn" if language == "bn" else "title_en")), 1)
     doc.add_paragraph(_text(company_name))
+    if company_address:
+        doc.add_paragraph(_text(company_address))
     if from_date and to_date:
         prefix = "সময়কাল" if language == "bn" else "Period"
         doc.add_paragraph(f"{prefix}: {from_date} — {to_date}")
     doc.add_paragraph(suffix)
-    if _value(layout, "header_note"):
-        doc.add_paragraph(_text(_value(layout, "header_note")))
+    header_key = "header_note_bn" if language == "bn" else "header_note"
+    footer_key = "footer_note_bn" if language == "bn" else "footer_note"
+    if _value(layout, header_key):
+        doc.add_paragraph(_text(_value(layout, header_key)))
 
     keys = [_text(_value(col, "field_key")) for col in columns]
     labels = [_text(_value(col, "label_bn" if language == "bn" else "label_en")) for col in columns]
     data = list(rows)
     if family == "Register":
-        # Never shrink a 16/22-column PDF grid into an unreadable Word table.
-        # Every column is retained: for wide forms, repeat an identifying
-        # column alongside consecutive bands of at most seven other fields.
-        if len(keys) <= 8:
-            _table(doc, labels, keys, data)
-        else:
-            key_index = next(
-                (i for i, key in enumerate(keys) if key in ("employee_name", "employee", "worker_register_no", "serial_no")),
-                0,
-            )
-            anchor = keys[key_index]
-            anchor_label = labels[key_index]
-            remaining = [(key, label) for i, (key, label) in enumerate(zip(keys, labels)) if i != key_index]
-            for offset in range(0, len(remaining), 6):
-                if offset:
-                    doc.add_page_break()
-                batch = remaining[offset:offset + 6]
-                heading = "কলাম" if language == "bn" else "Fields"
-                doc.add_paragraph(f"{heading} {offset + 1}–{offset + len(batch)}")
-                _table(
-                    doc,
-                    [anchor_label] + [label for _, label in batch],
-                    [anchor] + [key for key, _ in batch],
-                    data,
+        groups = {}
+        for item in data:
+            identity = ""
+            if _value(layout, "form_code") == "form_9":
+                identity = " · ".join(_text(item.get(key)) for key in ("employee_name", "worker_register_no", "card_no", "designation", "department", "date_of_joining"))
+            groups.setdefault(identity, []).append(item)
+        if not groups:
+            groups[""] = []
+        original_keys, original_labels = list(keys), list(labels)
+        for group_index, (identity, data) in enumerate(groups.items()):
+            keys, labels = list(original_keys), list(original_labels)
+            if group_index:
+                doc.add_page_break()
+            if identity:
+                doc.add_paragraph(identity)
+            # Never shrink a 16/22-column PDF grid into an unreadable Word table.
+            # Every column is retained: for wide forms, repeat an identifying
+            # column alongside consecutive bands of at most seven other fields.
+            if len(keys) <= 8:
+                _table(doc, labels, keys, data)
+            else:
+                if "serial_no" not in keys:
+                    data = [{**row, "_row_reference": i} for i, row in enumerate(data, 1)]
+                    keys = ["_row_reference"] + keys
+                    labels = ["সারির নির্দেশক" if language == "bn" else "Working-copy row reference"] + labels
+                key_index = next(
+                    (i for i, key in enumerate(keys) if key in ("serial_no", "_row_reference")),
+                    0,
                 )
+                anchor = keys[key_index]
+                anchor_label = labels[key_index]
+                remaining = [(key, label) for i, (key, label) in enumerate(zip(keys, labels)) if i != key_index]
+                for offset in range(0, len(remaining), 6):
+                    if offset:
+                        doc.add_page_break()
+                        if identity:
+                            doc.add_paragraph(identity)
+                    batch = remaining[offset:offset + 6]
+                    heading = "কলাম" if language == "bn" else "Fields"
+                    doc.add_paragraph(f"{heading} {offset + 1}–{offset + len(batch)}")
+                    _table(
+                        doc,
+                        [anchor_label] + [label for _, label in batch],
+                        [anchor] + [key for key, _ in batch],
+                        data,
+                    )
     else:
         # Per-person letters and narrative returns read best as editable
         # label/value Word sections; one row is one complete document.
         items = data or [{}]
-        for index, item in enumerate(items):
-            if index:
-                doc.add_page_break()
-            _table(
-                doc, ["বিষয়" if language == "bn" else "Field",
-                      "তথ্য" if language == "bn" else "Value"],
-                ["label", "value"],
-                [{"label": label, "value": _text(item.get(key))} for key, label in zip(keys, labels)],
-            )
-    if _value(layout, "footer_note"):
-        doc.add_paragraph(_text(_value(layout, "footer_note")))
+        index = 0
+        groups = {}
+        for column in columns:
+            groups.setdefault(_value(column, "section_key"), []).append(column)
+        for item in items:
+            for group in groups.values():
+                if index:
+                    doc.add_page_break()
+                index += 1
+                title = _value(group[0], "section_bn" if language == "bn" else "section_en")
+                if title:
+                    doc.add_heading(_text(title), 2)
+                _table(doc, ["বিষয়" if language == "bn" else "Field", "তথ্য" if language == "bn" else "Value"],
+                       ["label", "value"], [{"label": _value(c, "label_bn" if language == "bn" else "label_en"),
+                       "value": _text(item.get(_value(c, "field_key")))} for c in group])
+    if _value(layout, footer_key):
+        doc.add_paragraph(_text(_value(layout, footer_key)))
+    page_number = OxmlElement("w:fldSimple")
+    page_number.set(qn("w:instr"), "PAGE")
+    if signatory:
+        doc.add_paragraph(_text(signatory))
+    section.footer.paragraphs[0]._p.append(page_number)
 
     stream = BytesIO()
     doc.save(stream)

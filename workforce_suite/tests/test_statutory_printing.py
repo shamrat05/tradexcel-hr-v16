@@ -48,13 +48,16 @@ def test_pdf_catalog_exactly_covers_all_29_dife_index_entries():
         assert form["orientation"] in {"Landscape", "Portrait"}
         assert form["kind"] in {"Register", "Document", "Return", "Evidence Only"}
         assert form["legal_approved"] is False
-        assert 1 <= len(form["columns"]) <= 22
+        assert 1 <= len(form["columns"])
+        if form["kind"] != "Return":
+            assert len(form["columns"]) <= 22
 
 
-def test_duplicate_government_source_is_explicitly_blocked():
+def test_shared_pdf_contains_distinct_form_6_and_6a_regions():
     rows = {x["id"]: x for x in json.loads(SPECS.read_text())["entries"]}
     assert rows["form_6"]["source_sha256"] == rows["form_6a"]["source_sha256"]
-    assert "identical" in rows["form_6a"]["source_issue"].lower()
+    assert "distinct" in rows["form_6a"]["field_audit"].lower()
+    assert rows["form_6"]["columns"] != rows["form_6a"]["columns"]
     assert rows["rule_353"]["source_sha256"] is None
 
 
@@ -130,11 +133,11 @@ def test_many_rows_use_repeating_headers_and_no_fixed_row_height():
 def test_print_layout_controllers_enforce_review_and_access_checks():
     parent = MODULE / "doctype" / "workforce_statutory_print_layout"
     src = (parent / "workforce_statutory_print_layout.py").read_text()
-    assert "assert_company_access(" in src
+    assert "check_company(" in src
     assert 'source["legal_approved"]' in src
     assert "before_submit" in src
     rec = (MODULE / "doctype" / "workforce_statutory_record" / "workforce_statutory_record.py").read_text()
-    assert "assert_company_access(" in rec
+    assert "check_company(" in rec
     assert 'layout.check_permission("read")' in rec
 
 

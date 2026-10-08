@@ -3,7 +3,7 @@ import json
 import subprocess
 from pathlib import Path
 
-FRAPPE = Path(__file__).resolve().parents[3] / "frappe" / "frappe"
+FRAPPE = Path(__import__("frappe").get_app_path("frappe"))
 NODE = '/home/sanchita/.nvm/versions/node/v24.15.0/bin/node'
 
 

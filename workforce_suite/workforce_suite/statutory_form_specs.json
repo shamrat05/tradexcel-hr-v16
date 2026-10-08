@@ -22,100 +22,115 @@
         {
           "field_key": "worker_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_father",
           "label_en": "Father's name",
-          "label_bn": "",
+          "label_bn": "পিতার নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_mother",
           "label_en": "Mother's name",
-          "label_bn": "",
+          "label_bn": "মাতার নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "appointment_date",
           "label_en": "Appointment date",
-          "label_bn": "",
+          "label_bn": "নিয়োগের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "job_title",
           "label_en": "Designation",
-          "label_bn": "",
+          "label_bn": "পদবি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employment_category",
           "label_en": "Appointment category",
-          "label_bn": "",
+          "label_bn": "নিয়োগের শ্রেণি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "place_of_work",
           "label_en": "Place of work",
-          "label_bn": "",
+          "label_bn": "কর্মস্থল",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "basic_wages",
           "label_en": "Basic wage",
-          "label_bn": "",
+          "label_bn": "মূল মজুরি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "allowances",
           "label_en": "Other agreed allowances",
-          "label_bn": "",
+          "label_bn": "অন্যান্য সম্মত ভাতা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "probation_terms",
           "label_en": "Reviewed probation terms",
-          "label_bn": "",
+          "label_bn": "পর্যালোচিত শিক্ষানবিশের শর্ত",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "authorized_signature",
           "label_en": "Employer signature",
-          "label_bn": "",
+          "label_bn": "মালিকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         },
         {
           "field_key": "employee_acknowledgement",
           "label_en": "Worker acknowledgement",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের প্রাপ্তিস্বীকার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Native-source draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_6",
@@ -127,9 +142,9 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2da6fa7f880f4621b264546c81e7d9d5.pdf",
       "source_sha256": "f285869693118d4f5c93b6ef40d650d5f73b2b513be2a6caf7e92faf491be0bd",
       "source_pages": 1,
-      "field_audit": "partial_manual_read",
+      "field_audit": "Upper Form 6 region of combined Form 6 / 6(a) source inspected. Current legal version and complete ID-card geometry await approval.",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": " National SRO 284-Law/2022 pages 22-24 amend personnel/service-book details (Form 7) and Form 40 terminology. Preserve the scanned source, review current required identifiers and wage-structure cells before official use.",
       "columns": [
         {
           "field_key": "employee_name",
@@ -137,7 +152,8 @@
           "label_bn": "শ্রমিকের নাম",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee",
@@ -145,7 +161,8 @@
           "label_bn": "আইডি",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation",
@@ -153,7 +170,8 @@
           "label_bn": "পদবী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "date_of_joining",
@@ -161,7 +179,8 @@
           "label_bn": "যোগদান",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "department",
@@ -169,7 +188,8 @@
           "label_bn": "বিভাগ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "branch",
@@ -177,9 +197,13 @@
           "label_bn": "কর্মস্থল",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         }
-      ]
+      ],
+      "implementation_status": "Native-source draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_6a",
@@ -191,9 +215,9 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/d1578b126dd14efda5e6959fc8e9efe0.pdf",
       "source_sha256": "f285869693118d4f5c93b6ef40d650d5f73b2b513be2a6caf7e92faf491be0bd",
       "source_pages": 1,
-      "field_audit": "partial_manual_read_plus_full_2015_rules",
+      "field_audit": "One shared PDF contains Form 6 in the upper region and a distinct Form 6(a) register below. SHA identity is not form identity; both regions inspected.",
       "legal_approved": false,
-      "source_issue": "The linked standalone file is byte-identical to Form 6, but the separate Form 6(A) columns are identified in the full 2015 Gazette; verify final legally current wording before approval.",
+      "source_issue": "",
       "columns": [
         {
           "field_key": "serial_no",
@@ -201,7 +225,8 @@
           "label_bn": "ক্রমিক নং",
           "width_weight": 1,
           "required": true,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
@@ -209,7 +234,8 @@
           "label_bn": "শ্রমিক রেজিস্টারের ক্রমিক নং",
           "width_weight": 1,
           "required": true,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": true
         },
         {
           "field_key": "employee_name",
@@ -217,7 +243,8 @@
           "label_bn": "শ্রমিকের নাম",
           "width_weight": 1,
           "required": true,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": true
         },
         {
           "field_key": "age",
@@ -225,7 +252,8 @@
           "label_bn": "বয়স",
           "width_weight": 1,
           "required": false,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": true
         },
         {
           "field_key": "nature_of_work",
@@ -233,7 +261,8 @@
           "label_bn": "কাজের প্রকৃতি",
           "width_weight": 1,
           "required": false,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": true
         },
         {
           "field_key": "appointment_letter_issue_date",
@@ -241,7 +270,8 @@
           "label_bn": "নিয়োগপত্র প্রদানের তারিখ",
           "width_weight": 1,
           "required": false,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": true
         },
         {
           "field_key": "id_card_issue_date",
@@ -249,7 +279,8 @@
           "label_bn": "পরিচয়পত্র প্রদানের তারিখ",
           "width_weight": 1,
           "required": false,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": true
         },
         {
           "field_key": "service_book_issue_date",
@@ -257,7 +288,8 @@
           "label_bn": "সার্ভিস বই প্রদানের তারিখ",
           "width_weight": 1,
           "required": false,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": true
         },
         {
           "field_key": "worker_signature",
@@ -265,7 +297,8 @@
           "label_bn": "শ্রমিকের স্বাক্ষর বা টিপসই",
           "width_weight": 1,
           "required": false,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": false
         },
         {
           "field_key": "remarks",
@@ -273,9 +306,13 @@
           "label_bn": "মন্তব্য",
           "width_weight": 1,
           "required": false,
-          "fieldtype": "Data"
+          "fieldtype": "Data",
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_7",
@@ -289,7 +326,7 @@
       "source_pages": 2,
       "field_audit": "partial_manual_read",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": " National SRO 284-Law/2022 pages 22-24 amend personnel/service-book details (Form 7) and Form 40 terminology. Preserve the scanned source, review current required identifiers and wage-structure cells before official use.",
       "columns": [
         {
           "field_key": "employee",
@@ -297,7 +334,8 @@
           "label_bn": "শ্রমিক",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee_name",
@@ -305,7 +343,8 @@
           "label_bn": "নাম",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "date_of_joining",
@@ -313,7 +352,8 @@
           "label_bn": "যোগদান",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation",
@@ -321,7 +361,8 @@
           "label_bn": "পদবী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "department",
@@ -329,25 +370,31 @@
           "label_bn": "বিভাগ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "service_change",
           "label_en": "Change of service",
-          "label_bn": "",
+          "label_bn": "চাকরির পরিবর্তন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employer_signature",
           "label_en": "Employer signature",
-          "label_bn": "",
+          "label_bn": "মালিকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Native-source draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_8",
@@ -366,140 +413,160 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_name_and_nid",
           "label_en": "Worker name and NID",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম ও জাতীয় পরিচয়পত্র নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "father_name",
           "label_en": "Father's name",
-          "label_bn": "",
+          "label_bn": "পিতার নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "mother_name",
           "label_en": "Mother's name",
-          "label_bn": "",
+          "label_bn": "মাতার নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "sex_dob_age",
           "label_en": "Sex, birth date and age",
-          "label_bn": "",
+          "label_bn": "লিঙ্গ, জন্মতারিখ ও বয়স",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "permanent_address",
           "label_en": "Permanent address",
-          "label_bn": "",
+          "label_bn": "স্থায়ী ঠিকানা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "date_of_joining",
           "label_en": "Date appointed",
-          "label_bn": "",
+          "label_bn": "নিয়োগের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation_grade",
           "label_en": "Designation and grade",
-          "label_bn": "",
+          "label_bn": "পদবি ও গ্রেড",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "card_no",
           "label_en": "Card no.",
-          "label_bn": "",
+          "label_bn": "কার্ড নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "due_leave",
           "label_en": "Leave due",
-          "label_bn": "",
+          "label_bn": "প্রাপ্য ছুটি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "working_period",
           "label_en": "Daily working period",
-          "label_bn": "",
+          "label_bn": "দৈনিক কাজের সময়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "break_time",
           "label_en": "Break period",
-          "label_bn": "",
+          "label_bn": "বিরতির সময়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "weekly_holiday",
           "label_en": "Weekly holiday",
-          "label_bn": "",
+          "label_bn": "সাপ্তাহিক ছুটি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "group_name",
           "label_en": "Workgroup",
-          "label_bn": "",
+          "label_bn": "কর্মদল",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "shift_relay",
           "label_en": "Shift and relay",
-          "label_bn": "",
+          "label_bn": "পালা ও রিলে",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "group_transfer",
           "label_en": "Group transfer details",
-          "label_bn": "",
+          "label_bn": "দল পরিবর্তনের বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Native-source draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_9",
@@ -511,91 +578,105 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/b55064e4ae13401dbeacdab3d6f7597f.pdf",
       "source_sha256": "488daa3653fbd1b9216cc537a9743fdb6e042433e8ca6b39b29214aea8bddbbb",
       "source_pages": 1,
-      "field_audit": "partial_manual_read",
+      "field_audit": "All 13 source columns and individual-worker header inspected. Native allocations/ledger supply balances; approved applications supply dates/days. Grant decision date, denials, encashment/receipt and signatures require reviewed evidence.",
       "legal_approved": false,
       "source_issue": "Form 9 is per-worker leave book/register, not a simple Leave Application row. Current native adapter does not populate cumulative balances or issued-book history.",
       "columns": [
         {
           "field_key": "annual_leave_opening",
-          "label_en": "Annual leave carried forward",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Annual leave opening balance",
+          "label_bn": "বছরের প্রারম্ভে জমাকৃত বার্ষিক ছুটি",
+          "width_weight": 1,
+          "required_value": true
         },
         {
-          "field_key": "leave_requested",
-          "label_en": "Leave type requested",
-          "label_bn": "",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "field_key": "annual_requested",
+          "label_en": "Annual leave requested",
+          "label_bn": "প্রার্থিত বার্ষিক ছুটি",
+          "width_weight": 1,
+          "required_value": true
+        },
+        {
+          "field_key": "casual_requested",
+          "label_en": "Casual leave requested",
+          "label_bn": "প্রার্থিত নৈমিত্তিক ছুটি",
+          "width_weight": 1,
+          "required_value": true
+        },
+        {
+          "field_key": "sick_requested",
+          "label_en": "Sick leave requested",
+          "label_bn": "প্রার্থিত অসুস্থতার ছুটি",
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "rejection_reason",
-          "label_en": "Reason pending/rejected",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Denied / deferred date and reason",
+          "label_bn": "প্রত্যাখ্যান বা মুলতবির তারিখ ও কারণ",
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "grant_date",
-          "label_en": "Leave approval date",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Leave granted on",
+          "label_bn": "ছুটি মঞ্জুরের তারিখ",
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "granted_days",
-          "label_en": "Days granted",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Days granted / encashed",
+          "label_bn": "মঞ্জুর বা নগদায়িত ছুটির দিন",
+          "width_weight": 1,
+          "required_value": true
+        },
+        {
+          "field_key": "annual_encashment",
+          "label_en": "Annual leave encashment and payment date",
+          "label_bn": "বার্ষিক ছুটি নগদায়ন ও অর্থ প্রদানের তারিখ",
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "annual_balance",
-          "label_en": "Annual balance",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Annual leave balance",
+          "label_bn": "অবশিষ্ট বার্ষিক ছুটি",
+          "width_weight": 1,
+          "required_value": true
         },
         {
-          "field_key": "sick_days",
-          "label_en": "Sick leave days",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "field_key": "casual_balance",
+          "label_en": "Casual leave balance",
+          "label_bn": "অবশিষ্ট নৈমিত্তিক ছুটি",
+          "width_weight": 1,
+          "required_value": true
         },
         {
-          "field_key": "casual_days",
-          "label_en": "Casual leave days",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "field_key": "sick_balance",
+          "label_en": "Sick leave balance",
+          "label_bn": "অবশিষ্ট পীড়া ছুটি",
+          "width_weight": 1,
+          "required_value": true
         },
         {
-          "field_key": "annual_taken",
-          "label_en": "Annual leave taken",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "field_key": "worker_signature",
+          "label_en": "Worker signature",
+          "label_bn": "শ্রমিকের স্বাক্ষর",
+          "width_weight": 1,
+          "required_value": false
         },
         {
-          "field_key": "remarks",
-          "label_en": "Remarks",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 2
+          "field_key": "employer_signature",
+          "label_en": "Employer / manager signature",
+          "label_bn": "মালিক / ব্যবস্থাপকের স্বাক্ষর",
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Native-source draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_19",
@@ -614,156 +695,178 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "age",
           "label_en": "Age",
-          "label_bn": "",
+          "label_bn": "বয়স",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "group_number",
           "label_en": "Group",
-          "label_bn": "",
+          "label_bn": "দল",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "relay_number",
           "label_en": "Relay",
-          "label_bn": "",
+          "label_bn": "রিলে",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
           "label_en": "Worker register no.",
-          "label_bn": "",
+          "label_bn": "শ্রমিক রেজিস্টার নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "wage_register_no",
           "label_en": "Wage register no.",
-          "label_bn": "",
+          "label_bn": "মজুরি রেজিস্টার নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "joining_date",
           "label_en": "Joining date",
-          "label_bn": "",
+          "label_bn": "যোগদানের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "notice_date",
           "label_en": "Maternity notice date",
-          "label_bn": "",
+          "label_bn": "প্রসূতি নোটিশের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "prior_paid_days",
           "label_en": "Wage-paid days in previous 3 months",
-          "label_bn": "",
+          "label_bn": "পূর্ববর্তী তিন মাসে মজুরি প্রদত্ত দিন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "prior_wage_amount",
           "label_en": "Wages paid in previous 3 months",
-          "label_bn": "",
+          "label_bn": "পূর্ববর্তী তিন মাসে প্রদত্ত মজুরি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "average_daily_wage",
           "label_en": "Average daily wage",
-          "label_bn": "",
+          "label_bn": "গড় দৈনিক মজুরি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "delivery_date",
           "label_en": "Delivery date",
-          "label_bn": "",
+          "label_bn": "সন্তান প্রসবের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "post_delivery_notice",
           "label_en": "Post-delivery notice",
-          "label_bn": "",
+          "label_bn": "প্রসব পরবর্তী নোটিশ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "first_payment",
           "label_en": "First instalment date and amount",
-          "label_bn": "",
+          "label_bn": "প্রথম কিস্তির তারিখ ও পরিমাণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "second_payment",
           "label_en": "Second instalment date and amount",
-          "label_bn": "",
+          "label_bn": "দ্বিতীয় কিস্তির তারিখ ও পরিমাণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "alternative_payee",
           "label_en": "Alternative payee name and address",
-          "label_bn": "",
+          "label_bn": "বিকল্প প্রাপকের নাম ও ঠিকানা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "manager_signature",
           "label_en": "Employer/manager signature",
-          "label_bn": "",
+          "label_bn": "মালিক বা ব্যবস্থাপকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_20",
@@ -782,68 +885,79 @@
         {
           "field_key": "area",
           "label_en": "Room/area",
-          "label_bn": "",
+          "label_bn": "কক্ষ বা এলাকা",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "part",
           "label_en": "Surface / section",
-          "label_bn": "",
+          "label_bn": "পৃষ্ঠ বা অংশ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "treatment",
           "label_en": "Whitewash/paint/polish",
-          "label_bn": "",
+          "label_bn": "চুনকাম, রং বা পালিশ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "day",
           "label_en": "Day",
-          "label_bn": "",
+          "label_bn": "দিন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "month",
           "label_en": "Month",
-          "label_bn": "",
+          "label_bn": "মাস",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "year",
           "label_en": "Year",
-          "label_bn": "",
+          "label_bn": "বছর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "authorized_signature",
           "label_en": "Employer/authorized officer signature",
-          "label_bn": "",
+          "label_bn": "মালিক বা অনুমোদিত কর্মকর্তার স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_22",
@@ -862,100 +976,115 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "training_date_time",
           "label_en": "Date and time",
-          "label_bn": "",
+          "label_bn": "তারিখ ও সময়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "fire_training",
           "label_en": "Fire extinguishing",
-          "label_bn": "",
+          "label_bn": "অগ্নিনির্বাপণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "rescue_training",
           "label_en": "Rescue",
-          "label_bn": "",
+          "label_bn": "উদ্ধার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "first_aid_training",
           "label_en": "First aid",
-          "label_bn": "",
+          "label_bn": "প্রাথমিক চিকিৎসা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "trainer_agency",
           "label_en": "Training agency",
-          "label_bn": "",
+          "label_bn": "প্রশিক্ষণ প্রদানকারী সংস্থা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "male_participants",
           "label_en": "Male participants",
-          "label_bn": "",
+          "label_bn": "পুরুষ অংশগ্রহণকারী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "female_participants",
           "label_en": "Female participants",
-          "label_bn": "",
+          "label_bn": "নারী অংশগ্রহণকারী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "total_participants",
           "label_en": "Total participants",
-          "label_bn": "",
+          "label_bn": "মোট অংশগ্রহণকারী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "duration",
           "label_en": "Duration",
-          "label_bn": "",
+          "label_bn": "সময়কাল",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "manager_signature",
           "label_en": "Employer/manager signature",
-          "label_bn": "",
+          "label_bn": "মালিক বা ব্যবস্থাপকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_22a",
@@ -974,84 +1103,97 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "drill_date_time",
           "label_en": "Date and time",
-          "label_bn": "",
+          "label_bn": "তারিখ ও সময়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "organizing_agency",
           "label_en": "Organizing agency",
-          "label_bn": "",
+          "label_bn": "আয়োজক সংস্থা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "male_participants",
           "label_en": "Male participants",
-          "label_bn": "",
+          "label_bn": "পুরুষ অংশগ্রহণকারী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "female_participants",
           "label_en": "Female participants",
-          "label_bn": "",
+          "label_bn": "নারী অংশগ্রহণকারী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "total_participants",
           "label_en": "Total participants",
-          "label_bn": "",
+          "label_bn": "মোট অংশগ্রহণকারী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "duration",
           "label_en": "Duration",
-          "label_bn": "",
+          "label_bn": "সময়কাল",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "authority_present",
           "label_en": "Authority name and designation",
-          "label_bn": "",
+          "label_bn": "কর্তৃপক্ষের নাম ও পদবি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "witness_signatures",
           "label_en": "Fire service/worker representative signature",
-          "label_bn": "",
+          "label_bn": "ফায়ার সার্ভিস বা শ্রমিক প্রতিনিধির স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         },
         {
           "field_key": "injury_report",
           "label_en": "Incident / injury details",
-          "label_bn": "",
+          "label_bn": "ঘটনা বা আঘাতের বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_23",
@@ -1070,76 +1212,88 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
           "label_en": "Worker register no.",
-          "label_bn": "",
+          "label_bn": "শ্রমিক রেজিস্টার নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "age",
           "label_en": "Age",
-          "label_bn": "",
+          "label_bn": "বয়স",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "work_nature",
           "label_en": "Nature of work",
-          "label_bn": "",
+          "label_bn": "কাজের প্রকৃতি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "protective_equipment",
           "label_en": "PPE / safety clothes given and date",
-          "label_bn": "",
+          "label_bn": "প্রদত্ত নিরাপত্তা উপকরণ বা পোশাক ও তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "training",
           "label_en": "Relevant training details",
-          "label_bn": "",
+          "label_bn": "প্রাসঙ্গিক প্রশিক্ষণের বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_signature",
           "label_en": "Worker signature / thumbprint",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের স্বাক্ষর বা টিপসই",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_24",
@@ -1158,124 +1312,142 @@
         {
           "field_key": "equipment_id",
           "label_en": "Machine / chain / crane identification",
-          "label_bn": "",
+          "label_bn": "যন্ত্র, শিকল বা ক্রেনের পরিচিতি",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "test_certificate",
           "label_en": "Test certificate",
-          "label_bn": "",
+          "label_bn": "পরীক্ষার সনদ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "certifier_name",
           "label_en": "Certificate issuer name",
-          "label_bn": "",
+          "label_bn": "সনদ প্রদানকারীর নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "certifier_address",
           "label_en": "Certificate issuer address",
-          "label_bn": "",
+          "label_bn": "সনদ প্রদানকারীর ঠিকানা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "certificate_date",
           "label_en": "Certificate date",
-          "label_bn": "",
+          "label_bn": "সনদের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "certificate_reference",
           "label_en": "Certificate reference",
-          "label_bn": "",
+          "label_bn": "সনদের তথ্যসূত্র",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "machinery_details",
           "label_en": "Machinery examination details",
-          "label_bn": "",
+          "label_bn": "যন্ত্র পরীক্ষার বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "examiner_name",
           "label_en": "Competent examiner",
-          "label_bn": "",
+          "label_bn": "যোগ্য পরীক্ষক",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "exam_date",
           "label_en": "Examination date",
-          "label_bn": "",
+          "label_bn": "পরীক্ষার তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "examiner_signature",
           "label_en": "Competent examiner signature",
-          "label_bn": "",
+          "label_bn": "যোগ্য পরীক্ষকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         },
         {
           "field_key": "tested_safe_load",
           "label_en": "Certified safe working load",
-          "label_bn": "",
+          "label_bn": "প্রত্যয়িত নিরাপদ কার্যভার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "faults",
           "label_en": "Observed defects",
-          "label_bn": "",
+          "label_bn": "পর্যবেক্ষিত ত্রুটি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "repairs",
           "label_en": "Repairs completed",
-          "label_bn": "",
+          "label_bn": "সম্পন্ন মেরামত",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "restrictions",
           "label_en": "Use restrictions",
-          "label_bn": "",
+          "label_bn": "ব্যবহারের বিধিনিষেধ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_25a",
@@ -1294,76 +1466,88 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "establishment",
           "label_en": "Establishment",
-          "label_bn": "",
+          "label_bn": "প্রতিষ্ঠান",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "management",
           "label_en": "Management authority",
-          "label_bn": "",
+          "label_bn": "পরিচালনা কর্তৃপক্ষ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "pressure_vessel",
           "label_en": "Pressure vessel name/type",
-          "label_bn": "",
+          "label_bn": "চাপপাত্রের নাম বা ধরন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "defects_repairs",
           "label_en": "Defects and repairs",
-          "label_bn": "",
+          "label_bn": "ত্রুটি ও মেরামত",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "construction_date",
           "label_en": "Construction date",
-          "label_bn": "",
+          "label_bn": "নির্মাণের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "test_pressure_date",
           "label_en": "Last hydraulic test date / pressure",
-          "label_bn": "",
+          "label_bn": "শেষ জলচাপ পরীক্ষার তারিখ ও চাপ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "vessel_condition",
           "label_en": "Current condition/location",
-          "label_bn": "",
+          "label_bn": "বর্তমান অবস্থা ও অবস্থান",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_26",
@@ -1382,100 +1566,115 @@
         {
           "field_key": "certificate_no",
           "label_en": "Certificate no.",
-          "label_bn": "",
+          "label_bn": "সনদ নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "date",
           "label_en": "Exam date",
-          "label_bn": "",
+          "label_bn": "পরীক্ষার তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "father_name",
           "label_en": "Father's name",
-          "label_bn": "",
+          "label_bn": "পিতার নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "mother_name",
           "label_en": "Mother's name",
-          "label_bn": "",
+          "label_bn": "মাতার নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "sex",
           "label_en": "Sex",
-          "label_bn": "",
+          "label_bn": "লিঙ্গ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "age_dob",
           "label_en": "Age / date of birth",
-          "label_bn": "",
+          "label_bn": "বয়স বা জন্মতারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "address",
           "label_en": "Address",
-          "label_bn": "",
+          "label_bn": "ঠিকানা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "workplace",
           "label_en": "Establishment",
-          "label_bn": "",
+          "label_bn": "প্রতিষ্ঠান",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "fitness",
           "label_en": "Examiner fitness determination",
-          "label_bn": "",
+          "label_bn": "পরীক্ষকের সক্ষমতা নির্ধারণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "certifying_doctor",
           "label_en": "Registered doctor's details",
-          "label_bn": "",
+          "label_bn": "নিবন্ধিত চিকিৎসকের বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "doctor_signature",
           "label_en": "Doctor's original signature",
-          "label_bn": "",
+          "label_bn": "চিকিৎসকের মূল স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Evidence only",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_26a",
@@ -1494,100 +1693,115 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation_card",
           "label_en": "Designation / card",
-          "label_bn": "",
+          "label_bn": "পদবি বা কার্ড",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "sex",
           "label_en": "Sex",
-          "label_bn": "",
+          "label_bn": "লিঙ্গ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "birth_date_age",
           "label_en": "Birth date / age",
-          "label_bn": "",
+          "label_bn": "জন্মতারিখ বা বয়স",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "appointed_date",
           "label_en": "Date appointed to current work",
-          "label_bn": "",
+          "label_bn": "বর্তমান কাজে নিয়োগের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "work_type",
           "label_en": "Nature of work",
-          "label_bn": "",
+          "label_bn": "কাজের প্রকৃতি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "hazard_materials",
           "label_en": "Hazardous materials used",
-          "label_bn": "",
+          "label_bn": "ব্যবহৃত বিপজ্জনক উপকরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "examination_date",
           "label_en": "Medical examination date",
-          "label_bn": "",
+          "label_bn": "চিকিৎসা পরীক্ষার তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "fit_date",
           "label_en": "Date certified fit",
-          "label_bn": "",
+          "label_bn": "সক্ষম প্রত্যয়িত হওয়ার তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "restriction",
           "label_en": "Unfit or work restrictions",
-          "label_bn": "",
+          "label_bn": "অক্ষমতা বা কাজের বিধিনিষেধ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "doctor_signature",
           "label_en": "Registered doctor signature",
-          "label_bn": "",
+          "label_bn": "নিবন্ধিত চিকিৎসকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_27",
@@ -1606,156 +1820,178 @@
         {
           "field_key": "establishment",
           "label_en": "Establishment name/address",
-          "label_bn": "",
+          "label_bn": "প্রতিষ্ঠানের নাম ও ঠিকানা",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "establishment_reg",
           "label_en": "Establishment registration",
-          "label_bn": "",
+          "label_bn": "প্রতিষ্ঠানের নিবন্ধন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "contacts",
           "label_en": "Contact details",
-          "label_bn": "",
+          "label_bn": "যোগাযোগের বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "manager_contact",
           "label_en": "Management authority contact",
-          "label_bn": "",
+          "label_bn": "পরিচালনা কর্তৃপক্ষের যোগাযোগ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "contractor_contact",
           "label_en": "Contractor contact",
-          "label_bn": "",
+          "label_bn": "ঠিকাদারের যোগাযোগ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "industry",
           "label_en": "Nature of business",
-          "label_bn": "",
+          "label_bn": "ব্যবসার প্রকৃতি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "incident_at",
           "label_en": "Accident date/time",
-          "label_bn": "",
+          "label_bn": "দুর্ঘটনার তারিখ ও সময়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "incident_location",
           "label_en": "Accident location",
-          "label_bn": "",
+          "label_bn": "দুর্ঘটনার স্থান",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "incident_details",
           "label_en": "Accident details",
-          "label_bn": "",
+          "label_bn": "দুর্ঘটনার বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": true
         },
         {
           "field_key": "incident_cause",
           "label_en": "Cause of accident",
-          "label_bn": "",
+          "label_bn": "দুর্ঘটনার কারণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "injured_person",
           "label_en": "Injured/deceased person",
-          "label_bn": "",
+          "label_bn": "আহত বা মৃত ব্যক্তি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
           "label_en": "Worker register / card",
-          "label_bn": "",
+          "label_bn": "শ্রমিক রেজিস্টার বা কার্ড",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation",
           "label_en": "Designation",
-          "label_bn": "",
+          "label_bn": "পদবি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "injury_type",
           "label_en": "Injury type",
-          "label_bn": "",
+          "label_bn": "আঘাতের ধরন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "treatment",
           "label_en": "Treatment / hospital",
-          "label_bn": "",
+          "label_bn": "চিকিৎসা বা হাসপাতাল",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "witnesses",
           "label_en": "Witness details",
-          "label_bn": "",
+          "label_bn": "সাক্ষীর বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "notified_by",
           "label_en": "Notified by",
-          "label_bn": "",
+          "label_bn": "অবহিতকারী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "notice_date",
           "label_en": "Notice date",
-          "label_bn": "",
+          "label_bn": "নোটিশের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "manager_signature",
           "label_en": "Signature",
-          "label_bn": "",
+          "label_bn": "স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_28",
@@ -1774,84 +2010,97 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "injured_worker",
           "label_en": "Injured worker / ID / designation",
-          "label_bn": "",
+          "label_bn": "আহত শ্রমিক, পরিচিতি ও পদবি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "incident_at",
           "label_en": "Incident date/time",
-          "label_bn": "",
+          "label_bn": "ঘটনার তারিখ ও সময়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "inspector_notice_date",
           "label_en": "Inspector notice date",
-          "label_bn": "",
+          "label_bn": "পরিদর্শককে নোটিশের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "incident_details",
           "label_en": "Severity/injury/incident",
-          "label_bn": "",
+          "label_bn": "গুরুত্ব, আঘাত বা ঘটনার বিবরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": true
         },
         {
           "field_key": "return_to_work",
           "label_en": "Return-to-work date",
-          "label_bn": "",
+          "label_bn": "কাজে ফেরার তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "absence_days",
           "label_en": "Workdays absent",
-          "label_bn": "",
+          "label_bn": "কাজে অনুপস্থিত দিন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "medical_provider",
           "label_en": "Hospital/clinic/doctor",
-          "label_bn": "",
+          "label_bn": "হাসপাতাল, ক্লিনিক বা চিকিৎসক",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "compensation",
           "label_en": "Loss of earning capacity / compensation",
-          "label_bn": "",
+          "label_bn": "উপার্জন সক্ষমতার ক্ষতি বা ক্ষতিপূরণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_32",
@@ -1870,60 +2119,70 @@
         {
           "field_key": "establishment",
           "label_en": "Establishment",
-          "label_bn": "",
+          "label_bn": "প্রতিষ্ঠান",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "certificate_no",
           "label_en": "Certificate number",
-          "label_bn": "",
+          "label_bn": "সনদ নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "building",
           "label_en": "Building identification",
-          "label_bn": "",
+          "label_bn": "ভবনের পরিচিতি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "issuer",
           "label_en": "Competent engineer",
-          "label_bn": "",
+          "label_bn": "যোগ্য প্রকৌশলী",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "issued_at",
           "label_en": "Issued on",
-          "label_bn": "",
+          "label_bn": "প্রদানের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "expires_at",
           "label_en": "Expires on",
-          "label_bn": "",
+          "label_bn": "মেয়াদ শেষের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "original_document",
           "label_en": "Original signed certificate",
-          "label_bn": "",
+          "label_bn": "মূল স্বাক্ষরিত সনদ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         }
-      ]
+      ],
+      "implementation_status": "Evidence only",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_33",
@@ -1942,76 +2201,88 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
           "label_en": "Worker register no.",
-          "label_bn": "",
+          "label_bn": "শ্রমিক রেজিস্টার নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation_card",
           "label_en": "Designation / card",
-          "label_bn": "",
+          "label_bn": "পদবি বা কার্ড",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "group_relay",
           "label_en": "Group/relay",
-          "label_bn": "",
+          "label_bn": "দল বা রিলে",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "exemption_order",
           "label_en": "Government exemption order/date",
-          "label_bn": "",
+          "label_bn": "সরকারি অব্যাহতি আদেশ ও তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "missed_weekly_holiday",
           "label_en": "Weekly rest day not received",
-          "label_bn": "",
+          "label_bn": "প্রাপ্ত হয়নি এমন সাপ্তাহিক বিশ্রামের দিন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "compensatory_leave_date",
           "label_en": "Compensatory leave date",
-          "label_bn": "",
+          "label_bn": "ক্ষতিপূরণমূলক ছুটির তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_34",
@@ -2033,7 +2304,8 @@
           "label_bn": "ক্রমিক",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
@@ -2041,7 +2313,8 @@
           "label_bn": "রেজিস্টার নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee_name",
@@ -2049,23 +2322,26 @@
           "label_bn": "শ্রমিকের নাম",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
-          "field_key": "employee_number",
-          "label_en": "Card no.",
-          "label_bn": "কার্ড নং",
+          "field_key": "designation_card",
+          "label_en": "Designation and card number",
+          "label_bn": "পদবি ও টোকেন / কার্ড নম্বর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
-          "field_key": "branch",
-          "label_en": "Section",
-          "label_bn": "বিভাগ",
+          "field_key": "group_relay",
+          "label_en": "Group / relay, where applicable",
+          "label_bn": "গ্রুপ / রিলে নম্বর, প্রযোজ্য ক্ষেত্রে",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "day_fri",
@@ -2073,7 +2349,8 @@
           "label_bn": "শুক্রবার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "day_sat",
@@ -2081,7 +2358,8 @@
           "label_bn": "শনিবার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "day_sun",
@@ -2089,7 +2367,8 @@
           "label_bn": "রবিবার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "day_mon",
@@ -2097,7 +2376,8 @@
           "label_bn": "সোমবার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "day_tue",
@@ -2105,7 +2385,8 @@
           "label_bn": "মঙ্গলবার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "day_wed",
@@ -2113,7 +2394,8 @@
           "label_bn": "বুধবার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "day_thu",
@@ -2121,7 +2403,8 @@
           "label_bn": "বৃহস্পতিবার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "total_work_hours",
@@ -2129,7 +2412,8 @@
           "label_bn": "মোট কাজের ঘণ্টা",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "approved_overtime_hours",
@@ -2137,7 +2421,8 @@
           "label_bn": "অনুমোদিত ওভারটাইম ঘণ্টা",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "overtime_hourly_rate",
@@ -2145,7 +2430,8 @@
           "label_bn": "প্রতি ঘণ্টার মজুরি",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "overtime_pay",
@@ -2153,9 +2439,13 @@
           "label_bn": "ওভারটাইম মজুরি",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         }
-      ]
+      ],
+      "implementation_status": "Native-source draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_35_35a",
@@ -2169,73 +2459,84 @@
       "source_pages": 2,
       "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "Source contains two legally distinct consent and withdrawal documents; this shared draft is not approved for either. Variant-specific templates required.",
+      "source_issue": "Separate prescribed variants are present in the source. This grouped working-evidence layout is not an exact variant facsimile. Independent variant-specific schema and legal review remain required.",
       "columns": [
         {
           "field_key": "employee",
           "label_en": "Worker",
-          "label_bn": "",
+          "label_bn": "শ্রমিক",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation",
           "label_en": "Designation",
-          "label_bn": "",
+          "label_bn": "পদবি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "card_number",
           "label_en": "Card/token",
-          "label_bn": "",
+          "label_bn": "কার্ড বা টোকেন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "section",
           "label_en": "Section",
-          "label_bn": "",
+          "label_bn": "শাখা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "consent_date",
           "label_en": "Night-work consent date",
-          "label_bn": "",
+          "label_bn": "রাত্রিকালীন কাজের সম্মতির তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "withdrawal_date",
           "label_en": "Withdrawal date",
-          "label_bn": "",
+          "label_bn": "প্রত্যাহারের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_signature",
           "label_en": "Worker signature/thumbprint",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের স্বাক্ষর বা টিপসই",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_36",
@@ -2254,76 +2555,88 @@
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
           "label_en": "Worker register no.",
-          "label_bn": "",
+          "label_bn": "শ্রমিক রেজিস্টার নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation_card",
           "label_en": "Designation / card",
-          "label_bn": "",
+          "label_bn": "পদবি বা কার্ড",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "group_relay",
           "label_en": "Group/relay",
-          "label_bn": "",
+          "label_bn": "দল বা রিলে",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "consent_date",
           "label_en": "Night-work consent date",
-          "label_bn": "",
+          "label_bn": "রাত্রিকালীন কাজের সম্মতির তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "withdrawal_date",
           "label_en": "Withdrawal date",
-          "label_bn": "",
+          "label_bn": "প্রত্যাহারের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_signature",
           "label_en": "Worker signature/thumbprint",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের স্বাক্ষর বা টিপসই",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         },
         {
           "field_key": "manager_signature",
           "label_en": "Manager signature",
-          "label_bn": "",
+          "label_bn": "ব্যবস্থাপকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_37_37a_37b",
@@ -2337,81 +2650,93 @@
       "source_pages": 3,
       "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "Source includes one-, two-, and three-shift notices with different tables; variant-specific layout required.",
+      "source_issue": "Separate prescribed variants are present in the source. This grouped working-evidence layout is not an exact variant facsimile. Independent variant-specific schema and legal review remain required.",
       "columns": [
         {
           "field_key": "day",
           "label_en": "Day",
-          "label_bn": "",
+          "label_bn": "দিন",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "shift_name",
           "label_en": "Shift / group",
-          "label_bn": "",
+          "label_bn": "পালা বা দল",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "start_time",
           "label_en": "Work starts",
-          "label_bn": "",
+          "label_bn": "কাজ শুরুর সময়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "end_time",
           "label_en": "Work ends",
-          "label_bn": "",
+          "label_bn": "কাজ শেষের সময়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "rest_break",
           "label_en": "Rest break",
-          "label_bn": "",
+          "label_bn": "বিশ্রামের বিরতি",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "work_nature",
           "label_en": "Work type",
-          "label_bn": "",
+          "label_bn": "কাজের ধরন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "group_number",
           "label_en": "Group number",
-          "label_bn": "",
+          "label_bn": "দল নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "effective_date",
           "label_en": "Effective date",
-          "label_bn": "",
+          "label_bn": "কার্যকর তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "manager_signature",
           "label_en": "Manager signature",
-          "label_bn": "",
+          "label_bn": "ব্যবস্থাপকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_38",
@@ -2423,7 +2748,7 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/56158e6356b64f1eb62c6c7f4f65cdd5.pdf",
       "source_sha256": "2755a1f916756b64295bea0875f757dbccbac5bc373a4c37b477e1d68115da03",
       "source_pages": 1,
-      "field_audit": "partial_manual_read",
+      "field_audit": "17 source columns inspected: transport precedes medical. Submitted Salary Slips and explicit earning mappings only; wages do not establish payment or acknowledgement.",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
@@ -2433,7 +2758,8 @@
           "label_bn": "ক্রমিক",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
@@ -2441,7 +2767,8 @@
           "label_bn": "রেজিস্টার নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee_name",
@@ -2449,7 +2776,8 @@
           "label_bn": "শ্রমিকের নাম",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "basic_wage",
@@ -2457,7 +2785,8 @@
           "label_bn": "মূল মজুরি",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "house_rent",
@@ -2465,7 +2794,8 @@
           "label_bn": "বাড়ী ভাড়া",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "transport",
@@ -2473,7 +2803,8 @@
           "label_bn": "যাতায়াত",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "medical",
@@ -2481,7 +2812,8 @@
           "label_bn": "চিকিৎসা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "food_allowance",
@@ -2489,7 +2821,8 @@
           "label_bn": "খাদ্য ভাতা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "attendance_bonus",
@@ -2497,7 +2830,8 @@
           "label_bn": "হাজিরা বোনাস",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "overtime_hours",
@@ -2505,7 +2839,8 @@
           "label_bn": "অধিক কাজের ঘণ্টা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "overtime_rate",
@@ -2513,7 +2848,8 @@
           "label_bn": "প্রতি ঘণ্টার OT হার",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "overtime_payment",
@@ -2521,7 +2857,8 @@
           "label_bn": "প্রাপ্য অতিরিক্ত ভাতা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "other_pay",
@@ -2529,7 +2866,8 @@
           "label_bn": "অন্যান্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "gross_pay",
@@ -2537,7 +2875,8 @@
           "label_bn": "মোট",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "total_deduction",
@@ -2545,7 +2884,8 @@
           "label_bn": "কর্তন",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "net_pay",
@@ -2553,7 +2893,8 @@
           "label_bn": "মোট প্রদেয়",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "acknowledgement",
@@ -2561,9 +2902,13 @@
           "label_bn": "স্বাক্ষর",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Native-source draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_39",
@@ -2577,89 +2922,102 @@
       "source_pages": 1,
       "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": " National SRO 284-Law/2022 pages 22-24 amend personnel/service-book details (Form 7) and Form 40 terminology. Preserve the scanned source, review current required identifiers and wage-structure cells before official use. The downloaded sheet also contains Form 40; that second variant is not implemented by this Form 39 schema.",
       "columns": [
         {
           "field_key": "serial_no",
           "label_en": "Serial",
-          "label_bn": "",
+          "label_bn": "ক্রমিক নং",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "worker_register_no",
           "label_en": "Worker register no.",
-          "label_bn": "",
+          "label_bn": "শ্রমিক রেজিস্টার নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employee_name",
           "label_en": "Worker name",
-          "label_bn": "",
+          "label_bn": "শ্রমিকের নাম",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "card_number",
           "label_en": "Card/token",
-          "label_bn": "",
+          "label_bn": "কার্ড বা টোকেন",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "designation_department",
           "label_en": "Designation/department",
-          "label_bn": "",
+          "label_bn": "পদবি বা বিভাগ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "damage_reason",
           "label_en": "Damage/loss reason",
-          "label_bn": "",
+          "label_bn": "ক্ষতি বা লোকসানের কারণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "deduction_order",
           "label_en": "Deduction amount and date",
-          "label_bn": "",
+          "label_bn": "কর্তনের পরিমাণ ও তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "instalments",
           "label_en": "Instalments / collection dates",
-          "label_bn": "",
+          "label_bn": "কিস্তি বা আদায়ের তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "recovered_on",
           "label_en": "Recovery completion date",
-          "label_bn": "",
+          "label_bn": "আদায় সম্পন্ন হওয়ার তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "remarks",
           "label_en": "Remarks",
-          "label_bn": "",
+          "label_bn": "মন্তব্য",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 2
+          "width_weight": 2,
+          "required_value": false
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_80",
@@ -2678,132 +3036,151 @@
         {
           "field_key": "establishment",
           "label_en": "Establishment",
-          "label_bn": "",
+          "label_bn": "প্রতিষ্ঠান",
           "required": true,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "registration_no",
           "label_en": "Registration no.",
-          "label_bn": "",
+          "label_bn": "নিবন্ধন নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "employer",
           "label_en": "Employer / managing director",
-          "label_bn": "",
+          "label_bn": "মালিক বা ব্যবস্থাপনা পরিচালক",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "district",
           "label_en": "District",
-          "label_bn": "",
+          "label_bn": "জেলা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "mailing_address",
           "label_en": "Mailing address",
-          "label_bn": "",
+          "label_bn": "ডাক ঠিকানা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "industry",
           "label_en": "Industry",
-          "label_bn": "",
+          "label_bn": "শিল্প",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "adult_male",
           "label_en": "Adult male average",
-          "label_bn": "",
+          "label_bn": "প্রাপ্তবয়স্ক পুরুষের গড় সংখ্যা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "adult_female",
           "label_en": "Adult female average",
-          "label_bn": "",
+          "label_bn": "প্রাপ্তবয়স্ক নারীর গড় সংখ্যা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "foreign_male",
           "label_en": "Foreign male average",
-          "label_bn": "",
+          "label_bn": "বিদেশি পুরুষের গড় সংখ্যা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "foreign_female",
           "label_en": "Foreign female average",
-          "label_bn": "",
+          "label_bn": "বিদেশি নারীর গড় সংখ্যা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "contractor_male",
           "label_en": "Contractor male average",
-          "label_bn": "",
+          "label_bn": "ঠিকাদারি পুরুষ শ্রমিকের গড় সংখ্যা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "contractor_female",
           "label_en": "Contractor female average",
-          "label_bn": "",
+          "label_bn": "ঠিকাদারি নারী শ্রমিকের গড় সংখ্যা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "adolescent_boys",
           "label_en": "Adolescent boys average",
-          "label_bn": "",
+          "label_bn": "কিশোর শ্রমিকের গড় সংখ্যা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "adolescent_girls",
           "label_en": "Adolescent girls average",
-          "label_bn": "",
+          "label_bn": "কিশোরী শ্রমিকের গড় সংখ্যা",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "working_days",
           "label_en": "Working days in half-year",
-          "label_bn": "",
+          "label_bn": "অর্ধবর্ষে কার্যদিবস",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "signed_by",
           "label_en": "Employer signature",
-          "label_bn": "",
+          "label_bn": "মালিকের স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "form_81",
@@ -2815,187 +3192,1064 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/9a81f5a004e94e1597bd9740dc4d518e.pdf",
       "source_sha256": "c99b5adc98806f972435d4106c26d2bbe7b1591553d0c494d3575359d5bdf3fb",
       "source_pages": 11,
-      "field_audit": "source_table_reviewed_draft_english_labels",
+      "field_audit": "All 11 PDF pages inspected. A–K are retained as distinct draft sections with 105 named source groups. Category matrices and exact prescribed subcells require legal field review; grouped working-copy values are NOT an exact official facsimile. No automatic legal category, rate or payment inference.",
       "legal_approved": false,
-      "source_issue": "Eleven-page annual return has multiple sections and annexures not represented by this single draft key/value layout; not an official Form 81.",
+      "source_issue": "All 11 source pages inspected. Twelve sections are represented as grouped reviewed evidence, but prescribed subcell geometry and current-law reconciliation remain incomplete. Draft working copy only; not a complete official Form 81.",
       "columns": [
         {
           "field_key": "licence_no",
-          "label_en": "Licence no.",
-          "label_bn": "",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Licence number",
+          "label_bn": "লাইসেন্স নম্বর",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "reporting_year",
           "label_en": "Reporting year",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_bn": "বিবরণীর বছর",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "establishment",
-          "label_en": "Establishment",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Establishment name",
+          "label_bn": "প্রতিষ্ঠানের নাম",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "registration_no",
-          "label_en": "Registration no.",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Registration number",
+          "label_bn": "রেজিস্ট্রেশন নম্বর",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "employer",
-          "label_en": "Employer / managing director",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Employer name",
+          "label_bn": "মালিকের নাম",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "manager",
-          "label_en": "Manager",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Manager name",
+          "label_bn": "ব্যবস্থাপকের নাম",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "head_office_address",
           "label_en": "Head office address",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_bn": "প্রধান কার্যালয়ের ঠিকানা",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "mailing_address",
           "label_en": "Mailing address",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_bn": "ডাকের ঠিকানা",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "industry",
-          "label_en": "Industry sector",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Industry",
+          "label_bn": "শিল্পের ধরন",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "adult_male",
-          "label_en": "Adult male average",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Average adult male workers",
+          "label_bn": "গড় প্রাপ্তবয়স্ক পুরুষ শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "adult_female",
-          "label_en": "Adult female average",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Average adult female workers",
+          "label_bn": "গড় প্রাপ্তবয়স্ক মহিলা শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "foreign_male",
-          "label_en": "Foreign male average",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Average foreign male workers",
+          "label_bn": "গড় বিদেশী পুরুষ শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "foreign_female",
-          "label_en": "Foreign female average",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Average foreign female workers",
+          "label_bn": "গড় বিদেশী মহিলা শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "contractor_male",
-          "label_en": "Contractor male average",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Average contractor male workers",
+          "label_bn": "গড় ঠিকাদারের পুরুষ শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "contractor_female",
-          "label_en": "Contractor female average",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Average contractor female workers",
+          "label_bn": "গড় ঠিকাদারের মহিলা শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
-          "field_key": "adolescent_workers",
-          "label_en": "Adolescent workers average",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "field_key": "adolescent_boys",
+          "label_en": "Average adolescent boys",
+          "label_bn": "গড় কিশোর শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
+        },
+        {
+          "field_key": "adolescent_girls",
+          "label_en": "Average adolescent girls",
+          "label_bn": "গড় কিশোরী শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "weekly_hours",
-          "label_en": "Normal workweek hours",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Normal weekly work hours",
+          "label_bn": "সাপ্তাহিক স্বাভাবিক কর্মঘণ্টা",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
           "field_key": "annual_working_days",
-          "label_en": "Annual working days",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Working days in year",
+          "label_bn": "বছরে কাজের দিন",
+          "width_weight": 1,
+          "section_key": "a_identity",
+          "section_en": "A — Establishment and workforce",
+          "section_bn": "ক — প্রতিষ্ঠান ও শ্রমিক",
+          "required_value": true
         },
         {
-          "field_key": "rest_breaks",
-          "label_en": "Breaks",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "field_key": "adult_rest_breaks",
+          "label_en": "Adult rest intervals",
+          "label_bn": "প্রাপ্তবয়স্ক শ্রমিকের বিশ্রাম বিরতি",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
         },
         {
-          "field_key": "holiday_work",
-          "label_en": "Holiday work / compensatory leave",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "field_key": "adolescent_rest_breaks",
+          "label_en": "Adolescent rest intervals",
+          "label_bn": "কিশোর শ্রমিকের বিশ্রাম বিরতি",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
         },
         {
-          "field_key": "accidents",
-          "label_en": "Fatal / serious / minor accidents",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "field_key": "holiday_exemption",
+          "label_en": "Weekly holiday exemption particulars",
+          "label_bn": "সাপ্তাহিক ছুটি থেকে অব্যাহতির বিবরণ",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "holiday_exempt_workers",
+          "label_en": "Workers covered by holiday exemption",
+          "label_bn": "অব্যাহতিপ্রাপ্ত শ্রমিক সংখ্যা",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "compensatory_eligible",
+          "label_en": "Workers due compensatory holiday",
+          "label_bn": "ক্ষতিপূরণমূলক ছুটি প্রাপ্য শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "compensatory_granted",
+          "label_en": "Workers granted compensatory holiday",
+          "label_bn": "ক্ষতিপূরণমূলক ছুটি মঞ্জুরকৃত শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "fatal_accidents",
+          "label_en": "Fatal accidents",
+          "label_bn": "মারাত্মক দুর্ঘটনা",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "serious_accidents",
+          "label_en": "Serious accidents",
+          "label_bn": "গুরুতর দুর্ঘটনা",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "minor_accidents",
+          "label_en": "Minor accidents",
+          "label_bn": "সামান্য দুর্ঘটনা",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
         },
         {
           "field_key": "lost_workdays",
-          "label_en": "Workdays lost to accidents",
-          "label_bn": "",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
+          "label_en": "Person-days lost due to accidents",
+          "label_bn": "দুর্ঘটনায় নষ্ট শ্রমদিন",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "dangerous_operations",
+          "label_en": "Dangerous operations and average workers",
+          "label_bn": "বিপজ্জনক কাজে গড় শ্রমিক",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "signed_by",
+          "label_en": "Responsible signatory and date",
+          "label_bn": "দায়িত্বপ্রাপ্ত স্বাক্ষরকারী ও তারিখ",
+          "width_weight": 1,
+          "section_key": "a_worktime",
+          "section_en": "A — Work time, holidays and incidents",
+          "section_bn": "ক — কর্মসময়, ছুটি ও দুর্ঘটনা",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_eligible_male",
+          "label_en": "Completed qualifying service — men",
+          "label_bn": "যোগ্য চাকরিকাল সম্পন্ন — পুরুষ",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_eligible_female",
+          "label_en": "Completed qualifying service — women",
+          "label_bn": "যোগ্য চাকরিকাল সম্পন্ন — মহিলা",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_eligible_adolescent",
+          "label_en": "Completed qualifying service — adolescents",
+          "label_bn": "যোগ্য চাকরিকাল সম্পন্ন — কিশোর",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_granted_male",
+          "label_en": "Granted leave — men",
+          "label_bn": "ছুটি মঞ্জুর — পুরুষ",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_granted_female",
+          "label_en": "Granted leave — women",
+          "label_bn": "ছুটি মঞ্জুর — মহিলা",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_granted_adolescent",
+          "label_en": "Granted leave — adolescents",
+          "label_bn": "ছুটি মঞ্জুর — কিশোর",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_not_availed_male",
+          "label_en": "Eligible but not availed — men",
+          "label_bn": "প্রাপ্য কিন্তু ভোগ করেননি — পুরুষ",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_not_availed_female",
+          "label_en": "Eligible but not availed — women",
+          "label_bn": "প্রাপ্য কিন্তু ভোগ করেননি — মহিলা",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_not_availed_adolescent",
+          "label_en": "Eligible but not availed — adolescents",
+          "label_bn": "প্রাপ্য কিন্তু ভোগ করেননি — কিশোর",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_encashment_male",
+          "label_en": "Encashment recipients and amounts — men",
+          "label_bn": "নগদায়ন প্রাপক ও অর্থ — পুরুষ",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_encashment_female",
+          "label_en": "Encashment recipients and amounts — women",
+          "label_bn": "নগদায়ন প্রাপক ও অর্থ — মহিলা",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leave_encashment_adolescent",
+          "label_en": "Encashment recipients and amounts — adolescents",
+          "label_bn": "নগদায়ন প্রাপক ও অর্থ — কিশোর",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leavers_resigned",
+          "label_en": "Resigned workers",
+          "label_bn": "ইস্তফা প্রদানকারী শ্রমিক",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leavers_dismissed",
+          "label_en": "Dismissed workers",
+          "label_bn": "বরখাস্ত শ্রমিক",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leavers_discharged",
+          "label_en": "Discharged workers",
+          "label_bn": "ডিসচার্জকৃত শ্রমিক",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "leavers_other",
+          "label_en": "Other leavers",
+          "label_bn": "অন্যান্য বিচ্ছিন্ন শ্রমিক",
+          "width_weight": 1,
+          "section_key": "b_leave",
+          "section_en": "B — Earned annual leave",
+          "section_bn": "খ — অর্জিত বার্ষিক ছুটি",
+          "required_value": true
+        },
+        {
+          "field_key": "canteen_foods",
+          "label_en": "Food items and prices",
+          "label_bn": "খাবার ও মূল্য",
+          "width_weight": 1,
+          "section_key": "c_canteen",
+          "section_en": "C — Canteen",
+          "section_bn": "গ — ক্যান্টিন",
+          "required_value": true
+        },
+        {
+          "field_key": "canteen_notice",
+          "label_en": "Closure notice particulars",
+          "label_bn": "বন্ধের নোটিশ",
+          "width_weight": 1,
+          "section_key": "c_canteen",
+          "section_en": "C — Canteen",
+          "section_bn": "গ — ক্যান্টিন",
+          "required_value": true
+        },
+        {
+          "field_key": "canteen_subsidy",
+          "label_en": "Subsidy and arrangements",
+          "label_bn": "ভর্তুকি ও ব্যবস্থা",
+          "width_weight": 1,
+          "section_key": "c_canteen",
+          "section_en": "C — Canteen",
+          "section_bn": "গ — ক্যান্টিন",
+          "required_value": true
+        },
+        {
+          "field_key": "canteen_comments",
+          "label_en": "Canteen comments",
+          "label_bn": "ক্যান্টিন মন্তব্য",
+          "width_weight": 1,
+          "section_key": "c_canteen",
+          "section_en": "C — Canteen",
+          "section_bn": "গ — ক্যান্টিন",
+          "required_value": true
+        },
+        {
+          "field_key": "children_under_two",
+          "label_en": "Average children under two",
+          "label_bn": "দুই বছরের কম শিশুর গড় সংখ্যা",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "children_over_two",
+          "label_en": "Average children over two",
+          "label_bn": "দুই বছরের বেশি শিশুর গড় সংখ্যা",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_staff_qualification",
+          "label_en": "Nurse / midwife training",
+          "label_bn": "সেবিকা / ধাত্রীর প্রশিক্ষণ",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_milk",
+          "label_en": "Milk provided",
+          "label_bn": "দুধ সরবরাহ",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_clothing",
+          "label_en": "Clothing provided",
+          "label_bn": "পোশাক সরবরাহ",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_medical",
+          "label_en": "Medical care",
+          "label_bn": "চিকিৎসা সেবা",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_sanitation",
+          "label_en": "Soap and sanitation",
+          "label_bn": "সাবান ও পরিচ্ছন্নতা",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_play",
+          "label_en": "Play materials",
+          "label_bn": "খেলার উপকরণ",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_teachers",
+          "label_en": "Teachers",
+          "label_bn": "শিক্ষিকা",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_nurses",
+          "label_en": "Nurses",
+          "label_bn": "সেবিকা",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_doctors",
+          "label_en": "Doctors",
+          "label_bn": "চিকিৎসক",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "childcare_sweepers",
+          "label_en": "Cleaners",
+          "label_bn": "পরিচ্ছন্নতাকর্মী",
+          "width_weight": 1,
+          "section_key": "d_childcare",
+          "section_en": "D — Childcare",
+          "section_bn": "ঘ — শিশুকক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "restroom_attendance",
+          "label_en": "Daily attendance",
+          "label_bn": "দৈনিক উপস্থিতি",
+          "width_weight": 1,
+          "section_key": "e_restroom",
+          "section_en": "E — Rest and lunch room",
+          "section_bn": "ঙ — বিশ্রাম ও খাবার কক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "restroom_facilities",
+          "label_en": "Facilities",
+          "label_bn": "সুবিধা",
+          "width_weight": 1,
+          "section_key": "e_restroom",
+          "section_en": "E — Rest and lunch room",
+          "section_bn": "ঙ — বিশ্রাম ও খাবার কক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "restroom_condition",
+          "label_en": "Condition",
+          "label_bn": "অবস্থা",
+          "width_weight": 1,
+          "section_key": "e_restroom",
+          "section_en": "E — Rest and lunch room",
+          "section_bn": "ঙ — বিশ্রাম ও খাবার কক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "restroom_comments",
+          "label_en": "Comments",
+          "label_bn": "মন্তব্য",
+          "width_weight": 1,
+          "section_key": "e_restroom",
+          "section_en": "E — Rest and lunch room",
+          "section_bn": "ঙ — বিশ্রাম ও খাবার কক্ষ",
+          "required_value": true
+        },
+        {
+          "field_key": "deduction_workforce",
+          "label_en": "Adult / adolescent workforce counts and averages",
+          "label_bn": "প্রাপ্তবয়স্ক / কিশোর শ্রমিক সংখ্যা ও গড়",
+          "width_weight": 1,
+          "section_key": "f_deductions",
+          "section_en": "F — Fines and deductions",
+          "section_bn": "চ — জরিমানা ও কর্তন",
+          "required_value": true
+        },
+        {
+          "field_key": "wages_paid",
+          "label_en": "Wages actually paid including allowances",
+          "label_bn": "ভাতাসহ প্রকৃত পরিশোধিত মজুরি",
+          "width_weight": 1,
+          "section_key": "f_deductions",
+          "section_en": "F — Fines and deductions",
+          "section_bn": "চ — জরিমানা ও কর্তন",
+          "required_value": true
+        },
+        {
+          "field_key": "fine_cases_amounts",
+          "label_en": "Fine cases and amounts",
+          "label_bn": "জরিমানার সংখ্যা ও অর্থ",
+          "width_weight": 1,
+          "section_key": "f_deductions",
+          "section_en": "F — Fines and deductions",
+          "section_bn": "চ — জরিমানা ও কর্তন",
+          "required_value": true
+        },
+        {
+          "field_key": "damage_cases_amounts",
+          "label_en": "Damage deductions: cases and amounts",
+          "label_bn": "ক্ষতিজনিত কর্তনের সংখ্যা ও অর্থ",
+          "width_weight": 1,
+          "section_key": "f_deductions",
+          "section_en": "F — Fines and deductions",
+          "section_bn": "চ — জরিমানা ও কর্তন",
+          "required_value": true
+        },
+        {
+          "field_key": "absence_cases_amounts",
+          "label_en": "Absence deductions: cases and amounts",
+          "label_bn": "অনুপস্থিতিজনিত কর্তনের সংখ্যা ও অর্থ",
+          "width_weight": 1,
+          "section_key": "f_deductions",
+          "section_en": "F — Fines and deductions",
+          "section_bn": "চ — জরিমানা ও কর্তন",
+          "required_value": true
+        },
+        {
+          "field_key": "fine_fund_use",
+          "label_en": "Fine fund use: purposes and amounts",
+          "label_bn": "জরিমানা তহবিলের ব্যবহার ও অর্থ",
+          "width_weight": 1,
+          "section_key": "f_deductions",
+          "section_en": "F — Fines and deductions",
+          "section_bn": "চ — জরিমানা ও কর্তন",
+          "required_value": true
+        },
+        {
+          "field_key": "maternity_claims",
+          "label_en": "Benefit claims",
+          "label_bn": "কল্যাণ দাবির সংখ্যা",
+          "width_weight": 1,
+          "section_key": "g_maternity",
+          "section_en": "G — Maternity benefit",
+          "section_bn": "ছ — প্রসূতি কল্যাণ",
+          "required_value": true
+        },
+        {
+          "field_key": "maternity_approved",
+          "label_en": "Approved claims",
+          "label_bn": "অনুমোদিত দাবির সংখ্যা",
+          "width_weight": 1,
+          "section_key": "g_maternity",
+          "section_en": "G — Maternity benefit",
+          "section_bn": "ছ — প্রসূতি কল্যাণ",
+          "required_value": true
+        },
+        {
+          "field_key": "maternity_payments",
+          "label_en": "Benefit recipients and actual payment amounts",
+          "label_bn": "কল্যাণ প্রাপক ও পরিশোধিত অর্থ",
+          "width_weight": 1,
+          "section_key": "g_maternity",
+          "section_en": "G — Maternity benefit",
+          "section_bn": "ছ — প্রসূতি কল্যাণ",
+          "required_value": true
+        },
+        {
+          "field_key": "maternity_alternate_payees",
+          "label_en": "Deceased worker: alternate recipients and amounts",
+          "label_bn": "মৃত শ্রমিকের বিকল্প প্রাপক ও অর্থ",
+          "width_weight": 1,
+          "section_key": "g_maternity",
+          "section_en": "G — Maternity benefit",
+          "section_bn": "ছ — প্রসূতি কল্যাণ",
+          "required_value": true
+        },
+        {
+          "field_key": "maternity_total",
+          "label_en": "Total recipients and payments",
+          "label_bn": "মোট প্রাপক ও অর্থ",
+          "width_weight": 1,
+          "section_key": "g_maternity",
+          "section_en": "G — Maternity benefit",
+          "section_bn": "ছ — প্রসূতি কল্যাণ",
+          "required_value": true
+        },
+        {
+          "field_key": "fatal_compensation",
+          "label_en": "Fatal cases and payments by adult / adolescent category",
+          "label_bn": "প্রাপ্তবয়স্ক / কিশোরের মৃত্যু ও পরিশোধিত অর্থ",
+          "width_weight": 1,
+          "section_key": "h_compensation",
+          "section_en": "H — Accident and occupational disease compensation",
+          "section_bn": "জ — দুর্ঘটনা ও পেশাগত রোগের ক্ষতিপূরণ",
+          "required_value": true
+        },
+        {
+          "field_key": "permanent_compensation",
+          "label_en": "Permanent disability cases and payments by category",
+          "label_bn": "শ্রেণিভিত্তিক স্থায়ী অক্ষমতা ও অর্থ",
+          "width_weight": 1,
+          "section_key": "h_compensation",
+          "section_en": "H — Accident and occupational disease compensation",
+          "section_bn": "জ — দুর্ঘটনা ও পেশাগত রোগের ক্ষতিপূরণ",
+          "required_value": true
+        },
+        {
+          "field_key": "temporary_compensation",
+          "label_en": "Temporary disability cases and payments by category",
+          "label_bn": "শ্রেণিভিত্তিক অস্থায়ী অক্ষমতা ও অর্থ",
+          "width_weight": 1,
+          "section_key": "h_compensation",
+          "section_en": "H — Accident and occupational disease compensation",
+          "section_bn": "জ — দুর্ঘটনা ও পেশাগত রোগের ক্ষতিপূরণ",
+          "required_value": true
+        },
+        {
+          "field_key": "disease_types",
+          "label_en": "Occupational disease types",
+          "label_bn": "পেশাগত রোগের ধরন",
+          "width_weight": 1,
+          "section_key": "h_compensation",
+          "section_en": "H — Accident and occupational disease compensation",
+          "section_bn": "জ — দুর্ঘটনা ও পেশাগত রোগের ক্ষতিপূরণ",
+          "required_value": true
+        },
+        {
+          "field_key": "disease_compensation",
+          "label_en": "Disease cases and payments by category",
+          "label_bn": "শ্রেণিভিত্তিক রোগ ও পরিশোধিত অর্থ",
+          "width_weight": 1,
+          "section_key": "h_compensation",
+          "section_en": "H — Accident and occupational disease compensation",
+          "section_bn": "জ — দুর্ঘটনা ও পেশাগত রোগের ক্ষতিপূরণ",
+          "required_value": true
+        },
+        {
+          "field_key": "medical_establishment",
+          "label_en": "Establishment and worker / contractor counts",
+          "label_bn": "প্রতিষ্ঠান ও শ্রমিক / ঠিকাদারের সংখ্যা",
+          "width_weight": 1,
+          "section_key": "i_medical",
+          "section_en": "I — Medical facilities",
+          "section_bn": "ঝ — চিকিৎসা সুবিধা",
+          "required_value": true
+        },
+        {
+          "field_key": "medical_facilities",
+          "label_en": "Clinic and emergency facilities",
+          "label_bn": "চিকিৎসাকেন্দ্র ও জরুরি সুবিধা",
+          "width_weight": 1,
+          "section_key": "i_medical",
+          "section_en": "I — Medical facilities",
+          "section_bn": "ঝ — চিকিৎসা সুবিধা",
+          "required_value": true
+        },
+        {
+          "field_key": "medical_staff",
+          "label_en": "Medical officers, nurses and other staff",
+          "label_bn": "চিকিৎসক, সেবিকা ও অন্যান্য কর্মী",
+          "width_weight": 1,
+          "section_key": "i_medical",
+          "section_en": "I — Medical facilities",
+          "section_bn": "ঝ — চিকিৎসা সুবিধা",
+          "required_value": true
+        },
+        {
+          "field_key": "medical_coverage",
+          "label_en": "Workers covered and clinic attendance",
+          "label_bn": "অন্তর্ভুক্ত শ্রমিক ও চিকিৎসাকেন্দ্রে উপস্থিতি",
+          "width_weight": 1,
+          "section_key": "i_medical",
+          "section_en": "I — Medical facilities",
+          "section_bn": "ঝ — চিকিৎসা সুবিধা",
+          "required_value": true
+        },
+        {
+          "field_key": "medical_absence",
+          "label_en": "Absence statistics",
+          "label_bn": "অনুপস্থিতির পরিসংখ্যান",
+          "width_weight": 1,
+          "section_key": "i_medical",
+          "section_en": "I — Medical facilities",
+          "section_bn": "ঝ — চিকিৎসা সুবিধা",
+          "required_value": true
+        },
+        {
+          "field_key": "first_aid_supplies",
+          "label_en": "First-aid supplies and arrangements",
+          "label_bn": "প্রাথমিক চিকিৎসার সরঞ্জাম ও ব্যবস্থা",
+          "width_weight": 1,
+          "section_key": "i_medical",
+          "section_en": "I — Medical facilities",
+          "section_bn": "ঝ — চিকিৎসা সুবিধা",
+          "required_value": true
+        },
+        {
+          "field_key": "medical_steps",
+          "label_en": "Health measures taken",
+          "label_bn": "স্বাস্থ্য সংরক্ষণের ব্যবস্থা",
+          "width_weight": 1,
+          "section_key": "i_medical",
+          "section_en": "I — Medical facilities",
+          "section_bn": "ঝ — চিকিৎসা সুবিধা",
+          "required_value": true
+        },
+        {
+          "field_key": "medical_comments",
+          "label_en": "Comments",
+          "label_bn": "মন্তব্য",
+          "width_weight": 1,
+          "section_key": "i_medical",
+          "section_en": "I — Medical facilities",
+          "section_bn": "ঝ — চিকিৎসা সুবিধা",
+          "required_value": true
+        },
+        {
+          "field_key": "fund_opening",
+          "label_en": "Reviewed fund categories and opening balances",
+          "label_bn": "পর্যালোচিত তহবিলের শ্রেণি ও প্রারম্ভিক স্থিতি",
+          "width_weight": 1,
+          "section_key": "j_fund",
+          "section_en": "J — Participation and welfare fund",
+          "section_bn": "ঞ — অংশগ্রহণ ও কল্যাণ তহবিল",
+          "required_value": true
+        },
+        {
+          "field_key": "fund_disbursement",
+          "label_en": "Disbursements / worker loans by fund",
+          "label_bn": "তহবিলভিত্তিক বিতরণ / শ্রমিক ঋণ",
+          "width_weight": 1,
+          "section_key": "j_fund",
+          "section_en": "J — Participation and welfare fund",
+          "section_bn": "ঞ — অংশগ্রহণ ও কল্যাণ তহবিল",
+          "required_value": true
+        },
+        {
+          "field_key": "fund_investment",
+          "label_en": "Investments and returns by fund",
+          "label_bn": "তহবিলভিত্তিক বিনিয়োগ ও আয়",
+          "width_weight": 1,
+          "section_key": "j_fund",
+          "section_en": "J — Participation and welfare fund",
+          "section_bn": "ঞ — অংশগ্রহণ ও কল্যাণ তহবিল",
+          "required_value": true
+        },
+        {
+          "field_key": "fund_bank",
+          "label_en": "Bank balances by fund",
+          "label_bn": "তহবিলভিত্তিক ব্যাংক স্থিতি",
+          "width_weight": 1,
+          "section_key": "j_fund",
+          "section_en": "J — Participation and welfare fund",
+          "section_bn": "ঞ — অংশগ্রহণ ও কল্যাণ তহবিল",
+          "required_value": true
+        },
+        {
+          "field_key": "fund_comments",
+          "label_en": "Comments",
+          "label_bn": "মন্তব্য",
+          "width_weight": 1,
+          "section_key": "j_fund",
+          "section_en": "J — Participation and welfare fund",
+          "section_bn": "ঞ — অংশগ্রহণ ও কল্যাণ তহবিল",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_serial",
+          "label_en": "Serial number",
+          "label_bn": "ক্রমিক নম্বর",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_establishment",
+          "label_en": "Establishment and address",
+          "label_bn": "প্রতিষ্ঠান ও ঠিকানা",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_balances",
+          "label_en": "Employer / worker balances",
+          "label_bn": "মালিক / শ্রমিকের স্থিতি",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_loans",
+          "label_en": "Employer / worker loans",
+          "label_bn": "মালিক / শ্রমিক ঋণ",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_admin",
+          "label_en": "Administration expenses",
+          "label_bn": "প্রশাসনিক ব্যয়",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_income",
+          "label_en": "Employer / worker income",
+          "label_bn": "মালিক / শ্রমিক আয়",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_rate",
+          "label_en": "Reviewed investment rate",
+          "label_bn": "পর্যালোচিত বিনিয়োগের হার",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_management",
+          "label_en": "Gross management expenses",
+          "label_bn": "মোট ব্যবস্থাপনা ব্যয়",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
+        },
+        {
+          "field_key": "investment_comments",
+          "label_en": "Comments",
+          "label_bn": "মন্তব্য",
+          "width_weight": 1,
+          "section_key": "k_investment",
+          "section_en": "K — Provident Fund annual return",
+          "section_bn": "ট — ভবিষ্য তহবিলের বার্ষিক বিবরণী",
+          "required_value": true
         }
-      ]
+      ],
+      "implementation_status": "Reviewed manual-evidence draft",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "schedule_7",
@@ -3017,7 +4271,8 @@
           "label_bn": "রেফারেন্স নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "record_date",
@@ -3025,7 +4280,8 @@
           "label_bn": "তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "subject",
@@ -3033,7 +4289,8 @@
           "label_bn": "বিষয়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "details",
@@ -3041,7 +4298,8 @@
           "label_bn": "বিস্তারিত",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "approved_by",
@@ -3049,9 +4307,13 @@
           "label_bn": "স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         }
-      ]
+      ],
+      "implementation_status": "Evidence only",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     },
     {
       "id": "rule_353",
@@ -3073,7 +4335,8 @@
           "label_bn": "রেফারেন্স নং",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "record_date",
@@ -3081,7 +4344,8 @@
           "label_bn": "তারিখ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "subject",
@@ -3089,7 +4353,8 @@
           "label_bn": "বিষয়",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "details",
@@ -3097,7 +4362,8 @@
           "label_bn": "বিস্তারিত",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         },
         {
           "field_key": "approved_by",
@@ -3105,9 +4371,19 @@
           "label_bn": "স্বাক্ষর",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 1,
+          "required_value": true
         }
-      ]
+      ],
+      "implementation_status": "Evidence only",
+      "translation_status": "Draft bilingual labels; independent legal/translation review required, no certification.",
+      "currentness_status": "Historical source inspected; 2022 Rules and 2026 Act crosswalk not legally approved."
     }
-  ]
+  ],
+  "currentness_review": {
+    "checked_on": "2026-10-08",
+    "national_act_reference": "https://bdlaws.minlaw.gov.bd/act-print-1672.html",
+    "rules_amendment_reference": "https://www.dpp.gov.bd/bgpress/index.php/document/get_extraordinary/45976",
+    "status": "2026 Act amendment identified; automatic replacement of prescribed Rules forms not established. Official approval remains closed."
+  }
 }

@@ -7,7 +7,7 @@ app_email = ""
 app_license = "MIT"
 
 app_include_css = ["workforce_suite.bundle.css"]
-app_include_js = ["workforce_suite.bundle.js", "/assets/workforce_suite/js/statutory_contextual_export.js"]
+app_include_js = ["workforce_suite.bundle.js"]
 
 add_to_apps_screen = [{
     "name": "workforce_suite",
@@ -49,7 +49,7 @@ extend_doctype_class = {
 doctype_js = {
     "Employee Checkin": "public/js/employee_checkin_review.js",
     "Workforce Biometric Device": "public/js/workforce_biometric_device.js",
-    "Payroll Entry": "public/js/payroll_entry.js",
+    "Payroll Entry": ["public/js/payroll_entry.js", "public/js/statutory_payroll_actions.js"],
     "Salary Slip": "public/js/salary_slip_adjustments.js",
     "Employee": "public/js/employee_calendar.js",
     "Employee Separation": "public/js/employee_separation.js",
@@ -228,6 +228,10 @@ after_migrate = "workforce_suite.install.after_migrate"
 
 
 permission_query_conditions = {
+    "Workforce Statutory Print Layout": "workforce_suite.workforce_suite.statutory_access.statutory_query_conditions",
+    "Workforce Statutory Record": "workforce_suite.workforce_suite.statutory_access.statutory_query_conditions",
+    "Workforce Statutory Profile": "workforce_suite.workforce_suite.statutory_access.statutory_query_conditions",
+    "Workforce Statutory Export": "workforce_suite.workforce_suite.statutory_access.statutory_query_conditions",
     "Workforce Mobile Event": "workforce_suite.workforce_suite.report_scope.employee_link_query_conditions",
     "Leave Policy Assignment": "workforce_suite.workforce_suite.report_scope.employee_link_query_conditions",
     "Leave Application": "workforce_suite.workforce_suite.report_scope.employee_link_query_conditions",
@@ -267,6 +271,10 @@ permission_query_conditions = {
 }
 
 has_permission = {
+    "Workforce Statutory Print Layout": "workforce_suite.workforce_suite.statutory_access.statutory_has_permission",
+    "Workforce Statutory Record": "workforce_suite.workforce_suite.statutory_access.statutory_has_permission",
+    "Workforce Statutory Profile": "workforce_suite.workforce_suite.statutory_access.statutory_has_permission",
+    "Workforce Statutory Export": "workforce_suite.workforce_suite.statutory_access.statutory_has_permission",
     "Workforce Mobile Event": "workforce_suite.workforce_suite.report_scope.employee_link_has_permission",
     "Leave Policy Assignment": "workforce_suite.workforce_suite.report_scope.employee_link_has_permission",
     "Leave Application": "workforce_suite.workforce_suite.report_scope.employee_link_has_permission",

@@ -1048,6 +1048,18 @@
    "label": "Bulk Shift Assignment",
    "link_to": "Shift Assignment Tool",
    "type": "DocType"
+  },
+  {
+   "label": "Statutory Form Layouts",
+   "type": "DocType",
+   "link_to": "Workforce Statutory Print Layout",
+   "color": "Grey"
+  },
+  {
+   "label": "Statutory Evidence Records",
+   "type": "DocType",
+   "link_to": "Workforce Statutory Record",
+   "color": "Grey"
   }
  ],
  "title": "Workforce Suite",

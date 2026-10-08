@@ -34,6 +34,7 @@ def render_html(
     *,
     company_name: str,
     company_address: str = "",
+    signatory: str = "",
     from_date: str = "",
     to_date: str = "",
     is_draft: bool = True,
@@ -55,7 +56,7 @@ def render_html(
     columns = list(_entry(layout, "columns", []))
     if not columns:
         raise ValueError("Print layout has no approved columns")
-    if len(columns) > 22:
+    if len(columns) > 22 and family != "Return":
         raise ValueError("A4 safety limit: no more than 22 columns per table")
     if len(columns) > 11 and orientation == "portrait" and family == "Register":
         raise ValueError("Wide register must use landscape A4 or fewer columns")
@@ -66,8 +67,8 @@ def render_html(
 
     translated = language == "bn"
     title = _safe(_entry(layout, "title_bn" if translated else "title_en") or "")
-    subtitle = _safe(_entry(layout, "header_note", "") or "")
-    footer = _safe(_entry(layout, "footer_note", "") or "")
+    subtitle = _safe(_entry(layout, "header_note_bn" if translated else "header_note", "") or "")
+    footer = _safe(_entry(layout, "footer_note_bn" if translated else "footer_note", "") or "")
     name = _safe(company_name)
     address = _safe(company_address)
     period = (_safe(from_date) + " — " + _safe(to_date)) if from_date and to_date else ""
@@ -93,17 +94,30 @@ def render_html(
             + "</th>" for col in columns
         )
         colgroups = "".join(f'<col style="width:{width:.5f}%">' for width in percents)
-        body = []
+        groups = {}
         for row in rows:
-            cells = "".join(
-                "<td>" + _safe(row.get(str(_entry(col, "field_key", "")), "")) + "</td>"
-                for col in columns
-            )
-            body.append("<tr>" + cells + "</tr>")
-        if not rows:
-            empty_label = "এই সময়ের জন্য কোনো যাচাইকৃত রেকর্ড নেই।" if translated else "No verified records for this period."
-            body = [f'<tr><td colspan="{len(columns)}" class="empty">{empty_label}</td></tr>']
-        table = "<table><colgroup>" + colgroups + "</colgroup><thead><tr>" + heads + "</tr></thead><tbody>" + "".join(body) + "</tbody></table>"
+            identity = row.get("employee", "") if _entry(layout, "form_code") == "form_9" else ""
+            groups.setdefault(identity, []).append(row)
+        if not groups:
+            groups[""] = []
+        tables = []
+        for identity, records in groups.items():
+            body = []
+            for row in records:
+                cells = "".join("<td>" + _safe(row.get(str(_entry(col, "field_key", "")), "")) + "</td>" for col in columns)
+                body.append("<tr>" + cells + "</tr>")
+            if not records:
+                empty_label = "এই সময়ের জন্য কোনো যাচাইকৃত রেকর্ড নেই।" if translated else "No verified records for this period."
+                body = [f'<tr><td colspan="{len(columns)}" class="empty">{empty_label}</td></tr>']
+            worker = ""
+            if identity:
+                row = records[0]
+                pairs = [("employee_name", "Worker", "শ্রমিক"), ("worker_register_no", "Worker register number", "শ্রমিকের রেজিস্টার নম্বর"),
+                         ("card_no", "Card number", "কার্ড নম্বর"), ("designation", "Designation", "পদবি"),
+                         ("department", "Department", "বিভাগ"), ("date_of_joining", "Joining date", "নিয়োগের তারিখ")]
+                worker = '<p class="company-note">' + " · ".join(_safe(bn if translated else en) + ": " + _safe(row.get(key)) for key, en, bn in pairs) + '</p>'
+            tables.append('<section class="leave-entry">' + worker + "<table><colgroup>" + colgroups + "</colgroup><thead><tr>" + heads + "</tr></thead><tbody>" + "".join(body) + "</tbody></table></section>")
+        table = "".join(tables)
     else:
         # Single-entry legal letters, certificates and returns benefit from
         # an accessible key/value layout, not a 17-column miniature grid.
@@ -116,8 +130,20 @@ def render_html(
                 + '</th><td>' + _safe(row.get(str(_entry(col, "field_key", "")), "")) + '</td></tr>'
                 for col in columns
             )
-            pages.append('<section class="document-entry"><table class="key-value"><tbody>' + cells + '</tbody></table></section>')
+            sections = {}
+            for col in columns:
+                section = str(_entry(col, "section_key", ""))
+                sections.setdefault(section, []).append(col)
+            for section, section_columns in sections.items():
+                cells = "".join(
+                    '<tr><th scope="row">' + _safe(_entry(col, "label_bn" if translated else "label_en"))
+                    + '</th><td>' + _safe(row.get(str(_entry(col, "field_key", "")), "")) + '</td></tr>'
+                    for col in section_columns)
+                section_heading = _safe(_entry(section_columns[0], "section_bn" if translated else "section_en", ""))
+                pages.append('<section class="document-entry">' + (f'<h2>{section_heading}</h2>' if section_heading else '')
+                             + '<table class="key-value"><tbody>' + cells + '</tbody></table></section>')
         table = "".join(pages)
+    footer = "\n".join(value for value in (footer, _safe(signatory)) if value)
     foot = f'<footer class="signatory">{footer}</footer>' if footer else ""
     density = "dense" if len(columns) >= 14 and family == "Register" else "normal"
     css = """
@@ -145,14 +171,16 @@ th,td {border:.55pt solid #444; padding:2mm 1.3mm; vertical-align:top;
 th {font-size:8pt; font-weight:700; text-align:left; background:#f5f5f5;}
 td {font-size:8pt;}
 th small {display:block; font-size:6.5pt; font-weight:400;}
-.dense th {font-size:7pt; padding:1.2mm .65mm;}
-.dense td {font-size:7.5pt; padding:1.2mm .75mm;}
+.dense th {font-size:8.5pt; padding:1.2mm .65mm;}
+.dense td {font-size:9pt; padding:1.2mm .75mm;}
 .dense th small {font-size:6pt;}
 .key-value {table-layout:fixed;}
 .key-value th {width:32%; font-size:9pt;}
 .key-value td {font-size:9pt;}
 .document-entry {break-after:page; page-break-after:always;}
 .document-entry:last-child {break-after:auto; page-break-after:auto;}
+.leave-entry + .leave-entry {break-before:page; page-break-before:always;}
+h2 {font-size:11pt; margin:0 0 3mm;}
 .empty {text-align:center; font-style:italic; padding:6mm;}
 .signatory {margin-top:12mm; padding-top:4mm; border-top:.65pt solid #bbb;
             text-align:right; font-size:9pt; white-space:pre-wrap;}

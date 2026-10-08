@@ -10,12 +10,17 @@ Object.keys(WORKFORCE_CALENDAR_FORMS).forEach((doctype) => {
 			if (frm.is_new()) return;
 			const target = WORKFORCE_CALENDAR_FORMS[doctype](frm);
 			if (!target.employee) return;
-            if (doctype === "Employee") {
+            if (doctype === "Employee" && frappe.model.can_read("Workforce Statutory Print Layout")) {
                 frm.add_custom_button(__("Worker ID draft"), () =>
                     window.workforceStatutoryExport("form_6", {
                         company: frm.doc.company, branch: frm.doc.branch,
                         employee: frm.doc.name,
                     }), __("Statutory drafts"));
+                for (const [code, title] of [["form_8", "Worker register working draft"], ["form_9", "Leave register working draft"]]) {
+                    frm.add_custom_button(__(title), () => window.workforceStatutoryExport(code, {
+                        company: frm.doc.company, employee: frm.doc.name, branch: frm.doc.branch,
+                    }), __("Statutory drafts"));
+                }
             }
 			frm.add_custom_button(__('Calendar'), () => show_employee_calendar(target.employee, target.name));
 		},

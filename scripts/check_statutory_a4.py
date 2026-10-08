@@ -37,6 +37,7 @@ def form(code):
     s = next(x for x in SPECS["entries"] if x["id"] == code)
     return {
         **s,
+        "form_code": code,
         "form_family": s["kind"],
         "title_en": s["ui_title"],
         "title_bn": "শ্রমিক রেজিস্টার" if code != "form_6" else "পরিচয় পত্র",
@@ -72,30 +73,44 @@ def main():
         ("form_6", 1, "employee_name", "SYN-EMP-0001"),
         ("form_34", 48, "employee_name", "SYN-EMP-0048"),
         ("form_38", 105, "employee_name", "SYN-EMP-0105"),
-        ("form_9", 85, "leave_requested", "SYN-LEAVE-0085"),
+        ("form_9", 85, "annual_requested", "SYN-LEAVE-0085"),
     ]
-    for code, count, marker_field, final in jobs:
+    # Every printable catalog draft has independent EN/BN coverage. Wide,
+    # multi-page high-value registers retain the larger stress populations.
+    stress = {job[0]: job[1:] for job in jobs}
+    for source in SPECS["entries"]:
+        if source["kind"] == "Evidence Only":
+            continue
+        code = source["id"]
+        count, marker_field, final = stress.get(code, (1, source["columns"][-1]["field_key"], "SYN-FINAL-0001"))
         layout = form(code)
-        rows = [
-            {
-                **{col["field_key"]: f"{i}" for col in layout["columns"]},
-                "employee_name": f"SYN-EMP-{i:04}",
-            }
-            for i in range(1, count + 1)
-        ]
-        # The marker must be placed in an actual printable column. A Form 9
-        # draft has different columns than an employee ID card.
-        if not any(col["field_key"] == marker_field for col in layout["columns"]):
-            raise AssertionError(f"QA field {marker_field} missing in {code}")
-        rows[-1][marker_field] = final
-        html = renderer(
-            layout, rows, company_name="Synthetic Test Company",
-            from_date="2026-10-01", to_date="2026-10-07", is_draft=True,
-        )
-        pdf_path = OUTPUT / f"{code}_a4.pdf"
-        HTML(string=html, base_url=str(ROOT)).write_pdf(str(pdf_path))
-        pages = check_pdf(pdf_path, layout["orientation"], final)
-        print(f"A4 PDF PASS {code} {layout['orientation']} {pages} page(s), {count} entries")
+        for language in ("en", "bn"):
+            rows = [
+                {**{col["field_key"]: str(i) for col in layout["columns"]},
+                 "employee_name": f"SYN-EMP-{i:04}",
+                 "employee": "SYN-GROUP" if code == "form_9" else f"SYN-EMP-{i:04}"}
+                for i in range(1, count + 1)
+            ]
+            assert any(col["field_key"] == marker_field for col in layout["columns"])
+            rows[-1][marker_field] = final
+            html = renderer(layout, rows, company_name="Synthetic Test Company" if language == "en" else "পরীক্ষামূলক প্রতিষ্ঠান",
+                from_date="2026-10-01", to_date="2026-10-07", is_draft=True, language=language)
+            pdf_path = OUTPUT / f"{code}_{language}_a4.pdf"
+            HTML(string=html, base_url=str(ROOT)).write_pdf(str(pdf_path))
+            pages = check_pdf(pdf_path, layout["orientation"], final)
+            if language == "bn":
+                fonts = [font[3] for page in fitz.open(pdf_path) for font in page.get_fonts()]
+                assert any("Bengali" in font for font in fonts), (pdf_path, fonts)
+            from workforce_suite.workforce_suite.statutory_print_docx import render_docx
+            from zipfile import ZipFile
+            from io import BytesIO
+            docx = render_docx(layout, rows, company_name="Synthetic Test Company" if language == "en" else "পরীক্ষামূলক প্রতিষ্ঠান", language=language)
+            with ZipFile(BytesIO(docx)) as archive:
+                assert archive.testzip() is None
+                body = archive.read("word/document.xml").decode()
+                assert final in body and 'w:w="' in body and 'w:h="' in body
+            (OUTPUT / f"{code}_{language}.docx").write_bytes(docx)
+            print(f"A4 PDF + DOCX PASS {code} {language} {layout['orientation']} {pages} page(s), {count} entries")
     print("ALL_SYNTHETIC_A4_TESTS_PASSED")
 
 

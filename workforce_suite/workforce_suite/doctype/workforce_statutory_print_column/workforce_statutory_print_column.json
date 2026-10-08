@@ -14,7 +14,10 @@
   "width_weight",
   "required_value",
   "salary_component",
-  "sensitive"
+  "sensitive",
+  "section_key",
+  "section_en",
+  "section_bn"
  ],
  "fields": [
   {
@@ -64,6 +67,22 @@
    "fieldtype": "Check",
    "label": "Sensitive",
    "default": 0
+  },
+  {
+   "fieldname": "section_key",
+   "fieldtype": "Data",
+   "label": "Protected Return Section",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_en",
+   "fieldtype": "Data",
+   "label": "Section Heading (English)"
+  },
+  {
+   "fieldname": "section_bn",
+   "fieldtype": "Data",
+   "label": "Section Heading (Bangla)"
   }
  ]
 }

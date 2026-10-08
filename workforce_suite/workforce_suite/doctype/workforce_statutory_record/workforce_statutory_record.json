@@ -16,7 +16,11 @@
   "reference_id",
   "entries",
   "evidence_file",
-  "evidence_note"
+  "evidence_note",
+  "employee",
+  "effective_to",
+  "reviewed_by",
+  "reviewed_at"
  ],
  "fields": [
   {
@@ -73,6 +77,30 @@
    "fieldname": "evidence_note",
    "fieldtype": "Small Text",
    "label": "Evidence / Review Notes (not printed)"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee Evidence Scope",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Evidence Effective To"
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reviewed_at",
+   "fieldtype": "Datetime",
+   "label": "Reviewed At",
+   "read_only": 1
   }
  ],
  "permissions": [
