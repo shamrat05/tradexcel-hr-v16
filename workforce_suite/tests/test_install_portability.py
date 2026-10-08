@@ -55,6 +55,12 @@ def test_generic_runtime_has_no_salary_split_or_daily_component_name_authority()
     assert "allow_on_submit" not in component
     setup_source = inspect.getsource(install.after_migrate)
     assert "ensure_salary_setup" not in setup_source
+    assert "ensure_field_transport_component()" not in setup_source
+    attendance_policy = Path(__file__).resolve().parents[1] / "workforce_suite" / "doctype" / "workforce_attendance_policy" / "workforce_attendance_policy.json"
+    import json
+    policy = json.loads(attendance_policy.read_text(encoding="utf-8"))
+    allowance = next(f for f in policy["fields"] if f["fieldname"] == "allowance_salary_component")
+    assert allowance.get("default", "") == ""
 
 
 def test_salary_setup_refuses_packaged_company_defaults(tmp_path):

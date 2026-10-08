@@ -1351,7 +1351,7 @@ def after_migrate():
     from workforce_suite.branch_setup import ensure_branch_fields
     from workforce_suite.role_setup import ensure_workforce_roles
     from workforce_suite.approval_setup import ensure_workforce_workflows
-    from workforce_suite.field_attendance_setup import ensure_field_attendance_fields, ensure_field_transport_component
+    from workforce_suite.field_attendance_setup import ensure_field_attendance_fields
     from workforce_suite.field_financial_setup import (
         ensure_income_tax_review_fields,
         ensure_payroll_adjustment_workflow_fields,
@@ -1366,7 +1366,7 @@ def after_migrate():
     ensure_workforce_workflows()
     ensure_default_exit_template()
     ensure_field_attendance_fields()
-    ensure_field_transport_component()
+    # Salary Components are company/configuration decisions, not install defaults.
     ensure_working_time_holiday_category_field()
     ensure_income_tax_review_fields()
     # Historic structure pay-basis seeding is an explicit reviewed migration

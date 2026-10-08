@@ -1,47 +1,273 @@
 {
- "doctype":"DocType",
- "name":"Workforce Attendance Policy",
- "module":"Workforce Suite",
- "engine":"InnoDB",
- "autoname":"field:policy_name",
- "field_order":["policy_name","enabled","company","branch","department","designation","employee_category","employee","effective_from","effective_to","attendance_mode","outside_action","require_gps","require_selfie","offline_max_age_hours","offline_trust_window_minutes","offline_time_action","face_match_enabled","tracking_mode","tracking_interval_minutes","retention_days","allowance_mode","rate_per_km","fixed_area_amount","allowance_multiplier","max_km_per_day","allowance_salary_component","allowance_requires_approval","notes"],
- "fields":[
-  {"fieldname":"policy_name","fieldtype":"Data","label":"Policy Name","reqd":1,"unique":1,"in_list_view":1},
-  {"fieldname":"enabled","fieldtype":"Check","label":"Enabled","default":"1","in_list_view":1},
-  {"fieldname":"company","fieldtype":"Link","label":"Company","options":"Company","reqd":1,"in_list_view":1},
-  {"fieldname":"branch","fieldtype":"Link","label":"Branch"},
-  {"fieldname":"department","fieldtype":"Link","label":"Department"},
-  {"fieldname":"designation","fieldtype":"Link","label":"Designation"},
-  {"fieldname":"employee_category","fieldtype":"Select","label":"Employee Category","options":"All\u000aWorker\u000aStaff","default":"All"},
-  {"fieldname":"employee","fieldtype":"Link","label":"Employee","options":"Employee"},
-  {"fieldname":"effective_from","fieldtype":"Date","label":"Effective From","reqd":1,"in_list_view":1},
-  {"fieldname":"effective_to","fieldtype":"Date","label":"Effective To"},
-  {"fieldname":"attendance_mode","fieldtype":"Select","label":"Attendance Mode","options":"Office Only\u000aField Only\u000aHybrid\u000aWork From Home","default":"Office Only","reqd":1,"in_list_view":1},
-  {"fieldname":"outside_action","fieldtype":"Select","label":"Outside Location","options":"Accept\u000aFlag\u000aBlock","default":"Flag","reqd":1},
-  {"fieldname":"require_gps","fieldtype":"Check","label":"Require GPS","default":"0"},
-  {"fieldname":"require_selfie","fieldtype":"Check","label":"Require Selfie","default":"0"},
-  {"fieldname":"offline_max_age_hours","fieldtype":"Int","label":"Maximum Offline Age (Hours)","default":"72","description":"Captured mobile events beyond this limit in either direction are always blocked."},
-  {"fieldname":"offline_trust_window_minutes","fieldtype":"Int","label":"Receipt-Time Trust Window (Minutes)","default":"5","description":"Captured time outside this receipt-time window requires review or is blocked."},
-  {"fieldname":"offline_time_action","fieldtype":"Select","label":"Suspicious Offline Time","options":"Flag\u000aBlock","default":"Flag","reqd":1},
-  {"fieldname":"face_match_enabled","fieldtype":"Check","label":"Enable Face Match","default":"0"},
-  {"fieldname":"tracking_mode","fieldtype":"Select","label":"Location Tracking","options":"Check-in/out Only\u000aActive Duty Pings","default":"Check-in/out Only","reqd":1},
-  {"fieldname":"tracking_interval_minutes","fieldtype":"Int","label":"Ping Interval (Minutes)","default":"15"},
-  {"fieldname":"retention_days","fieldtype":"Int","label":"Evidence Retention (Days)","default":"90"},
-  {"fieldname":"allowance_mode","fieldtype":"Select","label":"Allowance Mode","options":"None\u000aPer Km\u000aFixed Area\u000aManual","default":"None","reqd":1},
-  {"fieldname":"rate_per_km","fieldtype":"Currency","label":"Rate per Km","default":"0"},
-  {"fieldname":"fixed_area_amount","fieldtype":"Currency","label":"Fixed Area Amount","default":"0"},
-  {"fieldname":"allowance_multiplier","fieldtype":"Float","label":"Allowance Multiplier","default":"1"},
-  {"fieldname":"max_km_per_day","fieldtype":"Float","label":"Maximum Km per Day"},
-  {"fieldname":"allowance_salary_component","fieldtype":"Link","label":"Allowance Salary Component","options":"Salary Component","default":"Field Transport Allowance","depends_on":"eval:doc.allowance_mode!='None'"},
-  {"fieldname":"allowance_requires_approval","fieldtype":"Check","label":"Require Allowance Approval","default":"0"},
-  {"fieldname":"notes","fieldtype":"Small Text","label":"Notes"}
+ "doctype": "DocType",
+ "name": "Workforce Attendance Policy",
+ "module": "Workforce Suite",
+ "engine": "InnoDB",
+ "autoname": "field:policy_name",
+ "field_order": [
+  "policy_name",
+  "enabled",
+  "company",
+  "branch",
+  "department",
+  "designation",
+  "employee_category",
+  "employee",
+  "effective_from",
+  "effective_to",
+  "attendance_mode",
+  "outside_action",
+  "require_gps",
+  "require_selfie",
+  "offline_max_age_hours",
+  "offline_trust_window_minutes",
+  "offline_time_action",
+  "face_match_enabled",
+  "tracking_mode",
+  "tracking_interval_minutes",
+  "retention_days",
+  "allowance_mode",
+  "rate_per_km",
+  "fixed_area_amount",
+  "allowance_multiplier",
+  "max_km_per_day",
+  "allowance_salary_component",
+  "allowance_requires_approval",
+  "notes"
  ],
- "is_submittable":1,
- "permissions":[
-  {"role":"System Manager","read":1,"write":1,"create":1,"submit":1,"cancel":1,"delete":1,"export":1,"print":1,"report":1},
-  {"role":"Workforce Suite Manager","read":1,"write":1,"create":1,"submit":1,"cancel":1,"export":1,"print":1,"report":1},
-  {"role":"Workforce Suite/Attendance Officer","read":1,"write":1,"create":1,"export":1,"print":1,"report":1},
-  {"role":"Workforce Compliance Auditor","read":1,"export":1,"print":1,"report":1}
+ "fields": [
+  {
+   "fieldname": "policy_name",
+   "fieldtype": "Data",
+   "label": "Policy Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation"
+  },
+  {
+   "fieldname": "employee_category",
+   "fieldtype": "Select",
+   "label": "Employee Category",
+   "options": "All\nWorker\nStaff",
+   "default": "All"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Effective To"
+  },
+  {
+   "fieldname": "attendance_mode",
+   "fieldtype": "Select",
+   "label": "Attendance Mode",
+   "options": "Office Only\nField Only\nHybrid\nWork From Home",
+   "default": "Office Only",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "outside_action",
+   "fieldtype": "Select",
+   "label": "Outside Location",
+   "options": "Accept\nFlag\nBlock",
+   "default": "Flag",
+   "reqd": 1
+  },
+  {
+   "fieldname": "require_gps",
+   "fieldtype": "Check",
+   "label": "Require GPS",
+   "default": "0"
+  },
+  {
+   "fieldname": "require_selfie",
+   "fieldtype": "Check",
+   "label": "Require Selfie",
+   "default": "0"
+  },
+  {
+   "fieldname": "offline_max_age_hours",
+   "fieldtype": "Int",
+   "label": "Maximum Offline Age (Hours)",
+   "default": "72",
+   "description": "Captured mobile events beyond this limit in either direction are always blocked."
+  },
+  {
+   "fieldname": "offline_trust_window_minutes",
+   "fieldtype": "Int",
+   "label": "Receipt-Time Trust Window (Minutes)",
+   "default": "5",
+   "description": "Captured time outside this receipt-time window requires review or is blocked."
+  },
+  {
+   "fieldname": "offline_time_action",
+   "fieldtype": "Select",
+   "label": "Suspicious Offline Time",
+   "options": "Flag\nBlock",
+   "default": "Flag",
+   "reqd": 1
+  },
+  {
+   "fieldname": "face_match_enabled",
+   "fieldtype": "Check",
+   "label": "Enable Face Match",
+   "default": "0"
+  },
+  {
+   "fieldname": "tracking_mode",
+   "fieldtype": "Select",
+   "label": "Location Tracking",
+   "options": "Check-in/out Only\nActive Duty Pings",
+   "default": "Check-in/out Only",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tracking_interval_minutes",
+   "fieldtype": "Int",
+   "label": "Ping Interval (Minutes)",
+   "default": "15"
+  },
+  {
+   "fieldname": "retention_days",
+   "fieldtype": "Int",
+   "label": "Evidence Retention (Days)",
+   "default": "90"
+  },
+  {
+   "fieldname": "allowance_mode",
+   "fieldtype": "Select",
+   "label": "Allowance Mode",
+   "options": "None\nPer Km\nFixed Area\nManual",
+   "default": "None",
+   "reqd": 1
+  },
+  {
+   "fieldname": "rate_per_km",
+   "fieldtype": "Currency",
+   "label": "Rate per Km",
+   "default": "0"
+  },
+  {
+   "fieldname": "fixed_area_amount",
+   "fieldtype": "Currency",
+   "label": "Fixed Area Amount",
+   "default": "0"
+  },
+  {
+   "fieldname": "allowance_multiplier",
+   "fieldtype": "Float",
+   "label": "Allowance Multiplier",
+   "default": "1"
+  },
+  {
+   "fieldname": "max_km_per_day",
+   "fieldtype": "Float",
+   "label": "Maximum Km per Day"
+  },
+  {
+   "fieldname": "allowance_salary_component",
+   "fieldtype": "Link",
+   "label": "Allowance Salary Component",
+   "options": "Salary Component",
+   "default": "",
+   "depends_on": "eval:doc.allowance_mode!='None'"
+  },
+  {
+   "fieldname": "allowance_requires_approval",
+   "fieldtype": "Check",
+   "label": "Require Allowance Approval",
+   "default": "0"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
  ],
- "track_changes":1
+ "is_submittable": 1,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "Workforce Suite Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "Workforce Suite/Attendance Officer",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "Workforce Compliance Auditor",
+   "read": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "track_changes": 1
 }

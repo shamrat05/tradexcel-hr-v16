@@ -27,8 +27,8 @@ def user_default_company() -> str | None:
 def resolve_company(filters: dict | None = None) -> str:
     """Resolve an explicit company or the current user's default company.
 
-    There is intentionally no COMPANY_A fallback. A shared HRMS must never silently
-    run an COMPANY_B request against COMPANY_A just because a filter was omitted.
+    There is intentionally no implicit company fallback. A shared HRMS must never
+    run a request against the wrong company's records when a filter is omitted.
     """
     values = filters or {}
     company = values.get("company") or user_default_company()
@@ -73,7 +73,7 @@ def assert_company_access(
         )
     # has_permission() checks role rights, not the user's allowed records.
     # get_list() applies User Permissions; this exact-name query prevents the
-    # raw SQL reports from bypassing a user's COMPANY_A/COMPANY_B company boundary.
+    # raw SQL reports from bypassing the user's explicit company boundary.
     allowed = frappe.get_list(
         "Company",
         filters={"name": company},

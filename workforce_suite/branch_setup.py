@@ -36,7 +36,7 @@ def _branch_fields() -> dict[str, list[dict[str, object]]]:
                 "label": "Company",
                 "fieldtype": "Link",
                 "options": "Company",
-                # Explicitly clear the old COMPANY_A default on existing sites.
+                # Never create a company-specific Branch default on generic installs.
                 "default": "",
                 "insert_after": "branch_type",
             },
