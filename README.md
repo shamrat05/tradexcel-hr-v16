@@ -82,6 +82,7 @@ customer-distributable branch.
 
 ## License
 
-See the included license and `app_license` hook before commercial
-distribution. The upstream framework and ERPNext/HRMS licenses apply
-independently; verify software licensing and support terms for your offering.
+The app currently declares `MIT` in its Frappe hooks, but this repository
+does not yet include a reviewed root license file. Decide and document your
+commercial distribution terms before selling licenses or sharing source.
+Verify the independent upstream Frappe/ERPNext/HRMS license obligations.
