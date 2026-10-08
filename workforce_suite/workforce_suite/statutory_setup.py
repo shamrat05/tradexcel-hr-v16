@@ -45,7 +45,7 @@ def prepare_draft_layout(company, form_code, effective_from, branch=""):
                     .orderby(table.creation).for_update().run(as_dict=True))
         if existing:
             for item in existing:
-                frappe.get_doc("Workforce Statutory Print Layout", item.name).check_permission("read")
+                frappe.get_doc("Workforce Statutory Print Layout", item.name, for_update=True).check_permission("read")
             return {"created": False, "layouts": [item.name for item in existing]}
         doc = frappe.get_doc({
             "doctype": "Workforce Statutory Print Layout", "company": company,
