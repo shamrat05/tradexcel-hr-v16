@@ -18,6 +18,7 @@ Run from the bench root after a verified fresh backup:
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import importlib.util
 import json
@@ -193,14 +194,24 @@ def _rename_plan(legacy_doctypes: list[str]) -> dict[str, dict[str, str]]:
     return plan
 
 
-def _verify_backup(backup_file: str) -> dict:
+def _verify_backup(backup_file: str, expected_sha256: str | None = None) -> dict:
     path = Path(backup_file).expanduser().resolve()
     if not path.is_file() or path.stat().st_size < 1024:
         frappe.throw(f"A nonempty, verified database backup file is required: {path}")
+    if not path.name.endswith(".sql.gz"):
+        frappe.throw("Use a database *.sql.gz backup from bench backup")
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
+    if expected_sha256 and digest.hexdigest().lower() != expected_sha256.lower():
+        frappe.throw("Backup SHA-256 does not match the provided checksum")
+    try:
+        with gzip.open(path, "rb") as handle:
+            for _ in iter(lambda: handle.read(1024 * 1024), b""):
+                pass
+    except (EOFError, OSError) as exc:
+        frappe.throw(f"Backup gzip integrity check failed: {exc}")
     return {"path": str(path), "sha256": digest.hexdigest(), "bytes": path.stat().st_size}
 
 
@@ -255,17 +266,22 @@ def _update_app_fields() -> None:
             frappe.db.set_value("Module Def", TARGET_MODULE, "app_name", TARGET_APP, update_modified=False)
 
 
-def prepare(backup_file: str) -> None:
-    if _snapshot_path().exists():
-        frappe.throw("A migration snapshot already exists; restore/review it before restarting prepare")
+def preflight(
+    backup_file: str,
+    expected_sha256: str | None = None,
+    *,
+    show_report: bool = True,
+) -> tuple[list[str], dict, dict]:
+    """Read-only validation before any DDL, settings or data changes."""
     _verify_bench_package()
-    if LEGACY_APP not in frappe.get_installed_apps():
-        frappe.throw("The legacy app is not installed on this site")
-    backup = _verify_backup(backup_file)
+    apps = frappe.get_installed_apps()
+    if LEGACY_APP not in apps or TARGET_APP in apps:
+        frappe.throw(f"Expected only the old app installed in site DB; got {apps}")
+    backup = _verify_backup(backup_file, expected_sha256)
     legacy_doctypes = _legacy_app_doctypes()
+    if not legacy_doctypes:
+        frappe.throw("No app-owned legacy DocTypes found; refusing to migrate a possibly wrong site")
     plan = _rename_plan(legacy_doctypes)
-
-    # Fail before the first DDL table rename if any destination already exists.
     for doctype, mapping in plan.items():
         destinations = list(mapping.values())
         if len(set(destinations)) != len(destinations):
@@ -273,6 +289,22 @@ def prepare(backup_file: str) -> None:
         for old, new in mapping.items():
             if frappe.db.exists(doctype, old) and frappe.db.exists(doctype, new):
                 frappe.throw(f"Migration conflict: {doctype} {old!r} -> existing {new!r}")
+    if show_report:
+        print(json.dumps({
+            "status": "READ_ONLY_PREFLIGHT_PASS",
+            "backup": backup,
+            "installed_apps": apps,
+            "app_owned_doctypes": len(legacy_doctypes),
+            "metadata_renames": {doctype: len(mapping) for doctype, mapping in plan.items()},
+            "business_counts": _business_counts(),
+        }, indent=2))
+    return legacy_doctypes, plan, backup
+
+
+def prepare(backup_file: str, expected_sha256: str | None = None) -> None:
+    if _snapshot_path().exists():
+        frappe.throw("A migration snapshot already exists; restore/review it before restarting prepare")
+    legacy_doctypes, plan, backup = preflight(backup_file, expected_sha256, show_report=False)
 
     app_counts = {name: int(frappe.db.count(name)) for name in legacy_doctypes if _exists(name)}
     snapshot = {
@@ -464,23 +496,26 @@ def _enter_site(site: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--site", required=True)
-    parser.add_argument("--phase", choices=("prepare", "finalize", "verify"), required=True)
+    parser.add_argument("--phase", choices=("preflight", "prepare", "finalize", "verify"), required=True)
     parser.add_argument("--yes", action="store_true")
     # No destructive column-drop option. That is a separate approved project.
-    parser.add_argument("--backup-file", help="Verified pre-migration database backup; required for prepare")
+    parser.add_argument("--backup-file", help="Database *.sql.gz backup; required for preflight and prepare")
+    parser.add_argument("--backup-sha256", help="Optional expected SHA-256 of database backup")
     args = parser.parse_args()
 
     if args.phase in {"prepare", "finalize"} and not args.yes:
         parser.error("--yes is required for migration mutations")
 
-    if args.phase == "prepare" and not args.backup_file:
-        parser.error("--backup-file is required before any database rename")
+    if args.phase in {"preflight", "prepare"} and not args.backup_file:
+        parser.error("--backup-file is required for preflight and prepare")
     # Resolve paths before _enter_site changes cwd into bench/sites.
     backup_file = str(Path(args.backup_file).expanduser().resolve()) if args.backup_file else None
     _enter_site(args.site)
     try:
-        if args.phase == "prepare":
-            prepare(backup_file)
+        if args.phase == "preflight":
+            preflight(backup_file, args.backup_sha256)
+        elif args.phase == "prepare":
+            prepare(backup_file, args.backup_sha256)
         elif args.phase == "finalize":
             finalize()
         else:
