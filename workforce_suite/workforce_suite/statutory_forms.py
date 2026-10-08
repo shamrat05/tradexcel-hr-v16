@@ -14,6 +14,9 @@ import frappe
 from frappe import _
 from frappe.utils import getdate
 
+from workforce_suite.workforce_suite.statutory_export_policy import (
+    available_languages, normalize_period, period_mode, validate_language,
+)
 from workforce_suite.workforce_suite.company_context import assert_company_access
 from workforce_suite.workforce_suite.report_scope import (
     permitted_employee_names, permitted_salary_slips,
@@ -61,15 +64,62 @@ def get_form_spec(form_code: str):
     }
 
 
-def _check_dates(from_date: str, to_date: str):
-    a, b = getdate(from_date), getdate(to_date)
-    if a > b or (b - a).days > 370:
-        frappe.throw(_("Choose a valid date range of at most 371 days."))
-    return a.isoformat(), b.isoformat()
+def _scope_employees(
+    layout, employee: str = "", branch: str = "",
+    department: str = "", employment_type: str = "",
+    include_all: bool = False,
+) -> tuple[str, ...]:
+    """Enforce company, establishment and native Employee visibility.
+
+    A personal document defaults to one worker; bulk needs an explicit choice.
+    Branch, department and worker category filters are optional, never
+    repeated when already supplied by the current report.
+    """
+    if employee and include_all:
+        frappe.throw(_("Choose either one employee or all matching employees."))
+    if layout.data_source == "Manual":
+        if employee or department or employment_type or branch:
+            frappe.throw(_("These worker filters do not apply to manually entered evidence."))
+        return ()
+    if layout.branch and branch and layout.branch != branch:
+        frappe.throw(_("Selected branch is outside the saved print layout."))
+    effective_branch = layout.branch or branch
+    if effective_branch and frappe.db.get_value("Branch", effective_branch, "company") != layout.company:
+        frappe.throw(_("Selected Branch is not in the layout Company."))
+    if department:
+        owner = frappe.db.get_value("Department", department, "company")
+        if owner and owner != layout.company:
+            frappe.throw(_("Department is outside the layout Company."))
+    allowed = permitted_employee_names(
+        layout.company, branch=effective_branch or None,
+        department=department or None,
+    )
+    if employment_type:
+        # Filter only the already-permitted Employee IDs.
+        scoped = frappe.get_list(
+            "Employee", filters={"name": ["in", allowed],
+                                 "employment_type": employment_type,
+                                 "company": layout.company},
+            fields=["name"], limit_page_length=0,
+        ) if allowed else []
+        permitted = {row.name for row in scoped}
+        allowed = tuple(name for name in allowed if name in permitted)
+    if employee:
+        if employee not in allowed:
+            frappe.throw(_("Employee is outside your authorized scope."),
+                         frappe.PermissionError)
+        allowed = (employee,)
+    elif layout.form_family == "Document" and layout.data_source == "Employee":
+        if not include_all:
+            frappe.throw(_("Select an Employee or explicitly choose all matching employees."))
+        if len(allowed) > 50:
+            frappe.throw(_("For personal documents, export at most 50 workers at a time. Narrow the filters."))
+    if len(allowed) > MAX_PRINT_ROWS:
+        frappe.throw(_("Limit exports to 2000 workers by selecting branch or department."))
+    return allowed
 
 
-def _read_employees(company: str, from_date: str, to_date: str):
-    allowed = permitted_employee_names(company)
+def _read_employees(company: str, from_date: str, to_date: str, allowed: tuple[str, ...]):
     if not allowed:
         return []
     if len(allowed) > MAX_PRINT_ROWS:
@@ -91,8 +141,7 @@ def _read_employees(company: str, from_date: str, to_date: str):
     ) for x in records]
 
 
-def _read_attendance(layout, from_date: str, to_date: str):
-    allowed = permitted_employee_names(layout.company)
+def _read_attendance(layout, from_date: str, to_date: str, allowed: tuple[str, ...]):
     if not allowed:
         return []
     records = frappe.get_list(
@@ -127,8 +176,7 @@ def _read_attendance(layout, from_date: str, to_date: str):
     return list(groups.values())
 
 
-def _read_leave(layout, from_date: str, to_date: str):
-    allowed = permitted_employee_names(layout.company)
+def _read_leave(layout, from_date: str, to_date: str, allowed: tuple[str, ...]):
     if not allowed:
         return []
     rows = frappe.get_list(
@@ -144,8 +192,7 @@ def _read_leave(layout, from_date: str, to_date: str):
     return [dict(r) for r in rows]
 
 
-def _read_salary_slips(layout, from_date: str, to_date: str):
-    allowed = permitted_employee_names(layout.company)
+def _read_salary_slips(layout, from_date: str, to_date: str, allowed: tuple[str, ...]):
     if not allowed:
         return []
     slips = permitted_salary_slips(
@@ -201,28 +248,37 @@ def _read_manual(layout, from_date: str, to_date: str):
     return rows
 
 
-def _source_rows(layout, start, end):
+def _source_rows(layout, start, end, allowed):
     if layout.data_source == "Manual":
         return _read_manual(layout, start, end)
     if layout.data_source == "Employee":
-        return _read_employees(layout.company, start, end)
+        return _read_employees(layout.company, start, end, allowed)
     if layout.data_source == "Attendance":
-        return _read_attendance(layout, start, end)
+        return _read_attendance(layout, start, end, allowed)
     if layout.data_source == "Leave Application":
-        return _read_leave(layout, start, end)
+        return _read_leave(layout, start, end, allowed)
     if layout.data_source == "Salary Slip":
-        return _read_salary_slips(layout, start, end)
+        return _read_salary_slips(layout, start, end, allowed)
     frappe.throw(_("This print data source is not supported."))
 
 
-def _print_context(layout_name: str, from_date: str, to_date: str):
+def _print_context(
+    layout_name: str, from_date: str = "", to_date: str = "",
+    *, employee: str = "", branch: str = "", department: str = "",
+    employment_type: str = "", include_all: bool = False,
+    language: str = "en",
+):
     layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
     layout.check_permission("read")
     assert_company_access(layout.company, require_explicit_scope=True)
-    start, end = _check_dates(from_date, to_date)
-    if layout.effective_from and end < layout.effective_from:
+    try:
+        start, end = normalize_period(layout.form_code, layout.data_source, from_date, to_date)
+        language = validate_language(layout, language)
+    except ValueError as exc:
+        frappe.throw(str(exc))
+    if start and layout.effective_from and end < str(layout.effective_from):
         frappe.throw(_("This template version is not effective during the selected period."))
-    if layout.effective_to and start > layout.effective_to:
+    if start and layout.effective_to and start > str(layout.effective_to):
         frappe.throw(_("This template has expired for the selected period."))
 
     spec = spec_for(layout.form_code)
@@ -231,7 +287,12 @@ def _print_context(layout_name: str, from_date: str, to_date: str):
     if layout.docstatus and not spec["legal_approved"]:
         frappe.throw(_("A government-reviewed template is required before official printing."))
 
-    rows = _source_rows(layout, start, end)
+    allowed = _scope_employees(
+        layout, employee=employee, branch=branch,
+        department=department, employment_type=employment_type,
+        include_all=include_all,
+    )
+    rows = _source_rows(layout, start, end, allowed)
     if len(rows) > MAX_PRINT_ROWS:
         frappe.throw(_("Too many records for a single printable document."))
     columns = list(layout.columns)
@@ -247,23 +308,59 @@ def _print_context(layout_name: str, from_date: str, to_date: str):
     html = render_html(
         layout, rows, company_name=company_name or layout.company,
         from_date=start, to_date=end, is_draft=layout.docstatus != 1,
+        language=language,
     )
     return layout, html
 
 
 @frappe.whitelist()
-def preview_a4(layout_name: str, from_date: str, to_date: str):
-    """Return escaped company-scoped HTML for app-owned browser preview."""
-    _, html = _print_context(layout_name, from_date, to_date)
+def export_options(layout_name: str):
+    """Only render controls applicable to this saved layout."""
+    layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
+    layout.check_permission("read")
+    assert_company_access(layout.company, require_explicit_scope=True)
+    return {
+        "company": layout.company,
+        "branch": layout.branch or "",
+        "data_source": layout.data_source,
+        "form_family": layout.form_family,
+        "form_code": layout.form_code,
+        "period_mode": period_mode(layout.form_code, layout.data_source),
+        "languages": list(available_languages(layout)),
+        "allow_worker_filters": layout.data_source != "Manual",
+        "employee_required": layout.form_family == "Document" and layout.data_source == "Employee",
+    }
+
+
+@frappe.whitelist()
+def preview_a4(
+    layout_name: str, from_date: str = "", to_date: str = "",
+    language: str = "en", employee: str = "", branch: str = "",
+    department: str = "", employment_type: str = "", include_all: int = 0,
+):
+    """Render the selected authorization-scoped draft or approved layout."""
+    _, html = _print_context(
+        layout_name, from_date, to_date, language=language,
+        employee=employee, branch=branch, department=department,
+        employment_type=employment_type, include_all=bool(int(include_all)),
+    )
     return {"html": html}
 
 
 @frappe.whitelist()
-def download_a4(layout_name: str, from_date: str, to_date: str):
-    """Native Frappe PDF converter receives explicit A4 + orientation."""
+def download_a4(
+    layout_name: str, from_date: str = "", to_date: str = "",
+    language: str = "en", employee: str = "", branch: str = "",
+    department: str = "", employment_type: str = "", include_all: int = 0,
+):
+    """Always render on A4 with orientation selected by reviewed layout."""
     from frappe.utils.pdf import get_pdf
 
-    layout, html = _print_context(layout_name, from_date, to_date)
+    layout, html = _print_context(
+        layout_name, from_date, to_date, language=language,
+        employee=employee, branch=branch, department=department,
+        employment_type=employment_type, include_all=bool(int(include_all)),
+    )
     options = {
         "page-size": "A4", "orientation": layout.orientation,
         "margin-top": "9mm", "margin-bottom": "12mm",
@@ -272,6 +369,8 @@ def download_a4(layout_name: str, from_date: str, to_date: str):
     }
     payload = get_pdf(html, options)
     safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", layout.form_code)
-    frappe.local.response.filename = f"{safe_name}_{from_date}_{to_date}.pdf"
+    frappe.local.response.filename = (
+        f"{safe_name}_{language}_{from_date or 'employee'}_{to_date or 'document'}.pdf"
+    )
     frappe.local.response.filecontent = payload
     frappe.local.response.type = "pdf"
