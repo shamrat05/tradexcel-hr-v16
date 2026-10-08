@@ -156,7 +156,8 @@ frappe.query_reports["Workforce Payroll Readiness"] = {
         report.$prepare_payroll_button.prop("disabled", true);
         report.page.add_inner_button(
             __("Review Structure Migration"),
-            () => show_daily_wage_migration_preview(report)
+            () => show_daily_wage_migration_preview(report),
+            __("More actions")
         );
 
         report.$report

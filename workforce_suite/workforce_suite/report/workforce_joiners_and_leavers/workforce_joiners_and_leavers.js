@@ -69,10 +69,10 @@ frappe.query_reports["Workforce Joiners and Leavers"] = {
         if (hr_maker) {
             report.page.add_inner_button(__("View Employee Onboardings"), () => {
                 frappe.set_route("List", "Employee Onboarding");
-            });
+            }, __("Employee workflows"));
             report.page.add_inner_button(__("View Employee Separations"), () => {
                 frappe.set_route("List", "Employee Separation");
-            });
+            }, __("Employee workflows"));
         }
     },
 };
