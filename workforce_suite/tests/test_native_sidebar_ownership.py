@@ -8,7 +8,7 @@ import frappe
 from workforce_suite import install
 
 ROOT = Path(__file__).resolve().parents[1]
-FRAPPE = Path(__file__).resolve().parents[3] / "frappe" / "frappe"
+FRAPPE = Path(__import__("frappe").get_app_path("frappe"))
 
 class ProjectedDoc(frappe._dict):
     def set(self,key,value): self[key]=copy.deepcopy(value)
