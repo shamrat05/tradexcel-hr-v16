@@ -37,6 +37,7 @@ def render_html(
     from_date: str = "",
     to_date: str = "",
     is_draft: bool = True,
+    language: str = "en",
 ) -> str:
     """Produce letter-sized document *content* laid out on exact A4 paper.
 
@@ -44,6 +45,9 @@ def render_html(
     Frappe's converter. Long tables have repeating headers; rows wrap
     instead of shrinking text to illegibility or clipping at the margins.
     """
+    from workforce_suite.workforce_suite.statutory_export_policy import validate_language
+
+    language = validate_language(layout, language)
     orientation = _sheet(str(_entry(layout, "orientation", "")))
     family = str(_entry(layout, "form_family", "Register"))
     if family == "Evidence Only":
@@ -60,31 +64,32 @@ def render_html(
     total = sum(widths)
     percents = [100.0 * w / total for w in widths]
 
-    title = _safe(_entry(layout, "title_bn") or _entry(layout, "title_en") or "")
-    en_title = _safe(_entry(layout, "title_en") or "")
-    logo_free_header = f"<h1>{title}</h1>" + (
-        f'<p class="english-title">{en_title}</p>' if en_title and en_title != title else ""
-    )
+    translated = language == "bn"
+    title = _safe(_entry(layout, "title_bn" if translated else "title_en") or "")
     subtitle = _safe(_entry(layout, "header_note", "") or "")
     footer = _safe(_entry(layout, "footer_note", "") or "")
     name = _safe(company_name)
     address = _safe(company_address)
     period = (_safe(from_date) + " — " + _safe(to_date)) if from_date and to_date else ""
+    period_label = "সময়কাল" if translated else "Period"
+    draft_label = (
+        "অভ্যন্তরীণ খসড়া — সরকারি দাখিলের জন্য নয়"
+        if translated else "INTERNAL DRAFT — NOT AN OFFICIAL FILING"
+    )
     heading = (
-        '<header><div class="heading-left">' + logo_free_header + '</div>'
+        '<header><div class="heading-left"><h1>' + title + '</h1></div>'
         + '<div class="heading-right"><strong>' + name + '</strong>'
         + (f"<span>{address}</span>" if address else "")
-        + (f'<span>Period: {period}</span>' if period else "")
+        + (f'<span>{period_label}: {period}</span>' if period else "")
         + "</div></header>"
         + (f'<p class="company-note">{subtitle}</p>' if subtitle else "")
-        + ('<p class="draft">INTERNAL DRAFT — NOT AN OFFICIAL FILING</p>' if is_draft else "")
+        + (f'<p class="draft">{draft_label}</p>' if is_draft else "")
     )
     # Print column titles only. Source-PDF help/instructions are never added.
     if family == "Register":
         heads = "".join(
-            '<th scope="col">' + _safe(_entry(col, "label_bn") or _entry(col, "label_en"))
-            + ('<small>' + _safe(_entry(col, "label_en")) + '</small>'
-               if _entry(col, "label_bn") and _entry(col, "label_en") else "")
+            '<th scope="col">' +
+            _safe(_entry(col, "label_bn" if translated else "label_en"))
             + "</th>" for col in columns
         )
         colgroups = "".join(f'<col style="width:{width:.5f}%">' for width in percents)
@@ -96,7 +101,8 @@ def render_html(
             )
             body.append("<tr>" + cells + "</tr>")
         if not rows:
-            body = [f'<tr><td colspan="{len(columns)}" class="empty">No verified records for this period.</td></tr>']
+            empty_label = "এই সময়ের জন্য কোনো যাচাইকৃত রেকর্ড নেই।" if translated else "No verified records for this period."
+            body = [f'<tr><td colspan="{len(columns)}" class="empty">{empty_label}</td></tr>']
         table = "<table><colgroup>" + colgroups + "</colgroup><thead><tr>" + heads + "</tr></thead><tbody>" + "".join(body) + "</tbody></table>"
     else:
         # Single-entry legal letters, certificates and returns benefit from
@@ -105,7 +111,8 @@ def render_html(
         pages = []
         for row in docs:
             cells = "".join(
-                '<tr><th scope="row">' + _safe(_entry(col, "label_bn") or _entry(col, "label_en"))
+                '<tr><th scope="row">' +
+                _safe(_entry(col, "label_bn" if translated else "label_en"))
                 + '</th><td>' + _safe(row.get(str(_entry(col, "field_key", "")), "")) + '</td></tr>'
                 for col in columns
             )
@@ -155,7 +162,7 @@ th small {display:block; font-size:6.5pt; font-weight:400;}
 }
 """.replace("ORIENTATION", orientation)
     return (
-        '<!doctype html><html lang="bn"><head><meta charset="UTF-8">'
+        '<!doctype html><html lang="' + language + '"><head><meta charset="UTF-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<style>' + css + '</style></head>'
         '<body class="' + density + '">' + heading + table + foot + '</body></html>'
