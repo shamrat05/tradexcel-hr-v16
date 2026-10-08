@@ -15,46 +15,102 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/60f48f0617dc4a5187ab6889dc4792a8.pdf",
       "source_sha256": "26dfe9a42968d8681ea8e8b8dd09d81a42a346938874546b36bdaab566a20d50",
       "source_pages": 3,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "worker_name",
+          "label_en": "Worker name",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_father",
+          "label_en": "Father's name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "worker_mother",
+          "label_en": "Mother's name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "appointment_date",
+          "label_en": "Appointment date",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "job_title",
+          "label_en": "Designation",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "employment_category",
+          "label_en": "Appointment category",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "place_of_work",
+          "label_en": "Place of work",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "basic_wages",
+          "label_en": "Basic wage",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "allowances",
+          "label_en": "Other agreed allowances",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "probation_terms",
+          "label_en": "Reviewed probation terms",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "authorized_signature",
+          "label_en": "Employer signature",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employee_acknowledgement",
+          "label_en": "Worker acknowledgement",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
@@ -305,28 +361,20 @@
       "source_pages": 1,
       "field_audit": "partial_manual_read",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": "Full 2015 worker register uses 16+ columns including employee personal identifiers; needs source-confirmed Bengali labels and permission tests.",
       "columns": [
         {
-          "field_key": "worker_register_no",
-          "label_en": "Register no.",
-          "label_bn": "শ্রমিক রেজিস্টার নং",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
           "required": true,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "employee",
-          "label_en": "Worker ID",
-          "label_bn": "শ্রমিক আইডি",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "employee_name",
-          "label_en": "Name",
-          "label_bn": "নাম",
+          "field_key": "worker_name_and_nid",
+          "label_en": "Worker name and NID",
+          "label_bn": "",
           "required": true,
           "fieldtype": "Data",
           "width_weight": 1
@@ -348,16 +396,16 @@
           "width_weight": 1
         },
         {
-          "field_key": "gender",
-          "label_en": "Gender",
+          "field_key": "sex_dob_age",
+          "label_en": "Sex, birth date and age",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "date_of_birth",
-          "label_en": "Date of birth",
+          "field_key": "permanent_address",
+          "label_en": "Permanent address",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
@@ -365,51 +413,91 @@
         },
         {
           "field_key": "date_of_joining",
-          "label_en": "Joined",
+          "label_en": "Date appointed",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "designation",
-          "label_en": "Designation",
+          "field_key": "designation_grade",
+          "label_en": "Designation and grade",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "department",
-          "label_en": "Department",
+          "field_key": "card_no",
+          "label_en": "Card no.",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "branch",
-          "label_en": "Workplace",
+          "field_key": "due_leave",
+          "label_en": "Leave due",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "employment_type",
-          "label_en": "Category",
+          "field_key": "working_period",
+          "label_en": "Daily working period",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "status",
-          "label_en": "Status",
+          "field_key": "break_time",
+          "label_en": "Break period",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "weekly_holiday",
+          "label_en": "Weekly holiday",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "group_name",
+          "label_en": "Workgroup",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "shift_relay",
+          "label_en": "Shift and relay",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "group_transfer",
+          "label_en": "Group transfer details",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -425,63 +513,87 @@
       "source_pages": 1,
       "field_audit": "partial_manual_read",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": "Form 9 is per-worker leave book/register, not a simple Leave Application row. Current native adapter does not populate cumulative balances or issued-book history.",
       "columns": [
         {
-          "field_key": "employee",
-          "label_en": "Employee",
-          "label_bn": "শ্রমিক",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "employee_name",
-          "label_en": "Name",
-          "label_bn": "নাম",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "leave_type",
-          "label_en": "Leave type",
-          "label_bn": "ছুটির ধরন",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "from_date",
-          "label_en": "From",
-          "label_bn": "শুরু",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "to_date",
-          "label_en": "To",
-          "label_bn": "শেষ",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "total_leave_days",
-          "label_en": "Days",
-          "label_bn": "দিন",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "status",
-          "label_en": "Approval status",
+          "field_key": "annual_leave_opening",
+          "label_en": "Annual leave carried forward",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "leave_requested",
+          "label_en": "Leave type requested",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "rejection_reason",
+          "label_en": "Reason pending/rejected",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "grant_date",
+          "label_en": "Leave approval date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "granted_days",
+          "label_en": "Days granted",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "annual_balance",
+          "label_en": "Annual balance",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "sick_days",
+          "label_en": "Sick leave days",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "casual_days",
+          "label_en": "Casual leave days",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "annual_taken",
+          "label_en": "Annual leave taken",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -497,27 +609,99 @@
       "source_pages": 1,
       "field_audit": "pending_transcription",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": "19-column maternity benefits register, includes sensitive wages and medical data; needs reviewed field mapping and independent access controls before use.",
       "columns": [
         {
-          "field_key": "employee",
-          "label_en": "Employee",
-          "label_bn": "শ্রমিক",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_name",
+          "label_en": "Worker name",
+          "label_bn": "",
           "required": true,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "employee_name",
-          "label_en": "Name",
-          "label_bn": "নাম",
-          "required": true,
+          "field_key": "age",
+          "label_en": "Age",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "group_number",
+          "label_en": "Group",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "relay_number",
+          "label_en": "Relay",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "wage_register_no",
+          "label_en": "Wage register no.",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "joining_date",
+          "label_en": "Joining date",
+          "label_bn": "",
+          "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
           "field_key": "notice_date",
-          "label_en": "Notice date",
+          "label_en": "Maternity notice date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "prior_paid_days",
+          "label_en": "Wage-paid days in previous 3 months",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "prior_wage_amount",
+          "label_en": "Wages paid in previous 3 months",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "average_daily_wage",
+          "label_en": "Average daily wage",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
@@ -532,28 +716,52 @@
           "width_weight": 1
         },
         {
-          "field_key": "benefit_period",
-          "label_en": "Benefit period",
+          "field_key": "post_delivery_notice",
+          "label_en": "Post-delivery notice",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "benefit_amount",
-          "label_en": "Benefit amount",
+          "field_key": "first_payment",
+          "label_en": "First instalment date and amount",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "receipt",
-          "label_en": "Receipt",
+          "field_key": "second_payment",
+          "label_en": "Second instalment date and amount",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "alternative_payee",
+          "label_en": "Alternative payee name and address",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "manager_signature",
+          "label_en": "Employer/manager signature",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -567,49 +775,73 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/b5f4059493a54a7196c9c4f051c14af3.pdf",
       "source_sha256": "a3d8547c29f90829825f66a033442226f36f4fc1b46e878ebfb6cf7c24b81bb0",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "area",
+          "label_en": "Room/area",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "part",
+          "label_en": "Surface / section",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "treatment",
+          "label_en": "Whitewash/paint/polish",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "day",
+          "label_en": "Day",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "month",
+          "label_en": "Month",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "year",
+          "label_en": "Year",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "authorized_signature",
+          "label_en": "Employer/authorized officer signature",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -623,49 +855,105 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/84c7ac8195c44eeeaabb644c5f5775e0.pdf",
       "source_sha256": "77e6fd51d98583120f2886c525cf5fce5653ee6f448f04216e4c16d84d74973f",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "training_date_time",
+          "label_en": "Date and time",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "fire_training",
+          "label_en": "Fire extinguishing",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "rescue_training",
+          "label_en": "Rescue",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "first_aid_training",
+          "label_en": "First aid",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "trainer_agency",
+          "label_en": "Training agency",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "male_participants",
+          "label_en": "Male participants",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "female_participants",
+          "label_en": "Female participants",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "total_participants",
+          "label_en": "Total participants",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "duration",
+          "label_en": "Duration",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "manager_signature",
+          "label_en": "Employer/manager signature",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -679,46 +967,86 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/7468059cc251419dae1856ce605e8c22.pdf",
       "source_sha256": "a24e31b7ac847844e733c3c3b6b6209392bc77396e196d3c6a07a9d73abbd205",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "drill_date_time",
+          "label_en": "Date and time",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "organizing_agency",
+          "label_en": "Organizing agency",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "male_participants",
+          "label_en": "Male participants",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "female_participants",
+          "label_en": "Female participants",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "total_participants",
+          "label_en": "Total participants",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "duration",
+          "label_en": "Duration",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "authority_present",
+          "label_en": "Authority name and designation",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "witness_signatures",
+          "label_en": "Fire service/worker representative signature",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "injury_report",
+          "label_en": "Incident / injury details",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
@@ -735,49 +1063,81 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6baa84bb4360465887c6e7049de4be15.pdf",
       "source_sha256": "72c7deff3f49773b172b9ff2be0578994b154e85930cda99b944d5f40baab977",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "employee_name",
+          "label_en": "Worker name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "age",
+          "label_en": "Age",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "work_nature",
+          "label_en": "Nature of work",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "protective_equipment",
+          "label_en": "PPE / safety clothes given and date",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "training",
+          "label_en": "Relevant training details",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_signature",
+          "label_en": "Worker signature / thumbprint",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -791,49 +1151,129 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/e24267bdcc574095bd102cbc113d7cd9.pdf",
       "source_sha256": "ae9339530396c867447157495ddccffdedc58d94b1d3b5c8a1553bdae71ba4be",
       "source_pages": 2,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": "Multi-part 2-page machinery examination original; draft fields are for review only. Do not substitute for a competent examiner's certificate.",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "equipment_id",
+          "label_en": "Machine / chain / crane identification",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "test_certificate",
+          "label_en": "Test certificate",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "certifier_name",
+          "label_en": "Certificate issuer name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "certifier_address",
+          "label_en": "Certificate issuer address",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "certificate_date",
+          "label_en": "Certificate date",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "certificate_reference",
+          "label_en": "Certificate reference",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "machinery_details",
+          "label_en": "Machinery examination details",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "examiner_name",
+          "label_en": "Competent examiner",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "exam_date",
+          "label_en": "Examination date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "examiner_signature",
+          "label_en": "Competent examiner signature",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "tested_safe_load",
+          "label_en": "Certified safe working load",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "faults",
+          "label_en": "Observed defects",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "repairs",
+          "label_en": "Repairs completed",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "restrictions",
+          "label_en": "Use restrictions",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -847,49 +1287,81 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6cc87e0bdb56470787bc538b3cddd1e8.pdf",
       "source_sha256": "fdb20ac16c2aa32ea6291a09026b1c04bd98d99c7710d21954cd736f4e82ff7f",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "establishment",
+          "label_en": "Establishment",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "management",
+          "label_en": "Management authority",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "pressure_vessel",
+          "label_en": "Pressure vessel name/type",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "defects_repairs",
+          "label_en": "Defects and repairs",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "construction_date",
+          "label_en": "Construction date",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "test_pressure_date",
+          "label_en": "Last hydraulic test date / pressure",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "vessel_condition",
+          "label_en": "Current condition/location",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -897,52 +1369,108 @@
       "id": "form_26",
       "form_title": "Hazardous work health inspection",
       "ui_title": "Health examination record",
-      "kind": "Register",
+      "kind": "Evidence Only",
       "orientation": "Landscape",
       "data_source": "Manual",
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/ad59c9326bea48dea126616b74be81c4.pdf",
       "source_sha256": "d4db73ddbc27eb284df5368977a998844cda6bb9f180895068ea144b1511c7a2",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": "This document is an original registered medical practitioner's certificate; upload verified original evidence, do not generate from editable form fields.",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "certificate_no",
+          "label_en": "Certificate no.",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "date",
+          "label_en": "Exam date",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "worker_name",
+          "label_en": "Worker name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "father_name",
+          "label_en": "Father's name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "mother_name",
+          "label_en": "Mother's name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "sex",
+          "label_en": "Sex",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "age_dob",
+          "label_en": "Age / date of birth",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "address",
+          "label_en": "Address",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "workplace",
+          "label_en": "Establishment",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "fitness",
+          "label_en": "Examiner fitness determination",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "certifying_doctor",
+          "label_en": "Registered doctor's details",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "doctor_signature",
+          "label_en": "Doctor's original signature",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
@@ -959,46 +1487,102 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6a6179ca4af046d78bfbdcec02408b04.pdf",
       "source_sha256": "0f34dcf2376f4523167053a7aa642f7d7f16c6f8ffc552faa0e197f9588ba091",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_name",
+          "label_en": "Worker name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "designation_card",
+          "label_en": "Designation / card",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "sex",
+          "label_en": "Sex",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "birth_date_age",
+          "label_en": "Birth date / age",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "appointed_date",
+          "label_en": "Date appointed to current work",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "work_type",
+          "label_en": "Nature of work",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "hazard_materials",
+          "label_en": "Hazardous materials used",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "examination_date",
+          "label_en": "Medical examination date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "fit_date",
+          "label_en": "Date certified fit",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "restriction",
+          "label_en": "Unfit or work restrictions",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "doctor_signature",
+          "label_en": "Registered doctor signature",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
@@ -1015,46 +1599,158 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/e1dba151a4824642a2f77543223ed996.pdf",
       "source_sha256": "a7d417c6de68e99519c2ab725c15e6edf9036364a6d151cdc5845fc0c4998800",
       "source_pages": 2,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": "Two-page accident notice requires source-matched line-by-line layout and signatories before official use.",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "establishment",
+          "label_en": "Establishment name/address",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "establishment_reg",
+          "label_en": "Establishment registration",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "contacts",
+          "label_en": "Contact details",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "manager_contact",
+          "label_en": "Management authority contact",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "contractor_contact",
+          "label_en": "Contractor contact",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "industry",
+          "label_en": "Nature of business",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "incident_at",
+          "label_en": "Accident date/time",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "incident_location",
+          "label_en": "Accident location",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "incident_details",
+          "label_en": "Accident details",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
+        },
+        {
+          "field_key": "incident_cause",
+          "label_en": "Cause of accident",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "injured_person",
+          "label_en": "Injured/deceased person",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register / card",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "designation",
+          "label_en": "Designation",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "injury_type",
+          "label_en": "Injury type",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "treatment",
+          "label_en": "Treatment / hospital",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "witnesses",
+          "label_en": "Witness details",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "notified_by",
+          "label_en": "Notified by",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "notice_date",
+          "label_en": "Notice date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "manager_signature",
+          "label_en": "Signature",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
@@ -1071,49 +1767,89 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/79c2dbe021af4bf98f790260a40a96a3.pdf",
       "source_sha256": "aeff313c2379cd8a25d83e3c2d219bb2142d6475895348462663eb77286b4fa2",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "injured_worker",
+          "label_en": "Injured worker / ID / designation",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "incident_at",
+          "label_en": "Incident date/time",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "inspector_notice_date",
+          "label_en": "Inspector notice date",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "incident_details",
+          "label_en": "Severity/injury/incident",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
+        },
+        {
+          "field_key": "return_to_work",
+          "label_en": "Return-to-work date",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "absence_days",
+          "label_en": "Workdays absent",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "medical_provider",
+          "label_en": "Hospital/clinic/doctor",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "compensation",
+          "label_en": "Loss of earning capacity / compensation",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -1127,46 +1863,62 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/55b4428f5cb24a11a9561701ae34155f.pdf",
       "source_sha256": "b121710cf4ae81ce7cf121ee9f52f07c32bac6bb4f65ad0b42b3ca7ca85345d0",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "establishment",
+          "label_en": "Establishment",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "certificate_no",
+          "label_en": "Certificate number",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "building",
+          "label_en": "Building identification",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "issuer",
+          "label_en": "Competent engineer",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "issued_at",
+          "label_en": "Issued on",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "expires_at",
+          "label_en": "Expires on",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "original_document",
+          "label_en": "Original signed certificate",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
@@ -1183,36 +1935,68 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2e04512bd50c46b78d45e6ec3349f35f.pdf",
       "source_sha256": "094662fd42670c1d8c75ab8aa5fe1d14f947a89ef004f5765b2f3e682a93e390",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "employee",
-          "label_en": "Employee",
-          "label_bn": "শ্রমিক",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
           "required": true,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "employee_name",
-          "label_en": "Name",
-          "label_bn": "নাম",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "work_date",
-          "label_en": "Holiday worked",
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "leave_date",
+          "field_key": "employee_name",
+          "label_en": "Worker name",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "designation_card",
+          "label_en": "Designation / card",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "group_relay",
+          "label_en": "Group/relay",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "exemption_order",
+          "label_en": "Government exemption order/date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "missed_weekly_holiday",
+          "label_en": "Weekly rest day not received",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "compensatory_leave_date",
           "label_en": "Compensatory leave date",
           "label_bn": "",
           "required": false,
@@ -1220,12 +2004,12 @@
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approver",
+          "field_key": "remarks",
+          "label_en": "Remarks",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 1
+          "width_weight": 2
         }
       ]
     },
@@ -1383,53 +2167,69 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/9b5dfaf878564feb914eea440562d70a.pdf",
       "source_sha256": "db8bebbff885a4b7a4908e5e051de02a2c0d25dc3970ced7c514e14060ad6532",
       "source_pages": 2,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": "Source contains two legally distinct consent and withdrawal documents; this shared draft is not approved for either. Variant-specific templates required.",
       "columns": [
         {
           "field_key": "employee",
-          "label_en": "Employee",
-          "label_bn": "শ্রমিক",
+          "label_en": "Worker",
+          "label_bn": "",
           "required": true,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
           "field_key": "employee_name",
-          "label_en": "Name",
-          "label_bn": "নাম",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "notice_date",
-          "label_en": "Consent/withdrawal date",
-          "label_bn": "",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "shift",
-          "label_en": "Shift",
+          "label_en": "Worker name",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "consent",
-          "label_en": "Consent / withdrawal",
-          "label_bn": "সম্মতি",
+          "field_key": "designation",
+          "label_en": "Designation",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "signed_by",
-          "label_en": "Worker signature",
+          "field_key": "card_number",
+          "label_en": "Card/token",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "section",
+          "label_en": "Section",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "consent_date",
+          "label_en": "Night-work consent date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "withdrawal_date",
+          "label_en": "Withdrawal date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_signature",
+          "label_en": "Worker signature/thumbprint",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
@@ -1447,29 +2247,53 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/71f5b7d95de143f89fbc4cfa4b168a87.pdf",
       "source_sha256": "816996c5a948ec8c1f869af7539cc7ef631c1d6e584cbf448bee5b76b1edec50",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "employee",
-          "label_en": "Employee",
-          "label_bn": "শ্রমিক",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
           "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
+          "label_bn": "",
+          "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
           "field_key": "employee_name",
-          "label_en": "Name",
-          "label_bn": "নাম",
-          "required": true,
+          "label_en": "Worker name",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "designation_card",
+          "label_en": "Designation / card",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "group_relay",
+          "label_en": "Group/relay",
+          "label_bn": "",
+          "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
           "field_key": "consent_date",
-          "label_en": "Consent date",
+          "label_en": "Night-work consent date",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
@@ -1484,16 +2308,16 @@
           "width_weight": 1
         },
         {
-          "field_key": "shift",
-          "label_en": "Night shift",
+          "field_key": "worker_signature",
+          "label_en": "Worker signature/thumbprint",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "evidence",
-          "label_en": "Evidence",
+          "field_key": "manager_signature",
+          "label_en": "Manager signature",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
@@ -1511,53 +2335,77 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/348a2fee5ef5408f9d616552104d3c1a.pdf",
       "source_sha256": "d8e8c50fe99cea8ea8a1f0643e6ec79fe27f5d4da09fc7a8f4aaad3587a2da0f",
       "source_pages": 3,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "",
+      "source_issue": "Source includes one-, two-, and three-shift notices with different tables; variant-specific layout required.",
       "columns": [
         {
+          "field_key": "day",
+          "label_en": "Day",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
           "field_key": "shift_name",
-          "label_en": "Shift name",
-          "label_bn": "শিফট",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "start_time",
-          "label_en": "Start time",
-          "label_bn": "শুরু",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "end_time",
-          "label_en": "End time",
-          "label_bn": "শেষ",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "break_time",
-          "label_en": "Break",
-          "label_bn": "বিরতি",
-          "required": false,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "workers",
-          "label_en": "Worker category",
+          "label_en": "Shift / group",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "effective_from",
+          "field_key": "start_time",
+          "label_en": "Work starts",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "end_time",
+          "label_en": "Work ends",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "rest_break",
+          "label_en": "Rest break",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "work_nature",
+          "label_en": "Work type",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "group_number",
+          "label_en": "Group number",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "effective_date",
           "label_en": "Effective date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "manager_signature",
+          "label_en": "Manager signature",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
@@ -1727,49 +2575,89 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/33f833ab5839418481e4364ee7c3188c.pdf",
       "source_sha256": "387477e096134a13a40348cc16d0eea51ca7a80eabbc8185139664151d6377ce",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reference_no",
-          "label_en": "Reference number",
-          "label_bn": "রেফারেন্স নং",
+          "field_key": "serial_no",
+          "label_en": "Serial",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "worker_register_no",
+          "label_en": "Worker register no.",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "record_date",
-          "label_en": "Record date",
-          "label_bn": "তারিখ",
+          "field_key": "employee_name",
+          "label_en": "Worker name",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "subject",
-          "label_en": "Subject",
-          "label_bn": "বিষয়",
+          "field_key": "card_number",
+          "label_en": "Card/token",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "details",
-          "label_en": "Details",
-          "label_bn": "বিস্তারিত",
+          "field_key": "designation_department",
+          "label_en": "Designation/department",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "approved_by",
-          "label_en": "Approval / Signatory",
-          "label_bn": "স্বাক্ষর",
+          "field_key": "damage_reason",
+          "label_en": "Damage/loss reason",
+          "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
+        },
+        {
+          "field_key": "deduction_order",
+          "label_en": "Deduction amount and date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "instalments",
+          "label_en": "Instalments / collection dates",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "recovered_on",
+          "label_en": "Recovery completion date",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "remarks",
+          "label_en": "Remarks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 2
         }
       ]
     },
@@ -1783,29 +2671,117 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/d3f092899b2246419fc7c54107e83c06.pdf",
       "source_sha256": "0d38a88a9f5387b00856d4656a6ff32632124d5cae9e4e377d137a02c38f26b2",
       "source_pages": 1,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
       "source_issue": "",
       "columns": [
         {
-          "field_key": "reporting_period",
-          "label_en": "Period",
-          "label_bn": "সময়কাল",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "establishment_name",
+          "field_key": "establishment",
           "label_en": "Establishment",
-          "label_bn": "প্রতিষ্ঠান",
+          "label_bn": "",
           "required": true,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "worker_count",
-          "label_en": "Worker count",
+          "field_key": "registration_no",
+          "label_en": "Registration no.",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "employer",
+          "label_en": "Employer / managing director",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "district",
+          "label_en": "District",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "mailing_address",
+          "label_en": "Mailing address",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "industry",
+          "label_en": "Industry",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "adult_male",
+          "label_en": "Adult male average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "adult_female",
+          "label_en": "Adult female average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "foreign_male",
+          "label_en": "Foreign male average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "foreign_female",
+          "label_en": "Foreign female average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "contractor_male",
+          "label_en": "Contractor male average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "contractor_female",
+          "label_en": "Contractor female average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "adolescent_boys",
+          "label_en": "Adolescent boys average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "adolescent_girls",
+          "label_en": "Adolescent girls average",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
@@ -1813,15 +2789,15 @@
         },
         {
           "field_key": "working_days",
-          "label_en": "Working days",
+          "label_en": "Working days in half-year",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "employer_signature",
-          "label_en": "Authorized signatory",
+          "field_key": "signed_by",
+          "label_en": "Employer signature",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
@@ -1839,53 +2815,181 @@
       "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/9a81f5a004e94e1597bd9740dc4d518e.pdf",
       "source_sha256": "c99b5adc98806f972435d4106c26d2bbe7b1591553d0c494d3575359d5bdf3fb",
       "source_pages": 11,
-      "field_audit": "pending_transcription",
+      "field_audit": "source_table_reviewed_draft_english_labels",
       "legal_approved": false,
-      "source_issue": "11 source pages; page-by-page required-field transcription and mixed-layout assessment pending.",
+      "source_issue": "Eleven-page annual return has multiple sections and annexures not represented by this single draft key/value layout; not an official Form 81.",
       "columns": [
         {
+          "field_key": "licence_no",
+          "label_en": "Licence no.",
+          "label_bn": "",
+          "required": true,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
           "field_key": "reporting_year",
-          "label_en": "Year",
-          "label_bn": "বছর",
-          "required": true,
+          "label_en": "Reporting year",
+          "label_bn": "",
+          "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "establishment_name",
+          "field_key": "establishment",
           "label_en": "Establishment",
-          "label_bn": "প্রতিষ্ঠান",
-          "required": true,
-          "fieldtype": "Data",
-          "width_weight": 1
-        },
-        {
-          "field_key": "workforce_stats",
-          "label_en": "Workforce summary",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "wage_stats",
-          "label_en": "Wage summary",
+          "field_key": "registration_no",
+          "label_en": "Registration no.",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "safety_stats",
-          "label_en": "Safety summary",
+          "field_key": "employer",
+          "label_en": "Employer / managing director",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
           "width_weight": 1
         },
         {
-          "field_key": "signed_by",
-          "label_en": "Authorized signatory",
+          "field_key": "manager",
+          "label_en": "Manager",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "head_office_address",
+          "label_en": "Head office address",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "mailing_address",
+          "label_en": "Mailing address",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "industry",
+          "label_en": "Industry sector",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "adult_male",
+          "label_en": "Adult male average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "adult_female",
+          "label_en": "Adult female average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "foreign_male",
+          "label_en": "Foreign male average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "foreign_female",
+          "label_en": "Foreign female average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "contractor_male",
+          "label_en": "Contractor male average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "contractor_female",
+          "label_en": "Contractor female average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "adolescent_workers",
+          "label_en": "Adolescent workers average",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "weekly_hours",
+          "label_en": "Normal workweek hours",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "annual_working_days",
+          "label_en": "Annual working days",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "rest_breaks",
+          "label_en": "Breaks",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "holiday_work",
+          "label_en": "Holiday work / compensatory leave",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "accidents",
+          "label_en": "Fatal / serious / minor accidents",
+          "label_bn": "",
+          "required": false,
+          "fieldtype": "Data",
+          "width_weight": 1
+        },
+        {
+          "field_key": "lost_workdays",
+          "label_en": "Workdays lost to accidents",
           "label_bn": "",
           "required": false,
           "fieldtype": "Data",
