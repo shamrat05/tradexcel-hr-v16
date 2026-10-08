@@ -397,9 +397,9 @@ def test_new_native_features_scope_and_record_isolation():
         comp_a = "Example Company A"
         comp_b = "Example Company B"
 
-        emp_a_data = frappe.db.get_value("Employee", {"company": comp_a, "status": "Active"}, ["name", "department"], as_dict=True)
-        emp_b_data = frappe.db.get_value("Employee", {"company": comp_b, "status": "Active"}, ["name", "department"], as_dict=True)
-        assert emp_a_data and emp_b_data, "Both active test employees must exist"
+        emp_a_data = frappe.db.get_value("Employee", {"company": comp_a, "status": "Active", "department": ["is", "set"]}, ["name", "department"], as_dict=True)
+        emp_b_data = frappe.db.get_value("Employee", {"company": comp_b, "status": "Active", "department": ["is", "set"]}, ["name", "department"], as_dict=True)
+        assert emp_a_data and emp_b_data, "Both department-scoped active test employees must exist"
         emp_a = emp_a_data.name
         emp_b = emp_b_data.name
         dept_a = emp_a_data.department

@@ -264,3 +264,37 @@ def test_personal_pdf_filename_uses_normalized_context_not_ignored_caller_dates(
     with patch('frappe.utils.pdf.get_pdf',return_value=b'%PDF-TEST-CONVERTER-STUB'):
         forms.download_a4(doc.name,from_date='../ignored',to_date='ignored',employee=data['person'])
     assert frappe.local.response.filename=='form_8_en_employee_document.pdf'
+
+
+@pytest.mark.parametrize("narrowing", ["Employee", "Department", "Branch"])
+@pytest.mark.parametrize("actor", ["auditor", "reviewer"])
+def test_narrowed_operator_cannot_read_whole_establishment_manual_evidence(data, narrowing, actor):
+    doc=layout('form_81')
+    record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
+        'entry_date':'2026-01-01','evidence_note':'TEST establishment-wide sensitive evidence',
+        'entries':[{'field_key':'licence_no','field_value':'TEST-MANUAL-RESTRICTED'}]}).insert()
+    frappe.set_user(data['reviewer']);record.submit();frappe.set_user('Administrator')
+    target=data['person'] if narrowing=='Employee' else frappe.db.get_value(narrowing,{'company':doc.company},'name')
+    assert target
+    permission=frappe.get_doc({'doctype':'User Permission','user':data[actor],'allow':narrowing,
+        'for_value':target,'apply_to_all_doctypes':1}).insert()
+    data['h'].permissions.append(permission.name);frappe.clear_cache(user=data[actor])
+    frappe.set_user(data[actor])
+    assert record.name not in frappe.get_list('Workforce Statutory Record',pluck='name')
+    with pytest.raises(frappe.PermissionError):record.check_permission('read')
+    with pytest.raises(frappe.PermissionError):forms.preview_a4(doc.name,'2026-01-01','2026-12-31')
+
+
+def test_branch_scoped_auditor_can_read_matching_manual_establishment(data):
+    branch=frappe.db.get_value('Branch',{'company':'Example Company A'},'name');assert branch
+    doc=layout('form_81',branch=branch)
+    record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'branch':branch,'layout':doc.name,
+        'entry_date':'2026-01-01','evidence_note':'TEST reviewed establishment evidence',
+        'entries':[{'field_key':'licence_no','field_value':'TEST-MATCHING-BRANCH'}]}).insert()
+    frappe.set_user(data['reviewer']);record.submit();frappe.set_user('Administrator')
+    permission=frappe.get_doc({'doctype':'User Permission','user':data['auditor'],'allow':'Branch',
+        'for_value':branch,'apply_to_all_doctypes':1}).insert();data['h'].permissions.append(permission.name)
+    frappe.clear_cache(user=data['auditor']);frappe.set_user(data['auditor'])
+    assert record.name in frappe.get_list('Workforce Statutory Record',pluck='name')
+    record.check_permission('read')
+    assert forms.preview_a4(doc.name,'2026-01-01','2026-12-31')['row_count']==1

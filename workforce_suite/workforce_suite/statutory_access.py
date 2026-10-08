@@ -10,30 +10,47 @@ def check_company(company):
     )
 
 
+
+def _manual_scope(user):
+    from frappe.permissions import get_user_permissions
+    scopes = get_user_permissions(user)
+    narrowed = bool(scopes.get("Employee") or scopes.get("Department"))
+    branches = [item.doc for item in scopes.get("Branch", [])]
+    return narrowed, branches
+
+
 def statutory_query_conditions(user=None, doctype=None):
     """Restrict native lists/REST too, not only the custom exporter."""
     user = user or frappe.session.user
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+    privileged = "System Manager" in frappe.get_roles(user)
+    if user == "Administrator" or (privileged and doctype != "Workforce Statutory Record"):
         return ""
     companies = frappe.get_all("User Permission", filters={"user": user, "allow": "Company"}, pluck="for_value")
-    if not companies:
+    if not companies and not privileged:
         return "1=0"
     table = frappe.qb.DocType(doctype)
-    condition = table.company.isin(companies)
+    condition = table.company.isin(companies) if companies else table.company.isnotnull()
     if doctype == "Workforce Statutory Export":
         condition &= table.generated_by == user
     if doctype == "Workforce Statutory Record":
+        narrowed, branches = _manual_scope(user)
+        options = {}
+        if narrowed:
+            options["filters"] = {"data_source": ["!=", "Manual"]}
+        elif branches:
+            options["or_filters"] = [["data_source", "!=", "Manual"], ["branch", "in", branches]]
         condition &= table.layout.isin(frappe.qb.get_query(
             "Workforce Statutory Print Layout", fields=["name"], ignore_permissions=False,
-            user=user, db_query_compat=True))
+            user=user, db_query_compat=True, **options))
     return condition.get_sql(quote_char="`", with_namespace=True)
 
 
 def statutory_has_permission(doc, ptype=None, user=None, **kwargs):
     user = user or frappe.session.user
-    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+    privileged = "System Manager" in frappe.get_roles(user)
+    if user == "Administrator" or (privileged and doc.doctype != "Workforce Statutory Record"):
         return True  # Native DocPerm and User Permissions still apply.
-    if doc.get("company") and not frappe.db.exists("User Permission", {
+    if not privileged and doc.get("company") and not frappe.db.exists("User Permission", {
         "user": user, "allow": "Company", "for_value": doc.company,
     }):
         return False
@@ -44,6 +61,12 @@ def statutory_has_permission(doc, ptype=None, user=None, **kwargs):
             return False
         if doc.get("employee") and not frappe.has_permission("Employee", "read", doc.employee, user=user):
             return False
+        layout = frappe.db.get_value("Workforce Statutory Print Layout", doc.layout,
+                                   ["data_source", "branch"], as_dict=True)
+        if layout and layout.data_source == "Manual":
+            narrowed, branches = _manual_scope(user)
+            if narrowed or (branches and layout.branch not in branches):
+                return False
     return True
 
 

@@ -114,7 +114,7 @@ def _scope_employees(
     if layout.data_source == "Manual":
         from frappe.permissions import get_user_permissions
         scopes = get_user_permissions(frappe.session.user)
-        if scopes.get("Department") or (scopes.get("Branch") and not layout.branch):
+        if scopes.get("Employee") or scopes.get("Department") or (scopes.get("Branch") and not layout.branch):
             frappe.throw(_("Manual establishment returns need a permitted establishment layout; whole-company evidence is not available to a narrowed scope."), frappe.PermissionError)
         if branch and branch != layout.branch:
             frappe.throw(_("Manual evidence Branch must match its establishment layout."), frappe.PermissionError)
