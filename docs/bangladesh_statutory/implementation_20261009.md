@@ -55,7 +55,7 @@ The OAuth credential rejected creation/update of `.github/workflows/bd-statutory
 
 ## Completion checkpoint — 2026-10-09
 
-PR: [#77](https://github.com/shamrat05/tradexcel-hr-v16/pull/77), OPEN / DRAFT / UNMERGED, base `feat/bd-statutory-printing-v1`. Runtime corrections through `846432cb0b5ae92ef0d34f7392d3bca5ee7fd0b5` were tested; the final documentation-only descendant does not change that code.
+PR: #77, OPEN / DRAFT / UNMERGED, base `feat/bd-statutory-printing-v1`. Runtime corrections through `846432cb0b5ae92ef0d34f7392d3bca5ee7fd0b5` were tested; the final documentation-only descendant does not change that code.
 
 - Final uninterrupted integration suite: **894 passed, 0 failed, 2 explained skipped**, 595.31 seconds, exact private log/JUnit `full-integration-final-scope.log` / `.xml`. All application tests were executed in one run. The two historical-structure skips remain the ones listed above.
 - The preceding committed-source run had **886 passed, 1 failed, 2 skipped**. Its sole failure selected an Employee without a Department for a Department User Permission fixture. The fixture now selects an Employee with a Department; no permission or payroll calculation was relaxed.
@@ -66,3 +66,5 @@ PR: [#77](https://github.com/shamrat05/tradexcel-hr-v16/pull/77), OPEN / DRAFT /
 - Final source/wiring, Python compile, all tracked JSON, touched JavaScript under Node 24.15.0 and `git diff --check` passed. PR #74 remains unchanged and merge-tree compatible. Original checkout and its unrelated changes remain preserved.
 
 Disposition remains **PARTIAL / ready for engineering and legal review**, not production or official filing. Incomplete prescribed variant layouts, full Form 81 matrix/automatic period aggregation, unavailable receipt/rate evidence, current-law/translation approval and real staff/device UAT remain outstanding. No government template was marked legally approved.
+
+A documentation-only follow-up initially failed White-label QA because an inline repository URL matched the existing customer-identifier contract. The note now references the PR number; no test or identifier restriction was weakened. The affected source checks were rerun before publication.
