@@ -18,6 +18,8 @@ Run from the bench root after a verified fresh backup:
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -63,11 +65,14 @@ RENAMABLE_METADATA_DOCTYPES = (
     "Report",
     "Page",
     "Workspace",
-    "Custom Block",
+    "Custom HTML Block",
     "Desktop Icon",
     "Workspace Sidebar",
     "Dashboard Chart",
     "Number Card",
+    "Workflow",
+    "Workflow State",
+    "Patch Log",
 )
 
 LEGACY_TOKEN = re.compile(r"tradexcel|tradex", re.IGNORECASE)
@@ -77,9 +82,11 @@ def rebrand_identifier(value: str) -> str:
     replacements = (
         ("Tradexcel HR", TARGET_MODULE),
         ("Tradex HR", TARGET_MODULE),
+        ("TradeX HR", TARGET_MODULE),
         ("tradexcel_hr", TARGET_APP),
         ("tradex_hr", TARGET_APP),
         ("Tradexcel", "Workforce"),
+        ("TradeX", "Workforce"),
         ("Tradex", "Workforce"),
         ("tradexcel", "workforce"),
         ("tradex", "workforce"),
@@ -125,24 +132,85 @@ def _business_counts() -> dict[str, int]:
 
 
 def _legacy_app_doctypes() -> list[str]:
-    names = set(frappe.get_all("DocType", filters={"module": LEGACY_MODULE}, pluck="name"))
-    names.update(frappe.get_all("DocType", filters=[["name", "like", "Tradexcel %"]], pluck="name"))
-    names.update(frappe.get_all("DocType", filters=[["name", "like", "Tradex %"]], pluck="name"))
-    return sorted(names)
+    # Module ownership, not a brand-shaped name, determines what belongs to
+    # this app. A customer may legitimately own documents with branded names.
+    return sorted(frappe.get_all("DocType", filters={"module": LEGACY_MODULE}, pluck="name"))
+
+
+def _old_name(name: str) -> str:
+    """Known product-name inverse used only for exact app-owned inventories."""
+    return name.replace("Workforce Suite", LEGACY_MODULE).replace("Workforce", "Tradexcel")
 
 
 def _metadata_names(doctype: str, legacy_app_doctypes: set[str]) -> list[str]:
     if not _exists(doctype):
         return []
-    names: set[str] = set()
+    if doctype == "DocType":
+        return sorted(legacy_app_doctypes)
+
+    if doctype == "Role":
+        from workforce_suite.role_setup import ROLE_NAMES
+        return sorted(name for current in ROLE_NAMES
+                      if (name := _old_name(current)) and frappe.db.exists("Role", name))
+
+    if doctype in {"Workflow", "Workflow State"}:
+        from workforce_suite.approval_setup import WORKFLOWS
+        current = set(WORKFLOWS) if doctype == "Workflow" else {
+            row[0] for workflow in WORKFLOWS.values() for row in workflow["states"]
+        }
+        return sorted(name for generic in current
+                      if (name := _old_name(generic)) and frappe.db.exists(doctype, name))
+
+    if doctype == "Custom HTML Block":
+        old = "Tradexcel Work Needing Attention"
+        return [old] if frappe.db.exists(doctype, old) else []
+
+    if doctype == "Patch Log":
+        return sorted(name for name in frappe.get_all(doctype, pluck="name")
+                      if name.startswith((LEGACY_APP + ".", "tradexcel_hr.")))
+
+    # Retired prototypes/number cards are not authoritative app data. Leave
+    # historical and customer-owned artifacts alone for manual review.
+    if doctype in {"Dashboard Chart", "Number Card"}:
+        return []
+
     meta = frappe.get_meta(doctype)
     if meta.has_field("module"):
-        names.update(frappe.get_all(doctype, filters={"module": LEGACY_MODULE}, pluck="name"))
-    for prefix in ("Tradexcel%", "Tradex%", "tradexcel%", "tradex%"):
-        names.update(frappe.get_all(doctype, filters=[["name", "like", prefix]], pluck="name"))
-    if doctype == "DocType":
-        names.intersection_update(legacy_app_doctypes)
-    return sorted(names)
+        return sorted(frappe.get_all(doctype, filters={"module": LEGACY_MODULE}, pluck="name"))
+    if meta.has_field("app"):
+        return sorted(frappe.get_all(doctype, filters={"app": LEGACY_APP}, pluck="name"))
+    return []
+
+
+def _rename_plan(legacy_doctypes: list[str]) -> dict[str, dict[str, str]]:
+    plan = {}
+    if frappe.db.exists("Module Def", LEGACY_MODULE):
+        plan["Module Def"] = {LEGACY_MODULE: TARGET_MODULE}
+    for doctype in RENAMABLE_METADATA_DOCTYPES:
+        names = _metadata_names(doctype, set(legacy_doctypes))
+        mapped = {old: rebrand_identifier(old) for old in names}
+        plan[doctype] = {old: new for old, new in mapped.items() if old != new}
+    return plan
+
+
+def _verify_backup(backup_file: str) -> dict:
+    path = Path(backup_file).expanduser().resolve()
+    if not path.is_file() or path.stat().st_size < 1024:
+        frappe.throw(f"A nonempty, verified database backup file is required: {path}")
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return {"path": str(path), "sha256": digest.hexdigest(), "bytes": path.stat().st_size}
+
+
+def _verify_bench_package() -> None:
+    apps_txt = Path.cwd() / "apps.txt"
+    if not apps_txt.is_file() or TARGET_APP not in apps_txt.read_text().splitlines():
+        frappe.throw("sites/apps.txt must register workforce_suite before prepare")
+    if importlib.util.find_spec(TARGET_APP) is None:
+        frappe.throw("Python cannot import workforce_suite; install the editable app in the bench first")
+
 
 
 def _rename_one(doctype: str, old: str, new: str) -> None:
@@ -187,31 +255,48 @@ def _update_app_fields() -> None:
             frappe.db.set_value("Module Def", TARGET_MODULE, "app_name", TARGET_APP, update_modified=False)
 
 
-def prepare() -> None:
+def prepare(backup_file: str) -> None:
+    if _snapshot_path().exists():
+        frappe.throw("A migration snapshot already exists; restore/review it before restarting prepare")
+    _verify_bench_package()
+    if LEGACY_APP not in frappe.get_installed_apps():
+        frappe.throw("The legacy app is not installed on this site")
+    backup = _verify_backup(backup_file)
     legacy_doctypes = _legacy_app_doctypes()
+    plan = _rename_plan(legacy_doctypes)
+
+    # Fail before the first DDL table rename if any destination already exists.
+    for doctype, mapping in plan.items():
+        destinations = list(mapping.values())
+        if len(set(destinations)) != len(destinations):
+            frappe.throw(f"Duplicate rename targets in {doctype}: {mapping}")
+        for old, new in mapping.items():
+            if frappe.db.exists(doctype, old) and frappe.db.exists(doctype, new):
+                frappe.throw(f"Migration conflict: {doctype} {old!r} -> existing {new!r}")
+
     app_counts = {name: int(frappe.db.count(name)) for name in legacy_doctypes if _exists(name)}
     snapshot = {
-        "version": 1,
+        "version": 2,
         "site": frappe.local.site,
         "legacy_app": LEGACY_APP,
         "target_app": TARGET_APP,
+        "verified_backup": backup,
         "business_counts": _business_counts(),
         "app_doctype_counts": app_counts,
         "doctype_map": {name: rebrand_identifier(name) for name in legacy_doctypes},
+        "metadata_map": plan,
     }
     _write_snapshot(snapshot)
 
     old_in_patch = getattr(frappe.flags, "in_patch", False)
     frappe.flags.in_patch = True
     try:
-        if frappe.db.exists("Module Def", LEGACY_MODULE):
-            _rename_one("Module Def", LEGACY_MODULE, TARGET_MODULE)
-
-        legacy_set = set(legacy_doctypes)
+        if "Module Def" in plan:
+            for old, new in plan["Module Def"].items():
+                _rename_one("Module Def", old, new)
         for doctype in RENAMABLE_METADATA_DOCTYPES:
-            names = legacy_doctypes if doctype == "DocType" else _metadata_names(doctype, legacy_set)
-            for old in names:
-                _rename_one(doctype, old, rebrand_identifier(old))
+            for old, new in plan.get(doctype, {}).items():
+                _rename_one(doctype, old, new)
 
         _update_app_fields()
         _switch_installed_app()
@@ -226,6 +311,7 @@ def prepare() -> None:
             frappe.throw("Business-record counts changed during prepare")
     finally:
         frappe.flags.in_patch = old_in_patch
+
 
 
 def _candidate_field_doctypes() -> set[str]:
@@ -290,16 +376,8 @@ def finalize(drop_legacy_columns: bool = False) -> None:
             if drop_legacy_columns and not meta.issingle and frappe.db.has_column(doctype, old_fieldname):
                 frappe.db.drop_column(doctype, old_fieldname)
 
-    if _exists("Custom Field"):
-        for row in frappe.get_all("Custom Field", fields=["name", "label", "description", "options", "default"]):
-            updates = {}
-            for field in ("label", "description", "options", "default"):
-                value = row.get(field)
-                if isinstance(value, str) and LEGACY_TOKEN.search(value):
-                    updates[field] = rebrand_identifier(value)
-            if updates:
-                frappe.db.set_value("Custom Field", row.name, updates, update_modified=False)
-
+    # Do not alter arbitrary Custom Field labels/defaults/options. They may
+    # contain a customer's *actual* registered company name, which is data.
     current_business = _business_counts()
     if current_business != snapshot.get("business_counts", {}):
         frappe.throw(
@@ -325,17 +403,14 @@ def verify() -> None:
     if TARGET_APP not in apps:
         errors.append(f"target app missing: {TARGET_APP}")
 
-    for doctype in RENAMABLE_METADATA_DOCTYPES + ("Module Def",):
-        if not _exists(doctype):
-            continue
-        for name in frappe.get_all(doctype, pluck="name"):
-            if isinstance(name, str) and LEGACY_TOKEN.search(name):
-                errors.append(f"legacy metadata identifier: {doctype} {name}")
+    snapshot = _read_snapshot()
+    for doctype, mapping in snapshot.get("metadata_map", {}).items():
+        for old, new in mapping.items():
+            if frappe.db.exists(doctype, old):
+                errors.append(f"legacy app-owned metadata still exists: {doctype} {old}")
+            if not frappe.db.exists(doctype, new):
+                errors.append(f"renamed metadata missing: {doctype} {new}")
 
-    if _exists("Custom Field"):
-        for row in frappe.get_all("Custom Field", fields=["dt", "fieldname"]):
-            if LEGACY_TOKEN.search(row.fieldname or ""):
-                errors.append(f"legacy custom field: {row.dt}.{row.fieldname}")
 
     snapshot = _read_snapshot()
     if _business_counts() != snapshot.get("business_counts", {}):
@@ -363,15 +438,18 @@ def main() -> int:
     parser.add_argument("--phase", choices=("prepare", "finalize", "verify"), required=True)
     parser.add_argument("--yes", action="store_true")
     parser.add_argument("--drop-legacy-columns", action="store_true")
+    parser.add_argument("--backup-file", help="Verified pre-migration database backup; required for prepare")
     args = parser.parse_args()
 
     if args.phase in {"prepare", "finalize"} and not args.yes:
         parser.error("--yes is required for migration mutations")
 
+    if args.phase == "prepare" and not args.backup_file:
+        parser.error("--backup-file is required before any database rename")
     _enter_site(args.site)
     try:
         if args.phase == "prepare":
-            prepare()
+            prepare(args.backup_file)
         elif args.phase == "finalize":
             finalize(drop_legacy_columns=args.drop_legacy_columns)
         else:
