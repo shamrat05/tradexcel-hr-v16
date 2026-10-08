@@ -365,6 +365,7 @@ def test_draft_setup_concurrent_blank_branch_requests_create_one_configuration()
             results = [future.result(timeout=60) for future in futures]
         names = sorted({name for result in results for name in result['layouts']})
         assert len(names) == 1 and sum(result['created'] for result in results) == 1
+        frappe.db.rollback()  # Observe committed worker results in a new snapshot.
         assert len(frappe.get_all('Workforce Statutory Print Layout', filters=scope)) == 1
     finally:
         frappe.db.rollback()
