@@ -174,3 +174,8 @@ On the isolated site, the Form 40 repeatable-repayment integration test passed (
 The Form 40 adapter now emits a reviewed advance with no repayments as one row with blank repayment cells. When repayments exist, advance-level remarks are retained and combined with repayment-specific reference/notes rather than overwritten. The regression covers both cases.
 
 The earlier whole-suite attempt was invalid because the disposable site hit its default 600-job guard. After confirming no competing test process, the isolated site was given a temporary 5000-job cap for one run; no jobs were purged or altered. The exact current tree completed **904 passed, 2 skipped, 15 warnings** in 694.29 seconds. The temporary site-specific setting was removed and the prior absent configuration restored. This remains isolated-site evidence; remote CI and legal/staff acceptance are separate gates.
+
+
+## Periodic return draft aggregation — 2026-10-09
+
+Forms 80 and 81 now have a native read-only aggregation path when no submitted manual return record exists. It is Company/Branch scoped, permission checked, bounded, and uses only submitted Attendance observations for draft adult male/female averages. It reports missing Attendance coverage, working-day review, and legal category review findings instead of treating missing data as zero or silently producing an approved return. Existing reviewed manual records remain authoritative and unchanged. The path is an engineering draft; establishment categories, foreign/contractor/adolescent classifications, working days, payment/safety particulars, current-law mapping and legal approval remain required before official use.
