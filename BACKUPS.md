@@ -78,3 +78,25 @@ Fresh standard backup --with-files; gzip and both archives verified. Timestamp i
 | `20261009_225514-workforce-statutory-fresh_localhost-files.tar` | 10240 | `3682e75cf45f991e6a21ee2faa1ff96b5a08ba46606a51f06f3690180e86ae4a` |
 | `20261009_225514-workforce-statutory-fresh_localhost-private-files.tar` | 10240 | `6646d395d1dee21d0dc41d343716395259c1dd2c71bb4bbe88e09e0942a1c136` |
 | `20261009_225514-workforce-statutory-fresh_localhost-site_config_backup.json` | 320 | `d7748f77133741ae541480187239bc3a1287c18050be936bf7c4a29c05a4c52c` |
+
+## Local owner acceptance preview — 2026-10-10
+
+Fresh full hrms-v16.localhost backup before restoring its data to a separate PR #77-only local preview. Original site is not migrated. Artifacts remain private outside Git; complete gzip/tar integrity verified.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20261010_005859-hrms-v16_localhost-database.sql.gz` | 61314340 | `3bd154d4136cde03de82ebef3d9322a2b800808b0b38dd14a869fc547bbc32ac` |
+| `20261010_005859-hrms-v16_localhost-files.tar` | 10240 | `8ff954efde121478d6540789febeeab6c5681ccd3a5120eb69c247c3d1d1cb8b` |
+| `20261010_005859-hrms-v16_localhost-private-files.tar` | 38942720 | `b8ac0f901c45c85ce5def37e7b60fcd1f30584035e2065be09b21796e30056ce` |
+| `20261010_005859-hrms-v16_localhost-site_config_backup.json` | 269 | `47fefb4ea85f1eaeeda393d9cfa6010e612ce9b0dc300b17c539e50c48d0c84d` |
+
+## Restored local acceptance copy before identity/schema migration — 2026-10-10
+
+Fresh full backup of the separate PR #77 preview after verified restore. Native business values and all uploaded files matched the source before migration. Gzip/tar integrity verified; artifacts private outside Git.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20261010_010539-workforce-statutory-preview_localhost-database.sql.gz` | 61314325 | `75a94f5711c6f7fa6611319df912d1efdc0e2a2bce82f19f291e4bb0a4b112c3` |
+| `20261010_010539-workforce-statutory-preview_localhost-files.tar` | 10240 | `82354bf41bb2d8edf6377d2303fdce7373d82c32991b1eb389d9bff95d63ee22` |
+| `20261010_010539-workforce-statutory-preview_localhost-private-files.tar` | 38942720 | `cf7b4370b090c9cb71e060ca8a7920952080997fdfccabd9c25f98ae7f4fc932` |
+| `20261010_010539-workforce-statutory-preview_localhost-site_config_backup.json` | 340 | `d8222c703b110a238636dfc8ece009fafe920c64aba6214df05874945246123a` |
