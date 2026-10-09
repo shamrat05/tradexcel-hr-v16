@@ -23,6 +23,19 @@ Frappe sidebar image/setup issues and an HRMS restricted-user Settings request
 remain documented; physical-device and real staff UAT remain outstanding.
 See the [acceptance evidence](docs/white_label_migration.md#acceptance-follow-up--2026-10-08).
 
+Bangladesh statutory technical working copies now cover 35 catalog entries,
+including separate prescribed variants and four original-evidence-only entries.
+The expanded isolated application suite passed **933 tests, 2 skipped, 18
+upstream warnings**; bilingual native A4 PDF and editable Word rendering,
+backed-up migration and disposable fresh installation were verified. The
+[coverage and field crosswalk](docs/bangladesh_statutory/coverage.md) and
+[dated verification](docs/bangladesh_statutory/implementation_20261009.md)
+distinguish technical evidence from official acceptance. Independent current-law
+and translation approval, actual employer evidence and staff/filing acceptance
+remain required; the original Rule 353 reference is still unavailable. No form
+is automatically certified and no production deployment was performed.
+
+
 ## App name and module
 
 | Item | Value |

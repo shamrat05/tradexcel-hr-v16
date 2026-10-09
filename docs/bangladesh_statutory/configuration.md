@@ -1,6 +1,6 @@
 # Configure statutory working copies in native Desk
 
-This feature produces **draft working copies**, not legally approved filings. The coverage matrix lists incomplete prescribed variants and external evidence. An independently reviewed personnel fact does not certify a form, establish a wage entitlement or prove payment.
+This feature produces **draft working copies**, not legally approved filings. The coverage matrix lists the protected source structures, distinct variants and external evidence boundaries. An independently reviewed personnel fact does not certify a form, establish a wage entitlement or prove payment.
 
 Operators need native access to the source records **and** statutory-layout access (currently System Manager or Workforce Compliance Auditor), with the appropriate explicit Company scope. An HR/payroll role alone does not authorize this exporter. Contextual actions respect native visibility; server checks remain authoritative. No native source permissions are granted by these actions.
 
@@ -17,7 +17,7 @@ Generation records are immutable and say `Draft Generated`. They record actor/ti
 
 This branch adds native DocType metadata and therefore requires a supported migration **only on a backed-up, authorized site**. The completed fresh-site test used a disposable synthetic Frappe 16 bench; the original local HRMS was untouched. Before a real upgrade, back up database/public/private/config recovery material, rehearse restore, compare any existing draft layouts with the protected schemas, and review Company/Branch profiles. Old drafts with incomplete or conflicting schemas fail closed rather than being silently rewritten. No existing submitted Employee, Attendance, salary or financial document is modified by these adapters.
 
-Official use remains blocked pending current-law review, approved translations and completion of the prescribed variant/page geometries described in [coverage](coverage.md). Creating a layout or submitting evidence cannot override that gate.
+Official use remains blocked pending current-law review, approved translations and independent acceptance of the source-linked working-copy layouts described in [coverage](coverage.md). Creating a layout or submitting evidence cannot override that gate.
 
 ## Explicit first-use setup
 
@@ -33,8 +33,7 @@ This action does not infer legal applicability or create a reviewed establishmen
 profile. Missing registration, address, signatory, statutory identity, salary
 mapping and Bangla heading remain review findings or editable configuration.
 Company-specific information comes from native records or explicit authorized
-configuration; it is not shipped in the application. External certificates are
-rejected as generated layouts.
+configuration; it is not shipped in the application. External entries can be configured to retain private originals; their generated PDF/DOCX exports are rejected.
 
 For a working Employee export, prepare Form 8, open an authorized Employee and
 choose the statutory Worker Register action. Preview the draft and its findings,
@@ -42,3 +41,17 @@ then choose **Download A4 PDF** or **Editable DOCX working copy**. Form 8 requir
 no payroll date range. PDFs/DOCX download to your browser; configuration and
 immutable generation audit records remain native DocTypes. An internal draft
 is not a legally approved register or government filing.
+
+## Reviewed periodic return and history workflow
+
+For Form 80 or 81, choose **Layout Tools → Prepare Return Evidence** and the exact half-year/calendar year. Repeated requests reuse the existing readable record and preserve edits. The draft inherits reviewed establishment identifiers and provides the complete protected field checklist. Enter the actual facts, keep unresolved fields blank, add per-field provenance, attach private originals where needed and use explicit reviewed non-applicability reasons. A separate reviewer submits only a complete return; draft evidence cannot bypass missing-data findings.
+
+Choose **Reviewed Workforce Evidence** only when the establishment membership and calendar are complete. Add native Employees or distinct external workforce identities, explicit reviewed categories, dated establishment membership and original source references. Use **Evidence → Fill Reviewed Calendar Range** to record actual working/non-working dates with source provenance; omitted dates are not holidays. Attest complete coverage and attach its private original. Save calculates averages only with full submitted Attendance observations. Missing/conflicting dates or work observations leave the draft unresolved and clear stale calculated cells. **Reviewed Aggregate Values** remains available for genuine reviewed historical records outside the installed native sources.
+
+For a service book or examination register, **Evidence → Add History Row** selects the actual source table and adds its protected fields with a chronological row number. Enter each historical employer, wage/rate, leave/service or examination fact from its actual evidence. Current designation or compensation never becomes a historical record. Blank source-book pages remain editable, with unsigned signature boxes.
+
+Identity cards/service books accept a private PNG/JPEG portrait linked to the worker. Original files and portraits are fingerprinted on independent submission and rechecked during export. Replacing a reviewed original requires a new review version.
+
+For native wage/overtime forms, choose the precise **Evidence Kind**, link the submitted Salary Slip or Overtime Slip, attach the original receipt/rate evidence and enter its actual dates, amounts and references. Payment instruction/reconciliation does not mean worker payment or acknowledgement. Rate intervals must match each native overtime date/hours and native currency precision; multiple rates remain an appendix rather than an invented blended rate. Evidence submission never changes payroll/accounting.
+
+**Evidence → Preview Return** inherits the record's Employee and reporting dates. Save first, review actionable findings, then choose English/Bangla and PDF/editable DOCX. All source variants have separate protected definitions; the combined historical configurations remain legacy working copies.
