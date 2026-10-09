@@ -159,22 +159,30 @@ def aggregate_periodic_return(layout, start, end):
                                  "message": "Employee access is required to prepare a periodic return draft."}]}]
     employees = frappe.get_list(
         "Employee",
-        filters={"company": layout.company, "status": "Active",
+        filters={"company": layout.company,
                  **({"branch": layout.branch} if layout.branch else {})},
-        fields=["name", "gender", "date_of_birth", "date_of_joining", "relieving_date"],
+        fields=["name", "gender", "date_of_birth", "date_of_joining", "relieving_date", "status"],
         order_by="name asc",
         limit_page_length=LIMIT + 1,
     )
     employees = bounded(employees, "employees for periodic return")
-    allowed = {row.name for row in employees}
+    from workforce_suite.workforce_suite.statutory_period_evidence import employment_observations
+    by_employee, intervals, provenance = employment_observations(employees, start, end)
+    allowed = set(by_employee)
     row = {"reporting_year": str(start)[:4]} if layout.form_code == "form_81" else {}
+    row["_period_provenance"] = provenance
     findings = [{
         "code": "PERIODIC_REVIEW",
         "message": "Draft values are derived from submitted Attendance observations and require establishment review before use.",
     }]
+    findings.append({"code": "HISTORICAL_ESTABLISHMENT_REVIEW",
+                     "message": "Current Company/Branch assignments only select candidates. Review dated establishment membership, including transfers into and out of this scope; these observations are not complete historical totals."})
+    if not provenance["employment_dates_complete"]:
+        findings.append({"code": "EMPLOYMENT_DATES_MISSING",
+                         "message": "Incomplete or inconsistent joining/relieving dates prevent full employment-period coverage."})
     if not allowed:
         findings.append({"code": "NO_EMPLOYEES",
-                         "message": "No active Employee records are available for this Company and establishment scope."})
+                         "message": "No period-overlapping Employee candidates are available for this Company and establishment scope."})
         row["_findings"] = findings
         return [row]
     if not frappe.has_permission("Attendance", "read"):
@@ -191,26 +199,29 @@ def aggregate_periodic_return(layout, start, end):
         limit_page_length=LIMIT + 1,
     )
     attendance = bounded(attendance, "submitted Attendance observations")
-    by_employee = {item.name: item for item in employees}
-    period_end = getdate(end)
-    leavers = [
-        person for person in employees
-        if getattr(person, "relieving_date", None)
-        and getdate(person.relieving_date) >= getdate(start)
-        and getdate(person.relieving_date) <= period_end
-    ]
     if layout.form_code == "form_81":
-        row["leavers_other"] = len(leavers)
         findings.append({
             "code": "LEAVER_CLASSIFICATION_REVIEW",
-            "message": "Employees with a native relieving date are counted as leavers pending reviewed resignation, dismissal or discharge classification.",
+            "message": "Native dated leavers are recorded in calculation provenance only. Review establishment membership and the prescribed resignation, dismissal, discharge or other reason; no reason is inferred.",
         })
     by_day = {}
+    observed = set()
     for item in attendance:
         person = by_employee.get(item.employee)
         if not person or item.status not in {"Present", "Half Day", "Work From Home"}:
             continue
-        by_day.setdefault(str(item.attendance_date), []).append(person)
+        at = getdate(item.attendance_date)
+        interval = intervals.get(item.employee)
+        if interval and not interval[0] <= at <= interval[1]:
+            findings.append({"code": "ATTENDANCE_OUTSIDE_EMPLOYMENT",
+                             "message": "Submitted Attendance outside authoritative employment dates was excluded; review the source."})
+            continue
+        # Multiple shifts on one date still represent one worker observation.
+        key = (item.employee, at)
+        if key in observed:
+            continue
+        observed.add(key)
+        by_day.setdefault(str(at), []).append(person)
     if not by_day:
         findings.append({"code": "ATTENDANCE_OBSERVATIONS_MISSING",
                          "message": "No submitted Attendance observations cover this period; averages and working days remain unfilled."})
@@ -233,6 +244,12 @@ def aggregate_periodic_return(layout, start, end):
             {"code": "WORKING_DAYS_REVIEW",
              "message": "Observed Attendance dates do not establish the establishment's statutory working-day count; enter reviewed working days."},
         ])
+    provenance["observed_worker_days"] = len(observed)
+    provenance["observed_dates"] = len(by_day)
+    provenance["calendar_days"] = (getdate(end) - getdate(start)).days + 1
+    provenance["attendance_coverage_complete"] = False
+    findings.append({"code": "ATTENDANCE_COVERAGE_REVIEW",
+                     "message": "Submitted work observations do not establish full-period coverage. Missing Attendance is not absence; review work schedules, holidays and missing employee-days before supplying prescribed averages."})
     row["_findings"] = findings
     return [row]
 

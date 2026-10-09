@@ -194,3 +194,9 @@ Periodic draft aggregation now also counts employees with a native relieving dat
 ## Final periodic aggregation verification checkpoint — 2026-10-09
 
 The exact tree including historical leaver aggregation completed the isolated full Workforce Suite suite with **906 passed, 2 skipped, 15 warnings** in 842.18 seconds. This validates regression compatibility on the disposable site; it does not convert draft periodic returns into legally approved filings.
+
+## Historical employee-selection correction — continuing statutory completion
+
+Removed the current Active filter from periodic Employee discovery while retaining permission-aware Company/Branch queries. A pure employment-period adapter includes dated joiners/currently Left workers, excludes non-overlapping employment, reports unknown/inconsistent dates and preserves candidate-versus-established-history distinctions. Attendance outside known employment intervals is excluded and worker/date observations are deduplicated. Native leavers are provenance observations, never automatically classified as Other. Missing historical transfers and incomplete Attendance coverage produce explicit findings.
+
+Validation at this checkpoint: 3 pure employment-period tests passed; 2 focused periodic native-adapter tests passed (27 deselected) in the disposable bench. These are focused results, not a new full-suite result. Remaining phases continue; technical completion is not claimed.

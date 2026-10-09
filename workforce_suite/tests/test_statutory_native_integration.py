@@ -623,3 +623,39 @@ def test_periodic_return_aggregation_uses_submitted_attendance_and_fails_closed(
     assert "adult_male" not in empty[0]
     assert any(item["code"] == "ATTENDANCE_OBSERVATIONS_MISSING"
                for item in empty[0]["_findings"])
+
+
+def test_periodic_historical_selection_scope_duplicates_and_partial_coverage(monkeypatch):
+    from types import SimpleNamespace
+    from workforce_suite.workforce_suite import statutory_native_data as native
+    employees = [SimpleNamespace(name="TEST-LEFT", gender="Male", date_of_birth="1990-01-01",
+                                 date_of_joining="2020-01-01", relieving_date="2026-06-01", status="Left"),
+                 SimpleNamespace(name="TEST-PRIOR", gender="Female", date_of_birth="1990-01-01",
+                                 date_of_joining="2020-01-01", relieving_date="2025-06-01", status="Left")]
+    calls = []
+    class FakeFrappe:
+        @staticmethod
+        def has_permission(*args):
+            return True
+        @staticmethod
+        def get_list(doctype, **kwargs):
+            calls.append((doctype, kwargs))
+            if doctype == "Employee":
+                return employees
+            return [SimpleNamespace(employee="TEST-LEFT", attendance_date="2026-01-01", status="Present")]*2
+    monkeypatch.setattr(native, "frappe", FakeFrappe)
+    layout = SimpleNamespace(form_code="form_81", company="TEST-Company", branch="TEST-Branch")
+    row = native.aggregate_periodic_return(layout, "2026-01-01", "2026-12-31")[0]
+    assert calls[0][1]["filters"] == {"company": "TEST-Company", "branch": "TEST-Branch"}
+    assert set(calls[1][1]["filters"]["employee"][1]) == {"TEST-LEFT"}
+    assert calls[1][1]["filters"]["docstatus"] == 1
+    assert row["adult_male"] == 1
+    assert "leavers_other" not in row
+    assert row["_period_provenance"]["observed_leavers"] == 1
+    assert row["_period_provenance"]["observed_worker_days"] == 1
+    assert not row["_period_provenance"]["attendance_coverage_complete"]
+    assert {"HISTORICAL_ESTABLISHMENT_REVIEW", "ATTENDANCE_COVERAGE_REVIEW"} <= {f["code"] for f in row["_findings"]}
+    monkeypatch.setattr(FakeFrappe, "has_permission", lambda *args: False)
+    denied = native.aggregate_periodic_return(layout, "2026-01-01", "2026-12-31")[0]
+    assert denied["_findings"][0]["code"] == "EMPLOYEE_ACCESS"
+    assert len(calls) == 2
