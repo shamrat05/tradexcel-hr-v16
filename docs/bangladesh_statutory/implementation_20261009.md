@@ -167,3 +167,10 @@ The inspected Form 39/40 source page distinguishes Form 40 from Form 39 and show
 ## Current Form 40 verification — 2026-10-09
 
 On the isolated site, the Form 40 repeatable-repayment integration test passed (1 passed, 26 deselected) and the full statutory native integration file passed (27 passed). Source, schema, printing and white-label checks passed (78 passed). A subsequent whole-application run was not a valid completion result: the isolated bench reached Frappe's native 600-job queue guard and reported 43 environment/setup failures, 861 passed and 2 skipped. No queue jobs were purged or altered; the broader run remains an infrastructure-gated follow-up rather than evidence of a Form 40 regression.
+
+
+## Form 40 edge-case and clean full-suite verification — 2026-10-09
+
+The Form 40 adapter now emits a reviewed advance with no repayments as one row with blank repayment cells. When repayments exist, advance-level remarks are retained and combined with repayment-specific reference/notes rather than overwritten. The regression covers both cases.
+
+The earlier whole-suite attempt was invalid because the disposable site hit its default 600-job guard. After confirming no competing test process, the isolated site was given a temporary 5000-job cap for one run; no jobs were purged or altered. The exact current tree completed **904 passed, 2 skipped, 15 warnings** in 694.29 seconds. The temporary site-specific setting was removed and the prior absent configuration restored. This remains isolated-site evidence; remote CI and legal/staff acceptance are separate gates.

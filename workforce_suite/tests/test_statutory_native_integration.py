@@ -518,26 +518,50 @@ def test_form40_requitals_are_repeatable_and_render_as_separate_rows(data):
             {"field_key": "worker_register_no", "field_value": "TEST-REG-40"},
             {"field_key": "employee_name", "field_value": "TEST Worker"},
             {"field_key": "advance_amount_date", "field_value": "1000 BDT / 2026-09-01"},
+            {"field_key": "remarks", "field_value": "TEST advance note"},
         ],
         "requitals": [
             {"amount": 250, "collection_date": "2026-09-30", "reference": "TEST-R1"},
-            {"amount": 250, "collection_date": "2026-10-01", "reference": "TEST-R2"},
+            {"amount": 250, "collection_date": "2026-10-01", "reference": "TEST-R2", "remarks": "TEST installment note"},
+        ],
+    }).insert()
+    empty_record = frappe.get_doc({
+        "doctype": "Workforce Statutory Record",
+        "company": doc.company,
+        "layout": doc.name,
+        "entry_date": "2026-10-03",
+        "evidence_note": "TEST advance awaiting first repayment",
+        "entries": [
+            {"field_key": "worker_register_no", "field_value": "TEST-REG-41"},
+            {"field_key": "employee_name", "field_value": "TEST Worker 2"},
+            {"field_key": "advance_amount_date", "field_value": "500 BDT / 2026-09-15"},
+            {"field_key": "remarks", "field_value": "TEST unrepaid advance"},
         ],
     }).insert()
     try:
         frappe.set_user(data["reviewer"])
         record.submit()
+        empty_record.submit()
         rows = _read_manual(doc, "2026-10-01", "2026-10-31")
-        assert len(rows) == 2
-        assert [row["requital_amount"] for row in rows] == [250, 250]
-        assert [str(row["requital_date"]) for row in rows] == ["2026-09-30", "2026-10-01"]
-        assert [row["remarks"] for row in rows] == ["TEST-R1", "TEST-R2"]
+        assert len(rows) == 3
+        assert [row["requital_amount"] for row in rows[:2]] == [250, 250]
+        assert [str(row["requital_date"]) for row in rows[:2]] == ["2026-09-30", "2026-10-01"]
+        assert rows[0]["remarks"] == "TEST advance note / TEST-R1"
+        assert rows[1]["remarks"] == "TEST advance note / TEST-R2 / TEST installment note"
+        assert rows[2]["requital_amount"] is None
+        assert rows[2]["requital_date"] is None
+        assert rows[2]["remarks"] == "TEST unrepaid advance"
     finally:
         frappe.set_user("Administrator")
-        if frappe.db.exists(record.doctype, record.name):
-            current = frappe.get_doc(record.doctype, record.name)
-            if current.docstatus == 1:
-                current.cancel()
-            frappe.delete_doc(record.doctype, record.name)
-        frappe.delete_doc(doc.doctype, doc.name)
+        for item in (record, empty_record):
+            if frappe.db.exists(item.doctype, item.name):
+                current = frappe.get_doc(item.doctype, item.name)
+                if current.docstatus == 1:
+                    current.cancel()
+                # Queue cleanup is intentionally avoided here: this isolated
+                # regression must remain runnable when the bench queue is full.
+                frappe.db.delete("Workforce Statutory Requital", {"parent": item.name})
+                frappe.db.delete("Workforce Statutory Value", {"parent": item.name})
+                frappe.db.delete(item.doctype, {"name": item.name})
+        frappe.db.delete(doc.doctype, {"name": doc.name})
         frappe.db.commit()

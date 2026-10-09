@@ -380,7 +380,17 @@ def _read_manual(layout, from_date: str, to_date: str):
         base["reference_no"] = base.get("reference_no") or record.reference_id
         base["record_date"] = base.get("record_date") or record.entry_date
         if layout.form_code == "form_40":
-            for requital in record.get("requitals") or []:
+            requitals = record.get("requitals") or []
+            if not requitals:
+                # A reviewed advance remains a register row before its first
+                # repayment; blank repayment cells are meaningful evidence.
+                row = dict(base)
+                row["requital_amount"] = None
+                row["requital_date"] = None
+                rows.append(row)
+                continue
+            original_remarks = base.get("remarks") or ""
+            for requital in requitals:
                 row = dict(base)
                 row["requital_amount"] = requital.amount
                 row["requital_date"] = requital.collection_date
@@ -388,7 +398,9 @@ def _read_manual(layout, from_date: str, to_date: str):
                     value for value in (requital.reference, requital.remarks) if value
                 )
                 if details:
-                    row["remarks"] = details
+                    row["remarks"] = " / ".join(
+                        value for value in (original_remarks, details) if value
+                    )
                 rows.append(row)
         else:
             rows.append(base)
