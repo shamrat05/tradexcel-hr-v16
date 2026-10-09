@@ -161,7 +161,7 @@ def aggregate_periodic_return(layout, start, end):
         "Employee",
         filters={"company": layout.company, "status": "Active",
                  **({"branch": layout.branch} if layout.branch else {})},
-        fields=["name", "gender", "date_of_birth"],
+        fields=["name", "gender", "date_of_birth", "date_of_joining", "relieving_date"],
         order_by="name asc",
         limit_page_length=LIMIT + 1,
     )
@@ -192,6 +192,19 @@ def aggregate_periodic_return(layout, start, end):
     )
     attendance = bounded(attendance, "submitted Attendance observations")
     by_employee = {item.name: item for item in employees}
+    period_end = getdate(end)
+    leavers = [
+        person for person in employees
+        if getattr(person, "relieving_date", None)
+        and getdate(person.relieving_date) >= getdate(start)
+        and getdate(person.relieving_date) <= period_end
+    ]
+    if layout.form_code == "form_81":
+        row["leavers_other"] = len(leavers)
+        findings.append({
+            "code": "LEAVER_CLASSIFICATION_REVIEW",
+            "message": "Employees with a native relieving date are counted as leavers pending reviewed resignation, dismissal or discharge classification.",
+        })
     by_day = {}
     for item in attendance:
         person = by_employee.get(item.employee)
@@ -204,9 +217,14 @@ def aggregate_periodic_return(layout, start, end):
     else:
         male = []
         female = []
-        for people in by_day.values():
-            male.append(sum(1 for person in people if person.gender == "Male" and person.date_of_birth))
-            female.append(sum(1 for person in people if person.gender == "Female" and person.date_of_birth))
+        def adult(person, at):
+            dob = getdate(person.date_of_birth) if person.date_of_birth else None
+            return bool(dob and (at.year, at.month, at.day) >= (dob.year + 18, dob.month, dob.day))
+
+        for day, people in by_day.items():
+            at = getdate(day)
+            male.append(sum(1 for person in people if person.gender == "Male" and adult(person, at)))
+            female.append(sum(1 for person in people if person.gender == "Female" and adult(person, at)))
         row["adult_male"] = round(sum(male) / len(male), 2)
         row["adult_female"] = round(sum(female) / len(female), 2)
         findings.extend([

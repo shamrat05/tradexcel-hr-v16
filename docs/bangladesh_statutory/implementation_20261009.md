@@ -184,3 +184,8 @@ Forms 80 and 81 now have a native read-only aggregation path when no submitted m
 ## Periodic aggregation precedence and final isolated validation — 2026-10-09
 
 Automatic Form 80/81 draft aggregation now yields to an existing draft manual evidence record; operator work in progress cannot be bypassed by a snapshot. Submitted manual evidence remains authoritative. After this precedence correction, the exact integrated tree completed **906 passed, 2 skipped, 15 warnings** in the isolated Workforce Suite bench. The queue cap was temporarily raised only for the isolated run, no queued jobs were purged, and the site-specific setting was removed afterward.
+
+
+## Historical workforce-period aggregation — 2026-10-09
+
+Periodic draft aggregation now also counts employees with a native relieving date inside the Form 81 reporting period as an explicitly reviewable leaver total. Gender averages use submitted Attendance observations and native birth dates for adult classification; missing coverage, category distinctions and working-day totals remain actionable findings. No current headcount is relabeled as a historical average, and no resignation/dismissal classification is inferred without reviewed evidence.
