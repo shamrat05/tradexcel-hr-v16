@@ -742,6 +742,16 @@ def test_payment_evidence_states_cannot_fabricate_money_or_cross_company(monkeyp
                 reference_doctype='Salary Slip',reference_name='TEST-SLIP',payment_date='2026-10-01',
                 entry_date='2026-10-01',payment_reference='TEST-RECEIPT',payment_amount=100)
     evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+    from datetime import timedelta
+    future = evidence.getdate() + timedelta(days=1)
+    record.payment_date = future
+    record.entry_date = future
+    for kind in ('Payment Instructed', 'Payment Reconciled', 'Worker Payment Evidenced', 'Worker Acknowledgement'):
+        record.evidence_kind = kind
+        with pytest.raises(ValueError, match='future'):
+            evidence.validate_financial_evidence(record, Item(data_source='Salary Slip'))
+    record.payment_date = record.entry_date = '2026-10-01'
+    record.evidence_kind = 'Worker Payment Evidenced'
     for amount in (0,-1,101,float('nan')):
         record.payment_amount=amount
         with pytest.raises(ValueError):evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))

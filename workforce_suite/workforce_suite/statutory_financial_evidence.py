@@ -74,7 +74,7 @@ def validate_financial_evidence(record, layout):
             frappe.throw('Payment/acknowledgement evidence cannot carry rate rows.')
         if not record.get('payment_date') or not record.get('payment_reference'):
             frappe.throw('Record the actual evidence date and payment/acknowledgement reference.')
-        if getdate(record.payment_date) > getdate(record.entry_date):
+        if getdate(record.payment_date) > min(getdate(record.entry_date), getdate()):
             frappe.throw('Evidence cannot attest a future payment or acknowledgement.')
         value = Decimal(str(record.get('payment_amount') or 0))
         net = Decimal(str(source.net_pay))
