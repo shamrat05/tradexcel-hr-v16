@@ -162,3 +162,8 @@ Form 40 is now represented as a distinct protected catalog entry and print-layou
 ## Form 40 repayment-history correction — 2026-10-09
 
 The inspected Form 39/40 source page distinguishes Form 40 from Form 39 and shows a repeatable “each installment amount and collection date” column alongside the advance, total recovery date and remarks. Workforce Suite now keeps that history in a native child table (Workforce Statutory Requital) rather than a single free-text value. Each row requires a positive reviewed amount and collection date; references and notes remain attached to the rendered row. An advance may be recorded before its first repayment, while a non-Form-40 record cannot carry repayment rows. Export expands each reviewed repayment into its own row without changing the canonical payroll or financial ledgers. Form 39 and Form 40 regression coverage asserts their distinct damage-versus-advance field contracts. The form remains a technical draft pending current-law and employer evidence review.
+
+
+## Current Form 40 verification — 2026-10-09
+
+On the isolated site, the Form 40 repeatable-repayment integration test passed (1 passed, 26 deselected) and the full statutory native integration file passed (27 passed). Source, schema, printing and white-label checks passed (78 passed). A subsequent whole-application run was not a valid completion result: the isolated bench reached Frappe's native 600-job queue guard and reported 43 environment/setup failures, 861 passed and 2 skipped. No queue jobs were purged or altered; the broader run remains an infrastructure-gated follow-up rather than evidence of a Form 40 regression.
