@@ -19,7 +19,7 @@ from workforce_suite.workforce_suite.statutory_export_policy import (
 )
 from workforce_suite.workforce_suite.statutory_access import check_company, checked_profile
 from workforce_suite.workforce_suite.statutory_schema import validate_schema, missing_findings, reconcile_wages, money
-from workforce_suite.workforce_suite.statutory_native_data import supplemental, approved_overtime, leave_balances, payment_evidence
+from workforce_suite.workforce_suite.statutory_native_data import supplemental, approved_overtime, leave_balances, payment_evidence, aggregate_periodic_return
 from workforce_suite.workforce_suite.report_scope import (
     permitted_employee_names, permitted_salary_slips,
 )
@@ -371,6 +371,8 @@ def _read_manual(layout, from_date: str, to_date: str):
     )
     if len(names) > MAX_PRINT_ROWS:
         frappe.throw(_("Too many manual statutory records for one PDF."))
+    if not names and layout.form_code in {"form_80", "form_81"}:
+        return aggregate_periodic_return(layout, from_date, to_date)
     rows = []
     for name in names:
         record = frappe.get_doc("Workforce Statutory Record", name.name)

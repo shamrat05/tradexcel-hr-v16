@@ -144,6 +144,80 @@ def leave_balances(layout, employees, start, end):
     return result, findings
 
 
+
+def aggregate_periodic_return(layout, start, end):
+    """Build a review-only Form 80/81 draft from native Attendance evidence.
+
+    This intentionally returns observed averages only when submitted Attendance
+    exists. It never treats current Employee headcount, missing days, or absent
+    rows as a statutory zero or as a completed legal return.
+    """
+    if layout.form_code not in {"form_80", "form_81"}:
+        return []
+    if not frappe.has_permission("Employee", "read"):
+        return [{"_findings": [{"code": "EMPLOYEE_ACCESS",
+                                 "message": "Employee access is required to prepare a periodic return draft."}]}]
+    employees = frappe.get_list(
+        "Employee",
+        filters={"company": layout.company, "status": "Active",
+                 **({"branch": layout.branch} if layout.branch else {})},
+        fields=["name", "gender", "date_of_birth"],
+        order_by="name asc",
+        limit_page_length=LIMIT + 1,
+    )
+    employees = bounded(employees, "employees for periodic return")
+    allowed = {row.name for row in employees}
+    row = {"reporting_year": str(start)[:4]} if layout.form_code == "form_81" else {}
+    findings = [{
+        "code": "PERIODIC_REVIEW",
+        "message": "Draft values are derived from submitted Attendance observations and require establishment review before use.",
+    }]
+    if not allowed:
+        findings.append({"code": "NO_EMPLOYEES",
+                         "message": "No active Employee records are available for this Company and establishment scope."})
+        row["_findings"] = findings
+        return [row]
+    if not frappe.has_permission("Attendance", "read"):
+        findings.append({"code": "ATTENDANCE_ACCESS",
+                         "message": "Attendance access is required to calculate observed workforce averages."})
+        row["_findings"] = findings
+        return [row]
+    attendance = frappe.get_list(
+        "Attendance",
+        filters={"company": layout.company, "employee": ["in", tuple(allowed)],
+                 "attendance_date": ["between", [start, end]], "docstatus": 1},
+        fields=["employee", "attendance_date", "status"],
+        order_by="attendance_date asc",
+        limit_page_length=LIMIT + 1,
+    )
+    attendance = bounded(attendance, "submitted Attendance observations")
+    by_employee = {item.name: item for item in employees}
+    by_day = {}
+    for item in attendance:
+        person = by_employee.get(item.employee)
+        if not person or item.status not in {"Present", "Half Day", "Work From Home"}:
+            continue
+        by_day.setdefault(str(item.attendance_date), []).append(person)
+    if not by_day:
+        findings.append({"code": "ATTENDANCE_OBSERVATIONS_MISSING",
+                         "message": "No submitted Attendance observations cover this period; averages and working days remain unfilled."})
+    else:
+        male = []
+        female = []
+        for people in by_day.values():
+            male.append(sum(1 for person in people if person.gender == "Male" and person.date_of_birth))
+            female.append(sum(1 for person in people if person.gender == "Female" and person.date_of_birth))
+        row["adult_male"] = round(sum(male) / len(male), 2)
+        row["adult_female"] = round(sum(female) / len(female), 2)
+        findings.extend([
+            {"code": "ADULT_CLASSIFICATION_REVIEW",
+             "message": "Adult classification is based on native gender and birth-date evidence; verify the applicable legal category before submission."},
+            {"code": "WORKING_DAYS_REVIEW",
+             "message": "Observed Attendance dates do not establish the establishment's statutory working-day count; enter reviewed working days."},
+        ])
+    row["_findings"] = findings
+    return [row]
+
 def payment_evidence(slip, allowed):
     """Reuse the existing native reconciliation inspector without leaking its rows."""
     payroll_entry = slip.get("payroll_entry")

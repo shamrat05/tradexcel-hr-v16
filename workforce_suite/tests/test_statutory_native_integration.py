@@ -582,3 +582,44 @@ def test_form40_requitals_are_repeatable_and_render_as_separate_rows(data):
                 frappe.db.delete(item.doctype, {"name": item.name})
         frappe.db.delete(doc.doctype, {"name": doc.name})
         frappe.db.commit()
+
+
+def test_periodic_return_aggregation_uses_submitted_attendance_and_fails_closed(monkeypatch):
+    from types import SimpleNamespace
+    from workforce_suite.workforce_suite import statutory_native_data as native
+
+    employees = [
+        SimpleNamespace(name="TEST-E-M", gender="Male", date_of_birth="1990-01-01"),
+        SimpleNamespace(name="TEST-E-F", gender="Female", date_of_birth="1992-01-01"),
+    ]
+    attendance = [
+        SimpleNamespace(employee="TEST-E-M", attendance_date="2026-01-01", status="Present"),
+        SimpleNamespace(employee="TEST-E-F", attendance_date="2026-01-01", status="Present"),
+        SimpleNamespace(employee="TEST-E-M", attendance_date="2026-01-02", status="Present"),
+    ]
+
+    class FakeFrappe:
+        @staticmethod
+        def has_permission(doctype, *args):
+            return True
+        @staticmethod
+        def get_list(doctype, **kwargs):
+            return employees if doctype == "Employee" else attendance
+
+    monkeypatch.setattr(native, "frappe", FakeFrappe)
+    layout = type("Layout", (), {"form_code": "form_80", "company": "Synthetic", "branch": ""})()
+    rows = native.aggregate_periodic_return(layout, "2026-01-01", "2026-06-30")
+    assert rows[0]["adult_male"] == 1.0
+    assert rows[0]["adult_female"] == 0.5
+    assert any(item["code"] == "WORKING_DAYS_REVIEW" for item in rows[0]["_findings"])
+
+    class NoAttendance(FakeFrappe):
+        @staticmethod
+        def get_list(doctype, **kwargs):
+            return employees if doctype == "Employee" else []
+
+    monkeypatch.setattr(native, "frappe", NoAttendance)
+    empty = native.aggregate_periodic_return(layout, "2026-01-01", "2026-06-30")
+    assert "adult_male" not in empty[0]
+    assert any(item["code"] == "ATTENDANCE_OBSERVATIONS_MISSING"
+               for item in empty[0]["_findings"])
