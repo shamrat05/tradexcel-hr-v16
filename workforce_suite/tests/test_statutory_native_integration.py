@@ -889,7 +889,7 @@ def test_service_book_same_date_different_employers_survive_but_conflicting_vers
     _,_,context=forms._print_context(book.name,employee=data['person'])
     entries=context['rows'][0]['_history']['employment_history']
     assert len(entries)==2 and {entry['history_employer'] for entry in entries}=={'TEST Employer A','TEST Employer B'}
-    duplicate=frappe.copy_doc(record);duplicate.owner='Administrator';duplicate.entries[-1].field_value='TEST conflicting reason';duplicate.insert()
+    duplicate=frappe.copy_doc(record);duplicate.docstatus=0;duplicate.owner='Administrator';duplicate.entries[-1].field_value='TEST conflicting reason';duplicate.insert()
     frappe.set_user(data['reviewer']);duplicate.submit();frappe.set_user('Administrator')
     with pytest.raises(frappe.ValidationError,match='Overlapping reviewed service-history'):
         forms._print_context(book.name,employee=data['person'])
