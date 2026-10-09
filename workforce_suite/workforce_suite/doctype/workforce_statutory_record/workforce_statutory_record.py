@@ -164,7 +164,10 @@ class WorkforceStatutoryRecord(Document):
             frappe.throw(_("Record the source and review justification."))
         layout = frappe.get_doc("Workforce Statutory Print Layout", self.layout)
         if (self.get("evidence_kind") or "Supplemental Facts") == "Supplemental Facts" and not self.get("entries"):
-            frappe.throw(_("Enter the actual source facts before submitting evidence."))
+            if layout.form_family != "Evidence Only" or not self.evidence_file:
+                frappe.throw(_("Enter the actual source facts before submitting evidence."))
+        if any(cell.get("value_status") == "Unresolved" and cell.field_value for cell in self.get("entries") or []):
+            frappe.throw(_("Review unresolved evidence states before submission."))
         if layout.form_code in {"form_80", "form_81"}:
             from workforce_suite.workforce_suite.statutory_export_policy import normalize_period
             from workforce_suite.workforce_suite.statutory_forms import spec_for
@@ -181,8 +184,6 @@ class WorkforceStatutoryRecord(Document):
             missing = missing_findings(spec_for(layout.form_code), [values])
             if missing:
                 frappe.throw(_("Complete each required prescribed field before review: {0}").format(", ".join(f["field"] for f in missing)))
-            if any(c.get("value_status") == "Unresolved" and c.field_value for c in cells):
-                frappe.throw(_("Review unresolved evidence states before submission."))
         from workforce_suite.workforce_suite.statutory_structure import repeatable_for, evidence_rows
         tables = repeatable_for(layout.form_code)
         if tables:

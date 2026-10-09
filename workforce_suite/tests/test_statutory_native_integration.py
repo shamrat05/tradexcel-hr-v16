@@ -102,7 +102,7 @@ def test_employee_native_identity_missing_id_findings_and_evidence_cannot_overri
     assert any(f.get('field')=='worker_name_and_nid' for f in preview['findings'])
     assert data['person'] not in preview['html'] # Internal Employee ID is not statutory NID.
     record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
-        'entry_date':'2020-01-01','employee':data['person'],'entries':[{'field_key':'gross_pay','field_value':'9999'}]})
+        'entry_date':'2020-01-01','employee':data['person'],'entries':[{'field_key':'gross_pay','field_value':'9999','value_status':'Evidence Entered'}]})
     with pytest.raises(frappe.ValidationError,match='native-owned'):record.insert()
     record.entries[0].field_key='national_id';record.entries[0].field_value='TEST-NID';record.evidence_note='TEST reviewed HR identity source';record.insert()
     with pytest.raises(frappe.PermissionError):record.submit()
@@ -244,7 +244,7 @@ def test_private_evidence_file_cannot_be_public_and_branch_scope_cannot_broaden(
     doc=layout('form_8')
     file=frappe.get_doc({'doctype':'File','file_name':'synthetic-stat.txt','file_url':'https://example.test/synthetic','is_private':0}).insert()
     evidence=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
-        'entry_date':'2020-01-01','employee':data['person'],'evidence_file':file.file_url,'entries':[{'field_key':'card_no','field_value':'TEST'}]})
+        'entry_date':'2020-01-01','employee':data['person'],'evidence_file':file.file_url,'entries':[{'field_key':'card_no','field_value':'TEST','value_status':'Evidence Entered'}]})
     with pytest.raises(frappe.PermissionError,match='private'):evidence.insert()
     with pytest.raises(frappe.ValidationError,match='Branch'):forms.preview_a4(doc.name,employee=data['person'],branch='Nonexistent Branch')
 
@@ -538,10 +538,10 @@ def test_form40_requitals_are_repeatable_and_render_as_separate_rows(data):
         "entry_date": "2026-10-02",
         "evidence_note": "TEST reviewed advance evidence",
         "entries": [
-            {"field_key": "worker_register_no", "field_value": "TEST-REG-40"},
-            {"field_key": "employee_name", "field_value": "TEST Worker"},
-            {"field_key": "advance_amount_date", "field_value": "1000 BDT / 2026-09-01"},
-            {"field_key": "remarks", "field_value": "TEST advance note"},
+            {"field_key": "worker_register_no", "field_value": "TEST-REG-40",'value_status':'Evidence Entered'},
+            {"field_key": "employee_name", "field_value": "TEST Worker",'value_status':'Evidence Entered'},
+            {"field_key": "advance_amount_date", "field_value": "1000 BDT / 2026-09-01",'value_status':'Evidence Entered'},
+            {"field_key": "remarks", "field_value": "TEST advance note",'value_status':'Evidence Entered'},
         ],
         "requitals": [
             {"amount": 250, "collection_date": "2026-09-30", "reference": "TEST-R1"},
@@ -555,10 +555,10 @@ def test_form40_requitals_are_repeatable_and_render_as_separate_rows(data):
         "entry_date": "2026-10-03",
         "evidence_note": "TEST advance awaiting first repayment",
         "entries": [
-            {"field_key": "worker_register_no", "field_value": "TEST-REG-41"},
-            {"field_key": "employee_name", "field_value": "TEST Worker 2"},
-            {"field_key": "advance_amount_date", "field_value": "500 BDT / 2026-09-15"},
-            {"field_key": "remarks", "field_value": "TEST unrepaid advance"},
+            {"field_key": "worker_register_no", "field_value": "TEST-REG-41",'value_status':'Evidence Entered'},
+            {"field_key": "employee_name", "field_value": "TEST Worker 2",'value_status':'Evidence Entered'},
+            {"field_key": "advance_amount_date", "field_value": "500 BDT / 2026-09-15",'value_status':'Evidence Entered'},
+            {"field_key": "remarks", "field_value": "TEST unrepaid advance",'value_status':'Evidence Entered'},
         ],
     }).insert()
     try:
@@ -716,7 +716,7 @@ def test_service_history_requires_row_identity_and_preserves_dates(data):
     doc=layout('form_7')
     record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
         'employee':data['person'],'entry_date':'2026-10-01','evidence_note':'TEST source-backed service history',
-        'entries':[{'field_key':'wage_effective','field_value':'2025-01-01','row_number':0}]})
+        'entries':[{'field_key':'wage_effective','field_value':'2025-01-01','row_number':0,'value_status':'Evidence Entered'}]})
     with pytest.raises(frappe.ValidationError,match='row numbers'):record.insert()
     record.entries[0].row_number=1
     record.insert()
@@ -800,7 +800,7 @@ def test_worker_manual_register_filters_canonical_employee_without_exposing_esta
     doc=layout('form_39')
     record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
         'employee':data['person'],'entry_date':'2026-01-01','evidence_note':'TEST worker-specific native identity and reviewed incident',
-        'entries':[{'field_key':'remarks','field_value':'TEST worker-specific reviewed facts'}]}).insert()
+        'entries':[{'field_key':'remarks','field_value':'TEST worker-specific reviewed facts','value_status':'Evidence Entered'}]}).insert()
     frappe.set_user(data['reviewer']);record.submit();frappe.set_user('Administrator')
     assert forms.preview_a4(doc.name,'2026-01-01','2026-01-31',employee=data['person'])['row_count']==1
     with pytest.raises(frappe.PermissionError):forms.preview_a4(doc.name,'2026-01-01','2026-01-31',employee=data['other'])
@@ -872,7 +872,7 @@ def test_native_evidence_choices_expose_companions_and_reject_unrelated_form_key
     assert {'national_id','grade'} <= {value['key'] for value in options['fields']}
     with pytest.raises(frappe.ValidationError,match='Unknown or native-owned'):
         frappe.get_doc({'doctype':'Workforce Statutory Record','company':company,'layout':form.name,
-            'employee':employee,'entry_date':'2026-09-01','entries':[{'field_key':'probation_terms','field_value':'TEST unrelated'}]}).insert()
+            'employee':employee,'entry_date':'2026-09-01','entries':[{'field_key':'probation_terms','field_value':'TEST unrelated','value_status':'Evidence Entered'}]}).insert()
 
 
 def test_service_book_same_date_different_employers_survive_but_conflicting_versions_block(data):
@@ -893,3 +893,34 @@ def test_service_book_same_date_different_employers_survive_but_conflicting_vers
     frappe.set_user(data['reviewer']);duplicate.submit();frappe.set_user('Administrator')
     with pytest.raises(frappe.ValidationError,match='Overlapping reviewed service-history'):
         forms._print_context(book.name,employee=data['person'])
+
+
+def test_unresolved_facts_cannot_become_submitted_worker_evidence(data):
+    book=layout('form_8')
+    record=frappe.get_doc({'doctype':'Workforce Statutory Record','layout':book.name,
+        'company':'Example Company A','employee':data['person'],'entry_date':'2026-09-01',
+        'evidence_note':'TEST reviewed source with one intentionally unresolved fact',
+        'entries':[{'field_key':'father_name','field_value':'TEST unresolved name','value_status':'Unresolved'}]}).insert()
+    frappe.set_user(data['reviewer'])
+    with pytest.raises(frappe.ValidationError,match='Review unresolved'):record.submit()
+    record.reload();record.entries[0].value_status='Evidence Entered';record.save();record.submit()
+    assert record.reviewed_by==data['reviewer']
+
+
+def test_external_original_can_be_reviewed_without_retyping_certificate_fields(data):
+    from frappe.utils.file_manager import save_file
+    import os
+    certificate=layout('form_26')
+    original=save_file('TEST-original-'+frappe.generate_hash(8)+'.txt',b'TEST externally issued original',None,None,is_private=1)
+    try:
+        record=frappe.get_doc({'doctype':'Workforce Statutory Record','layout':certificate.name,
+            'company':'Example Company A','employee':data['person'],'entry_date':'2026-09-01',
+            'evidence_note':'TEST independent original retention, no imitation certificate',
+            'reference_id':'TEST external issuer reference','evidence_file':original.file_url}).insert()
+        frappe.set_user(data['reviewer']);record.submit()
+        assert record.docstatus==1 and record.evidence_sha256 and not record.entries
+        with pytest.raises(frappe.ValidationError,match='externally issued'):
+            forms.preview_a4(certificate.name,'2026-09-01','2026-09-30')
+    finally:
+        path=original.get_full_path()
+        if os.path.exists(path):os.unlink(path)
