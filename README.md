@@ -25,7 +25,7 @@ See the [acceptance evidence](docs/white_label_migration.md#acceptance-follow-up
 
 Bangladesh statutory technical working copies now cover 35 catalog entries,
 including separate prescribed variants and four original-evidence-only entries.
-The expanded isolated application suite passed **933 tests, 2 skipped, 18
+The expanded isolated application suite passed **936 tests, 2 skipped, 18
 upstream warnings**; bilingual native A4 PDF and editable Word rendering,
 backed-up migration and disposable fresh installation were verified. The
 [coverage and field crosswalk](docs/bangladesh_statutory/coverage.md) and
