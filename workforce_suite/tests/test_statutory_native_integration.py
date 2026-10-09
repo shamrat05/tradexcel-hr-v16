@@ -854,6 +854,14 @@ def test_reviewed_original_fingerprint_rejects_replaced_and_non_image_content(mo
     file.get_content=lambda:b'TEST replaced'
     with pytest.raises(ValueError,match='changed'):evidence.checked_original('TEST-PRIVATE',digest)
     with pytest.raises(ValueError,match='PNG or JPEG'):evidence.checked_original('TEST-PRIVATE',image_only=True)
+    file.get_content=lambda:b'\x89PNG\r\n\x1a\nTEST corrupt payload'
+    with pytest.raises(ValueError,match='readable PNG or JPEG'):evidence.checked_original('TEST-PRIVATE',image_only=True)
+    from io import BytesIO
+    from PIL import Image
+    buffer=BytesIO();Image.new('RGB',(2,2),'white').save(buffer,format='PNG')
+    file.get_content=lambda:buffer.getvalue()
+    assert evidence.checked_original('TEST-PRIVATE',image_only=True)[0]==buffer.getvalue()
+
 
 
 def test_native_evidence_choices_expose_companions_and_reject_unrelated_form_keys(data):
@@ -865,3 +873,23 @@ def test_native_evidence_choices_expose_companions_and_reject_unrelated_form_key
     with pytest.raises(frappe.ValidationError,match='Unknown or native-owned'):
         frappe.get_doc({'doctype':'Workforce Statutory Record','company':company,'layout':form.name,
             'employee':employee,'entry_date':'2026-09-01','entries':[{'field_key':'probation_terms','field_value':'TEST unrelated'}]}).insert()
+
+
+def test_service_book_same_date_different_employers_survive_but_conflicting_versions_block(data):
+    book=layout('form_7')
+    for employer in ('TEST Employer A','TEST Employer B'):
+        record=frappe.get_doc({'doctype':'Workforce Statutory Record','layout':book.name,
+            'company':'Example Company A','employee':data['person'],'entry_date':'2026-09-01',
+            'evidence_note':'TEST independent historical service original',
+            'entries':[{'field_key':key,'field_value':value,'row_number':1,'value_status':'Evidence Entered',
+                        'source_reference':'TEST original employment history'} for key,value in {
+                'history_establishment':employer,'history_employer':employer,
+                'history_joined':'2020-01-01','history_left':'2020-06-30','history_left_reason':'TEST reviewed reason'}.items()]}).insert()
+        frappe.set_user(data['reviewer']);record.submit();frappe.set_user('Administrator')
+    _,_,context=forms._print_context(book.name,employee=data['person'])
+    entries=context['rows'][0]['_history']['employment_history']
+    assert len(entries)==2 and {entry['history_employer'] for entry in entries}=={'TEST Employer A','TEST Employer B'}
+    duplicate=frappe.copy_doc(record);duplicate.owner='Administrator';duplicate.entries[-1].field_value='TEST conflicting reason';duplicate.insert()
+    frappe.set_user(data['reviewer']);duplicate.submit();frappe.set_user('Administrator')
+    with pytest.raises(frappe.ValidationError,match='Overlapping reviewed service-history'):
+        forms._print_context(book.name,employee=data['person'])

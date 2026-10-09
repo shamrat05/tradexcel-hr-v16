@@ -64,8 +64,15 @@ def supplemental(layout, employees, start="", end=""):
             date_key = {"employment_history": "history_joined", "wage_history": "wage_effective", "leave_history": "service_leave_from", "conduct_history": "conduct_date"}.get(table)
             if date_key:
                 records.sort(key=lambda record: str(record.get(date_key) or ""))
-                dates = [record[date_key] for record in records if record.get(date_key)]
-                if len(dates) != len(set(dates)):
+                # A date is chronological order, not the whole identity: two
+                # employers or distinct conduct events can legitimately share it.
+                anchors = {"employment_history": ("history_establishment", "history_employer"),
+                           "wage_history": ("wage_post_card",),
+                           "leave_history": ("service_leave_to",),
+                           "conduct_history": ("conduct_details",)}.get(table, ())
+                identities = [tuple(str(record.get(key) or "").strip() for key in (date_key, *anchors))
+                              for record in records if record.get(date_key)]
+                if len(identities) != len(set(identities)):
                     frappe.throw("Overlapping reviewed service-history versions require explicit resolution.")
     return output
 
