@@ -189,3 +189,8 @@ Automatic Form 80/81 draft aggregation now yields to an existing draft manual ev
 ## Historical workforce-period aggregation — 2026-10-09
 
 Periodic draft aggregation now also counts employees with a native relieving date inside the Form 81 reporting period as an explicitly reviewable leaver total. Gender averages use submitted Attendance observations and native birth dates for adult classification; missing coverage, category distinctions and working-day totals remain actionable findings. No current headcount is relabeled as a historical average, and no resignation/dismissal classification is inferred without reviewed evidence.
+
+
+## Final periodic aggregation verification checkpoint — 2026-10-09
+
+The exact tree including historical leaver aggregation completed the isolated full Workforce Suite suite with **906 passed, 2 skipped, 15 warnings** in 842.18 seconds. This validates regression compatibility on the disposable site; it does not convert draft periodic returns into legally approved filings.
