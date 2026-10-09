@@ -201,7 +201,7 @@ def test_form24_three_prescribed_parts_have_independent_repeatable_rows():
 def test_word_embeds_supplied_native_logo_and_financial_evidence_is_not_payment_inference():
     import base64
     # Synthetic one-pixel PNG, independent of customer branding.
-    png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a6y8AAAAASUVORK5CYII=')
+    png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC')
     row={'_payment_rows':[{'worker':'TEST-W','state':'Payment Instructed','date':'2026-10-01','amount':123,'reference':'TEST-INSTRUCTION'}],
          '_rate_rows':[{'worker':'TEST-W','from':'2026-01-01','to':'2026-01-02','hours':2,'rate':10,'amount':20,'reference':'TEST-RATE'}]}
     for language in ('en','bn'):
