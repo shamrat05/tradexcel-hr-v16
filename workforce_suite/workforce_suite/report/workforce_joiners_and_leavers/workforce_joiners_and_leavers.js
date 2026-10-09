@@ -64,13 +64,14 @@ frappe.query_reports["Workforce Joiners and Leavers"] = {
         return value;
     },
     onload(report) {
+        workforce_suite.report_actions.begin(report);
         const hr_maker = ["Workforce Suite Manager", "HR User", "HR Manager"]
             .some((role) => frappe.user.has_role(role));
         if (hr_maker) {
-            report.page.add_inner_button(__("View Employee Onboardings"), () => {
+            report.workforce_actions.add(__("View Employee Onboardings"), () => {
                 frappe.set_route("List", "Employee Onboarding");
             }, __("Employee workflows"));
-            report.page.add_inner_button(__("View Employee Separations"), () => {
+            report.workforce_actions.add(__("View Employee Separations"), () => {
                 frappe.set_route("List", "Employee Separation");
             }, __("Employee workflows"));
         }

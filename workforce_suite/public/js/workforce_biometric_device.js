@@ -1,11 +1,11 @@
 frappe.ui.form.on("Workforce Biometric Device", {
   refresh(frm) {
-    if (frm.is_new()) return;
+    if (frm.is_new() || !frm.has_perm("write")) return;
 
     // Put the safe diagnostic first. Configuration writes are a secondary
     // device-management operation and stay available under a named group.
     frm.add_custom_button(__("Check Bridge Health"), () => {
-      frappe.call({
+      return frappe.call({
         method: "workforce_suite.api.check_device_bridge",
         args: { device_name: frm.doc.name },
         freeze: true,
@@ -14,7 +14,7 @@ frappe.ui.form.on("Workforce Biometric Device", {
     });
 
     frm.add_custom_button(__("Push Configuration to Bridge"), () => {
-      frappe.call({
+      return frappe.call({
         method: "workforce_suite.api.push_device_configuration",
         args: { device_name: frm.doc.name },
         freeze: true,

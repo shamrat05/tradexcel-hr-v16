@@ -1048,6 +1048,38 @@
    "label": "Bulk Shift Assignment",
    "link_to": "Shift Assignment Tool",
    "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Users & Roles",
+   "link_to": "User",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Role Profiles",
+   "link_to": "Role Profile",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "User Permissions",
+   "link_to": "User Permission",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "icon": "assign",
+   "label": "Site Announcements",
+   "link_to": "Navbar Settings",
+   "type": "DocType"
   }
  ],
  "title": "Workforce Suite",

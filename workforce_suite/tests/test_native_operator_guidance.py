@@ -45,7 +45,7 @@ def test_native_shared_completion_hides_the_guide_from_second_operator():
             with patch.object(frappe.db, 'exists', return_value=False), \
                  patch('frappe.custom.doctype.property_setter.property_setter.make_property_setter') as make:
                 install.ensure_operator_guidance()
-                assert make.call_args.args[3] == install.ATTENDANCE_REQUEST_GUIDANCE
+                assert make.call_args_list[0].args[3] == install.ATTENDANCE_REQUEST_GUIDANCE
     finally:
         frappe.set_user('Administrator')
         with patch.object(frappe, 'enqueue'), patch.object(frappe, 'in_test', True):
@@ -61,8 +61,11 @@ def test_persistent_help_has_no_completion_state_and_preserves_admin_override():
     with patch.object(frappe.db, 'exists', return_value=False), \
          patch('frappe.custom.doctype.property_setter.property_setter.make_property_setter') as make:
         install.ensure_operator_guidance()
-        make.assert_called_once_with('Attendance Request', 'explanation', 'description',
-                                    install.ATTENDANCE_REQUEST_GUIDANCE, 'Small Text')
+        make.assert_any_call('Attendance Request', 'explanation', 'description',
+                             install.ATTENDANCE_REQUEST_GUIDANCE, 'Small Text')
+        make.assert_any_call('Navbar Settings', 'announcement_widget', 'description',
+                             install.ANNOUNCEMENT_GUIDANCE, 'Small Text')
+        assert make.call_count == 2
     with patch.object(frappe.db, 'exists', return_value=True), \
          patch('frappe.custom.doctype.property_setter.property_setter.make_property_setter') as make:
         install.ensure_operator_guidance()

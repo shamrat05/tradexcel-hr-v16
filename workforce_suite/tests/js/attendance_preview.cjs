@@ -1,3 +1,4 @@
+const workforce_suite = {report_actions: {begin(report) {report.workforce_actions = {add: (...args) => report.page.add_inner_button(...args), primary: (...args) => report.page.set_primary_action(...args), is_current: () => true};}}};
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
@@ -12,7 +13,7 @@ const frappe = {
  call: options => { calls.push(options); return new Promise(resolve => {resolvePreview = resolve;}); },
  ui: {Dialog: class { constructor() {dialog=this; this.fields_dict={}; for(const key of ['action','explanation']) this.fields_dict[key]={$input:{on:(_,fn)=>{events[key]=fn;}}};this.fields_dict.preview={$wrapper:{html:()=>{}}};}get_value(k){return values[k];}get_values(){return values;}set_primary_action(label,fn){this.label=label;this.primary=fn;}show(){}hide(){} }}
 };
-vm.runInNewContext(fs.readFileSync(process.argv[2], 'utf8'), {frappe, __: x=>x});
+vm.runInNewContext(fs.readFileSync(process.argv[2], 'utf8'), {frappe, workforce_suite, __: x=>x});
 frappe.query_reports['Workforce Daily Attendance Board'].onload({
  page:{add_inner_button:(_,fn)=>{button=fn;}}, get_checked_items:()=>[{employee:'SYNTHETIC'}],
  get_filter_values:()=>({company:'Synthetic',attendance_date:'2026-09-01'}), refresh:()=>{}

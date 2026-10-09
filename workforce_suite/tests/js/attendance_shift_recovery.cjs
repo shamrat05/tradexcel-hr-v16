@@ -1,3 +1,4 @@
+const workforce_suite = {report_actions: {begin(report) {report.workforce_actions = {add: (...args) => report.page.add_inner_button(...args), primary: (...args) => report.page.set_primary_action(...args), is_current: () => true};}}};
 /*
  * TXUX-260930-006 offline UI contract for attendance/shift recovery.
  *
@@ -68,7 +69,7 @@ function loadDailyBoard() {
 			hide() { this.hidden = true; }
 		},
 	};
-	vm.runInNewContext(fs.readFileSync(DAILY, 'utf8'), { frappe, __ });
+	vm.runInNewContext(fs.readFileSync(DAILY, 'utf8'), { frappe, workforce_suite, __ });
 	let button = null;
 	frappe.query_reports['Workforce Daily Attendance Board'].onload({
 		page: { add_inner_button: (_label, fn) => { button = fn; } },
@@ -131,7 +132,7 @@ async function run() {
 	{
 		const { frappe, state } = baseMock();
 		frappe.model.can_read = (doctype) => doctype === 'Shift Assignment Tool';
-		vm.runInNewContext(fs.readFileSync(COVERAGE, 'utf8'), { frappe, __ });
+		vm.runInNewContext(fs.readFileSync(COVERAGE, 'utf8'), { frappe, workforce_suite, __ });
 		const def = frappe.query_reports['Workforce Shift Coverage'];
 		assert.equal(def.get_datatable_options({}).checkboxColumn, true);
 		let button = null;
@@ -205,7 +206,7 @@ async function run() {
 
 		// A role without tool read gets no button.
 		const denied = baseMock();
-		vm.runInNewContext(fs.readFileSync(COVERAGE, 'utf8'), { frappe: denied.frappe, __ });
+		vm.runInNewContext(fs.readFileSync(COVERAGE, 'utf8'), { frappe: denied.frappe, workforce_suite, __ });
 		let denied_button = null;
 		denied.frappe.query_reports['Workforce Shift Coverage'].onload({
 			page: { add_inner_button: (_l, fn) => { denied_button = fn; } },
@@ -227,7 +228,7 @@ async function run() {
 		for (const scenario of scenarios) {
 			const { frappe, state } = baseMock();
 			frappe.user.has_role = () => scenario.reviewer;
-			vm.runInNewContext(fs.readFileSync(CHECKIN, 'utf8'), { frappe, __ });
+			vm.runInNewContext(fs.readFileSync(CHECKIN, 'utf8'), { frappe, workforce_suite, __ });
 			const added = [];
 			state.form.handlers.refresh({
 				doc: { name: 'CHK-1', ...scenario.doc },
@@ -269,7 +270,7 @@ async function run() {
 		];
 		for (const scenario of scenarios) {
 			const { frappe, state } = baseMock();
-			vm.runInNewContext(fs.readFileSync(PERIOD, 'utf8'), { frappe, __ });
+			vm.runInNewContext(fs.readFileSync(PERIOD, 'utf8'), { frappe, workforce_suite, __ });
 			const buttons = [];
 			state.form.handlers.refresh({
 				doc: { name: 'PER-1', status: scenario.status, revision: 2, finalized_by: 'lead@example.test', finalized_at: '2026-09-29 10:00:00' },
@@ -301,7 +302,7 @@ async function run() {
 	{
 		const { frappe, state } = baseMock();
 		frappe.user.has_role = (role) => role === 'Workforce Suite Manager';
-		vm.runInNewContext(fs.readFileSync(TOOL, 'utf8'), { frappe, __ });
+		vm.runInNewContext(fs.readFileSync(TOOL, 'utf8'), { frappe, workforce_suite, __ });
 		const props = [];
 		const frm = {
 			doc: { action: 'Process Shift Requests' },

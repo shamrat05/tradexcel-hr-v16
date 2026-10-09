@@ -20,6 +20,7 @@ function host(roles = []) {
     const calls = { actions: [], forms: {}, routes: [], newDocs: [], messages: [] };
     const frappe = {
         query_reports: {},
+        model: {can_read: () => true, can_write: () => true, can_create: () => true},
         ui: { form: {
             on(doctype, handlers) { calls.forms[doctype] = handlers; },
         }},
@@ -54,7 +55,8 @@ function host(roles = []) {
             on() { return this; },
         },
     };
-    const context = vm.createContext({ frappe, __: (value) => value, console });
+    const workforce_suite = {report_actions: {begin(report) {report.workforce_actions = {add: (...args) => report.page.add_inner_button(...args), primary: (...args) => report.page.set_primary_action(...args), is_current: () => true};}}};
+    const context = vm.createContext({ frappe, workforce_suite, __: (value) => value, console });
     function load(relpath) {
         const fullpath = path.join(ROOT, relpath);
         const source = fs.readFileSync(fullpath, "utf8");
@@ -182,6 +184,7 @@ const reports = "workforce_suite/workforce_suite/report/";
     const h = formCase("workforce_suite/public/js/workforce_biometric_device.js", "Workforce Biometric Device");
     const frm = {
         is_new: () => false,
+        has_perm: () => true,
         doc: {name: "SYN-DEVICE-1"},
         add_custom_button: (label, action, group = "") => {
             h.calls.actions.push({label, action, group, kind: "toolbar"});
@@ -192,10 +195,11 @@ const reports = "workforce_suite/workforce_suite/report/";
         ["Check Bridge Health"], ["Push Configuration to Bridge", "Device actions"]
     ], "Health first; configuration write in explicit device group");
 }
-async function payrollForm(status, payment) {
+async function payrollForm(status, payment, write = true, read = true) {
     const h = formCase("workforce_suite/public/js/payroll_entry.js", "Payroll Entry");
     const frm = {
         doc: { custom_workforce_run_key: "SYN-RUN", docstatus: 1, name: "SYN-PAYROLL", status: "Submitted" },
+        has_perm: () => write,
         dashboard: { set_headline() {} },
         remove_custom_button() {},
         add_custom_button(label, action, group = "") {
@@ -203,6 +207,7 @@ async function payrollForm(status, payment) {
             return { addClass() {return this;} };
         },
     };
+    h.frappe.model.can_read = () => read;
     h.frappe.call = ({method}) => Promise.resolve({
         message: method.endsWith("get_payroll_accrual_reconciliation") ? status : payment,
     });
@@ -223,7 +228,7 @@ async function payrollForm(status, payment) {
         payment_journal_entry:"SYN-JE-1", bank_transactions:[{name:"SYN-BANK-1"}],
     });
     verifyActions(records.calls.actions, [
-        ["Open Payment Entry", "Payment records"],
+        ["Open Journal Entry", "Payment records"],
         ["Open Bank Transaction", "Payment records"],
     ], "Related payment records share a group rather than two toolbar buttons");
     records.calls.actions[0].action();
@@ -237,6 +242,16 @@ async function payrollForm(status, payment) {
         ["Retry Unsubmitted Salary Slips"]
     ], "Urgent payroll retry remains visible");
 
+    const denied = await payrollForm({status:"READY",safe_to_retry:false}, {
+        status:"READY_TO_PREPARE_PAYMENT"}, false, false);
+    verifyActions(denied.calls.actions, [], "Read-only users cannot prepare payment");
+    const hidden = await payrollForm({status:"READY",safe_to_retry:false}, {
+        status:"AWAITING_BANK_RECONCILIATION", payment_journal_entry:"SYN-JE",
+        bank_transactions:[{name:"SYN-BANK"}]}, false, false);
+    verifyActions(hidden.calls.actions, [], "Accounting routes require native read permission");
+    const device = formCase("workforce_suite/public/js/workforce_biometric_device.js", "Workforce Biometric Device");
+    device.calls.forms["Workforce Biometric Device"].refresh({is_new:()=>false,has_perm:()=>false});
+    verifyActions(device.calls.actions, [], "Read-only device user has no write-backed diagnostics");
     console.log(`Native action placement: ${checked} checks passed`);
 })().catch((error) => {
     console.error(error);
