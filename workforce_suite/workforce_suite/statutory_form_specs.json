@@ -3031,7 +3031,7 @@
       "source_pages": [
         1
       ],
-      "field_audit": "Distinct Form 40 register identified on the source page following Form 39: worker register identity, advance amount/payment date, requitals and collection dates, completion date and remarks.",
+      "field_audit": "Distinct Form 40 register identified on the source page following Form 39. Repeatable reviewed requital rows capture each repayment amount and collection date separately.",
       "legal_approved": false,
       "source_issue": "Form 40 is a separate prescribed register embedded in the downloaded Form 39 source PDF. Current-law and employer applicability review remain required before official use.",
       "columns": [
@@ -3090,12 +3090,12 @@
           "required_value": false
         },
         {
-          "field_key": "requitals",
-          "label_en": "Requitals, amount and collection date",
-          "label_bn": "পরিশোধের সংখ্যা, পরিমাণ ও আদায়ের তারিখ",
+          "field_key": "requital_amount",
+          "label_en": "Requital amount",
+          "label_bn": "পরিশোধের পরিমাণ",
           "required": false,
           "fieldtype": "Data",
-          "width_weight": 3,
+          "width_weight": 2,
           "required_value": false
         },
         {
@@ -3106,6 +3106,15 @@
           "fieldtype": "Data",
           "width_weight": 2,
           "required_value": false
+        },
+        {
+          "field_key": "requital_date",
+          "label_en": "Collection date",
+          "label_bn": "আদায়ের তারিখ",
+          "required": false,
+          "fieldtype": "Date",
+          "width_weight": 2,
+          "required_value": true
         },
         {
           "field_key": "remarks",

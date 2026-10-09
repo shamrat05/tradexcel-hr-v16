@@ -503,3 +503,41 @@ def test_concurrent_draft_profile_requests_create_one_profile_and_keep_scope(dat
         for row in frappe.get_all("Workforce Statutory Profile", filters=scope):
             frappe.delete_doc("Workforce Statutory Profile", row.name)
         frappe.db.commit()
+
+
+def test_form40_requitals_are_repeatable_and_render_as_separate_rows(data):
+    from workforce_suite.workforce_suite.statutory_forms import _read_manual
+    doc = layout("form_40")
+    record = frappe.get_doc({
+        "doctype": "Workforce Statutory Record",
+        "company": doc.company,
+        "layout": doc.name,
+        "entry_date": "2026-10-02",
+        "evidence_note": "TEST reviewed advance evidence",
+        "entries": [
+            {"field_key": "worker_register_no", "field_value": "TEST-REG-40"},
+            {"field_key": "employee_name", "field_value": "TEST Worker"},
+            {"field_key": "advance_amount_date", "field_value": "1000 BDT / 2026-09-01"},
+        ],
+        "requitals": [
+            {"amount": 250, "collection_date": "2026-09-30", "reference": "TEST-R1"},
+            {"amount": 250, "collection_date": "2026-10-01", "reference": "TEST-R2"},
+        ],
+    }).insert()
+    try:
+        frappe.set_user(data["reviewer"])
+        record.submit()
+        rows = _read_manual(doc, "2026-10-01", "2026-10-31")
+        assert len(rows) == 2
+        assert [row["requital_amount"] for row in rows] == [250, 250]
+        assert [str(row["requital_date"]) for row in rows] == ["2026-09-30", "2026-10-01"]
+        assert [row["remarks"] for row in rows] == ["TEST-R1", "TEST-R2"]
+    finally:
+        frappe.set_user("Administrator")
+        if frappe.db.exists(record.doctype, record.name):
+            current = frappe.get_doc(record.doctype, record.name)
+            if current.docstatus == 1:
+                current.cancel()
+            frappe.delete_doc(record.doctype, record.name)
+        frappe.delete_doc(doc.doctype, doc.name)
+        frappe.db.commit()

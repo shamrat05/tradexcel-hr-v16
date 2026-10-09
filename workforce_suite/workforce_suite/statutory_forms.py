@@ -375,11 +375,23 @@ def _read_manual(layout, from_date: str, to_date: str):
     for name in names:
         record = frappe.get_doc("Workforce Statutory Record", name.name)
         record.check_permission("read")
-        row = {cell.field_key: cell.field_value for cell in record.get("entries", [])}
-        row["_manual_record"] = record.name
-        row["reference_no"] = row.get("reference_no") or record.reference_id
-        row["record_date"] = row.get("record_date") or record.entry_date
-        rows.append(row)
+        base = {cell.field_key: cell.field_value for cell in record.get("entries", [])}
+        base["_manual_record"] = record.name
+        base["reference_no"] = base.get("reference_no") or record.reference_id
+        base["record_date"] = base.get("record_date") or record.entry_date
+        if layout.form_code == "form_40":
+            for requital in record.get("requitals") or []:
+                row = dict(base)
+                row["requital_amount"] = requital.amount
+                row["requital_date"] = requital.collection_date
+                details = " / ".join(
+                    value for value in (requital.reference, requital.remarks) if value
+                )
+                if details:
+                    row["remarks"] = details
+                rows.append(row)
+        else:
+            rows.append(base)
     return rows
 
 

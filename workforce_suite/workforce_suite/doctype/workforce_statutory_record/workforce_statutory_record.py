@@ -37,9 +37,23 @@ class WorkforceStatutoryRecord(Document):
             frappe.throw(_("Use native-source layouts for individual worker evidence."))
         if len(self.get("entries") or []) > 240:
             frappe.throw(_("Split large evidence records into separate entries."))
+        requitals = self.get("requitals") or []
+        if layout.form_code == "form_40":
+            if len(requitals) > 2000:
+                frappe.throw(_("Split large Form 40 repayment histories into separate evidence records."))
+            for row in requitals:
+                if float(row.amount or 0) <= 0:
+                    frappe.throw(_("Each Form 40 requital amount must be positive."))
+                if not row.collection_date:
+                    frappe.throw(_("Each Form 40 requital needs a collection date."))
+        elif requitals:
+            frappe.throw(_("Requital history is only valid for Form 40 evidence."))
         seen = set()
+        generated_requital_keys = {"requital_amount", "requital_date", "requital_reference", "requital_remarks"}
         for item in self.get("entries") or []:
             key = (item.field_key or "").strip()
+            if layout.form_code == "form_40" and key in generated_requital_keys:
+                frappe.throw(_("Form 40 repayment values must be entered in the Requital History table."))
             if not FIELD_KEY_RE.fullmatch(key) or key not in keys:
                 frappe.throw(_("Unknown or native-owned statutory evidence key: {0}").format(key))
             if key in seen:

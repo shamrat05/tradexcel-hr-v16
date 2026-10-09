@@ -15,6 +15,7 @@
   "entry_date",
   "reference_id",
   "entries",
+  "requitals",
   "evidence_file",
   "evidence_note",
   "employee",
@@ -66,6 +67,13 @@
    "label": "Entered Source Values",
    "options": "Workforce Statutory Value",
    "reqd": 1
+  },
+  {
+   "fieldname": "requitals",
+   "fieldtype": "Table",
+   "label": "Advance Requital History",
+   "options": "Workforce Statutory Requital",
+   "description": "Repeatable reviewed repayments for Form 40. Do not enter unverified payment facts."
   },
   {
    "fieldname": "evidence_file",

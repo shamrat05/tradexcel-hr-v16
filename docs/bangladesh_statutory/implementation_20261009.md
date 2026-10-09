@@ -157,3 +157,8 @@ On the isolated disposable Frappe v16 site workforce-statutory.localhost (separa
 ## Form 40 technical completion — 2026-10-09
 
 Form 40 is now represented as a distinct protected catalog entry and print-layout option. It is sourced from the separate Form 40 register appearing after Form 39 in the inspected source page, with worker register identity, advance amount/payment date, requitals and collection dates, recovery completion date and remarks. It remains a manually reviewed draft until current-law applicability, employer evidence and legal approval are completed; no advance or repayment is inferred from payroll.
+
+
+## Form 40 repayment-history correction — 2026-10-09
+
+The inspected Form 39/40 source page distinguishes Form 40 from Form 39 and shows a repeatable “each installment amount and collection date” column alongside the advance, total recovery date and remarks. Workforce Suite now keeps that history in a native child table (Workforce Statutory Requital) rather than a single free-text value. Each row requires a positive reviewed amount and collection date; references and notes remain attached to the rendered row. An advance may be recorded before its first repayment, while a non-Form-40 record cannot carry repayment rows. Export expands each reviewed repayment into its own row without changing the canonical payroll or financial ledgers. Form 39 and Form 40 regression coverage asserts their distinct damage-versus-advance field contracts. The form remains a technical draft pending current-law and employer evidence review.

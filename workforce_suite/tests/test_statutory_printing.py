@@ -53,6 +53,16 @@ def test_pdf_catalog_covers_all_catalog_entries():
             assert len(form["columns"]) <= 22
 
 
+def test_form_39_and_form_40_keep_distinct_register_meanings():
+    rows = {x["id"]: x for x in json.loads(SPECS.read_text())["entries"]}
+    damage = {x["field_key"] for x in rows["form_39"]["columns"]}
+    advance = {x["field_key"] for x in rows["form_40"]["columns"]}
+    assert {"damage_reason", "deduction_order", "recovered_on"} <= damage
+    assert {"advance_amount_date", "requital_amount", "requital_date"} <= advance
+    assert "damage_reason" not in advance
+    assert "advance_amount_date" not in damage
+
+
 def test_shared_pdf_contains_distinct_form_6_and_6a_regions():
     rows = {x["id"]: x for x in json.loads(SPECS.read_text())["entries"]}
     assert rows["form_6"]["source_sha256"] == rows["form_6a"]["source_sha256"]
