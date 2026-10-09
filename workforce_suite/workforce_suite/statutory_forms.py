@@ -387,6 +387,7 @@ def _read_manual(layout, from_date: str, to_date: str):
                 row = dict(base)
                 row["requital_amount"] = None
                 row["requital_date"] = None
+                row["_requital_required"] = False
                 rows.append(row)
                 continue
             original_remarks = base.get("remarks") or ""
@@ -394,6 +395,7 @@ def _read_manual(layout, from_date: str, to_date: str):
                 row = dict(base)
                 row["requital_amount"] = requital.amount
                 row["requital_date"] = requital.collection_date
+                row["_requital_required"] = True
                 details = " / ".join(
                     value for value in (requital.reference, requital.remarks) if value
                 )

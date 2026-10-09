@@ -506,7 +506,7 @@ def test_concurrent_draft_profile_requests_create_one_profile_and_keep_scope(dat
 
 
 def test_form40_requitals_are_repeatable_and_render_as_separate_rows(data):
-    from workforce_suite.workforce_suite.statutory_forms import _read_manual
+    from workforce_suite.workforce_suite.statutory_forms import _read_manual, _print_context
     doc = layout("form_40")
     record = frappe.get_doc({
         "doctype": "Workforce Statutory Record",
@@ -551,6 +551,11 @@ def test_form40_requitals_are_repeatable_and_render_as_separate_rows(data):
         assert rows[2]["requital_amount"] is None
         assert rows[2]["requital_date"] is None
         assert rows[2]["remarks"] == "TEST unrepaid advance"
+        _, _, preview_data = _print_context(doc.name, "2026-10-01", "2026-10-31")
+        assert not any(
+            finding.get("field") == "requital_date"
+            for finding in preview_data["findings"]
+        )
     finally:
         frappe.set_user("Administrator")
         for item in (record, empty_record):
