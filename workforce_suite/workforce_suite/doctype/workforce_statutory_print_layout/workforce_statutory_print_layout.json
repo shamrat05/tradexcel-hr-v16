@@ -72,7 +72,7 @@
   {
    "fieldname": "form_code",
    "fieldtype": "Select",
-   "options": "appointment_letter_sample\nform_6\nform_6a\nform_7\nform_8\nform_9\nform_19\nform_20\nform_22\nform_22a\nform_23\nform_24\nform_25a\nform_26\nform_26a\nform_27\nform_28\nform_32\nform_33\nform_34\nform_35_35a\nform_36\nform_37_37a_37b\nform_38\nform_39\nform_40\nform_80\nform_81\nschedule_7\nrule_353",
+   "options": "appointment_letter_sample\nform_6\nform_6a\nform_7\nform_8\nform_9\nform_19\nform_20\nform_22\nform_22a\nform_23\nform_24\nform_25a\nform_26\nform_26a\nform_27\nform_28\nform_32\nform_33\nform_34\nform_35_35a\nform_36\nform_37_37a_37b\nform_38\nform_39\nform_40\nform_80\nform_81\nschedule_7\nrule_353\nform_35\nform_35a\nform_37\nform_37a\nform_37b",
    "label": "DIFE Source Entry",
    "reqd": 1,
    "in_list_view": 1

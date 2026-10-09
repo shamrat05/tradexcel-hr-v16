@@ -30,19 +30,43 @@ def supplemental(layout, employees, start="", end=""):
     for item in records:
         doc = frappe.get_doc("Workforce Statutory Record", item.name)
         doc.check_permission("read")
+        if (doc.get("evidence_kind") or "Supplemental Facts") != "Supplemental Facts":
+            continue
         if doc.effective_to and getdate(doc.effective_to) < at:
             continue
         if not doc.reviewed_by or doc.reviewed_by == doc.owner:
             frappe.throw("Supplemental evidence needs an independent recorded reviewer.")
         row = output.setdefault(doc.employee, {"_evidence": []})
         row["_evidence"].append(doc.name)
+        from workforce_suite.workforce_suite.statutory_evidence_files import checked_original
+        if doc.evidence_file:
+            checked_original(doc.evidence_file, doc.get("evidence_sha256") or "")
+        if doc.get("portrait_file"):
+            row["_portrait_bytes"] = checked_original(doc.portrait_file, doc.get("portrait_sha256") or "", image_only=True)[0]
+            row["portrait_evidence"] = "Reviewed photograph"
+        from workforce_suite.workforce_suite.statutory_structure import repeated_keys, evidence_rows
+        history_keys = repeated_keys(layout.form_code)
+        projected = evidence_rows(doc.entries, layout.form_code)
+        for key, values in projected.get("_history", {}).items():
+            row.setdefault("_history", {}).setdefault(key, []).extend(values)
         for entry in doc.entries:
-            from workforce_suite.workforce_suite.doctype.workforce_statutory_record.workforce_statutory_record import SUPPLEMENTAL_FIELDS
-            if entry.field_key not in SUPPLEMENTAL_FIELDS:
+            if entry.field_key in history_keys:
+                continue
+            from workforce_suite.workforce_suite.doctype.workforce_statutory_record.workforce_statutory_record import permitted_supplemental_fields
+            allowed_fields = permitted_supplemental_fields(layout)
+            if entry.field_key not in allowed_fields:
                 frappe.throw("Evidence cannot override native identity, leave or financial fields.")
             if entry.field_key in row:
                 frappe.throw("Overlapping worker evidence: narrow or supersede the reviewed versions explicitly.")
             row[entry.field_key] = entry.field_value
+    for row in output.values():
+        for table, records in row.get("_history", {}).items():
+            date_key = {"employment_history": "history_joined", "wage_history": "wage_effective", "leave_history": "service_leave_from", "conduct_history": "conduct_date"}.get(table)
+            if date_key:
+                records.sort(key=lambda record: str(record.get(date_key) or ""))
+                dates = [record[date_key] for record in records if record.get(date_key)]
+                if len(dates) != len(set(dates)):
+                    frappe.throw("Overlapping reviewed service-history versions require explicit resolution.")
     return output
 
 
@@ -196,9 +220,10 @@ def aggregate_periodic_return(layout, start, end):
                  "attendance_date": ["between", [start, end]], "docstatus": 1},
         fields=["employee", "attendance_date", "status"],
         order_by="attendance_date asc",
-        limit_page_length=LIMIT + 1,
+        limit_page_length=500001,
     )
-    attendance = bounded(attendance, "submitted Attendance observations")
+    if len(attendance) > 500000:
+        frappe.throw("Too many annual Attendance observations; use reviewed aggregate evidence. Nothing was truncated.")
     if layout.form_code == "form_81":
         findings.append({
             "code": "LEAVER_CLASSIFICATION_REVIEW",
@@ -236,8 +261,11 @@ def aggregate_periodic_return(layout, start, end):
             at = getdate(day)
             male.append(sum(1 for person in people if person.gender == "Male" and adult(person, at)))
             female.append(sum(1 for person in people if person.gender == "Female" and adult(person, at)))
-        row["adult_male"] = round(sum(male) / len(male), 2)
-        row["adult_female"] = round(sum(female) / len(female), 2)
+        if all(person.date_of_birth and person.gender in {"Male", "Female"} for people in by_day.values() for person in people):
+            row["adult_male"] = round(sum(male) / len(male), 2)
+            row["adult_female"] = round(sum(female) / len(female), 2)
+        else:
+            findings.append({"code": "CLASSIFICATION_DATE_MISSING", "message": "Birth-date/gender evidence is incomplete; unknown adult categories were not counted as zero."})
         findings.extend([
             {"code": "ADULT_CLASSIFICATION_REVIEW",
              "message": "Adult classification is based on native gender and birth-date evidence; verify the applicable legal category before submission."},

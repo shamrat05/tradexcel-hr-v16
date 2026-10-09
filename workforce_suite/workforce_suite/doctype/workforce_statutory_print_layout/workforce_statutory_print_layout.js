@@ -88,3 +88,20 @@ async function open_print_options(frm, context = {}) {
     }
     return window.workforceStatutoryPrintLayout(frm.doc.name, context);
 }
+
+frappe.ui.form.on("Workforce Statutory Print Layout", {
+    refresh(frm) {
+        if (!frm.is_new() && ["form_80", "form_81"].includes(frm.doc.form_code) && frm.doc.docstatus !== 2) {
+            frm.add_custom_button(__("Prepare Return Evidence"), () => {
+                frappe.prompt([
+                    {fieldname: "from_date", fieldtype: "Date", label: __("Period From"), reqd: 1},
+                    {fieldname: "to_date", fieldtype: "Date", label: __("Period To"), reqd: 1}
+                ], (values) => frappe.call({
+                    method: "workforce_suite.workforce_suite.statutory_setup.prepare_periodic_evidence",
+                    type: "POST", args: {layout_name: frm.doc.name, ...values}, freeze: true,
+                    callback: (r) => { if (r.message?.records?.length) frappe.set_route("Form", "Workforce Statutory Record", r.message.records[0]); }
+                }), __("Reporting Period"));
+            }, __("Layout Tools"));
+        }
+    }
+});

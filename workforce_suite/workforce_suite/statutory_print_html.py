@@ -59,11 +59,13 @@ def render_html(
     columns = list(_entry(layout, "columns", []))
     if not columns:
         raise ValueError("Print layout has no approved columns")
-    if len(columns) > 22 and family != "Return":
+    if len(columns) > 22 and family == "Register":
         raise ValueError("A4 safety limit: no more than 22 columns per table")
     if len(columns) > 11 and orientation == "portrait" and family == "Register":
         raise ValueError("Wide register must use landscape A4 or fewer columns")
 
+    header_columns = [c for c in columns if _entry(c, "section_key") == "header"] if family == "Register" else []
+    columns = [c for c in columns if c not in header_columns]
     widths = [max(1, min(5, int(_entry(c, "width_weight", 1) or 1))) for c in columns]
     total = sum(widths)
     percents = [100.0 * w / total for w in widths]
@@ -105,6 +107,8 @@ def render_html(
         groups = {}
         for row in rows:
             identity = row.get("employee", "") if _entry(layout, "form_code") == "form_9" else ""
+            if header_columns:
+                identity = tuple(str(row.get(_entry(c,"field_key")) or "") for c in header_columns)
             groups.setdefault(identity, []).append(row)
         if not groups:
             groups[""] = []
@@ -118,12 +122,14 @@ def render_html(
                 empty_label = "এই সময়ের জন্য কোনো যাচাইকৃত রেকর্ড নেই।" if translated else "No verified records for this period."
                 body = [f'<tr><td colspan="{len(columns)}" class="empty">{empty_label}</td></tr>']
             worker = ""
-            if identity:
+            if identity and _entry(layout, "form_code") == "form_9":
                 row = records[0]
                 pairs = [("employee_name", "Worker", "শ্রমিক"), ("worker_register_no", "Worker register number", "শ্রমিকের রেজিস্টার নম্বর"),
                          ("card_no", "Card number", "কার্ড নম্বর"), ("designation", "Designation", "পদবি"),
                          ("department", "Department", "বিভাগ"), ("date_of_joining", "Joining date", "নিয়োগের তারিখ")]
                 worker = '<p class="company-note">' + " · ".join(_safe(bn if translated else en) + ": " + _safe(row.get(key)) for key, en, bn in pairs) + '</p>'
+            if header_columns and records:
+                worker += '<p class="company-note">' + ' · '.join(_safe(_entry(c, "label_bn" if translated else "label_en")) + ': ' + _safe(records[0].get(_entry(c,"field_key"))) for c in header_columns) + '</p>'
             tables.append('<section class="leave-entry">' + worker + "<table><colgroup>" + colgroups + "</colgroup><thead><tr>" + heads + "</tr></thead><tbody>" + "".join(body) + "</tbody></table></section>")
         table = "".join(tables)
     else:
@@ -142,15 +148,50 @@ def render_html(
             for col in columns:
                 section = str(_entry(col, "section_key", ""))
                 sections.setdefault(section, []).append(col)
+            from workforce_suite.workforce_suite.statutory_structure import matrices_for, matrix_keys, repeatable_for, history_pages
             for section, section_columns in sections.items():
+                matrices = matrices_for(_entry(layout, "form_code"), section)
+                repeated = repeatable_for(_entry(layout, "form_code"), section)
+                consumed = matrix_keys(matrices) | {key for table in repeated for key in table["keys"]}
                 cells = "".join(
                     '<tr><th scope="row">' + _safe(_entry(col, "label_bn" if translated else "label_en"))
                     + '</th><td>' + _safe(row.get(str(_entry(col, "field_key", "")), "")) + '</td></tr>'
-                    for col in section_columns)
+                    for col in section_columns if _entry(col, "field_key") not in consumed)
+                matrix_html = ""
+                if _entry(layout, "form_code") in {"form_6", "form_7"} and section in {"front", "identity"} and row.get("_portrait_bytes"):
+                    import base64
+                    encoded = base64.b64encode(row["_portrait_bytes"]).decode("ascii")
+                    mime = "image/png" if row["_portrait_bytes"].startswith(b"\x89PNG") else "image/jpeg"
+                    matrix_html += '<img style="width:30mm;max-height:38mm;object-fit:contain" src="data:' + mime + ';base64,' + encoded + '" alt="Worker portrait">'
+                for matrix in matrices:
+                    suffix = "bn" if translated else "en"
+                    heads = '<th></th>' + ''.join('<th>' + _safe(label) + '</th>' for label in matrix['column_labels_' + suffix])
+                    body = ''.join('<tr><th>' + _safe(label) + '</th>' + ''.join('<td>' + _safe(row.get(key)) + '</td>' for key in keys) + '</tr>'
+                                   for label, keys in zip(matrix['row_labels_' + suffix], matrix['cells']))
+                    matrix_html += '<h3>' + _safe(matrix['title_' + suffix]) + '</h3><table><thead><tr>' + heads + '</tr></thead><tbody>' + body + '</tbody></table>'
+                for repeated_table in repeated:
+                    records = row.get("_history", {}).get(repeated_table["id"], [])
+                    keys = repeated_table["keys"]
+                    labels = {str(_entry(c, "field_key")): _entry(c, "label_bn" if translated else "label_en") for c in section_columns}
+                    bands = [keys] if len(keys) <= 7 else [[keys[0]] + keys[offset:offset+6] for offset in range(1, len(keys), 6)]
+                    for page_index, page_rows in enumerate(history_pages(repeated_table, records)):
+                        if page_index:
+                            matrix_html += '<div class="book-continuation"><h2>' + _safe(repeated_table["title_bn" if translated else "title_en"]) + '</h2></div>'
+                        for band in bands:
+                            heads = ''.join('<th>' + _safe(labels[key]) + '</th>' for key in band)
+                            body = ''.join('<tr>' + ''.join('<td style="height:8mm">' + _safe(record.get(key)) + '</td>' for key in band) + '</tr>' for record in page_rows)
+                            if not page_rows:
+                                body = '<tr>' + ''.join('<td style="height:18mm"></td>' for key in band) + '</tr>'
+                            matrix_html += '<table><thead><tr>' + heads + '</tr></thead><tbody>' + body + '</tbody></table>'
                 section_heading = _safe(_entry(section_columns[0], "section_bn" if translated else "section_en", ""))
                 pages.append('<section class="document-entry">' + (f'<h2>{section_heading}</h2>' if section_heading else '')
-                             + '<table class="key-value"><tbody>' + cells + '</tbody></table></section>')
+                             + '<table class="key-value"><tbody>' + cells + '</tbody></table>' + matrix_html + '</section>')
         table = "".join(pages)
+    from workforce_suite.workforce_suite.statutory_structure import financial_appendices
+    for appendix_title, keys, labels, records in financial_appendices(rows, language):
+        heads = ''.join('<th>' + _safe(label) + '</th>' for label in labels)
+        body = ''.join('<tr>' + ''.join('<td>' + _safe(record.get(key)) + '</td>' for key in keys) + '</tr>' for record in records)
+        table += '<section class="leave-entry"><h2>' + _safe(appendix_title) + '</h2><table><thead><tr>' + heads + '</tr></thead><tbody>' + body + '</tbody></table></section>'
     footer = "\n".join(value for value in (letter_head_footer, footer, _safe(signatory)) if value)
     foot = f'<footer class="signatory">{footer}</footer>' if footer else ""
     density = "dense" if len(columns) >= 14 and family == "Register" else "normal"
@@ -189,6 +230,7 @@ th small {display:block; font-size:6.5pt; font-weight:400;}
 .key-value td {font-size:9pt;}
 .document-entry {break-after:page; page-break-after:always;}
 .document-entry:last-child {break-after:auto; page-break-after:auto;}
+.book-continuation {break-before:page; page-break-before:always;}
 .leave-entry + .leave-entry {break-before:page; page-break-before:always;}
 h2 {font-size:11pt; margin:0 0 3mm;}
 .empty {text-align:center; font-style:italic; padding:6mm;}

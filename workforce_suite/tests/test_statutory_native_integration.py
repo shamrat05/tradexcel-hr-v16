@@ -135,7 +135,8 @@ def test_submitted_attendance_weekly_hours_not_raw_checkins_or_draft(data):
 
 def test_manual_return_review_not_official_and_form81_full_section_export(data):
     doc=layout('form_81');entry=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
-        'entry_date':'2026-10-02','entries':[{'field_key':c.field_key,'field_value':'TEST '+c.field_key} for c in doc.columns],
+        'entry_date':'2026-10-02','reporting_from':'2026-01-01','reporting_to':'2026-12-31',
+        'entries':[{'field_key':c.field_key,'field_value':'0' if c.field_key in forms.spec_for('form_81').get('value_types',{}) and forms.spec_for('form_81')['value_types'][c.field_key]!='text' else 'TEST '+c.field_key,'value_status':'Evidence Entered'} for c in doc.columns],
         'evidence_note':'TEST reviewed establishment return evidence'}).insert()
     assert forms.preview_a4(doc.name,'2026-01-01','2026-12-31')['row_count']==0 # Draft evidence is not approved evidence.
     frappe.set_user(data['reviewer']);entry.reload();entry.submit();frappe.set_user('Administrator')
@@ -214,6 +215,24 @@ def test_native_salary_slip_mapping_reconciles_multiple_components_and_excludes_
     rows=forms._read_salary_slips(doc,'2026-09-01','2026-09-30',(data['person'],))
     assert len(rows)==1 and rows[0]['basic_wage']==slip.gross_pay and rows[0]['net_pay']==slip.net_pay
     assert 'worker_signature' not in rows[0] and rows[0]['_payment_status']!='PAID'
+    from workforce_suite.workforce_suite.statutory_financial_evidence import apply_financial_evidence
+    from frappe.utils.file_manager import save_file
+    file=save_file('TEST-receipt-'+token+'.txt',b'TEST synthetic payment evidence',None,None,is_private=1)
+    owned_path=Path(file.get_full_path())
+    try:
+        receipt=frappe.get_doc({'doctype':'Workforce Statutory Record','company':company,'layout':doc.name,
+            'employee':data['person'],'entry_date':'2026-10-01','evidence_kind':'Worker Payment Evidenced',
+            'reference_doctype':'Salary Slip','reference_name':slip.name,'payment_date':'2026-09-30',
+            'payment_amount':slip.net_pay,'payment_reference':'TEST-RECEIPT-'+token,
+            'evidence_file':file.file_url,'evidence_note':'TEST private original payment receipt'}).insert()
+        with pytest.raises(frappe.PermissionError):receipt.submit()
+        frappe.set_user(data['reviewer']);receipt.reload();receipt.submit();frappe.set_user('Administrator')
+        evidenced=apply_financial_evidence(doc,rows[0],'2026-09-01','2026-09-30')
+        assert evidenced['_worker_payment_status']=='Fully Evidenced'
+        assert evidenced['_financial_evidence']==[receipt.name]
+        assert evidenced['_payment_status']!='PAID'
+    finally:
+        owned_path.unlink(missing_ok=True)
     with pytest.raises(frappe.ValidationError,match='cuts'):forms._read_salary_slips(doc,'2026-09-02','2026-09-30',(data['person'],))
     doc.salary_mappings.pop();doc.save()
     with pytest.raises(frappe.ValidationError,match='Map every'):forms._read_salary_slips(doc,'2026-09-01','2026-09-30',(data['person'],))
@@ -284,8 +303,8 @@ def test_personal_pdf_filename_uses_normalized_context_not_ignored_caller_dates(
 def test_narrowed_operator_cannot_read_whole_establishment_manual_evidence(data, narrowing, actor):
     doc=layout('form_81')
     record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
-        'entry_date':'2026-01-01','evidence_note':'TEST establishment-wide sensitive evidence',
-        'entries':[{'field_key':'licence_no','field_value':'TEST-MANUAL-RESTRICTED'}]}).insert()
+        'entry_date':'2026-01-01','reporting_from':'2026-01-01','reporting_to':'2026-12-31','evidence_note':'TEST establishment-wide sensitive evidence',
+        'entries':[{'field_key':c.field_key,'field_value':('TEST-MANUAL-RESTRICTED' if c.field_key=='licence_no' else ('0' if forms.spec_for('form_81').get('value_types',{}).get(c.field_key) in ('integer','decimal','signed_decimal') else 'TEST evidence')), 'value_status':'Evidence Entered'} for c in doc.columns]}).insert()
     frappe.set_user(data['reviewer']);record.submit();frappe.set_user('Administrator')
     target=data['person'] if narrowing=='Employee' else frappe.db.get_value(narrowing,{'company':doc.company},'name')
     assert target
@@ -302,8 +321,8 @@ def test_branch_scoped_auditor_can_read_matching_manual_establishment(data):
     branch=frappe.db.get_value('Branch',{'company':'Example Company A'},'name');assert branch
     doc=layout('form_81',branch=branch)
     record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'branch':branch,'layout':doc.name,
-        'entry_date':'2026-01-01','evidence_note':'TEST reviewed establishment evidence',
-        'entries':[{'field_key':'licence_no','field_value':'TEST-MATCHING-BRANCH'}]}).insert()
+        'entry_date':'2026-01-01','reporting_from':'2026-01-01','reporting_to':'2026-12-31','evidence_note':'TEST reviewed establishment evidence',
+        'entries':[{'field_key':c.field_key,'field_value':('TEST-MATCHING-BRANCH' if c.field_key=='licence_no' else ('0' if forms.spec_for('form_81').get('value_types',{}).get(c.field_key) in ('integer','decimal','signed_decimal') else 'TEST evidence')), 'value_status':'Evidence Entered'} for c in doc.columns]}).insert()
     frappe.set_user(data['reviewer']);record.submit();frappe.set_user('Administrator')
     permission=frappe.get_doc({'doctype':'User Permission','user':data['auditor'],'allow':'Branch',
         'for_value':branch,'apply_to_all_doctypes':1}).insert();data['h'].permissions.append(permission.name)
@@ -321,7 +340,7 @@ def test_explicit_draft_setup_is_repeatable_preserves_edits_and_never_approves(d
     names = []
     try:
         first = prepare_draft_layout('Example Company A', 'form_8', '2026-10-01', branch.name)
-        names = first['layouts']; assert first['created'] and len(names) == 1
+        names = list(first['layouts']); assert first['created'] and len(names) == 1
         doc = frappe.get_doc('Workforce Statutory Print Layout', names[0])
         assert doc.docstatus == 0 and not doc.statutory_profile and not doc.approved_by
         assert not doc.title_bn and not doc.salary_mappings
@@ -334,8 +353,12 @@ def test_explicit_draft_setup_is_repeatable_preserves_edits_and_never_approves(d
         assert len(frappe.get_all(doc.doctype, filters={'company':doc.company,'branch':branch.name})) == 1
         with pytest.raises(frappe.ValidationError):
             prepare_draft_layout('Example Company B', 'form_8', '2026-10-01', branch.name)
-        with pytest.raises(frappe.ValidationError):
-            prepare_draft_layout('Example Company A', 'form_32', '2026-10-01', branch.name)
+        external = prepare_draft_layout('Example Company A', 'form_32', '2026-10-01', branch.name)
+        names.extend(external['layouts'])
+        certificate_layout=frappe.get_doc('Workforce Statutory Print Layout', external['layouts'][0])
+        assert certificate_layout.form_family=='Evidence Only'
+        with pytest.raises(frappe.ValidationError, match='externally issued'):
+            forms.preview_a4(certificate_layout.name, '2026-10-01', '2026-10-31')
         with pytest.raises(frappe.ValidationError):
             prepare_draft_layout('Example Company A', 'form_8', '', branch.name)
         frappe.set_user(data['auditor'])
@@ -659,3 +682,179 @@ def test_periodic_historical_selection_scope_duplicates_and_partial_coverage(mon
     denied = native.aggregate_periodic_return(layout, "2026-01-01", "2026-12-31")[0]
     assert denied["_findings"][0]["code"] == "EMPLOYEE_ACCESS"
     assert len(calls) == 2
+
+
+def test_periodic_checklist_is_idempotent_and_cannot_review_missing_fields(data):
+    from workforce_suite.workforce_suite.statutory_setup import prepare_periodic_evidence
+    doc=layout('form_80')
+    names=[]
+    try:
+        first=prepare_periodic_evidence(doc.name,'2026-01-01','2026-06-30');names=first['records']
+        again=prepare_periodic_evidence(doc.name,'2026-01-01','2026-06-30')
+        assert first['created'] and not again['created'] and again['records']==names
+        record=frappe.get_doc('Workforce Statutory Record',names[0])
+        assert all(c.field_label for c in record.entries)
+        assert any(c.value_status=='Unresolved' and not c.field_value for c in record.entries)
+        frappe.set_user(data['reviewer'])
+        with pytest.raises(frappe.ValidationError,match='justification'):record.submit()
+        record.reload();record.evidence_note='TEST reviewed sources'
+        with pytest.raises(frappe.ValidationError,match='required prescribed'):record.submit()
+        frappe.set_user(data['unscoped'])
+        with pytest.raises(frappe.PermissionError):prepare_periodic_evidence(doc.name,'2026-01-01','2026-06-30')
+    finally:
+        frappe.set_user('Administrator');frappe.db.rollback()
+        for name in names:
+            if frappe.db.exists('Workforce Statutory Record',name):
+                # This test owns the unsubmitted draft created by the explicit commit action.
+                frappe.db.delete('Workforce Statutory Value',{'parent':name})
+                frappe.db.delete('Workforce Statutory Record',{'name':name,'docstatus':0})
+        if frappe.db.exists(doc.doctype,doc.name):frappe.delete_doc(doc.doctype,doc.name)
+        frappe.db.commit()
+
+
+def test_service_history_requires_row_identity_and_preserves_dates(data):
+    doc=layout('form_7')
+    record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
+        'employee':data['person'],'entry_date':'2026-10-01','evidence_note':'TEST source-backed service history',
+        'entries':[{'field_key':'wage_effective','field_value':'2025-01-01','row_number':0}]})
+    with pytest.raises(frappe.ValidationError,match='row numbers'):record.insert()
+    record.entries[0].row_number=1
+    record.insert()
+    frappe.set_user(data['reviewer'])
+    with pytest.raises(frappe.ValidationError,match='each entered history'):record.submit()
+
+
+def test_payment_evidence_states_cannot_fabricate_money_or_cross_company(monkeypatch):
+    from types import SimpleNamespace
+    from workforce_suite.workforce_suite import statutory_financial_evidence as evidence
+    class Item(SimpleNamespace):
+        def get(self,key):return getattr(self,key,None)
+    source=Item(name='TEST-SLIP',company='TEST-A',employee='TEST-E',docstatus=1,net_pay=100,
+                check_permission=lambda *args:None)
+    class FakeFrappe:
+        PermissionError=PermissionError
+        @staticmethod
+        def get_doc(*args):return source
+        @staticmethod
+        def throw(message,*args):raise ValueError(message)
+    monkeypatch.setattr(evidence,'frappe',FakeFrappe)
+    record=Item(employee='TEST-E',company='TEST-A',evidence_kind='Worker Payment Evidenced',
+                reference_doctype='Salary Slip',reference_name='TEST-SLIP',payment_date='2026-10-01',
+                entry_date='2026-10-01',payment_reference='TEST-RECEIPT',payment_amount=100)
+    evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+    for amount in (0,-1,101,float('nan')):
+        record.payment_amount=amount
+        with pytest.raises(ValueError):evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+    record.payment_amount=100;record.company='TEST-B'
+    with pytest.raises(ValueError,match='scope'):evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+    record.company='TEST-A';source.docstatus=0
+    with pytest.raises(ValueError,match='submitted'):evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+
+
+def test_reviewed_period_calculation_requires_complete_calendar_attendance_and_independent_review(data):
+    from datetime import timedelta
+    from frappe.utils.file_manager import save_file
+    doc=layout('form_80')
+    token=frappe.generate_hash(8)
+    file=save_file('TEST-workforce-'+token+'.txt',b'TEST historical membership and establishment calendar',None,None,is_private=1)
+    owned_path=Path(file.get_full_path())
+    try:
+        for day in ('2026-01-01','2026-01-02'):
+            frappe.get_doc({'doctype':'Attendance','employee':data['person'],'company':doc.company,
+                'attendance_date':day,'status':'Present','working_hours':8}).insert().submit()
+        member={'employee':data['person'],'worker_category':'Adult Male','effective_from':'2026-01-01',
+                'effective_to':'2026-06-30','source_reference':'TEST source-backed membership including transfer review'}
+        record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
+            'entry_date':'2026-06-30','reporting_from':'2026-01-01','reporting_to':'2026-06-30',
+            'calculation_mode':'Reviewed Workforce Evidence','workforce_coverage_attested':1,
+            'workforce_members':[member],'evidence_file':file.file_url,'evidence_note':'TEST independently checked complete scope',
+            'entries':[{'field_key':c.field_key,'field_value':'TEST evidence','value_status':'Evidence Entered'} for c in doc.columns]}).insert()
+        assert record.calculation_provenance.startswith('Unresolved')
+        for n in range(181):
+            day=date(2026,1,1)+timedelta(days=n)
+            record.append('workforce_calendar',{'work_date':day,'is_working_day':n<2,'source_reference':'TEST reviewed calendar'})
+        record.save()
+        assert {c.field_key:c.field_value for c in record.entries}['adult_male']=='1.00'
+        assert 'submitted_attendance_sha256' in record.calculation_provenance
+        with pytest.raises(frappe.PermissionError):record.submit()
+        frappe.set_user(data['reviewer']);record.reload();record.submit();frappe.set_user('Administrator')
+        assert forms.preview_a4(doc.name,'2026-01-01','2026-06-30')['row_count']==1
+        # A missing third working-day observation remains unresolved, never absence.
+        draft=frappe.copy_doc(record);draft.docstatus=0;draft.name=None
+        draft.workforce_calendar[2].is_working_day=1;draft.insert()
+        assert draft.calculation_provenance.startswith('Unresolved')
+        frappe.set_user(data['reviewer'])
+        with pytest.raises(frappe.ValidationError,match='Incomplete submitted Attendance'):draft.submit()
+    finally:
+        owned_path.unlink(missing_ok=True)
+
+
+def test_worker_manual_register_filters_canonical_employee_without_exposing_establishment_evidence(data):
+    doc=layout('form_39')
+    record=frappe.get_doc({'doctype':'Workforce Statutory Record','company':doc.company,'layout':doc.name,
+        'employee':data['person'],'entry_date':'2026-01-01','evidence_note':'TEST worker-specific native identity and reviewed incident',
+        'entries':[{'field_key':'remarks','field_value':'TEST worker-specific reviewed facts'}]}).insert()
+    frappe.set_user(data['reviewer']);record.submit();frappe.set_user('Administrator')
+    assert forms.preview_a4(doc.name,'2026-01-01','2026-01-31',employee=data['person'])['row_count']==1
+    with pytest.raises(frappe.PermissionError):forms.preview_a4(doc.name,'2026-01-01','2026-01-31',employee=data['other'])
+
+
+def test_reviewed_overtime_rates_match_each_native_interval_and_currency_precision(monkeypatch):
+    from types import SimpleNamespace
+    from workforce_suite.workforce_suite import statutory_financial_evidence as evidence
+    class Item(SimpleNamespace):
+        def get(self,key):return getattr(self,key,None)
+    slip=Item(name='TEST-OT',employee='TEST-E',company='TEST-A',docstatus=1,
+        start_date='2026-09-01',end_date='2026-09-30',check_permission=lambda *a:None,
+        overtime_details=[Item(date='2026-09-02',overtime_duration=2),Item(date='2026-09-12',overtime_duration=3)])
+    salary=Item(check_permission=lambda *a:None,precision=lambda field:3)
+    class FakeFrappe:
+        PermissionError=PermissionError
+        @staticmethod
+        def get_doc(doctype,name):return slip if doctype=='Overtime Slip' else salary
+        @staticmethod
+        def get_list(*a,**kw):return [Item(name='TEST-AS',amount='80.005',salary_component='TEST-OT')]
+        @staticmethod
+        def throw(message,*a):raise ValueError(message)
+    monkeypatch.setattr(evidence,'frappe',FakeFrappe)
+    rates=[Item(effective_from='2026-09-01',effective_to='2026-09-09',hours=2,hourly_rate='10.001',amount='20.002',source_reference='TEST-first'),
+           Item(effective_from='2026-09-10',effective_to='2026-09-30',hours=3,hourly_rate='20.001',amount='60.003',source_reference='TEST-second')]
+    record=Item(employee='TEST-E',company='TEST-A',evidence_kind='Overtime Rate Breakdown',
+                reference_doctype='Overtime Slip',reference_name='TEST-OT',rates=rates)
+    evidence.validate_financial_evidence(record,Item(data_source='Attendance'))
+    rates[0].amount='20.003'
+    with pytest.raises(ValueError,match='amount'):evidence.validate_financial_evidence(record,Item(data_source='Attendance'))
+    rates[0].amount='20.002';rates[0].effective_to='2026-09-15'
+    with pytest.raises(ValueError,match='interval hours'):evidence.validate_financial_evidence(record,Item(data_source='Attendance'))
+    rates[0].effective_to='2026-09-09';rates[1].effective_from='2026-09-01'
+    with pytest.raises(ValueError,match='one evidenced'):evidence.validate_financial_evidence(record,Item(data_source='Attendance'))
+
+
+def test_reviewed_original_fingerprint_rejects_replaced_and_non_image_content(monkeypatch):
+    from types import SimpleNamespace
+    from workforce_suite.workforce_suite import statutory_evidence_files as evidence
+    file=SimpleNamespace(name='TEST-FILE',check_permission=lambda *a:None,get_content=lambda:b'TEST original')
+    class FakeFrappe:
+        PermissionError=PermissionError
+        @staticmethod
+        def get_doc(*a):return file
+        @staticmethod
+        def get_list(*a,**kw):return [SimpleNamespace(name='TEST-FILE',is_private=1)]
+        @staticmethod
+        def throw(message,*a):raise ValueError(message)
+    monkeypatch.setattr(evidence,'frappe',FakeFrappe)
+    _,digest,_=evidence.checked_original('TEST-PRIVATE')
+    file.get_content=lambda:b'TEST replaced'
+    with pytest.raises(ValueError,match='changed'):evidence.checked_original('TEST-PRIVATE',digest)
+    with pytest.raises(ValueError,match='PNG or JPEG'):evidence.checked_original('TEST-PRIVATE',image_only=True)
+
+
+def test_native_evidence_choices_expose_companions_and_reject_unrelated_form_keys(data):
+    from workforce_suite.workforce_suite.statutory_setup import evidence_field_options
+    company='Example Company A';employee=data['person']
+    form=layout('form_8',company)
+    options=evidence_field_options(form.name)
+    assert {'national_id','grade'} <= {value['key'] for value in options['fields']}
+    with pytest.raises(frappe.ValidationError,match='Unknown or native-owned'):
+        frappe.get_doc({'doctype':'Workforce Statutory Record','company':company,'layout':form.name,
+            'employee':employee,'entry_date':'2026-09-01','entries':[{'field_key':'probation_terms','field_value':'TEST unrelated'}]}).insert()

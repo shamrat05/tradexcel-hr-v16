@@ -38,8 +38,8 @@ def _layout(form_code: str):
 def test_pdf_catalog_covers_all_catalog_entries():
     catalog = json.loads(SPECS.read_text(encoding="utf-8"))
     forms = catalog["entries"]
-    assert len(forms) == 30
-    assert len({x["id"] for x in forms}) == 30
+    assert len(forms) == 35
+    assert len({x["id"] for x in forms}) == 35
     assert catalog["pdfs_audited"] == 28
     assert catalog["pdf_pages"] == 48
     for form in forms:
@@ -49,7 +49,7 @@ def test_pdf_catalog_covers_all_catalog_entries():
         assert form["kind"] in {"Register", "Document", "Return", "Evidence Only"}
         assert form["legal_approved"] is False
         assert 1 <= len(form["columns"])
-        if form["kind"] != "Return":
+        if form["kind"] == "Register":
             assert len(form["columns"]) <= 22
 
 

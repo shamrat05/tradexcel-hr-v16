@@ -36,6 +36,11 @@ def missing_findings(source, rows):
     findings = []
     if not rows:
         return [{"code": "NO_RECORDS", "message": "No authorized source records match this scope."}]
+    for index, row in enumerate(rows, 1):
+        for table in source.get("repeatable_tables", []):
+            if not row.get("_history", {}).get(table["id"]):
+                findings.append({"code": "HISTORY_MISSING", "row": index, "field": table["id"],
+                                 "message": "Reviewed prescribed history is missing: " + table["title_en"]})
     # Blank signature boxes are intentional in unsigned working copies.
     optional = {c["field_key"] for c in source["columns"]
                 if c.get("required_value") is False}

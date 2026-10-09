@@ -1,0 +1,34 @@
+{
+ "doctype": "DocType",
+ "name": "Workforce Statutory Workday",
+ "module": "Workforce Suite",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "fieldname": "work_date",
+   "fieldtype": "Date",
+   "label": "Calendar Date",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "is_working_day",
+   "fieldtype": "Check",
+   "label": "Reviewed Working Day",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source_reference",
+   "fieldtype": "Small Text",
+   "label": "Schedule / Holiday Source",
+   "in_list_view": 1,
+   "reqd": 1
+  }
+ ],
+ "field_order": [
+  "work_date",
+  "is_working_day",
+  "source_reference"
+ ]
+}

@@ -51,7 +51,7 @@ def _table(doc, labels, keys, rows):
 def render_docx(
     layout, rows, *, company_name: str, from_date: str = "",
     to_date: str = "", language: str = "en", company_address: str = "", signatory: str = "",
-    company_logo: str = "", letter_head_content: str = "", letter_head_footer: str = "",
+    company_logo: str = "", company_logo_bytes: bytes = b"", letter_head_content: str = "", letter_head_footer: str = "",
 ) -> bytes:
     from docx import Document
     from docx.enum.section import WD_ORIENT
@@ -62,7 +62,7 @@ def render_docx(
     if family == "Evidence Only":
         raise ValueError("An externally issued certificate cannot be generated")
     columns = list(_value(layout, "columns", []))
-    if not columns or (len(columns) > 22 and family != "Return"):
+    if not columns or (len(columns) > 22 and family == "Register"):
         raise ValueError("DOCX expects 1-22 reviewed columns")
     orientation = _value(layout, "orientation")
     if orientation not in ("Portrait", "Landscape"):
@@ -95,6 +95,11 @@ def render_docx(
         for language_font in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
             heading_fonts.set(qn(language_font), style.font.name)
 
+    if company_logo_bytes:
+        picture = doc.add_picture(BytesIO(company_logo_bytes), width=Mm(42))
+        if picture.height > Mm(18):
+            picture.width = int(picture.width * Mm(18) / picture.height)
+            picture.height = Mm(18)
     suffix = "বাংলা সম্পাদনাযোগ্য খসড়া — সরকারি দাখিল নয়" if language == "bn" else "EDITABLE WORKING COPY — NOT AN OFFICIAL FILING"
     if letter_head_content:
         from re import sub
@@ -112,6 +117,8 @@ def render_docx(
     if _value(layout, header_key):
         doc.add_paragraph(_text(_value(layout, header_key)))
 
+    header_columns = [c for c in columns if _value(c,"section_key") == "header"] if family == "Register" else []
+    columns = [c for c in columns if c not in header_columns]
     keys = [_text(_value(col, "field_key")) for col in columns]
     labels = [_text(_value(col, "label_bn" if language == "bn" else "label_en")) for col in columns]
     data = list(rows)
@@ -121,6 +128,8 @@ def render_docx(
             identity = ""
             if _value(layout, "form_code") == "form_9":
                 identity = " · ".join(_text(item.get(key)) for key in ("employee_name", "worker_register_no", "card_no", "designation", "department", "date_of_joining"))
+            if header_columns:
+                identity = ' · '.join(_text(_value(c,"label_bn" if language=='bn' else "label_en")) + ': ' + _text(item.get(_value(c,"field_key"))) for c in header_columns)
             groups.setdefault(identity, []).append(item)
         if not groups:
             groups[""] = []
@@ -171,16 +180,50 @@ def render_docx(
         for column in columns:
             groups.setdefault(_value(column, "section_key"), []).append(column)
         for item in items:
-            for group in groups.values():
+            for section_key, group in groups.items():
                 if index:
                     doc.add_page_break()
                 index += 1
                 title = _value(group[0], "section_bn" if language == "bn" else "section_en")
                 if title:
                     doc.add_heading(_text(title), 2)
+                if section_key in {"front", "identity"} and item.get("_portrait_bytes"):
+                    portrait = doc.add_picture(BytesIO(item["_portrait_bytes"]), width=Mm(30))
+                    if portrait.height > Mm(38):
+                        portrait.width = int(portrait.width * Mm(38) / portrait.height)
+                        portrait.height = Mm(38)
+                from workforce_suite.workforce_suite.statutory_structure import matrices_for, matrix_keys, repeatable_for, history_pages
+                matrices = matrices_for(_value(layout, "form_code"), section_key)
+                repeated = repeatable_for(_value(layout, "form_code"), section_key)
+                consumed = matrix_keys(matrices) | {key for table in repeated for key in table["keys"]}
                 _table(doc, ["বিষয়" if language == "bn" else "Field", "তথ্য" if language == "bn" else "Value"],
                        ["label", "value"], [{"label": _value(c, "label_bn" if language == "bn" else "label_en"),
-                       "value": _text(item.get(_value(c, "field_key")))} for c in group])
+                       "value": _text(item.get(_value(c, "field_key")))} for c in group if _value(c, "field_key") not in consumed])
+                for matrix in matrices:
+                    suffix = "bn" if language == "bn" else "en"
+                    doc.add_heading(matrix["title_" + suffix], 2)
+                    keys = ["category"] + [str(i) for i in range(len(matrix["column_labels_" + suffix]))]
+                    values = [{"category": label, **{str(i): item.get(key) for i, key in enumerate(fields)}}
+                              for label, fields in zip(matrix["row_labels_" + suffix], matrix["cells"])]
+                    _table(doc, ["শ্রেণি" if language == "bn" else "Category"] + matrix["column_labels_" + suffix], keys, values)
+                for repeated_table in repeated:
+                    keys = repeated_table["keys"]
+                    labels = {_value(c, "field_key"): _value(c, "label_bn" if language == "bn" else "label_en") for c in group}
+                    records = item.get("_history", {}).get(repeated_table["id"], [])
+                    bands = [keys] if len(keys) <= 7 else [[keys[0]] + keys[offset:offset+6] for offset in range(1, len(keys), 6)]
+                    if not records:
+                        doc.add_paragraph("পর্যালোচিত ইতিহাস প্রয়োজন" if language == "bn" else "Reviewed history required")
+                    for page_index, page_rows in enumerate(history_pages(repeated_table, records)):
+                        if page_index:
+                            doc.add_page_break()
+                            doc.add_heading(repeated_table["title_bn" if language == "bn" else "title_en"], 2)
+                        for band in bands:
+                            _table(doc, [labels[key] for key in band], band, page_rows or [{}])
+    from workforce_suite.workforce_suite.statutory_structure import financial_appendices
+    for appendix_title, keys, labels, records in financial_appendices(rows, language):
+        doc.add_page_break()
+        doc.add_heading(appendix_title, 2)
+        _table(doc, labels, keys, records)
     if letter_head_footer:
         from re import sub
         doc.add_paragraph(_text(sub("<[^>]+>", " ", letter_head_footer)).strip())

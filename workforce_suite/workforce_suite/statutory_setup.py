@@ -144,8 +144,6 @@ def prepare_draft_layout(company, form_code, effective_from, branch=""):
         if doc.get("company") != company:
             frappe.throw(_("Branch must belong to the selected Company."))
     source = spec_for(form_code)
-    if source["kind"] == "Evidence Only":
-        frappe.throw(_("This source is external evidence, not an employer-generated form."))
     # Serialize the explicit setup action across users/tabs, without creating a
     # new completion/state table or retaining private information in Redis keys.
     key = hashlib.sha256(f"{company}\0{branch}\0{form_code}".encode()).hexdigest()
@@ -196,3 +194,90 @@ def prepare_draft_layout(company, form_code, effective_from, branch=""):
         # This explicit action changes configuration only, never business data.
         frappe.db.commit()
         return {"created": True, "layouts": [doc.name]}
+
+
+@frappe.whitelist(methods=["POST"])
+def prepare_periodic_evidence(layout_name, from_date, to_date):
+    """Create one editable evidence checklist per layout and exact return period."""
+    if not frappe.has_permission("Workforce Statutory Record", "create"):
+        frappe.throw(_("You cannot enter statutory evidence."), frappe.PermissionError)
+    from workforce_suite.workforce_suite.statutory_forms import _scope_employees
+    from workforce_suite.workforce_suite.statutory_access import checked_profile
+    from workforce_suite.workforce_suite.statutory_export_policy import normalize_period
+    layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
+    layout.check_permission("read")
+    check_company(layout.company)
+    _scope_employees(layout)
+    if layout.form_code not in {"form_80", "form_81"} or layout.docstatus == 2:
+        frappe.throw(_("Choose a current Form 80 or Form 81 layout."))
+    try:
+        start, end = normalize_period(layout.form_code, layout.data_source, from_date, to_date)
+    except ValueError as exc:
+        frappe.throw(str(exc))
+    profile = checked_profile(layout, start, end)
+    key = hashlib.sha256(f"{layout.name}\0{start}\0{end}".encode()).hexdigest()
+    with frappe.cache.lock("workforce_statutory_return_setup:" + key, timeout=60, blocking_timeout=10):
+        table = frappe.qb.DocType("Workforce Statutory Record")
+        query = (frappe.qb.from_(table).select(table.name)
+                 .where((table.layout == layout.name) & (table.company == layout.company)
+                        & (table.reporting_from == start) & (table.reporting_to == end)
+                        & (table.docstatus != 2)).for_update())
+        try:
+            existing = query.run(as_dict=True)
+        except frappe.QueryDeadlockError:
+            frappe.db.rollback()
+            check_company(layout.company)
+            layout.check_permission("read")
+            if not frappe.has_permission("Workforce Statutory Record", "create"):
+                frappe.throw(_("You cannot enter statutory evidence."), frappe.PermissionError)
+            existing = query.run(as_dict=True)
+        for item in existing:
+            frappe.get_doc("Workforce Statutory Record", item.name).check_permission("read")
+        if existing:
+            return {"created": False, "records": [r.name for r in existing]}
+        values = {"reporting_year": start[:4]} if layout.form_code == "form_81" else {}
+        if profile:
+            values.update(establishment=profile.establishment_en, registration_no=profile.registration_no,
+                          licence_no=profile.licence_no, mailing_address=profile.address_en, industry=profile.industry_en)
+        record = frappe.get_doc({"doctype": "Workforce Statutory Record", "company": layout.company,
+            "layout": layout.name, "entry_date": end, "reporting_from": start, "reporting_to": end,
+            "entries": [{"field_key": c.field_key, "field_value": values.get(c.field_key, ""),
+                         "value_status": "Evidence Entered" if values.get(c.field_key) else "Unresolved",
+                         "source_reference": profile.name if profile and c.field_key in values else ""}
+                        for c in layout.columns]}).insert()
+        # Commit while holding the lock so the next request observes this draft.
+        frappe.db.commit()
+        return {"created": True, "records": [record.name]}
+
+
+@frappe.whitelist()
+def evidence_field_options(layout_name):
+    """Permission-scoped prescribed field choices for the native evidence editor."""
+    if not frappe.has_permission("Workforce Statutory Record", "create"):
+        frappe.throw(_("You cannot enter statutory evidence."), frappe.PermissionError)
+    layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
+    layout.check_permission("read")
+    check_company(layout.company)
+    from workforce_suite.workforce_suite.statutory_structure import repeatable_for, repeated_keys
+    from workforce_suite.workforce_suite.doctype.workforce_statutory_record.workforce_statutory_record import permitted_supplemental_fields
+    from workforce_suite.workforce_suite.statutory_forms import _scope_employees
+    if layout.data_source == "Manual":
+        _scope_employees(layout)
+    source = spec_for(layout.form_code)
+    permitted = {c["field_key"] for c in source["columns"]}
+    if layout.data_source != "Manual":
+        permitted = permitted_supplemental_fields(layout)
+    fields = [{"key": c["field_key"], "label": c["label_en"], "label_bn": c["label_bn"],
+               "section": c.get("section_key", ""), "required": c.get("required_value", True)}
+              for c in source["columns"] if c["field_key"] in permitted]
+    companions = {"national_id": ("National identity reference", "জাতীয় পরিচয়পত্রের রেফারেন্স"),
+                  "grade": ("Reviewed statutory grade", "পর্যালোচিত বিধিবদ্ধ গ্রেড"),
+                  "worker_register_no": ("Worker register number", "শ্রমিক রেজিস্টার নম্বর"),
+                  "card_no": ("Worker card number", "শ্রমিক কার্ড নম্বর"),
+                  "group_relay": ("Reviewed group / relay", "পর্যালোচিত দল/রিলে")}
+    known = {field["key"] for field in fields}
+    for key in sorted(permitted-known):
+        if key in companions:
+            fields.append({"key": key, "label": companions[key][0], "label_bn": companions[key][1],
+                           "section": "identity", "required": True})
+    return {"fields": fields, "tables": repeatable_for(layout.form_code)}

@@ -93,6 +93,13 @@ def main():
             ]
             assert any(col["field_key"] == marker_field for col in layout["columns"])
             rows[-1][marker_field] = final
+            for row in rows:
+                row["_history"] = {table["id"]: [{key: row.get(key, "SYN-HISTORY") for key in table["keys"]}]
+                                   for table in source.get("repeatable_tables", [])}
+            # The final prescribed value may belong to a repeatable history table.
+            for table in source.get("repeatable_tables", []):
+                if marker_field in table["keys"]:
+                    rows[-1]["_history"][table["id"]][-1][marker_field] = final
             html = renderer(layout, rows, company_name="Synthetic Test Company" if language == "en" else "পরীক্ষামূলক প্রতিষ্ঠান",
                 from_date="2026-10-01", to_date="2026-10-07", is_draft=True, language=language)
             pdf_path = OUTPUT / f"{code}_{language}_a4.pdf"

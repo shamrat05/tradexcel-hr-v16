@@ -34,14 +34,23 @@ def statutory_query_conditions(user=None, doctype=None):
         condition &= table.generated_by == user
     if doctype == "Workforce Statutory Record":
         narrowed, branches = _manual_scope(user)
-        options = {}
-        if narrowed:
-            options["filters"] = {"data_source": ["!=", "Manual"]}
-        elif branches:
-            options["or_filters"] = [["data_source", "!=", "Manual"], ["branch", "in", branches]]
+        # Native layout access always applies. Employee-linked manual records
+        # may use native worker scope; unlinked establishment returns cannot.
         condition &= table.layout.isin(frappe.qb.get_query(
             "Workforce Statutory Print Layout", fields=["name"], ignore_permissions=False,
-            user=user, db_query_compat=True, **options))
+            user=user, db_query_compat=True))
+        if narrowed or branches:
+            from workforce_suite.workforce_suite.report_scope import permitted_employee_query
+            worker = table.employee.isin(permitted_employee_query(user)) if frappe.has_permission("Employee", "read", user=user) else table.name.isnull()
+            nonmanual = table.layout.isin(frappe.qb.get_query(
+                "Workforce Statutory Print Layout", fields=["name"], filters={"data_source": ["!=", "Manual"]},
+                ignore_permissions=False, user=user, db_query_compat=True))
+            allowed = nonmanual | worker
+            if branches and not narrowed:
+                allowed |= table.layout.isin(frappe.qb.get_query(
+                    "Workforce Statutory Print Layout", fields=["name"], filters={"branch": ["in", branches]},
+                    ignore_permissions=False, user=user, db_query_compat=True))
+            condition &= allowed
     return condition.get_sql(quote_char="`", with_namespace=True)
 
 
@@ -63,7 +72,7 @@ def statutory_has_permission(doc, ptype=None, user=None, **kwargs):
             return False
         layout = frappe.db.get_value("Workforce Statutory Print Layout", doc.layout,
                                    ["data_source", "branch"], as_dict=True)
-        if layout and layout.data_source == "Manual":
+        if layout and layout.data_source == "Manual" and not doc.get("employee"):
             narrowed, branches = _manual_scope(user)
             if narrowed or (branches and layout.branch not in branches):
                 return False

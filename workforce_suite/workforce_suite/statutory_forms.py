@@ -27,6 +27,7 @@ from workforce_suite.workforce_suite.statutory_print_html import render_html
 
 SPECS_PATH = Path(__file__).with_name("statutory_form_specs.json")
 MAX_PRINT_ROWS = 2000
+WORKER_MANUAL_FORMS = frozenset({"form_6a", "form_19", "form_23", "form_26a", "form_27", "form_28", "form_33", "form_36", "form_39", "form_40"})
 FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 
 # Company-specific Salary Components MUST be mapped by the human editor.
@@ -111,7 +112,7 @@ def _scope_employees(
     """
     if employee and include_all:
         frappe.throw(_("Choose either one employee or all matching employees."))
-    if layout.data_source == "Manual":
+    if layout.data_source == "Manual" and not (layout.form_code in WORKER_MANUAL_FORMS and (employee or department or employment_type or branch)):
         from frappe.permissions import get_user_permissions
         scopes = get_user_permissions(frappe.session.user)
         if scopes.get("Employee") or scopes.get("Department") or (scopes.get("Branch") and not layout.branch):
@@ -358,13 +359,14 @@ def _read_salary_slips(layout, from_date: str, to_date: str, allowed: tuple[str,
     return output
 
 
-def _read_manual(layout, from_date: str, to_date: str):
+def _read_manual(layout, from_date: str, to_date: str, allowed=None):
     names = frappe.get_list(
         "Workforce Statutory Record",
         filters={
             "company": layout.company, "layout": layout.name,
             "entry_date": ["between", [from_date, to_date]],
             "docstatus": 1,
+            **({"employee": ["in", allowed]} if allowed is not None else {}),
         },
         fields=["name"], order_by="entry_date asc, name asc",
         limit_page_length=MAX_PRINT_ROWS + 1,
@@ -390,7 +392,21 @@ def _read_manual(layout, from_date: str, to_date: str):
     for name in names:
         record = frappe.get_doc("Workforce Statutory Record", name.name)
         record.check_permission("read")
-        base = {cell.field_key: cell.field_value for cell in record.get("entries", [])}
+        if record.evidence_file:
+            from workforce_suite.workforce_suite.statutory_evidence_files import checked_original
+            checked_original(record.evidence_file, record.get("evidence_sha256") or "")
+        if layout.form_code in {"form_80", "form_81"}:
+            if str(record.get("reporting_from") or "") != from_date or str(record.get("reporting_to") or "") != to_date:
+                continue
+        from workforce_suite.workforce_suite.statutory_structure import evidence_rows
+        base = evidence_rows(record.get("entries", []), layout.form_code)
+        if record.employee:
+            person = frappe.get_doc("Employee", record.employee)
+            person.check_permission("read")
+            base["employee"] = person.name
+            for key, value in {"employee_name": person.employee_name, "worker_name": person.employee_name,
+                               "date_of_joining": person.date_of_joining, "joining_date": person.date_of_joining}.items():
+                base.setdefault(key, value)
         base["_manual_record"] = record.name
         base["reference_no"] = base.get("reference_no") or record.reference_id
         base["record_date"] = base.get("record_date") or record.entry_date
@@ -421,12 +437,14 @@ def _read_manual(layout, from_date: str, to_date: str):
                 rows.append(row)
         else:
             rows.append(base)
+    if layout.form_code in {"form_80", "form_81"} and len(rows) > 1:
+        frappe.throw(_("Multiple reviewed returns cover this establishment and period. Resolve versions before export."))
     return rows
 
 
 def _source_rows(layout, start, end, allowed):
     if layout.data_source == "Manual":
-        return _read_manual(layout, start, end)
+        return _read_manual(layout, start, end, allowed if allowed else None)
     if layout.data_source == "Employee":
         return _read_employees(layout.company, start, end, allowed)
     if layout.data_source == "Attendance":
@@ -478,7 +496,10 @@ def _print_context(
         department=department, employment_type=employment_type,
         include_all=include_all,
     )
-    rows = _source_rows(layout, start, end, allowed)
+    if layout.data_source == "Manual" and layout.form_code in WORKER_MANUAL_FORMS and (employee or department or employment_type or branch) and not allowed:
+        rows = []
+    else:
+        rows = _source_rows(layout, start, end, allowed)
     if len(rows) > MAX_PRINT_ROWS:
         frappe.throw(_("Too many records for a single printable document."))
     evidence = supplemental(layout, allowed, start, end) if layout.data_source != "Manual" else {}
@@ -503,12 +524,16 @@ def _print_context(
             row["appointment_date"] = row.get("date_of_joining")
             row["job_title"] = row.get("designation")
             row["place_of_work"] = row.get("branch")
-        if profile and layout.data_source == "Manual":
+        if profile:
             for key, value in {"establishment": profile.establishment_bn if language == "bn" else profile.establishment_en,
                                "registration_no": profile.registration_no, "licence_no": profile.licence_no,
                                "mailing_address": profile.address_bn if language == "bn" else profile.address_en,
                                "industry": profile.industry_bn if language == "bn" else profile.industry_en}.items():
                 row.setdefault(key, value)
+    if layout.form_code in {"form_34", "form_38"}:
+        from workforce_suite.workforce_suite.statutory_financial_evidence import apply_financial_evidence
+        for row in rows:
+            apply_financial_evidence(layout, row, start, end)
     findings = missing_findings(spec, rows)
     for row in rows:
         findings.extend(row.get("_findings", []))
@@ -537,6 +562,14 @@ def _print_context(
         letter_head = get_letter_head(company_doc, False, letter_head_name) or {}
         letter_head_content = letter_head.get("content") or ""
         letter_head_footer = letter_head.get("footer") or ""
+    company_logo_bytes = b""
+    if company_logo and company_logo.startswith(("/files/", "/private/files/")):
+        files = frappe.get_list("File", filters={"file_url": company_logo}, fields=["name"], limit_page_length=2)
+        if len(files) == 1:
+            file_doc = frappe.get_doc("File", files[0].name)
+            file_doc.check_permission("read")
+            if (file_doc.file_name or "").lower().endswith((".png", ".jpg", ".jpeg")):
+                company_logo_bytes = file_doc.get_content()
     html = render_html(
         layout, rows, company_name=company_name or layout.company,
         company_address=company_address, signatory=signatory,
@@ -549,7 +582,7 @@ def _print_context(
         "rows": rows, "company_name": company_name or layout.company,
         "from_date": start, "to_date": end, "language": language, "findings": findings,
         "company_address": company_address, "signatory": signatory,
-        "company_logo": company_logo, "letter_head_content": letter_head_content,
+        "company_logo": company_logo, "company_logo_bytes": company_logo_bytes, "letter_head_content": letter_head_content,
         "letter_head_footer": letter_head_footer,
         "scope": {"employee": employee, "branch": branch or layout.branch, "department": department,
                   "employment_type": employment_type, "include_all": include_all},
@@ -570,7 +603,7 @@ def export_options(layout_name: str):
         "form_code": layout.form_code,
         "period_mode": period_mode(layout.form_code, layout.data_source),
         "languages": list(available_languages(layout)),
-        "allow_worker_filters": layout.data_source != "Manual",
+        "allow_worker_filters": layout.data_source != "Manual" or layout.form_code in WORKER_MANUAL_FORMS,
         "employee_required": layout.form_family == "Document" and layout.data_source == "Employee",
         "docx_working_copy": True,
     }
@@ -641,7 +674,7 @@ def download_docx(
         layout, data["rows"], company_name=data["company_name"],
         from_date=data["from_date"], to_date=data["to_date"], language=data["language"],
         company_address=data["company_address"], signatory=data["signatory"],
-        company_logo=data.get("company_logo", ""), letter_head_content=data.get("letter_head_content", ""),
+        company_logo=data.get("company_logo", ""), company_logo_bytes=data.get("company_logo_bytes", b""), letter_head_content=data.get("letter_head_content", ""),
         letter_head_footer=data.get("letter_head_footer", ""),
     )
     _audit_generation(layout, data, "DOCX", payload)
@@ -658,7 +691,7 @@ def _audit_generation(layout, data, output_format, payload):
     references = []
     for row in data["rows"]:
         references.append({key: row[key] for key in (
-            "employee", "salary_slip", "_attendance", "_overtime", "_evidence", "_leave_application", "_manual_record"
+            "employee", "salary_slip", "_attendance", "_overtime", "_evidence", "_leave_application", "_manual_record", "_financial_evidence", "_period_provenance"
         ) if key in row})
     previous = getattr(frappe.flags, "statutory_generation", False)
     frappe.flags.statutory_generation = True
