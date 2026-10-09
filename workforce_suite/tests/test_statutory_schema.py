@@ -121,3 +121,20 @@ def test_statutory_branding_uses_optional_native_logo_and_letterhead():
     plain = render_html(doc, [], company_name="Synthetic")
     assert '<img class="company-logo"' not in plain
     assert "Confidential footer" not in plain
+
+
+def test_form40_collection_date_is_required_only_for_actual_repayments():
+    source = next(item for item in CAT["entries"] if item["id"] == "form_40")
+    rows = [
+        {"serial_no": 1, "_requital_required": False,
+         "requital_amount": None, "requital_date": None},
+        {"serial_no": 2, "_requital_required": True,
+         "requital_amount": 100, "requital_date": None},
+        {"serial_no": 3, "_requital_required": True,
+         "requital_amount": 100, "requital_date": "2026-10-01"},
+        # Without adapter proof that this is an unrepaid advance, fail closed.
+        {"serial_no": 4, "requital_amount": 100, "requital_date": None},
+    ]
+    findings = missing_findings(source, rows)
+    assert [item["row"] for item in findings
+            if item.get("field") == "requital_date"] == [2, 4]

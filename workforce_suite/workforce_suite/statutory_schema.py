@@ -45,7 +45,7 @@ def missing_findings(source, rows):
             # Form 40's collection date is conditional: an advance may be
             # reviewed before its first repayment. Actual repayment rows mark
             # the field as required in the manual adapter.
-            if source.get("id") == "form_40" and key == "requital_date" and not row.get("_requital_required"):
+            if source.get("id") == "form_40" and key == "requital_date" and row.get("_requital_required") is False:
                 continue
             if key not in optional and row.get(key) in (None, ""):
                 findings.append({"code": "MISSING_VALUE", "row": index,

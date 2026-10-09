@@ -556,6 +556,18 @@ def test_form40_requitals_are_repeatable_and_render_as_separate_rows(data):
             finding.get("field") == "requital_date"
             for finding in preview_data["findings"]
         )
+        # Exercise the final preview gate too: an actual repayment with a
+        # missing date must retain its finding, unlike the unrepaid advance.
+        incomplete_rows = deepcopy(rows)
+        incomplete_rows[0]["requital_date"] = None
+        with patch.object(forms, "_source_rows", return_value=incomplete_rows):
+            _, _, incomplete_preview = _print_context(
+                doc.name, "2026-10-01", "2026-10-31"
+            )
+        assert [
+            finding["row"] for finding in incomplete_preview["findings"]
+            if finding.get("field") == "requital_date"
+        ] == [1]
     finally:
         frappe.set_user("Administrator")
         for item in (record, empty_record):
