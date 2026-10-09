@@ -77,8 +77,10 @@ def validate_financial_evidence(record, layout):
         if getdate(record.payment_date) > getdate(record.entry_date):
             frappe.throw('Evidence cannot attest a future payment or acknowledgement.')
         value = Decimal(str(record.get('payment_amount') or 0))
-        if not value.is_finite() or value <= 0 or value > Decimal(str(source.net_pay)):
-            frappe.throw('Evidence amount must be positive and cannot exceed the linked net wages.')
+        net = Decimal(str(source.net_pay))
+        zero_acknowledgement = kind == 'Worker Acknowledgement' and value == 0 and net == 0
+        if not value.is_finite() or (value <= 0 and not zero_acknowledgement) or value > net:
+            frappe.throw('Evidence amount must be positive and cannot exceed linked net wages, except an acknowledgement of exactly zero native net pay.')
 
 
 def reviewed_financial_evidence(layout, employee, source_names, start, end):

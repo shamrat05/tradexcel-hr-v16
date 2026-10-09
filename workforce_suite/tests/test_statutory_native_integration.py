@@ -749,6 +749,13 @@ def test_payment_evidence_states_cannot_fabricate_money_or_cross_company(monkeyp
     with pytest.raises(ValueError,match='scope'):evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
     record.company='TEST-A';source.docstatus=0
     with pytest.raises(ValueError,match='submitted'):evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+    source.docstatus=1;source.net_pay=0;record.payment_amount=0;record.evidence_kind='Worker Acknowledgement'
+    evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+    record.evidence_kind='Worker Payment Evidenced'
+    with pytest.raises(ValueError,match='positive'):evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+    source.net_pay=100;record.evidence_kind='Worker Acknowledgement'
+    with pytest.raises(ValueError,match='positive'):evidence.validate_financial_evidence(record,Item(data_source='Salary Slip'))
+
 
 
 def test_reviewed_period_calculation_requires_complete_calendar_attendance_and_independent_review(data):
