@@ -252,6 +252,46 @@ async function payrollForm(status, payment, write = true, read = true) {
     const device = formCase("workforce_suite/public/js/workforce_biometric_device.js", "Workforce Biometric Device");
     device.calls.forms["Workforce Biometric Device"].refresh({is_new:()=>false,has_perm:()=>false});
     verifyActions(device.calls.actions, [], "Read-only device user has no write-backed diagnostics");
+    // Delayed responses must not add actions for an earlier refresh/document.
+    const stale = formCase("workforce_suite/public/js/payroll_entry.js", "Payroll Entry");
+    const pending = [];
+    stale.frappe.call = () => new Promise(resolve => pending.push(resolve));
+    const form = {
+        doc: {name:"SYN-ONE",docstatus:1,custom_workforce_run_key:"SYN-RUN"},
+        has_perm: () => true,
+        remove_custom_button() {}, dashboard: {set_headline() {}},
+        add_custom_button(label) {stale.calls.actions.push(label);return {addClass() {}};},
+    };
+    const refresh = stale.calls.forms["Payroll Entry"].refresh;
+    refresh(form); refresh(form);
+    pending[0]({message:{safe_to_retry:true,draft_slip_count:1}});
+    await Promise.resolve();
+    assert.deepEqual(stale.calls.actions, [], "out-of-order refresh cannot add a stale finalize action"); checked++;
+    pending[1]({message:{status:"READY"}});
+    await Promise.resolve();
+    assert.equal(pending.length,3);
+    refresh(form);
+    pending[2]({message:{status:"READY_TO_PREPARE_PAYMENT"}});
+    await Promise.resolve();
+    assert.deepEqual(stale.calls.actions, [], "out-of-order payment response cannot add Prepare Payment"); checked++;
+    form.doc.name = "SYN-TWO";
+    pending[3]({message:{safe_to_retry:true,draft_slip_count:1}});
+    await Promise.resolve();
+    assert.deepEqual(stale.calls.actions, [], "old document response cannot add an action to a different document"); checked++;
+
+    for (const [user,roles,status,visible] of [
+        ["Administrator",[],1,true],
+        ["synthetic@example.test",["Workforce Payroll Manager"],1,true],
+        ["synthetic@example.test",["Workforce Employee/Worker"],1,false],
+        ["synthetic@example.test",["Workforce Payroll Manager"],0,false],
+    ]) {
+        const slip = host(roles);
+        slip.frappe.session.user = user;
+        slip.load("workforce_suite/public/js/salary_slip_adjustments.js");
+        slip.calls.forms["Salary Slip"].refresh({doc:{docstatus:status},add_custom_button:label=>slip.calls.actions.push(label)});
+        assert.equal(slip.calls.actions.includes("Review Payroll Adjustment"),visible);
+        checked++;
+    }
     console.log(`Native action placement: ${checked} checks passed`);
 })().catch((error) => {
     console.error(error);
