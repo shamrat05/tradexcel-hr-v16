@@ -372,6 +372,19 @@ def _read_manual(layout, from_date: str, to_date: str):
     if len(names) > MAX_PRINT_ROWS:
         frappe.throw(_("Too many manual statutory records for one PDF."))
     if not names and layout.form_code in {"form_80", "form_81"}:
+        drafts = frappe.get_list(
+            "Workforce Statutory Record",
+            filters={
+                "company": layout.company, "layout": layout.name,
+                "entry_date": ["between", [from_date, to_date]],
+                "docstatus": 0,
+            },
+            fields=["name"], limit_page_length=1,
+        )
+        if drafts:
+            # A draft evidence record is an explicit operator work item. Do
+            # not bypass it with an automatic snapshot.
+            return []
         return aggregate_periodic_return(layout, from_date, to_date)
     rows = []
     for name in names:

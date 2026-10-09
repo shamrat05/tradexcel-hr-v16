@@ -179,3 +179,8 @@ The earlier whole-suite attempt was invalid because the disposable site hit its 
 ## Periodic return draft aggregation — 2026-10-09
 
 Forms 80 and 81 now have a native read-only aggregation path when no submitted manual return record exists. It is Company/Branch scoped, permission checked, bounded, and uses only submitted Attendance observations for draft adult male/female averages. It reports missing Attendance coverage, working-day review, and legal category review findings instead of treating missing data as zero or silently producing an approved return. Existing reviewed manual records remain authoritative and unchanged. The path is an engineering draft; establishment categories, foreign/contractor/adolescent classifications, working days, payment/safety particulars, current-law mapping and legal approval remain required before official use.
+
+
+## Periodic aggregation precedence and final isolated validation — 2026-10-09
+
+Automatic Form 80/81 draft aggregation now yields to an existing draft manual evidence record; operator work in progress cannot be bypassed by a snapshot. Submitted manual evidence remains authoritative. After this precedence correction, the exact integrated tree completed **906 passed, 2 skipped, 15 warnings** in the isolated Workforce Suite bench. The queue cap was temporarily raised only for the isolated run, no queued jobs were purged, and the site-specific setting was removed afterward.
