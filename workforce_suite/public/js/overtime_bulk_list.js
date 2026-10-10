@@ -1,0 +1,117 @@
+frappe.listview_settings["Overtime Slip"] = {
+    onload(listview) {
+        if (!frappe.user.has_role("Workforce Suite Manager")) return;
+        listview.page.add_inner_button(__("Prepare Overtime Drafts"), () => {
+            const today = frappe.datetime.get_today();
+            const first = today.slice(0, 7) + "-01";
+            const [year, month] = today.slice(0, 7).split("-").map(Number);
+            const last = today.slice(0, 7) + "-" + String(new Date(year, month, 0).getDate()).padStart(2, "0");
+            const dialog = new frappe.ui.Dialog({
+                title: __("Prepare Overtime Drafts"),
+                fields: [
+                    {fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company",
+                        default: frappe.defaults.get_user_default("Company") || "", reqd: 1},
+                    {fieldname: "from_date", label: __("From Date"), fieldtype: "Date", default: first, reqd: 1},
+                    {fieldname: "to_date", label: __("To Date"), fieldtype: "Date", default: last, reqd: 1},
+                    {fieldname: "preview", fieldtype: "HTML"},
+                ],
+            });
+            let preview = null;
+            const escaped = (value) => frappe.utils.escape_html(String(value || ""));
+            const preview_action = () => {
+                const values = dialog.get_values();
+                if (!values) return;
+                frappe.call({
+                    method: "workforce_suite.workforce_suite.overtime_bulk.preview_overtime_drafts",
+                    args: {company: values.company, from_date: values.from_date, to_date: values.to_date},
+                    freeze: true,
+                    callback(response) {
+                        preview = response.message;
+                        const rows = (preview?.rows || []).map((row) =>
+                            `<tr><td><input type="checkbox" class="workforce-ot-select" data-employee="${escaped(row.employee)}" ${row.eligible ? "" : "disabled"}></td>` +
+                            `<td>${escaped(row.employee_name || row.employee)}</td><td>${escaped(row.branch)}</td>` +
+                            `<td>${escaped(row.department)}</td><td>${escaped(row.attendance_count)}</td>` +
+                            `<td>${row.eligible ? __("Ready for draft") : escaped(row.reason || __("Salary authority needs review"))}</td></tr>`
+                        ).join("");
+                        dialog.fields_dict.preview.$wrapper.html(
+                            `<p role="status">${__("Select Employees after reviewing their submitted overtime Attendance. Drafts do not create pay.")}</p>` +
+                            `<div style="max-height:45vh;overflow:auto" tabindex="0"><table class="table table-bordered">` +
+                            `<thead><tr><th>${__("Select")}</th><th>${__("Employee")}</th><th>${__("Branch")}</th>` +
+                            `<th>${__("Department")}</th><th>${__("Attendance days")}</th><th>${__("Review")}</th></tr></thead>` +
+                            `<tbody>${rows || `<tr><td colspan="6">${__("No matching overtime needs a draft.")}</td></tr>`}</tbody></table></div>`
+                        );
+                        dialog.set_primary_action(__("Create Selected Drafts"), () => {
+                            const current = dialog.get_values();
+                            if (!current) return;
+                            if (current.company !== preview.company || current.from_date !== preview.from_date || current.to_date !== preview.to_date) {
+                                frappe.msgprint(__("Filters changed. Preview again before creating drafts."));
+                                return;
+                            }
+                            const employees = dialog.fields_dict.preview.$wrapper.find(".workforce-ot-select:checked")
+                                .map((_, input) => input.dataset.employee).get();
+                            if (!employees.length) {
+                                frappe.msgprint(__("Select at least one Employee."));
+                                return;
+                            }
+                            frappe.confirm(__("Create draft Overtime Slips for {0} selected Employee(s)? An independent Payroll Approver must submit them.", [employees.length]), () => {
+                                frappe.call({
+                                    method: "workforce_suite.workforce_suite.overtime_bulk.prepare_overtime_drafts",
+                                    args: {...current, employees},
+                                    freeze: true,
+                                    callback(result) {
+                                        const outcome = result.message;
+                                        if (outcome?.status === "Queued") {
+                                            frappe.msgprint({
+                                                title: __("Overtime draft preparation queued"),
+                                                message: __("Preparation is queued for {0} selected Employee(s). Drafts do not create pay. Review the native Overtime Slip list when it finishes; an independent Payroll Approver must submit them.", [outcome.count || 0]),
+                                                indicator: "blue",
+                                                primary_action: {
+                                                    label: __("Review Overtime Slips"),
+                                                    action: () => frappe.set_route("List", "Overtime Slip"),
+                                                },
+                                            });
+                                        } else {
+                                            const rows = outcome?.rows || [];
+                                            const groups = new Map();
+                                            for (const row of rows) {
+                                                const key = row.status || "Review";
+                                                if (!groups.has(key)) groups.set(key, []);
+                                                groups.get(key).push(row);
+                                            }
+                                            const labels = {
+                                                Draft: __("Draft created"),
+                                                Blocked: __("Not eligible — salary authority needs review"),
+                                                Failed: __("Could not be prepared — review the Employee"),
+                                            };
+                                            let html = "";
+                                            for (const [status, items] of groups) {
+                                                html += `<p><b>${escaped(labels[status] || status)} (${items.length})</b></p><ul>` +
+                                                    items.map((row) => `<li>${escaped(row.employee)}` +
+                                                        (row.overtime_slip ? ` — ${escaped(row.overtime_slip)}` : "") +
+                                                        (row.reason ? ` — ${escaped(row.reason)}` : "") + "</li>").join("") + "</ul>";
+                                            }
+                                            html += `<p class="small text-muted">${__("Draft Overtime Slips do not create pay. An independent Payroll Approver must submit them; then inspect the native Overtime Slips.")}</p>`;
+                                            frappe.msgprint({
+                                                title: __("Overtime draft results"),
+                                                message: html,
+                                                indicator: groups.has("Failed") ? "orange" : "blue",
+                                                primary_action: groups.has("Draft") ? {
+                                                    label: __("Review Overtime Slips"),
+                                                    action: () => frappe.set_route("List", "Overtime Slip"),
+                                                } : undefined,
+                                            });
+                                        }
+                                        dialog.hide();
+                                        listview.refresh();
+                                    },
+                                });
+                            });
+                        });
+                    },
+                });
+            };
+            dialog.set_primary_action(__("Preview Eligible Employees"), preview_action);
+            dialog.show();
+        });
+    },
+};

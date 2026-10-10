@@ -1,0 +1,30 @@
+{
+ "doctype": "DocType",
+ "name": "Workforce Statutory Component Mapping",
+ "module": "Workforce Suite",
+ "istable": 1,
+ "editable_grid": 1,
+ "field_order": [
+  "field_key",
+  "salary_component"
+ ],
+ "fields": [
+  {
+   "fieldname": "field_key",
+   "fieldtype": "Select",
+   "label": "Protected Wage Column",
+   "reqd": 1,
+   "in_list_view": 1,
+   "options": "basic_wage\nhouse_rent\nmedical\ntransport\nfood_allowance\nattendance_bonus\novertime_payment\nother_pay"
+  },
+  {
+   "fieldname": "salary_component",
+   "fieldtype": "Link",
+   "options": "Salary Component",
+   "label": "Native Earning Component",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ],
+ "permissions": []
+}

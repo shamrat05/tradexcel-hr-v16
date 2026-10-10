@@ -20,7 +20,7 @@ jobs:
           node-version: '24.15.0'
       - run: python -m pip install pytest==8.4.2
       - run: python scripts/check_source.py
-      - run: python -m compileall -q tradex_hr
+      - run: python -m compileall -q workforce_suite
       - name: Pure tests (not Frappe integration)
-        run: python -m pytest tradex_hr/tests/test_field_attendance.py tradex_hr/tests/test_no_destructive_scripts_in_package.py -q
+        run: python -m pytest workforce_suite/tests/test_field_attendance.py workforce_suite/tests/test_no_destructive_scripts_in_package.py -q
       - run: git diff --check

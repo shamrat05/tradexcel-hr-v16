@@ -21,9 +21,9 @@
 
 1. Create named employee users and link `Employee.user_id`.
 2. Create `Shift Location` records with real coordinates/radii.
-3. Submit one `Tradexcel Attendance Policy` per scope. Prefer future-effective
+3. Submit one `Workforce Attendance Policy` per scope. Prefer future-effective
    dates; changing history requires an explicit bounded recalculation.
-4. Create/submit `Tradexcel Field Duty` for a field day or office errand. A
+4. Create/submit `Workforce Field Duty` for a field day or office errand. A
    temporary duty can include multiple locations and active-duty tracking.
 5. Open the Mobile Attendance page. It requests browser GPS and creates the
    same standard check-in used by terminal attendance.
@@ -60,7 +60,7 @@
 
 - Install the optional face-match dependency and verify both model SHA-256
   values in `docs/face_match_setup.md`.
-- Configure `Tradex Face Match Settings`, upload a single-face reference photo,
+- Configure `Workforce Face Match Settings`, upload a single-face reference photo,
   and test same-person, different-person, no-face, and multi-face selfies.
 - Confirm the score, threshold, provider, and result are recorded.
 - Confirm a provider outage blocks a face-match-enabled check-in instead of
@@ -71,8 +71,8 @@
 ## Verification commands
 
 ```bash
-cd /home/sanchita/frappe-bench-v16
-env/bin/python -m pytest apps/tradex_hr/tradex_hr/tests -q
+cd YOUR_BENCH
+env/bin/python -m pytest apps/workforce_suite/workforce_suite/tests -q
 ```
 
 Do not expose the Frappe mobile API or live-location page without HTTPS,

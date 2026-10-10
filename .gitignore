@@ -43,6 +43,6 @@ opencode.jsonc
 
 # Historical one-off utilities are not deployable production modules.
 # The employee cleanup contains real identifiers; the importer reads prototype data.
-tradex_hr/tradexcel_hr/cleanup_false_import_employees.py
-tradex_hr/tradexcel_hr/source_staff_salary.py
-tradex_hr/tradexcel_hr/purge_cancelled_salary_slips.py
+workforce_suite/workforce_suite/cleanup_false_import_employees.py
+workforce_suite/workforce_suite/source_staff_salary.py
+workforce_suite/workforce_suite/purge_cancelled_salary_slips.py

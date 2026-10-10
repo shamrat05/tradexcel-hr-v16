@@ -1,0 +1,50 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2026-09-17 00:00:00",
+ "disable_prepared_report_automation": 1,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "doctype_to_sync": [],
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "javascript": "// Copyright (c) 2026, Workforce and contributors\n\nfrappe.query_reports[\"Biometric ID Audit\"] = {\n\tfilters: [\n\t\t{ fieldname: \"company\", label: __(\"Company\"), fieldtype: \"Link\", options: \"Company\" },\n\t\t{ fieldname: \"device\", label: __(\"Device\"), fieldtype: \"Link\", options: \"Workforce Biometric Device\" },\n\t\t{\n\t\t\tfieldname: \"employee_status\",\n\t\t\tlabel: __(\"Employee Status\"),\n\t\t\tfieldtype: \"Select\",\n\t\t\toptions: \"All\\nActive\\nInactive\\nLeft\",\n\t\t\tdefault: \"Active\",\n\t\t},\n\t\t{\n\t\t\tfieldname: \"assignment_status\",\n\t\t\tlabel: __(\"Assignment Status\"),\n\t\t\tfieldtype: \"Select\",\n\t\t\toptions: \"All\\nAssigned\\nUnassigned\\nDuplicate\\nLegacy\",\n\t\t\tdefault: \"All\",\n\t\t},\n\t\t{\n\t\t\tfieldname: \"show_duplicates\",\n\t\t\tlabel: __(\"Show Duplicates Only\"),\n\t\t\tfieldtype: \"Select\",\n\t\t\toptions: \"No\\nYes\",\n\t\t\tdefault: \"No\",\n\t\t\thidden: 1,\n\t\t},\n\t],\n\tonload(report) {\n        workforce_suite.report_actions.begin(report);\n\t\tif (frappe.model.can_create(\"Workforce Employee Biometric\") || frappe.model.can_write(\"Workforce Employee Biometric\"))\n\t\treport.workforce_actions.add(__(\"Assign Biometric ID\"), () => {\n\t\t\tfrappe.prompt(\n\t\t\t\t[\n\t\t\t\t\t{ fieldname: \"employee\", label: __(\"Employee\"), fieldtype: \"Link\", options: \"Employee\", reqd: 1 },\n\t\t\t\t\t{ fieldname: \"device\", label: __(\"Device\"), fieldtype: \"Link\", options: \"Workforce Biometric Device\", reqd: 1 },\n\t\t\t\t\t{\n\t\t\t\t\t\tfieldname: \"biometric_id\",\n\t\t\t\t\t\tlabel: __(\"Biometric ID / PIN\"),\n\t\t\t\t\t\tfieldtype: \"Data\",\n\t\t\t\t\t\treqd: 1,\n\t\t\t\t\t\tdescription: __(\"Use the exact ID configured on this SenseFace terminal.\"),\n\t\t\t\t\t},\n\t\t\t\t],\n\t\t\t\t(values) => {\n\t\t\t\t\tfrappe.call({ method: \"workforce_suite.api.assign_employee_biometric\", args: values }).then(() => {\n\t\t\t\t\t\tfrappe.show_alert({ message: __(\"Device-specific biometric assignment saved\"), indicator: \"green\" });\n\t\t\t\t\t\treport.refresh();\n\t\t\t\t\t});\n\t\t\t\t},\n\t\t\t\t__(\"Assign Biometric ID\"),\n\t\t\t\t__(\"Save\")\n\t\t\t);\n\t\t});\n\t\tif (frappe.model.can_write(\"Workforce Biometric Device\"))\n\t\treport.workforce_actions.add(__(\"Copy Biometric to Device\"), () => {\n\t\t\tfrappe.prompt(\n\t\t\t\t[\n\t\t\t\t\t{ fieldname: \"employee\", label: __(\"Employee\"), fieldtype: \"Link\", options: \"Employee\", reqd: 1 },\n\t\t\t\t\t{ fieldname: \"source_device\", label: __(\"Copy From Device\"), fieldtype: \"Link\", options: \"Workforce Biometric Device\", reqd: 1 },\n\t\t\t\t\t{ fieldname: \"target_device\", label: __(\"Copy To Device\"), fieldtype: \"Link\", options: \"Workforce Biometric Device\", reqd: 1 },\n\t\t\t\t\t{\n\t\t\t\t\t\tfieldname: \"target_biometric_id\",\n\t\t\t\t\t\tlabel: __(\"Target Biometric ID / PIN\"),\n\t\t\t\t\t\tfieldtype: \"Data\",\n\t\t\t\t\t\tdescription: __(\"Leave blank to reuse the source PIN if it is free on the target.\"),\n\t\t\t\t\t},\n\t\t\t\t],\n\t\t\t\t(values) => {\n\t\t\t\t\tfrappe.confirm(\n\t\t\t\t\t\t__(\"This queues biometric templates to the target device. Continue?\"),\n\t\t\t\t\t\t() => {\n\t\t\t\t\t\t\tfrappe.call({\n\t\t\t\t\t\t\t\tmethod: \"workforce_suite.api.transfer_employee_biometric\",\n\t\t\t\t\t\t\t\targs: { ...values, confirm_transfer: 1 },\n\t\t\t\t\t\t\t}).then(() => {\n\t\t\t\t\t\t\t\tfrappe.show_alert({ message: __(\"Biometric transfer queued\"), indicator: \"green\" });\n\t\t\t\t\t\t\t\treport.refresh();\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}\n\t\t\t\t\t);\n\t\t\t\t},\n\t\t\t\t__(\"Copy Biometric to Device\"),\n\t\t\t\t__(\"Queue Transfer\")\n\t\t\t);\n\t\t}, __(\"Device actions\"));\n\t},\n};\n",
+ "letter_head": null,
+ "modified": "2026-09-17 08:02:38.396880",
+ "modified_by": "Administrator",
+ "module": "Workforce Suite",
+ "name": "Biometric ID Audit",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Employee",
+ "report_name": "Biometric ID Audit",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "HR User"
+  },
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Workforce Owner/Director"
+  },
+  {
+   "role": "Workforce Suite Manager"
+  },
+  {
+   "role": "Workforce Suite/Attendance Officer"
+  },
+  {
+   "role": "Workforce Compliance Auditor"
+  }
+ ],
+ "snapshot_report": 0,
+ "timeout": 0
+}

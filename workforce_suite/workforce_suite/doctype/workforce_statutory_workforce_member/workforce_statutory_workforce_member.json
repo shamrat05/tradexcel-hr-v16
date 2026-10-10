@@ -1,0 +1,81 @@
+{
+ "doctype": "DocType",
+ "name": "Workforce Statutory Workforce Member",
+ "module": "Workforce Suite",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Native Employee",
+   "in_list_view": 1,
+   "options": "Employee"
+  },
+  {
+   "fieldname": "external_identifier",
+   "fieldtype": "Data",
+   "label": "External Workforce Identity",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "worker_category",
+   "fieldtype": "Select",
+   "label": "Reviewed Worker Category",
+   "in_list_view": 1,
+   "options": "Pending Review\nAdult Male\nAdult Female\nAdolescent Boy\nAdolescent Girl",
+   "default": "Pending Review",
+   "reqd": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Historical Membership From",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Historical Membership To",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "is_foreign",
+   "fieldtype": "Check",
+   "label": "Reviewed Foreign Workforce",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_contractor",
+   "fieldtype": "Check",
+   "label": "Reviewed Contractor Workforce",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "external_workdays",
+   "fieldtype": "Data",
+   "label": "Evidenced External Workdays",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source_reference",
+   "fieldtype": "Small Text",
+   "label": "Membership / Classification Provenance",
+   "in_list_view": 1,
+   "reqd": 1
+  }
+ ],
+ "field_order": [
+  "employee",
+  "external_identifier",
+  "worker_category",
+  "effective_from",
+  "effective_to",
+  "is_foreign",
+  "is_contractor",
+  "external_workdays",
+  "source_reference"
+ ]
+}

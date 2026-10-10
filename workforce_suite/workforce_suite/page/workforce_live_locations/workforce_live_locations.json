@@ -1,0 +1,17 @@
+{
+ "doctype":"Page",
+ "name":"workforce-live-locations",
+ "page_name":"workforce-live-locations",
+ "title":"Workforce Live Locations",
+ "module":"Workforce Suite",
+ "standard":"Yes",
+ "roles":[
+  {"role":"System Manager"},
+  {"role":"Workforce Owner/Director"},
+  {"role":"Workforce Suite Manager"},
+  {"role":"Workforce Suite/Attendance Officer"},
+  {"role":"Workforce Factory Supervisor"},
+  {"role":"Workforce Branch Manager"},
+  {"role":"Workforce Department Manager"}
+ ]
+}

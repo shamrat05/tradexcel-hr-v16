@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Render synthetic statutory previews and verify their physical page bounds.
+
+Requires weasyprint and PyMuPDF in CI, not in the Frappe server app.
+Never uses or writes employee/customer data.
+"""
+from __future__ import annotations
+
+import importlib.util
+import json
+import re
+from pathlib import Path
+import sys
+
+import fitz
+from weasyprint import HTML
+
+ROOT = Path(__file__).resolve().parents[1]
+# Invocation as "python scripts/..." otherwise puts only /scripts on sys.path.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+MODULE = ROOT / "workforce_suite" / "workforce_suite"
+SPECS = json.loads((MODULE / "statutory_form_specs.json").read_text())
+OUTPUT = ROOT / "build" / "statutory_pdf_qa"
+
+
+def load_renderer():
+    path = MODULE / "statutory_print_html.py"
+    spec = importlib.util.spec_from_file_location("_a4_renderer", path)
+    loaded = importlib.util.module_from_spec(spec)
+    assert spec.loader
+    spec.loader.exec_module(loaded)
+    return loaded.render_html
+
+
+def form(code):
+    s = next(x for x in SPECS["entries"] if x["id"] == code)
+    return {
+        **s,
+        "form_code": code,
+        "form_family": s["kind"],
+        "title_en": s["ui_title"],
+        "title_bn": "শ্রমিক রেজিস্টার" if code != "form_6" else "পরিচয় পত্র",
+        "columns": s["columns"],
+    }
+
+
+def check_pdf(output: Path, page_setup: dict, expected_id: str):
+    doc = fitz.open(output)
+    assert len(doc) > 0
+    expected = tuple(page_setup[key] * 72 / 25.4 for key in ("width_mm", "height_mm"))
+    if page_setup["is_card"]:
+        assert len(doc) == 2, (output, "card must have exactly two sides", len(doc))
+    for page in doc:
+        actual = (page.rect.width, page.rect.height)
+        assert all(abs(a-b) < 1.5 for a, b in zip(actual, expected)), (
+            output, actual, expected
+        )
+        for word in page.get_text("words"):
+            x0, y0, x1, y1 = word[:4]
+            assert x0 >= -0.8 and y0 >= -0.8 and x1 <= page.rect.width + .8 and y1 <= page.rect.height + .8, (
+                output, page.number, word
+            )
+    all_text = " ".join(p.get_text("text") for p in doc)
+    # PDF extraction may insert line breaks after hyphens in narrow cells.
+    # Ignore whitespace only: still require the complete worker identifier.
+    assert expected_id in re.sub(r"\s+", "", all_text), (output, expected_id, all_text[-350:])
+    return len(doc)
+
+
+def main():
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    renderer = load_renderer()
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
+    jobs = [
+        ("form_6", 1, "employee_name", "SYN-EMP-0001"),
+        ("form_34", 48, "employee_name", "SYN-EMP-0048"),
+        ("form_38", 105, "employee_name", "SYN-EMP-0105"),
+        ("form_9", 85, "annual_requested", "SYN-LEAVE-0085"),
+    ]
+    # Every printable catalog draft has independent EN/BN coverage. Wide,
+    # multi-page high-value registers retain the larger stress populations.
+    stress = {job[0]: job[1:] for job in jobs}
+    for source in SPECS["entries"]:
+        if source["kind"] == "Evidence Only":
+            continue
+        code = source["id"]
+        count, marker_field, final = stress.get(code, (1, source["columns"][-1]["field_key"], "SYN-FINAL-0001"))
+        layout = form(code)
+        page_setup = resolve_page_setup(layout)
+        for language in ("en", "bn"):
+            rows = [
+                {**{col["field_key"]: str(i) for col in layout["columns"]},
+                 "employee_name": f"SYN-EMP-{i:04}",
+                 "employee": "SYN-GROUP" if code == "form_9" else f"SYN-EMP-{i:04}"}
+                for i in range(1, count + 1)
+            ]
+            assert any(col["field_key"] == marker_field for col in layout["columns"])
+            rows[-1][marker_field] = final
+            for row in rows:
+                row["_history"] = {table["id"]: [{key: row.get(key, "SYN-HISTORY") for key in table["keys"]}]
+                                   for table in source.get("repeatable_tables", [])}
+            # The final prescribed value may belong to a repeatable history table.
+            for table in source.get("repeatable_tables", []):
+                if marker_field in table["keys"]:
+                    rows[-1]["_history"][table["id"]][-1][marker_field] = final
+            html = renderer(layout, rows, company_name="Synthetic Test Company" if language == "en" else "পরীক্ষামূলক প্রতিষ্ঠান",
+                from_date="2026-10-01", to_date="2026-10-07", is_draft=True, language=language)
+            pdf_path = OUTPUT / f"{code}_{language}_{page_setup['paper_size'].lower().replace(' ', '_')}.pdf"
+            HTML(string=html, base_url=str(ROOT)).write_pdf(str(pdf_path))
+            pages = check_pdf(pdf_path, page_setup, final)
+            if language == "bn":
+                fonts = [font[3] for page in fitz.open(pdf_path) for font in page.get_fonts()]
+                assert any("Bengali" in font for font in fonts), (pdf_path, fonts)
+            from workforce_suite.workforce_suite.statutory_print_docx import render_docx
+            from zipfile import ZipFile
+            from io import BytesIO
+            docx = render_docx(layout, rows, company_name="Synthetic Test Company" if language == "en" else "পরীক্ষামূলক প্রতিষ্ঠান", language=language)
+            from docx import Document
+            section = Document(BytesIO(docx)).sections[0]
+            assert abs(section.page_width.mm - page_setup["width_mm"]) < 1
+            assert abs(section.page_height.mm - page_setup["height_mm"]) < 1
+            with ZipFile(BytesIO(docx)) as archive:
+                assert archive.testzip() is None
+                body = archive.read("word/document.xml").decode()
+                assert final in body and 'w:w="' in body and 'w:h="' in body
+            (OUTPUT / f"{code}_{language}.docx").write_bytes(docx)
+            print(f"PDF + DOCX PASS {code} {language} {page_setup['paper_size']} {page_setup['orientation']} {pages} page(s), {count} entries")
+    print("ALL_SYNTHETIC_PAGE_TESTS_PASSED")
+
+
+if __name__ == "__main__":
+    main()

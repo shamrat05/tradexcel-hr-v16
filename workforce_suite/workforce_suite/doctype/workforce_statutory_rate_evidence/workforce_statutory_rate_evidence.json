@@ -1,0 +1,59 @@
+{
+ "doctype": "DocType",
+ "name": "Workforce Statutory Rate Evidence",
+ "module": "Workforce Suite",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Effective To",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hours",
+   "fieldtype": "Float",
+   "label": "Approved Hours",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "hourly_rate",
+   "fieldtype": "Currency",
+   "label": "Historical Hourly Rate",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Evidenced Amount",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source_reference",
+   "fieldtype": "Small Text",
+   "label": "Original Rate Source",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ],
+ "field_order": [
+  "effective_from",
+  "effective_to",
+  "hours",
+  "hourly_rate",
+  "amount",
+  "source_reference"
+ ]
+}

@@ -1,0 +1,253 @@
+{
+ "doctype": "DocType",
+ "module": "Workforce Suite",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 0,
+ "name": "Workforce Statutory Record",
+ "autoname": "naming_series:",
+ "naming_series": "WSRR-.YYYY.-.#####",
+ "is_submittable": 1,
+ "field_order": [
+  "naming_series",
+  "company",
+  "layout",
+  "entry_date",
+  "reference_id",
+  "rates",
+  "payment_reference",
+  "payment_amount",
+  "payment_date",
+  "reference_name",
+  "reference_doctype",
+  "evidence_kind",
+  "reporting_to",
+  "reporting_from",
+  "entries",
+  "requitals",
+  "evidence_file",
+  "evidence_note",
+  "employee",
+  "effective_to",
+  "reviewed_by",
+  "reviewed_at",
+  "calculation_mode",
+  "workforce_coverage_attested",
+  "workforce_members",
+  "workforce_calendar",
+  "calculation_provenance",
+  "portrait_file",
+  "portrait_sha256",
+  "evidence_sha256"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "WSRR-.YYYY.-.#####",
+   "reqd": 1,
+   "default": "WSRR-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "layout",
+   "fieldtype": "Link",
+   "label": "Statutory Layout",
+   "options": "Workforce Statutory Print Layout",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "entry_date",
+   "fieldtype": "Date",
+   "label": "Record Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reference_id",
+   "fieldtype": "Data",
+   "label": "Reference / Worker Identifier",
+   "description": "Manual record identifier when applicable; do not invent."
+  },
+  {
+   "fieldname": "entries",
+   "fieldtype": "Table",
+   "label": "Entered Source Values",
+   "options": "Workforce Statutory Value",
+   "reqd": 0
+  },
+  {
+   "fieldname": "requitals",
+   "fieldtype": "Table",
+   "label": "Advance Requital History",
+   "options": "Workforce Statutory Requital",
+   "description": "Repeatable reviewed repayments for Form 40. Do not enter unverified payment facts."
+  },
+  {
+   "fieldname": "evidence_file",
+   "fieldtype": "Attach",
+   "label": "Supporting Evidence",
+   "description": "Store files privately; configure Frappe file access for sensitive evidence."
+  },
+  {
+   "fieldname": "evidence_note",
+   "fieldtype": "Small Text",
+   "label": "Evidence / Review Notes (not printed)"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee Evidence Scope",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Evidence Effective To"
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reviewed_at",
+   "fieldtype": "Datetime",
+   "label": "Reviewed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reporting_from",
+   "fieldtype": "Date",
+   "label": "Reporting Period From"
+  },
+  {
+   "fieldname": "reporting_to",
+   "fieldtype": "Date",
+   "label": "Reporting Period To"
+  },
+  {
+   "fieldname": "evidence_kind",
+   "fieldtype": "Select",
+   "label": "Evidence Kind",
+   "options": "Supplemental Facts\nPayment Instructed\nPayment Reconciled\nWorker Payment Evidenced\nWorker Acknowledgement\nOvertime Rate Breakdown",
+   "default": "Supplemental Facts"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Select",
+   "label": "Native Source Type",
+   "options": "\nSalary Slip\nOvertime Slip"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Submitted Native Source",
+   "options": "reference_doctype"
+  },
+  {
+   "fieldname": "payment_date",
+   "fieldtype": "Date",
+   "label": "Evidenced Payment / Acknowledgement Date"
+  },
+  {
+   "fieldname": "payment_amount",
+   "fieldtype": "Currency",
+   "label": "Covered Amount"
+  },
+  {
+   "fieldname": "payment_reference",
+   "fieldtype": "Data",
+   "label": "Receipt / Instruction / Reconciliation Reference"
+  },
+  {
+   "fieldname": "rates",
+   "fieldtype": "Table",
+   "label": "Reviewed Historical Rate Breakdown",
+   "options": "Workforce Statutory Rate Evidence"
+  },
+  {
+   "fieldname": "calculation_mode",
+   "fieldtype": "Select",
+   "label": "Periodic Calculation",
+   "options": "Reviewed Aggregate Values\nReviewed Workforce Evidence",
+   "default": "Reviewed Aggregate Values"
+  },
+  {
+   "fieldname": "workforce_coverage_attested",
+   "fieldtype": "Check",
+   "label": "Complete Establishment Membership and Calendar Attested",
+   "description": "Independent review must verify transfers, joiners, leavers, worker categories, external workforce and all dates. Current assignments do not prove historical membership."
+  },
+  {
+   "fieldname": "workforce_members",
+   "fieldtype": "Table",
+   "label": "Historical Workforce Membership",
+   "options": "Workforce Statutory Workforce Member"
+  },
+  {
+   "fieldname": "workforce_calendar",
+   "fieldtype": "Table",
+   "label": "Reviewed Complete Calendar",
+   "options": "Workforce Statutory Workday"
+  },
+  {
+   "fieldname": "calculation_provenance",
+   "fieldtype": "Small Text",
+   "label": "Calculation Provenance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "portrait_file",
+   "fieldtype": "Attach Image",
+   "label": "Reviewed Worker Portrait"
+  },
+  {
+   "fieldname": "portrait_sha256",
+   "fieldtype": "Data",
+   "label": "Reviewed Portrait SHA-256",
+   "read_only": 1
+  },
+  {
+   "fieldname": "evidence_sha256",
+   "fieldtype": "Data",
+   "label": "Reviewed Original SHA-256",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0,
+   "print": 1,
+   "export": 1
+  },
+  {
+   "role": "Workforce Compliance Auditor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 1,
+   "cancel": 0,
+   "print": 1,
+   "export": 1
+  }
+ ]
+}
