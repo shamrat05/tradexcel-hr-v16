@@ -19,7 +19,13 @@
   "form_family",
   "data_source",
   "layout_style",
+  "paper_size",
   "orientation",
+  "custom_width_mm",
+  "custom_height_mm",
+  "margin_mm",
+  "logo_position",
+  "watermark_text",
   "template_version",
   "effective_from",
   "effective_to",
@@ -96,18 +102,57 @@
   {
    "fieldname": "layout_style",
    "fieldtype": "Select",
-   "options": "Minimal Black and White",
+   "options": "Minimal Black and White\nCompact",
    "label": "Print Style",
    "default": "Minimal Black and White",
    "reqd": 1
   },
   {
+   "fieldname": "paper_size",
+   "fieldtype": "Select",
+   "options": "\nA4\nA5\nA6\nA7 Card\nLetter\nLegal\nCustom",
+   "label": "Default Paper / Card Size",
+   "description": "Blank uses A7 Card for Form 6 and A4 for other forms. Export can override this for one document without changing the layout."
+  },
+  {
    "fieldname": "orientation",
    "fieldtype": "Select",
    "options": "Portrait\nLandscape",
-   "label": "A4 Orientation",
+   "label": "Default Orientation",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "custom_width_mm",
+   "fieldtype": "Float",
+   "label": "Custom Width (mm)",
+   "depends_on": "eval:doc.paper_size == 'Custom'"
+  },
+  {
+   "fieldname": "custom_height_mm",
+   "fieldtype": "Float",
+   "label": "Custom Height (mm)",
+   "depends_on": "eval:doc.paper_size == 'Custom'"
+  },
+  {
+   "fieldname": "margin_mm",
+   "fieldtype": "Float",
+   "label": "Default Margin (mm)",
+   "description": "Leave blank for the safe size-specific default."
+  },
+  {
+   "fieldname": "logo_position",
+   "fieldtype": "Select",
+   "options": "\nLeft\nRight\nHidden",
+   "label": "Company Logo Position",
+   "description": "Uses the existing native Company logo; Hidden removes it only from this print."
+  },
+  {
+   "fieldname": "watermark_text",
+   "fieldtype": "Data",
+   "label": "Watermark Text",
+   "length": 60,
+   "description": "Optional text behind the document. Export may override it; this is never an approval stamp."
   },
   {
    "fieldname": "template_version",

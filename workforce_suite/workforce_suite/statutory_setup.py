@@ -181,7 +181,8 @@ def prepare_draft_layout(company, form_code, effective_from, branch=""):
             "branch": branch or "", "form_code": form_code,
             "title": source["ui_title"], "title_en": source["ui_title"],
             "form_family": source["kind"], "data_source": source["data_source"],
-            "orientation": source["orientation"], "effective_from": date,
+            "orientation": "Landscape" if form_code == "form_6" else source["orientation"],
+            "paper_size": "A7 Card" if form_code == "form_6" else "A4", "effective_from": date,
             "template_version": "draft-1", "layout_style": "Minimal Black and White",
             "statutory_profile": (frappe.get_all(
                 "Workforce Statutory Profile",

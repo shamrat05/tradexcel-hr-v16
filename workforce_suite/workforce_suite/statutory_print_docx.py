@@ -1,4 +1,4 @@
-"""Editable A4 Word working copies of company-scoped statutory draft datasets.
+"""Editable Word working copies with validated paper and card geometry.
 
 The DOCX is intentionally NOT an official government form or licence.
 Wide registers are split into manageable column bands (with repeated worker
@@ -20,21 +20,22 @@ def _text(value):
     return "" if value is None else str(value)
 
 
-def _table(doc, labels, keys, rows):
+def _table(doc, labels, keys, rows, *, font_pt=8, card=False, show_header=True):
     from docx.enum.table import WD_TABLE_ALIGNMENT
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.shared import Pt
 
-    table = doc.add_table(rows=1, cols=len(keys))
+    table = doc.add_table(rows=1 if show_header else 0, cols=len(keys))
     table.style = "Table Grid"
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = True
-    for i, title in enumerate(labels):
-        table.rows[0].cells[i].text = _text(title)
-    tbl_header = OxmlElement("w:tblHeader")
-    tbl_header.set(qn("w:val"), "true")
-    table.rows[0]._tr.get_or_add_trPr().append(tbl_header)
+    if show_header:
+        for i, title in enumerate(labels):
+            table.rows[0].cells[i].text = _text(title)
+        tbl_header = OxmlElement("w:tblHeader")
+        tbl_header.set(qn("w:val"), "true")
+        table.rows[0]._tr.get_or_add_trPr().append(tbl_header)
     for values in rows:
         cells = table.add_row().cells
         for i, key in enumerate(keys):
@@ -44,18 +45,95 @@ def _table(doc, labels, keys, rows):
             for para in cell.paragraphs:
                 para.paragraph_format.space_after = Pt(0)
                 for run in para.runs:
-                    run.font.size = Pt(8)
+                    run.font.size = Pt(font_pt)
+            if card:
+                tc_pr = cell._tc.get_or_add_tcPr()
+                margins = OxmlElement("w:tcMar")
+                for side in ("top", "left", "bottom", "right"):
+                    edge = OxmlElement("w:" + side)
+                    edge.set(qn("w:w"), "8")
+                    edge.set(qn("w:type"), "dxa")
+                    margins.append(edge)
+                tc_pr.append(margins)
     return table
+
+
+def _add_watermark(section, text, *, card=False):
+    """Repeat a transparent, behind-text watermark on each Word page.
+
+    A regular Word header shape is not reliably rendered by LibreOffice;
+    an anchored PNG also preserves Bangla glyph shaping in editable DOCX.
+    """
+    import subprocess
+    from pathlib import Path
+    from PIL import Image, ImageDraw, ImageFont
+    from docx.oxml import OxmlElement
+    from docx.shared import Mm
+
+    def font_for(family):
+        match = subprocess.run(["fc-match", "-f", "%{file}", family],
+                               capture_output=True, text=True, timeout=5, check=True)
+        path = Path(match.stdout.strip())
+        if not path.is_file():
+            raise ValueError("A matching font is required for the Word watermark")
+        return ImageFont.truetype(str(path), 90)
+
+    fonts = {False: font_for("DejaVu Sans"), True: font_for("Noto Sans Bengali")}
+    runs = []
+    for char in text:
+        bengali = "\u0980" <= char <= "\u09ff"
+        if runs and runs[-1][0] == bengali:
+            runs[-1] = (bengali, runs[-1][1] + char)
+        else:
+            runs.append((bengali, char))
+    measure = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    width = sum(measure.textlength(value, font=fonts[bengali]) for bengali, value in runs)
+    image = Image.new("RGBA", (int(width) + 44, 150), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(image)
+    x = 20.0
+    for bengali, value in runs:
+        draw.text((x, 20), value, font=fonts[bengali], fill=(105, 105, 105, 30))
+        x += draw.textlength(value, font=fonts[bengali])
+    stream = BytesIO()
+    image.save(stream, format="PNG")
+    stream.seek(0)
+    shape = section.header.paragraphs[0].add_run().add_picture(
+        stream, width=Mm(68 if card else 150))
+    inline = shape._inline
+    anchor = OxmlElement("wp:anchor")
+    for name, value in {"distT": "0", "distB": "0", "distL": "0", "distR": "0",
+                        "simplePos": "0", "relativeHeight": "0", "behindDoc": "1",
+                        "locked": "0", "layoutInCell": "1", "allowOverlap": "1"}.items():
+        anchor.set(name, value)
+    simple = OxmlElement("wp:simplePos")
+    simple.set("x", "0")
+    simple.set("y", "0")
+    anchor.append(simple)
+    for axis in ("H", "V"):
+        position = OxmlElement("wp:position" + axis)
+        position.set("relativeFrom", "page")
+        align = OxmlElement("wp:align")
+        align.text = "center"
+        position.append(align)
+        anchor.append(position)
+    anchor.append(inline.extent)
+    anchor.append(OxmlElement("wp:wrapNone"))
+    for child in list(inline):
+        anchor.append(child)
+    inline.addprevious(anchor)
+    inline.getparent().remove(inline)
 
 
 def render_docx(
     layout, rows, *, company_name: str, from_date: str = "",
     to_date: str = "", language: str = "en", company_address: str = "", signatory: str = "",
     company_logo: str = "", company_logo_bytes: bytes = b"", letter_head_content: str = "", letter_head_footer: str = "",
+    page_setup: dict | None = None,
 ) -> bytes:
     from docx import Document
     from docx.enum.section import WD_ORIENT
     from docx.shared import Mm, Pt, RGBColor
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
 
     validate_language(layout, language)
     family = _value(layout, "form_family", "Register")
@@ -64,19 +142,18 @@ def render_docx(
     columns = list(_value(layout, "columns", []))
     if not columns or (len(columns) > 22 and family == "Register"):
         raise ValueError("DOCX expects 1-22 reviewed columns")
-    orientation = _value(layout, "orientation")
-    if orientation not in ("Portrait", "Landscape"):
-        raise ValueError("Word print orientation must be A4 Portrait or Landscape")
+    page = page_setup or resolve_page_setup(layout)
+    orientation = page["orientation"]
 
     doc = Document()
     section = doc.sections[0]
     landscape = orientation == "Landscape"
     section.orientation = WD_ORIENT.LANDSCAPE if landscape else WD_ORIENT.PORTRAIT
-    section.page_width = Mm(297 if landscape else 210)
-    section.page_height = Mm(210 if landscape else 297)
-    section.left_margin = section.right_margin = Mm(10)
-    section.top_margin = Mm(12)
-    section.bottom_margin = Mm(13)
+    section.page_width = Mm(page["width_mm"])
+    section.page_height = Mm(page["height_mm"])
+    section.left_margin = section.right_margin = Mm(page["margin_mm"])
+    section.top_margin = section.bottom_margin = Mm(page["margin_mm"])
+    section.header_distance = section.footer_distance = Mm(1 if page["is_card"] else 4)
 
     style = doc.styles["Normal"]
     style.font.name = "Noto Sans Bengali" if language == "bn" else "Arial"
@@ -85,8 +162,11 @@ def render_docx(
     fonts = style.element.get_or_add_rPr().get_or_add_rFonts()
     fonts.set(qn("w:cs"), style.font.name)
     fonts.set(qn("w:eastAsia"), style.font.name)
-    style.font.size = Pt(9)
-    style.paragraph_format.space_after = Pt(4)
+    roomy_card = page["is_card"] and page["width_mm"] >= 130
+    style.font.size = Pt(6.8 if roomy_card else 5.5 if page["is_card"] else 8 if page["layout_style"] == "Compact" else 9)
+    style.paragraph_format.space_after = Pt(0 if page["is_card"] else 3 if page["layout_style"] == "Compact" else 4)
+    if page["is_card"]:
+        style.paragraph_format.line_spacing = 1
     for heading_name in ("Heading 1", "Heading 2"):
         heading = doc.styles[heading_name]
         heading.font.name = style.font.name
@@ -95,18 +175,24 @@ def render_docx(
         for language_font in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
             heading_fonts.set(qn(language_font), style.font.name)
 
-    if company_logo_bytes:
-        picture = doc.add_picture(BytesIO(company_logo_bytes), width=Mm(42))
-        if picture.height > Mm(18):
-            picture.width = int(picture.width * Mm(18) / picture.height)
-            picture.height = Mm(18)
+    if company_logo_bytes and page["logo_position"] != "Hidden":
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        logo_para = doc.add_paragraph()
+        logo_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT if page["logo_position"] == "Right" else WD_ALIGN_PARAGRAPH.LEFT
+        picture = logo_para.add_run().add_picture(BytesIO(company_logo_bytes), width=Mm(16 if page["is_card"] else 42))
+        max_height = Mm(6 if page["is_card"] else 18)
+        if picture.height > max_height:
+            picture.width = int(picture.width * max_height / picture.height)
+            picture.height = max_height
     suffix = "বাংলা সম্পাদনাযোগ্য খসড়া — সরকারি দাখিল নয়" if language == "bn" else "EDITABLE WORKING COPY — NOT AN OFFICIAL FILING"
-    if letter_head_content:
+    if letter_head_content and not page["is_card"]:
         from re import sub
         doc.add_paragraph(_text(sub("<[^>]+>", " ", letter_head_content)).strip())
-    doc.add_heading(_text(_value(layout, "title_bn" if language == "bn" else "title_en")), 1)
+    heading = doc.add_heading(_text(_value(layout, "title_bn" if language == "bn" else "title_en")), 1)
+    if page["is_card"]:
+        heading.style.font.size = Pt(8.2 if roomy_card else 7)
     doc.add_paragraph(_text(company_name))
-    if company_address:
+    if company_address and not page["is_card"]:
         doc.add_paragraph(_text(company_address))
     if from_date and to_date:
         prefix = "সময়কাল" if language == "bn" else "Period"
@@ -114,8 +200,10 @@ def render_docx(
     doc.add_paragraph(suffix)
     header_key = "header_note_bn" if language == "bn" else "header_note"
     footer_key = "footer_note_bn" if language == "bn" else "footer_note"
-    if _value(layout, header_key):
+    if _value(layout, header_key) and not page["is_card"]:
         doc.add_paragraph(_text(_value(layout, header_key)))
+    if page["watermark_text"]:
+        _add_watermark(section, page["watermark_text"], card=page["is_card"])
 
     header_columns = [c for c in columns if _value(c,"section_key") == "header"] if family == "Register" else []
     columns = [c for c in columns if c not in header_columns]
@@ -187,7 +275,7 @@ def render_docx(
                 title = _value(group[0], "section_bn" if language == "bn" else "section_en")
                 if title:
                     doc.add_heading(_text(title), 2)
-                if section_key in {"front", "identity"} and item.get("_portrait_bytes"):
+                if section_key in {"front", "identity"} and item.get("_portrait_bytes") and not page["is_card"]:
                     portrait = doc.add_picture(BytesIO(item["_portrait_bytes"]), width=Mm(30))
                     if portrait.height > Mm(38):
                         portrait.width = int(portrait.width * Mm(38) / portrait.height)
@@ -196,9 +284,26 @@ def render_docx(
                 matrices = matrices_for(_value(layout, "form_code"), section_key)
                 repeated = repeatable_for(_value(layout, "form_code"), section_key)
                 consumed = matrix_keys(matrices) | {key for table in repeated for key in table["keys"]}
-                _table(doc, ["বিষয়" if language == "bn" else "Field", "তথ্য" if language == "bn" else "Value"],
-                       ["label", "value"], [{"label": _value(c, "label_bn" if language == "bn" else "label_en"),
-                       "value": _text(item.get(_value(c, "field_key")))} for c in group if _value(c, "field_key") not in consumed])
+                field_rows = [{"label": _value(c, "label_bn" if language == "bn" else "label_en"),
+                               "value": _text(item.get(_value(c, "field_key")))}
+                              for c in group if _value(c, "field_key") not in consumed]
+                table_parent = doc
+                if page["is_card"] and section_key == "front" and item.get("_portrait_bytes"):
+                    from docx.shared import Mm
+                    outer = doc.add_table(rows=1, cols=2)
+                    outer.autofit = False
+                    outer.columns[0].width = Mm(page["width_mm"] - 2 * page["margin_mm"] - 19)
+                    outer.columns[1].width = Mm(18)
+                    table_parent = outer.cell(0, 0)
+                    portrait = outer.cell(0, 1).paragraphs[0].add_run().add_picture(
+                        BytesIO(item["_portrait_bytes"]), width=Mm(17))
+                    if portrait.height > Mm(22):
+                        portrait.width = int(portrait.width * Mm(22) / portrait.height)
+                        portrait.height = Mm(22)
+                _table(table_parent, ["বিষয়" if language == "bn" else "Field", "তথ্য" if language == "bn" else "Value"],
+                       ["label", "value"], field_rows,
+                       font_pt=6.5 if roomy_card else 5.2 if page["is_card"] else 8,
+                       card=page["is_card"], show_header=not page["is_card"])
                 for matrix in matrices:
                     suffix = "bn" if language == "bn" else "en"
                     doc.add_heading(matrix["title_" + suffix], 2)
@@ -224,14 +329,14 @@ def render_docx(
         doc.add_page_break()
         doc.add_heading(appendix_title, 2)
         _table(doc, labels, keys, records)
-    if letter_head_footer:
+    if letter_head_footer and not page["is_card"]:
         from re import sub
         doc.add_paragraph(_text(sub("<[^>]+>", " ", letter_head_footer)).strip())
     if _value(layout, footer_key):
         doc.add_paragraph(_text(_value(layout, footer_key)))
     page_number = OxmlElement("w:fldSimple")
     page_number.set(qn("w:instr"), "PAGE")
-    if signatory:
+    if signatory and not page["is_card"]:
         doc.add_paragraph(_text(signatory))
     section.footer.paragraphs[0]._p.append(page_number)
 

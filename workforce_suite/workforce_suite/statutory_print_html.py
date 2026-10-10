@@ -1,4 +1,4 @@
-"""Pure, dependency-free A4 HTML renderer for configurable statutory layouts.
+"""Pure HTML renderer for validated statutory paper and card layouts.
 
 No DB, Frappe hooks or template code execution here. Every user-supplied
 heading/cell is HTML-escaped. Do not print legislation footnotes, source-PDF
@@ -22,12 +22,6 @@ def _entry(row: object, key: str, default=None):
     return getattr(row, key, default)
 
 
-def _sheet(orientation: str) -> str:
-    if orientation not in {"Portrait", "Landscape"}:
-        raise ValueError("Only A4 Portrait or Landscape is supported")
-    return "portrait" if orientation == "Portrait" else "landscape"
-
-
 def render_html(
     layout: object,
     rows: list[dict],
@@ -42,17 +36,14 @@ def render_html(
     to_date: str = "",
     is_draft: bool = True,
     language: str = "en",
+    page_setup: dict | None = None,
 ) -> str:
-    """Produce letter-sized document *content* laid out on exact A4 paper.
-
-    The PDF API separately passes explicit page-size and orientation to
-    Frappe's converter. Long tables have repeating headers; rows wrap
-    instead of shrinking text to illegibility or clipping at the margins.
-    """
+    """Produce the same validated physical page geometry as PDF and DOCX."""
     from workforce_suite.workforce_suite.statutory_export_policy import validate_language
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
 
     language = validate_language(layout, language)
-    orientation = _sheet(str(_entry(layout, "orientation", "")))
+    page = page_setup or resolve_page_setup(layout)
     family = str(_entry(layout, "form_family", "Register"))
     if family == "Evidence Only":
         raise ValueError("An externally issued certificate cannot be generated")
@@ -60,9 +51,9 @@ def render_html(
     if not columns:
         raise ValueError("Print layout has no approved columns")
     if len(columns) > 22 and family == "Register":
-        raise ValueError("A4 safety limit: no more than 22 columns per table")
-    if len(columns) > 11 and orientation == "portrait" and family == "Register":
-        raise ValueError("Wide register must use landscape A4 or fewer columns")
+        raise ValueError("No more than 22 columns per table")
+    if len(columns) > 11 and page["width_mm"] - 2 * page["margin_mm"] < 270 and family == "Register":
+        raise ValueError("Wide register needs at least 270 mm printable width")
 
     header_columns = [c for c in columns if _entry(c, "section_key") == "header"] if family == "Register" else []
     columns = [c for c in columns if c not in header_columns]
@@ -83,14 +74,15 @@ def render_html(
         if translated else "INTERNAL DRAFT — NOT AN OFFICIAL FILING"
     )
     branding = ""
-    if company_logo:
-        branding += '<img class="company-logo" src="' + _safe(company_logo) + '" alt="Company logo">'
-    if letter_head_content:
+    logo_html = ('<img class="company-logo" src="' + _safe(company_logo) + '" alt="Company logo">') if company_logo and page["logo_position"] != "Hidden" else ""
+    if page["logo_position"] == "Left":
+        branding += logo_html
+    if letter_head_content and not page["is_card"]:
         branding += '<div class="letter-head-content">' + letter_head_content + '</div>'
     heading = (
         '<header><div class="heading-left">' + branding + '<h1>' + title + '</h1></div>'
-        + '<div class="heading-right"><strong>' + name + '</strong>'
-        + (f"<span>{address}</span>" if address else "")
+        + '<div class="heading-right">' + (logo_html if page["logo_position"] == "Right" else "") + '<strong>' + name + '</strong>'
+        + (f"<span>{address}</span>" if address and not page["is_card"] else "")
         + (f'<span>{period_label}: {period}</span>' if period else "")
         + "</div></header>"
         + (f'<p class="company-note">{subtitle}</p>' if subtitle else "")
@@ -162,7 +154,7 @@ def render_html(
                     import base64
                     encoded = base64.b64encode(row["_portrait_bytes"]).decode("ascii")
                     mime = "image/png" if row["_portrait_bytes"].startswith(b"\x89PNG") else "image/jpeg"
-                    matrix_html += '<img style="width:30mm;max-height:38mm;object-fit:contain" src="data:' + mime + ';base64,' + encoded + '" alt="Worker portrait">'
+                    matrix_html += '<img class="worker-portrait" src="data:' + mime + ';base64,' + encoded + '" alt="Worker portrait">'
                 for matrix in matrices:
                     suffix = "bn" if translated else "en"
                     heads = '<th></th>' + ''.join('<th>' + _safe(label) + '</th>' for label in matrix['column_labels_' + suffix])
@@ -184,8 +176,10 @@ def render_html(
                                 body = '<tr>' + ''.join('<td style="height:18mm"></td>' for key in band) + '</tr>'
                             matrix_html += '<table><thead><tr>' + heads + '</tr></thead><tbody>' + body + '</tbody></table>'
                 section_heading = _safe(_entry(section_columns[0], "section_bn" if translated else "section_en", ""))
+                contents = '<table class="key-value"><tbody>' + cells + '</tbody></table>'
+                contents = (matrix_html + contents) if page["is_card"] else (contents + matrix_html)
                 pages.append('<section class="document-entry">' + (f'<h2>{section_heading}</h2>' if section_heading else '')
-                             + '<table class="key-value"><tbody>' + cells + '</tbody></table>' + matrix_html + '</section>')
+                             + contents + '</section>')
         table = "".join(pages)
     from workforce_suite.workforce_suite.statutory_structure import financial_appendices
     for appendix_title, keys, labels, records in financial_appendices(rows, language):
@@ -196,7 +190,7 @@ def render_html(
     foot = f'<footer class="signatory">{footer}</footer>' if footer else ""
     density = "dense" if len(columns) >= 14 and family == "Register" else "normal"
     css = """
-@page { size: A4 ORIENTATION; margin: 9mm 8mm 12mm; }
+@page { size: PAGE_WIDTHmm PAGE_HEIGHTmm; margin: PAGE_MARGINmm; }
 html, body {margin:0; padding:0; background:#fff; color:#151515; }
 body {font-family:"Noto Sans Bengali","Nirmala UI",Arial,sans-serif;
       font-size:9pt; line-height:1.34; -webkit-print-color-adjust:exact; }
@@ -205,6 +199,11 @@ header {display:table; width:100%; border-bottom:1.2pt solid #171717;
         padding:0 0 3mm; margin:0 0 3mm;}
 .heading-left,.heading-right {display:table-cell; vertical-align:top;}
 .company-logo {display:block; max-width:42mm; max-height:18mm; object-fit:contain; margin-bottom:2mm;}
+.heading-right .company-logo {margin-left:auto;}
+.worker-portrait {width:30mm;max-height:38mm;object-fit:contain;}
+.watermark {position:fixed;top:44%;left:8%;width:84%;text-align:center;z-index:0;
+            font-size:32pt;color:#dedede;opacity:.42;transform:rotate(-25deg);pointer-events:none;}
+header,.document-entry,.leave-entry,.signatory {position:relative;z-index:1;}
 .letter-head-content {font-size:8.5pt; margin-bottom:2mm;}
 .heading-right {text-align:right; width:36%; font-size:8pt;}
 .heading-right span {display:block; overflow-wrap:anywhere; padding-top:1mm;}
@@ -237,13 +236,43 @@ h2 {font-size:11pt; margin:0 0 3mm;}
 .signatory {margin-top:12mm; padding-top:4mm; border-top:.65pt solid #bbb;
             text-align:right; font-size:9pt; white-space:pre-wrap;}
 @media screen {
-  body {margin:16px auto; padding:12px; max-width:1100px;
+  body {margin:16px auto; padding:12px; width:PAGE_WIDTHmm; max-width:100%;
         border:1px solid #ccc; box-shadow:0 4px 18px #ddd;}
 }
-""".replace("ORIENTATION", orientation)
+""".replace("PAGE_WIDTH", str(page["width_mm"])).replace("PAGE_HEIGHT", str(page["height_mm"])).replace("PAGE_MARGIN", str(page["margin_mm"]))
+    if page["layout_style"] == "Compact":
+        css += "\nbody {font-size:8pt;line-height:1.2;} th,td {padding:1mm .8mm;} h1 {font-size:11pt;}\n"
+    if page["is_card"]:
+        css += """
+body {font-size:5.8pt;line-height:1.08;}
+header {margin-bottom:1mm;padding-bottom:.5mm;}
+h1 {font-size:7pt;line-height:1.1;}
+h2 {font-size:6pt;margin:0 0 .5mm;}
+.heading-right {font-size:5.5pt;width:32%;}
+.company-logo {max-width:16mm;max-height:6mm;margin-bottom:.3mm;}
+.worker-portrait {float:right;width:17mm;max-height:22mm;margin:0 0 .5mm 1mm;}
+.document-entry {padding:0;margin:0;overflow:visible;}
+.key-value th {width:37%;font-size:5.3pt;}
+.key-value td {font-size:5.3pt;}
+th,td {padding:.23mm .38mm;border:.35pt solid #555;line-height:1.05;}
+.draft {font-size:5pt;padding:.4mm;margin:.4mm 0;}
+.company-note {font-size:5pt;margin:0 0 .5mm;}
+.signatory {font-size:5pt;margin-top:1mm;padding-top:.4mm;}
+.watermark {font-size:12pt;}
+"""
+        if page["width_mm"] >= 130:
+            css += """
+body {font-size:7pt;line-height:1.1;}
+h1 {font-size:8.2pt;}
+h2 {font-size:7pt;}
+.heading-right {font-size:6.5pt;}
+.key-value th,.key-value td {font-size:6.5pt;}
+.draft,.company-note,.signatory {font-size:6pt;}
+"""
+    watermark = ('<div class="watermark" aria-hidden="true">' + _safe(page["watermark_text"]) + '</div>') if page["watermark_text"] else ""
     return (
         '<!doctype html><html lang="' + language + '"><head><meta charset="UTF-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<style>' + css + '</style></head>'
-        '<body class="' + density + '">' + heading + table + foot + '</body></html>'
+        '<body class="' + density + '">' + watermark + heading + table + foot + '</body></html>'
     )

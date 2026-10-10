@@ -1,6 +1,9 @@
 # Context-aware statutory draft printing
 
-**Status:** feature branch prototype for review; all government-form profiles
+**Status:** historical prototype decision record. For current PDF/DOCX,
+paper/card controls and setup instructions, use
+[current configuration](../bangladesh_statutory/configuration.md) and
+[coverage](../bangladesh_statutory/coverage.md). All government-form profiles
 remain unapproved until field-by-field legal and visual acceptance.
 
 ## UX choices that avoid redundant clicks

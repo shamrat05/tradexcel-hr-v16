@@ -24,6 +24,7 @@ from workforce_suite.workforce_suite.report_scope import (
     permitted_employee_names, permitted_salary_slips,
 )
 from workforce_suite.workforce_suite.statutory_print_html import render_html
+from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup, PAPER_MM
 
 SPECS_PATH = Path(__file__).with_name("statutory_form_specs.json")
 MAX_PRINT_ROWS = 2000
@@ -461,11 +462,14 @@ def _print_context(
     *, employee: str = "", branch: str = "", department: str = "",
     employment_type: str = "", include_all: bool = False,
     language: str = "en",
+    print_options: str = "",
 ):
     layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
     layout.check_permission("read")
     check_company(layout.company)
     try:
+        page_setup = resolve_page_setup(layout, print_options)
+        altered_print = page_setup != resolve_page_setup(layout)
         start, end = normalize_period(layout.form_code, layout.data_source, from_date, to_date)
         language = validate_language(layout, language)
     except ValueError as exc:
@@ -553,11 +557,11 @@ def _print_context(
                     if profile else company_doc.company_name)
     company_address = (profile.address_bn if language == "bn" else profile.address_en) if profile else ""
     signatory = ((profile.signatory_bn if language == "bn" else profile.signatory_en) or "") if profile else ""
-    company_logo = company_doc.get("company_logo") or ""
+    company_logo = (company_doc.get("company_logo") or "") if page_setup["logo_position"] != "Hidden" else ""
     letter_head_content = ""
     letter_head_footer = ""
     letter_head_name = company_doc.get("default_letter_head")
-    if letter_head_name and not frappe.db.get_value("Letter Head", letter_head_name, "disabled"):
+    if letter_head_name and not page_setup["is_card"] and not frappe.db.get_value("Letter Head", letter_head_name, "disabled"):
         from frappe.www.printview import get_letter_head
         letter_head = get_letter_head(company_doc, False, letter_head_name) or {}
         letter_head_content = letter_head.get("content") or ""
@@ -575,11 +579,11 @@ def _print_context(
         company_address=company_address, signatory=signatory,
         company_logo=company_logo, letter_head_content=letter_head_content,
         letter_head_footer=letter_head_footer,
-        from_date=start, to_date=end, is_draft=layout.docstatus != 1,
-        language=language,
+        from_date=start, to_date=end, is_draft=layout.docstatus != 1 or altered_print,
+        language=language, page_setup=page_setup,
     )
     return layout, html, {
-        "rows": rows, "company_name": company_name or layout.company,
+        "rows": rows, "company_name": company_name or layout.company, "page_setup": page_setup,
         "from_date": start, "to_date": end, "language": language, "findings": findings,
         "company_address": company_address, "signatory": signatory,
         "company_logo": company_logo, "company_logo_bytes": company_logo_bytes, "letter_head_content": letter_head_content,
@@ -595,6 +599,19 @@ def export_options(layout_name: str):
     layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
     layout.check_permission("read")
     check_company(layout.company)
+    try:
+        page_setup = resolve_page_setup(layout)
+    except ValueError as exc:
+        frappe.throw(str(exc))
+    paper_sizes = []
+    for paper in PAPER_MM:
+        for orientation in ("Portrait", "Landscape"):
+            try:
+                resolve_page_setup(layout, {"paper_size": paper, "orientation": orientation})
+            except ValueError:
+                continue
+            paper_sizes.append(paper)
+            break
     return {
         "company": layout.company,
         "branch": layout.branch or "",
@@ -606,7 +623,36 @@ def export_options(layout_name: str):
         "allow_worker_filters": layout.data_source != "Manual" or layout.form_code in WORKER_MANUAL_FORMS,
         "employee_required": layout.form_family == "Document" and layout.data_source == "Employee",
         "docx_working_copy": True,
+        "paper_sizes": paper_sizes + ["Custom"],
+        "page_setup": page_setup,
+        "can_edit_print_defaults": layout.docstatus == 0 and layout.has_permission("write"),
     }
+
+
+@frappe.whitelist(methods=["POST"])
+def save_print_defaults(layout_name: str, print_options: str):
+    """Explicitly save visual defaults on an editable native draft layout."""
+    layout = frappe.get_doc("Workforce Statutory Print Layout", layout_name)
+    layout.check_permission("write")
+    check_company(layout.company)
+    if layout.docstatus != 0:
+        frappe.throw(_("Submitted templates cannot have their print defaults changed."), frappe.PermissionError)
+    try:
+        page = resolve_page_setup(layout, print_options)
+    except ValueError as exc:
+        frappe.throw(str(exc))
+    fields = {
+        "paper_size": page["paper_size"], "orientation": page["orientation"],
+        "custom_width_mm": page["width_mm"] if page["paper_size"] == "Custom" else None,
+        "custom_height_mm": page["height_mm"] if page["paper_size"] == "Custom" else None,
+        "margin_mm": page["margin_mm"], "logo_position": page["logo_position"],
+        "watermark_text": page["watermark_text"], "layout_style": page["layout_style"],
+    }
+    if all(layout.get(key) == value for key, value in fields.items()):
+        return {"changed": False, "page_setup": page}
+    layout.update(fields)
+    layout.save()
+    return {"changed": True, "page_setup": page}
 
 
 @frappe.whitelist()
@@ -614,14 +660,16 @@ def preview_a4(
     layout_name: str, from_date: str = "", to_date: str = "",
     language: str = "en", employee: str = "", branch: str = "",
     department: str = "", employment_type: str = "", include_all: int = 0,
+    print_options: str = "",
 ):
     """Render the selected authorization-scoped draft or approved layout."""
     _, html, data = _print_context(
         layout_name, from_date, to_date, language=language,
         employee=employee, branch=branch, department=department,
-        employment_type=employment_type, include_all=bool(int(include_all)),
+        employment_type=employment_type, include_all=bool(int(include_all)), print_options=print_options,
     )
-    return {"html": html, "findings": data["findings"], "status": "Draft", "row_count": len(data["rows"])}
+    return {"html": html, "findings": data["findings"], "status": "Draft", "row_count": len(data["rows"]),
+            "page_setup": data["page_setup"]}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -629,23 +677,37 @@ def download_a4(
     layout_name: str, from_date: str = "", to_date: str = "",
     language: str = "en", employee: str = "", branch: str = "",
     department: str = "", employment_type: str = "", include_all: int = 0,
+    print_options: str = "",
 ):
-    """Always render on A4 with orientation selected by reviewed layout."""
+    """Render the selected validated page setup through native Frappe PDF."""
     from frappe.utils.pdf import get_pdf
 
     layout, html, data = _print_context(
         layout_name, from_date, to_date, language=language,
         employee=employee, branch=branch, department=department,
-        employment_type=employment_type, include_all=bool(int(include_all)),
+        employment_type=employment_type, include_all=bool(int(include_all)), print_options=print_options,
     )
+    page = data["page_setup"]
     options = {
-        "page-size": "A4", "orientation": layout.orientation,
-        "margin-top": "9mm", "margin-bottom": "12mm",
-        "margin-left": "8mm", "margin-right": "8mm",
+        # Installed wkhtmltopdf rejects --page-size Custom. A valid fallback
+        # page-size plus explicit dimensions prints the selected geometry.
+        "page-size": "A4", "page-width": f'{page["width_mm"]}mm', "page-height": f'{page["height_mm"]}mm',
+        "margin-top": f'{page["margin_mm"]}mm', "margin-bottom": f'{page["margin_mm"]}mm',
+        "margin-left": f'{page["margin_mm"]}mm', "margin-right": f'{page["margin_mm"]}mm',
         "print-media-type": "",
-        "footer-right": "[page] / [topage]", "footer-font-size": "8",
     }
+    if not page["is_card"]:
+        options.update({"footer-right": "[page] / [topage]", "footer-font-size": "8"})
     payload = get_pdf(html, options)
+    if page["is_card"]:
+        from io import BytesIO
+        from pypdf import PdfReader
+        actual_pages = len(PdfReader(BytesIO(payload)).pages)
+        expected_pages = 2 * max(1, len(data["rows"]))
+        if actual_pages != expected_pages:
+            frappe.throw(_(
+                "Card content needs {0} pages instead of {1} sides. Choose larger paper or review long text before printing."
+            ).format(actual_pages, expected_pages))
     _audit_generation(layout, data, "PDF", payload)
     safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", layout.form_code)
     frappe.local.response.filename = (
@@ -661,14 +723,15 @@ def download_docx(
     layout_name: str, from_date: str = "", to_date: str = "",
     language: str = "en", employee: str = "", branch: str = "",
     department: str = "", employment_type: str = "", include_all: int = 0,
+    print_options: str = "",
 ):
-    """Editable A4 working copy. Never identified as a government-issued form."""
+    """Editable working copy with the same selected physical page setup."""
     from workforce_suite.workforce_suite.statutory_print_docx import render_docx
 
     layout, _html, data = _print_context(
         layout_name, from_date, to_date, language=language,
         employee=employee, branch=branch, department=department,
-        employment_type=employment_type, include_all=bool(int(include_all)),
+        employment_type=employment_type, include_all=bool(int(include_all)), print_options=print_options,
     )
     payload = render_docx(
         layout, data["rows"], company_name=data["company_name"],
@@ -676,6 +739,7 @@ def download_docx(
         company_address=data["company_address"], signatory=data["signatory"],
         company_logo=data.get("company_logo", ""), company_logo_bytes=data.get("company_logo_bytes", b""), letter_head_content=data.get("letter_head_content", ""),
         letter_head_footer=data.get("letter_head_footer", ""),
+        page_setup=data["page_setup"],
     )
     _audit_generation(layout, data, "DOCX", payload)
     safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", layout.form_code)
@@ -700,7 +764,7 @@ def _audit_generation(layout, data, output_format, payload):
             "doctype": "Workforce Statutory Export", "company": layout.company, "branch": layout.branch,
             "layout": layout.name, "template_version": layout.template_version, "source_sha256": layout.source_sha256,
             "scope_json": json.dumps({**data["scope"], "from_date": data["from_date"], "to_date": data["to_date"],
-                                      "references": references}, default=str),
+                                      "references": references, "page_setup": data["page_setup"]}, default=str),
             "language": data["language"], "output_format": output_format,
             "payload_sha256": hashlib.sha256(payload).hexdigest(), "generated_by": frappe.session.user,
             "generated_at": now_datetime(), "status": "Draft Generated",

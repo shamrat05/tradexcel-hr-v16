@@ -9,6 +9,7 @@ from frappe.model.document import Document
 from frappe.utils import getdate, now_datetime
 
 from workforce_suite.workforce_suite.statutory_access import check_company, checked_profile
+from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
 from workforce_suite.workforce_suite.statutory_schema import validate_schema
 from workforce_suite.workforce_suite.statutory_forms import (
     FIELD_KEY_RE, spec_for, COMPONENT_KEYS,
@@ -27,8 +28,10 @@ class WorkforceStatutoryPrintLayout(Document):
                 frappe.throw(_("Establishment Branch must belong to the selected Company."))
         if self.data_source != source["data_source"]:
             frappe.throw(_("The data source must match the DIFE source category. Do not relabel a different dataset as an official form."))
-        if self.orientation not in {"Portrait", "Landscape"}:
-            frappe.throw(_("Use A4 portrait or landscape."))
+        try:
+            resolve_page_setup(self)
+        except ValueError as exc:
+            frappe.throw(str(exc))
         if self.effective_to and getdate(self.effective_to) < getdate(self.effective_from):
             frappe.throw(_("Effective To cannot precede Effective From."))
         if not (self.columns or []):
@@ -38,9 +41,7 @@ class WorkforceStatutoryPrintLayout(Document):
         except ValueError as exc:
             frappe.throw(str(exc))
         if len(self.columns) > 22 and self.form_family == "Register":
-            frappe.throw(_("Split this document rather than printing more than 22 columns on A4."))
-        if self.form_family == "Register" and len(self.columns) > 11 and self.orientation == "Portrait":
-            frappe.throw(_("Wide table must be A4 landscape; choose landscape."))
+            frappe.throw(_("Split this document rather than printing more than 22 columns."))
         seen = set()
         protected = {c["field_key"]: c for c in source["columns"]}
         for col in self.columns:

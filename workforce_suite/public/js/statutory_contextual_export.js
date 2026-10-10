@@ -163,6 +163,37 @@ window.workforceStatutoryPrintLayout = async function (layoutName, context = {})
         if (optional.length) fields.push({fieldname: "scope_break", fieldtype: "Section Break",
             label: __("Narrow results"), collapsible: 1}, ...optional);
     }
+    const saved = options.page_setup;
+    fields.push(
+        {fieldname: "print_break", fieldtype: "Section Break", label: __("Paper and appearance"),
+            description: __("These choices affect this preview and download only. Change the saved defaults in the statutory layout.")},
+        {fieldname: "paper_size", fieldtype: "Select", label: __("Paper or card size"), reqd: 1,
+            options: options.paper_sizes.join("\n"), default: saved.paper_size,
+            description: options.form_code === "form_6"
+                ? __("A7 is compact. Choose A6 for easier reading when the card has many details.")
+                : __("Only paper sizes that can hold this layout are shown. Wide registers may need landscape orientation.")},
+        {fieldname: "orientation", fieldtype: "Select", label: __("Orientation"), reqd: 1,
+            options: "Portrait\nLandscape", default: saved.orientation},
+        {fieldname: "custom_width_mm", fieldtype: "Float", label: __("Custom width (mm)"),
+            depends_on: "eval:doc.paper_size == 'Custom'", default: saved.width_mm},
+        {fieldname: "custom_height_mm", fieldtype: "Float", label: __("Custom height (mm)"),
+            depends_on: "eval:doc.paper_size == 'Custom'", default: saved.height_mm},
+        {fieldname: "margin_mm", fieldtype: "Float", label: __("Margin (mm)"), reqd: 1,
+            default: saved.margin_mm},
+        {fieldname: "logo_position", fieldtype: "Select", label: __("Company logo"), reqd: 1,
+            options: "Left\nRight\nHidden", default: saved.logo_position,
+            description: __("Uses the logo in the native Company record.")},
+        {fieldname: "layout_style", fieldtype: "Select", label: __("Print style"), reqd: 1,
+            options: "Minimal Black and White\nCompact", default: saved.layout_style},
+        {fieldname: "watermark_text", fieldtype: "Data", label: __("Watermark text (optional)"),
+            default: saved.watermark_text,
+            description: __("A visual label only; it does not approve or file the document.")}
+    );
+    if (options.can_edit_print_defaults) {
+        fields.push({fieldname: "save_print_defaults", fieldtype: "Check", default: 0,
+            label: __("Save these choices as the default for this draft layout"),
+            description: __("Other authorized operators will see the new defaults. Leave unchecked for a one-time export.")});
+    }
     const preview = async (values = {}) => {
         const args = {...current, layout_name: layoutName};
         if (values.week_start) {
@@ -184,15 +215,29 @@ window.workforceStatutoryPrintLayout = async function (layoutName, context = {})
             return;
         }
         args.language = values.language === "বাংলা" ? "bn" : "en";
+        args.print_options = JSON.stringify(Object.fromEntries([
+            "paper_size", "orientation", "custom_width_mm", "custom_height_mm",
+            "margin_mm", "logo_position", "layout_style", "watermark_text"
+        ].map((key) => [key, values[key]])));
         const response = await frappe.call({
             method: "workforce_suite.workforce_suite.statutory_forms.preview_a4",
             args, freeze: true,
-            freeze_message: __("Preparing A4 draft preview")
+            freeze_message: __("Preparing print preview")
         });
+        if (values.save_print_defaults) {
+            await frappe.call({
+                method: "workforce_suite.workforce_suite.statutory_forms.save_print_defaults",
+                type: "POST", args: {layout_name: layoutName, print_options: args.print_options},
+                freeze: true,
+            });
+            frappe.show_alert({message: __("Print defaults saved on the draft layout."), indicator: "green"});
+        }
+        const page = response.message.page_setup;
+        const pageLabel = `${page.paper_size} · ${page.width_mm} × ${page.height_mm} mm`;
         const dialog = new frappe.ui.Dialog({
-            title: __("Statutory working draft"), size: "extra-large",
+            title: __("Statutory working draft") + " · " + pageLabel, size: "extra-large",
             fields: [{fieldname: "findings", fieldtype: "HTML"}, {fieldname: "page", fieldtype: "HTML"}],
-            primary_action_label: __("Download A4 PDF"),
+            primary_action_label: __("Download PDF working copy"),
             primary_action() {
                 return window.workforceStatutoryDownload("workforce_suite.workforce_suite.statutory_forms.download_a4", args);
             },
@@ -209,13 +254,12 @@ window.workforceStatutoryPrintLayout = async function (layoutName, context = {})
                 findings.map((finding) => "<li>" + escape((finding.row ? __("Row") + " " + finding.row + ": " : "") + finding.message) + "</li>").join("") + "</ul></details>");
         }
         const frame = document.createElement("iframe");
-        frame.title = __("Draft A4 print");
+        frame.title = __("Draft print preview") + " · " + pageLabel;
         frame.setAttribute("sandbox", "allow-same-origin");
         frame.style.cssText = "width:100%;height:65vh;border:1px solid var(--border-color,#ddd)";
         frame.srcdoc = response.message.html;
         dialog.fields_dict.page.$wrapper.append(frame);
         dialog.show();
     };
-    if (!fields.length) return preview();
-    frappe.prompt(fields, preview, __("Print settings"), __("Preview A4"));
+    frappe.prompt(fields, preview, __("Print settings"), __("Preview selected size"));
 };

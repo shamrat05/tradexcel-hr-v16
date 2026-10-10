@@ -1,5 +1,30 @@
 # PR 77 disposable statutory migration restore points
 
+## Before configurable paper/card metadata rehearsal — 2026-10-10
+
+Fresh supported `bench backup --with-files` of the **synthetic, disposable**
+`workforce-statutory-fresh.localhost` site before syncing PR #77 print-layout
+fields. Gzip and both tar archives were fully read and SHA-256 checked. This
+does not authorize migration of the populated local acceptance preview.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20261010_165515-workforce-statutory-fresh_localhost-database.sql.gz` | 1129322 | `ebfb788c37c692325505dd176777478f58d4a78e53e469f0f06fbe2fe7ea7f53` |
+| `20261010_165515-workforce-statutory-fresh_localhost-files.tar` | 10240 | `3682e75cf45f991e6a21ee2faa1ff96b5a08ba46606a51f06f3690180e86ae4a` |
+| `20261010_165515-workforce-statutory-fresh_localhost-private-files.tar` | 10240 | `6646d395d1dee21d0dc41d343716395259c1dd2c71bb4bbe88e09e0942a1c136` |
+| `20261010_165515-workforce-statutory-fresh_localhost-site_config_backup.json` | 293 | `3e621d32b0b2cb146ac532b28bf070665b7746fcca4b50086810965a0ca582cc` |
+
+The separate synthetic integration site `workforce-statutory.localhost` was
+also backed up immediately before its own schema sync and focused tests. Its
+database gzip and both file archives were fully read and SHA-256 checked.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `20261010_172858-workforce-statutory_localhost-database.sql.gz` | 9084994 | `4b05315ad511f31c63980241486d47d50ebf219fd6a7b177a8cf3dd26ece0015` |
+| `20261010_172858-workforce-statutory_localhost-files.tar` | 10240 | `dce6cde1619c042f1f84858fba3171125b74efc80673051fd73d32173b5a7260` |
+| `20261010_172858-workforce-statutory_localhost-private-files.tar` | 40960 | `858b19d8141545d633327e3a3a82f679191708772d4151eadceaa66f62a903f5` |
+| `20261010_172858-workforce-statutory_localhost-site_config_backup.json` | 281 | `7f5c5bad9b94d3843f6f37bf487658f69231733ced720e8c1b9bfcb4972f77bc` |
+
 The historical canonical BACKUPS.md was read before this operation and remains untouched. These backups belong only to the synthetic workforce-statutory.localhost bench, outside Git at /home/sanchita/workforce-statutory-20261008/bench. No customer restore or migration is authorized by this index.
 
 ## Before periodic evidence metadata migration

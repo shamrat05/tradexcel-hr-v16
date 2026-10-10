@@ -25,7 +25,7 @@ def _renderer():
 
 def _layout(form_code: str):
     entry = next(x for x in json.loads(SPECS.read_text())["entries"] if x["id"] == form_code)
-    data = {**entry, "form_family": entry["kind"], "title_en": entry["ui_title"],
+    data = {**entry, "form_code": entry["id"], "form_family": entry["kind"], "title_en": entry["ui_title"],
             "title_bn": "", "header_note": "", "footer_note": ""}
     data["columns"] = [
         dict(field_key=x["field_key"], label_bn=x["label_bn"],
@@ -72,12 +72,15 @@ def test_shared_pdf_contains_distinct_form_6_and_6a_regions():
 
 
 @pytest.mark.parametrize("form_id", ["form_6", "form_7", "form_8", "form_9", "form_34", "form_38", "form_80", "form_81"])
-def test_suggested_forms_render_valid_a4_html(form_id):
+def test_suggested_forms_render_valid_physical_html(form_id):
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
     render = _renderer()
     layout = _layout(form_id)
     data = [{x["field_key"]: "SYNTHETIC RECORD" for x in layout["columns"]}]
     html = render(layout, data, company_name="Example Company", from_date="2026-10-01", to_date="2026-10-07")
-    assert "@page { size: A4 " + layout["orientation"].lower() in html
+    page = resolve_page_setup(layout)
+    assert f'@page {{ size: {page["width_mm"]}mm {page["height_mm"]}mm' in html
+    assert page["paper_size"] == ("A7 Card" if form_id == "form_6" else "A4")
     assert "Example Company" in html
     assert "<!doctype html>" in html
     assert "INTERNAL DRAFT" in html
@@ -234,7 +237,7 @@ def test_docx_working_copy_a4_orientation_language_and_no_source_instructions():
     assert "EMP-01" in joined and "EMP-02" in joined
 
 
-def test_docx_portrait_document_and_wide_register_keep_all_columns():
+def test_docx_card_document_and_wide_register_keep_all_columns():
     from io import BytesIO
     from docx import Document
     from workforce_suite.workforce_suite.statutory_print_docx import render_docx
@@ -243,7 +246,8 @@ def test_docx_portrait_document_and_wide_register_keep_all_columns():
     output = Document(BytesIO(render_docx(
         layout, [{"employee_name": "SYN-001"}], company_name="Example"
     )))
-    assert abs(output.sections[0].page_width.mm - 210) < 1
+    assert abs(output.sections[0].page_width.mm - 105) < 1
+    assert abs(output.sections[0].page_height.mm - 74) < 1
     assert "SYN-001" in "\n".join(
         cell.text for t in output.tables for row in t.rows for cell in row.cells
     )
@@ -256,6 +260,88 @@ def test_docx_portrait_document_and_wide_register_keep_all_columns():
     )
     assert all(f"VALUE-{x['field_key']}" in docx_body for x in wide["columns"])
     assert max(len(t.columns) for t in rendered.tables) <= 8
+
+
+def test_saved_defaults_and_one_export_override_use_same_pdf_word_geometry():
+    from io import BytesIO
+    from docx import Document
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
+    from workforce_suite.workforce_suite.statutory_print_docx import render_docx
+
+    layout = _layout("form_6")
+    layout.update({"paper_size": "A6", "orientation": "Landscape", "logo_position": "Right",
+                   "watermark_text": "INTERNAL", "margin_mm": 4})
+    saved = resolve_page_setup(layout)
+    assert (saved["width_mm"], saved["height_mm"]) == (148, 105)
+    assert saved["logo_position"] == "Right"
+    once = resolve_page_setup(layout, {"paper_size": "Custom", "orientation": "Landscape",
+                                       "custom_width_mm": 130, "custom_height_mm": 90,
+                                       "watermark_text": "SAMPLE"})
+    assert resolve_page_setup(layout) == saved  # one-off export does not mutate the template
+    assert (once["width_mm"], once["height_mm"]) == (130, 90)
+    html = _renderer()(layout, [{"employee_name": "SYN-001"}], company_name="Example", page_setup=once)
+    assert "@page { size: 130.0mm 90.0mm; margin: 4.0mm" in html
+    assert '<div class="watermark" aria-hidden="true">SAMPLE</div>' in html
+    doc = Document(BytesIO(render_docx(layout, [{"employee_name": "SYN-001"}],
+                                    company_name="Example", page_setup=once)))
+    assert abs(doc.sections[0].page_width.mm - 130) < 1
+    assert abs(doc.sections[0].page_height.mm - 90) < 1
+    assert "wp:anchor" in doc.sections[0].header._element.xml
+    assert any(part.content_type == "image/png" for part in doc.sections[0].header.part.related_parts.values())
+
+
+@pytest.mark.parametrize("bad", [
+    {"paper_size": "Unknown"}, {"paper_size": "Custom", "custom_width_mm": 0, "custom_height_mm": 90},
+    {"paper_size": "Custom", "custom_width_mm": 120, "custom_height_mm": 90, "margin_mm": 40},
+    {"logo_position": "<script>"}, {"layout_style": "Executable"},
+    {"watermark_text": "x\nInjected"}, {"unsupported": "yes"},
+])
+def test_print_setup_rejects_untrusted_or_impossible_options(bad):
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
+    with pytest.raises(ValueError):
+        resolve_page_setup(_layout("form_6"), bad)
+
+
+def test_wide_register_cannot_be_forced_onto_card_or_narrow_custom_paper():
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
+    layout = _layout("form_38")
+    with pytest.raises(ValueError, match="card preset"):
+        resolve_page_setup(layout, {"paper_size": "A7 Card"})
+    with pytest.raises(ValueError, match="270 mm"):
+        resolve_page_setup(layout, {"paper_size": "A5"})
+
+
+@pytest.mark.parametrize("paper,orientation,expected", [
+    ("A4", "Portrait", (210, 297)), ("A4", "Landscape", (297, 210)),
+    ("A5", "Portrait", (148, 210)), ("Letter", "Landscape", (279.4, 215.9)),
+    ("Legal", "Portrait", (215.9, 355.6)),
+])
+def test_standard_paper_sizes_match_pdf_and_word_page_geometry(paper, orientation, expected):
+    from io import BytesIO
+    from docx import Document
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
+    from workforce_suite.workforce_suite.statutory_print_docx import render_docx
+    layout = _layout("form_6")
+    page = resolve_page_setup(layout, {"paper_size": paper, "orientation": orientation})
+    assert (page["width_mm"], page["height_mm"]) == expected
+    html = _renderer()(layout, [{}], company_name="Example", page_setup=page)
+    assert f'@page {{ size: {expected[0]}mm {expected[1]}mm' in html
+    word = Document(BytesIO(render_docx(layout, [{}], company_name="Example", page_setup=page)))
+    assert abs(word.sections[0].page_width.mm - expected[0]) < 1
+    assert abs(word.sections[0].page_height.mm - expected[1]) < 1
+
+
+def test_logo_position_and_escaped_watermark_are_per_document_visual_options():
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
+    layout = _layout("form_6")
+    page = resolve_page_setup(layout, {"logo_position": "Right", "watermark_text": "<PRIVATE>"})
+    html = _renderer()(layout, [{}], company_name="Example", company_logo="/files/logo.png", page_setup=page)
+    assert '<div class="heading-right"><img class="company-logo"' in html
+    assert "&lt;PRIVATE&gt;" in html and "<PRIVATE>" not in html
+    hidden = resolve_page_setup(layout, {"logo_position": "Hidden", "watermark_text": ""})
+    html = _renderer()(layout, [{}], company_name="Example", company_logo="/files/logo.png", page_setup=hidden)
+    assert 'class="company-logo"' not in html
+    assert 'class="watermark"' not in html
 
 
 def test_native_sources_cannot_be_relabelled_as_manual_statutory_forms():

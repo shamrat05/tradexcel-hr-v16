@@ -1,5 +1,6 @@
 """Real Frappe v16 synthetic statutory integration; run only on disposable sites."""
 import os
+import json
 from copy import deepcopy
 from datetime import date
 from pathlib import Path
@@ -296,6 +297,123 @@ def test_personal_pdf_filename_uses_normalized_context_not_ignored_caller_dates(
     with patch('frappe.utils.pdf.get_pdf',return_value=b'%PDF-TEST-CONVERTER-STUB'):
         forms.download_a4(doc.name,from_date='../ignored',to_date='ignored',employee=data['person'])
     assert frappe.local.response.filename=='form_8_en_employee_document.pdf'
+
+
+def test_card_export_options_are_permission_checked_and_audited(data):
+    doc = layout('form_6')
+    options = forms.export_options(doc.name)
+    assert options['page_setup']['paper_size'] == 'A7 Card'
+    assert 'A7 Card' in options['paper_sizes']
+    assert (options['page_setup']['width_mm'], options['page_setup']['height_mm']) == (105, 74)
+    assert options['page_setup']['orientation'] == 'Landscape'
+    from io import BytesIO
+    from pypdf import PdfReader
+    forms.download_a4(doc.name, employee=data['person'])
+    default_pdf = PdfReader(BytesIO(frappe.local.response.filecontent))
+    assert len(default_pdf.pages) == 2
+    assert abs(float(default_pdf.pages[0].mediabox.width) * 25.4 / 72 - 105) < 1
+    forms.download_a4(doc.name, employee=data['person'],
+                      print_options=json.dumps({'paper_size': 'A6', 'orientation': 'Landscape'}))
+    larger_card = PdfReader(BytesIO(frappe.local.response.filecontent))
+    assert len(larger_card.pages) == 2
+    assert abs(float(larger_card.pages[0].mediabox.width) * 25.4 / 72 - 148) < 1
+    override = json.dumps({'paper_size': 'Custom', 'orientation': 'Landscape',
+                           'custom_width_mm': 130, 'custom_height_mm': 90,
+                           'watermark_text': 'TEST WORKING COPY'})
+    preview = forms.preview_a4(doc.name, employee=data['person'], print_options=override)
+    assert preview['page_setup']['width_mm'] == 130
+    assert '@page { size: 130.0mm 90.0mm' in preview['html']
+    forms.download_a4(doc.name, employee=data['person'], print_options=override)
+    pdf = PdfReader(BytesIO(frappe.local.response.filecontent))
+    assert len(pdf.pages) == 2
+    assert abs(float(pdf.pages[0].mediabox.width) * 25.4 / 72 - 130) < 1
+    assert abs(float(pdf.pages[0].mediabox.height) * 25.4 / 72 - 90) < 1
+    audit = frappe.get_last_doc('Workforce Statutory Export')
+    assert json.loads(audit.scope_json)['page_setup']['watermark_text'] == 'TEST WORKING COPY'
+    assert forms.export_options(doc.name)['page_setup']['paper_size'] == 'A7 Card'
+
+
+def test_non_card_export_does_not_offer_impossible_card_preset(data):
+    doc = layout('form_8')
+    sizes = forms.export_options(doc.name)['paper_sizes']
+    assert 'A4' in sizes and 'Custom' in sizes
+    assert 'A7 Card' not in sizes
+
+
+def test_card_with_reviewed_portrait_and_filled_fields_stays_two_sided():
+    from io import BytesIO
+    from PIL import Image
+    from pypdf import PdfReader
+    from frappe.utils.pdf import get_pdf
+    from workforce_suite.tests.test_statutory_printing import _layout
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
+    from workforce_suite.workforce_suite.statutory_print_html import render_html
+
+    doc = _layout('form_6')
+    image = BytesIO()
+    Image.new('RGB', (80, 100), 'gray').save(image, format='PNG')
+    row = {column['field_key']: 'TEST REVIEWED VALUE' for column in doc['columns']}
+    row['_portrait_bytes'] = image.getvalue()
+    page = resolve_page_setup(doc)
+    html = render_html(doc, [row], company_name='TEST Company', page_setup=page)
+    options = {'page-size': 'A4', 'page-width': '105mm', 'page-height': '74mm',
+               'margin-top': '3mm', 'margin-bottom': '3mm',
+               'margin-left': '3mm', 'margin-right': '3mm', 'print-media-type': ''}
+    assert len(PdfReader(BytesIO(get_pdf(html, options))).pages) == 2
+
+
+def test_print_overrides_do_not_bypass_source_permissions_or_geometry(data):
+    doc = layout('form_6')
+    with pytest.raises(frappe.ValidationError, match='supported paper'):
+        forms.preview_a4(doc.name, employee=data['person'], print_options='{"paper_size":"unsafe"}')
+    with pytest.raises(frappe.ValidationError, match='Unknown print option'):
+        forms.preview_a4(doc.name, employee=data['person'], print_options='{"company":"other"}')
+    frappe.set_user(data['worker'])
+    try:
+        with pytest.raises(frappe.PermissionError):
+            forms.export_options(doc.name)
+        with pytest.raises(frappe.PermissionError):
+            forms.preview_a4(doc.name, employee=data['person'], print_options='{"paper_size":"A4"}')
+    finally:
+        frappe.set_user('Administrator')
+
+
+def test_card_pdf_refuses_extra_pages_instead_of_hiding_overflow(data):
+    from io import BytesIO
+    from pypdf import PdfWriter
+    doc = layout('form_6')
+    writer = PdfWriter()
+    for _ in range(3):
+        writer.add_blank_page(width=298, height=210)
+    stream = BytesIO()
+    writer.write(stream)
+    before = frappe.db.count('Workforce Statutory Export')
+    with patch('frappe.utils.pdf.get_pdf', return_value=stream.getvalue()):
+        with pytest.raises(frappe.ValidationError, match='instead of 2 sides'):
+            forms.download_a4(doc.name, employee=data['person'])
+    assert frappe.db.count('Workforce Statutory Export') == before
+
+
+def test_authorized_operator_can_save_visual_defaults_once_without_changing_source(data):
+    doc = layout('form_6')
+    original_columns = [(c.field_key, c.section_key) for c in doc.columns]
+    options = json.dumps({'paper_size': 'Custom', 'orientation': 'Landscape',
+                          'custom_width_mm': 135, 'custom_height_mm': 95,
+                          'margin_mm': 4, 'logo_position': 'Right',
+                          'watermark_text': 'TEST DRAFT', 'layout_style': 'Compact'})
+    first = forms.save_print_defaults(doc.name, options)
+    assert first['changed'] is True
+    assert forms.save_print_defaults(doc.name, options)['changed'] is False
+    doc.reload()
+    assert doc.paper_size == 'Custom' and doc.logo_position == 'Right'
+    assert (doc.custom_width_mm, doc.custom_height_mm) == (135, 95)
+    assert [(c.field_key, c.section_key) for c in doc.columns] == original_columns
+    frappe.set_user(data['worker'])
+    try:
+        with pytest.raises(frappe.PermissionError):
+            forms.save_print_defaults(doc.name, options)
+    finally:
+        frappe.set_user('Administrator')
 
 
 @pytest.mark.parametrize("narrowing", ["Employee", "Department", "Branch"])

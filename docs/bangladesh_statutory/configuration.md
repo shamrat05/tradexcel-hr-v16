@@ -5,11 +5,11 @@ This feature produces **draft working copies**, not legally approved filings. Th
 Operators need native access to the source records **and** statutory-layout access (currently System Manager or Workforce Compliance Auditor), with the appropriate explicit Company scope. An HR/payroll role alone does not authorize this exporter. Contextual actions respect native visibility; server checks remain authoritative. No native source permissions are granted by these actions.
 
 1. An authorized System Manager or scoped Compliance Auditor creates a **Workforce Statutory Profile** for an explicit Company and, where appropriate, Branch. Enter the establishment's EN/BN name/address, actual registration/licence references, effective dates, signatory details and applicable source/review notes. Map the company's actual native annual/casual/sick Leave Types; do not create entitlements here. A different authorized reviewer submits the profile.
-2. Create **Workforce Statutory Print Layout**, select the historical form reference, Company/Branch, effective dates and version, then use **Layout Tools → Load Suggested Columns**. Required source keys and sections are protected. Change labels, translated notes and width weights only after checking their meaning. Complete the Bangla title and every label; there is no English fallback. Source hashes are read-only and assigned by the controller.
+2. Create **Workforce Statutory Print Layout**, select the historical form reference, Company/Branch, effective dates and version, then use **Layout Tools → Load Suggested Columns**. Required source keys and sections are protected. Change labels, translated notes and width weights only after checking their meaning. Complete the Bangla title and every label; there is no English fallback. Source hashes are read-only and assigned by the controller. Set the saved paper/card size, orientation, optional custom dimensions, margin, compact style, Company-logo position and watermark text on this layout; only an authorized layout editor can save these defaults.
 3. For Form 38, map the actual native earning components to the protected wage columns. The additional mapping child table allows several native components in one prescribed column. A component cannot appear twice, and every included nonzero Salary Slip earning must be mapped. This mapping groups **already calculated native amounts for printing**; it never configures salaries or divides gross wages.
 4. Use **Workforce Statutory Record** for missing, reviewed facts. Select the same layout/Company, relevant Employee for a native-source supplement, record date/effective end, explicit field keys, source justification and readable private evidence file where applicable. The native controller rejects unknown fields and native-owned wage, hours, identity and leave-balance overrides. Set each populated fact to Evidence Entered (or use Not Applicable with an explicit reason) before a different reviewer submits the record. Unresolved populated facts are rejected at submission. Draft evidence is never exported as reviewed truth. Externally issued evidence-only entries can retain and independently review a private original without retyping its certificate fields; their PDF/DOCX generation remains blocked.
 5. Open the originating Employee Calendar, attendance/pay/leave report or Payroll Entry and use its grouped statutory action. Saved Company/worker/Branch/Department/period filters are reused. A worker card/register has no payroll period. Form 34 requests a Friday–Thursday week when a report's selection is not one. Form 80 needs a full half-year; Form 81 a full year. A leave `as_of_date` is not a reporting history range.
-6. Preview before downloading. Missing mandatory values, unresolved overtime-rate breakdowns, absent allocation evidence and missing receipts appear as findings. Blank draft cells are not invented zeroes. PDF is fixed-layout A4; DOCX is an editable working copy, with explicitly identified column bands on wide registers. Both downloads recheck server permissions and use the same data adapter.
+6. Choose **Print & Review → Preview / Download**. The print dialog shows the saved paper and appearance choices, which may be changed for this one preview/download without editing the layout. An authorized editor of a draft layout may check **Save these choices as the default** there; the server checks write access and saves only visual settings. Submitted layouts cannot be changed this way. The preview then offers PDF and editable DOCX from the same selected page setup. Missing mandatory values, unresolved overtime-rate breakdowns, absent allocation evidence and missing receipts appear as findings. Blank draft cells are not invented zeroes. Wide DOCX registers retain all columns in identified bands. Both downloads recheck server permissions and use the same data adapter. A visual watermark is not an approval or filing status.
 
 Generation records are immutable and say `Draft Generated`. They record actor/time, layout/version, source references, selected scope and output hash, without copying the exported personal cell values. There is no fictional filed/paid/approved status. External medical, engineering and licence originals must be retained as controlled evidence rather than fabricated by this exporter.
 
@@ -37,10 +37,34 @@ configuration; it is not shipped in the application. External entries can be con
 
 For a working Employee export, prepare Form 8, open an authorized Employee and
 choose the statutory Worker Register action. Preview the draft and its findings,
-then choose **Download A4 PDF** or **Editable DOCX working copy**. Form 8 requires
+then choose **Download PDF working copy** or **Editable DOCX working copy**. Form 8 requires
 no payroll date range. PDFs/DOCX download to your browser; configuration and
 immutable generation audit records remain native DocTypes. An internal draft
 is not a legally approved register or government filing.
+
+## Paper, card, logo and watermark defaults
+
+Ordinary registers retain A4 defaults. Form 6 worker identity cards default to
+**A7 Card, landscape (105 × 74 mm)** with separate front/back pages; this is
+a practical draft size, **not a claimed legal dimension**. The layout editor
+can save a compatible standard size or bounded custom millimetre dimensions.
+The A7 preset is offered only for Form 6. It is dense; A6 landscape gives
+larger text when the card has many details. The operator sees compatible
+sizes and the saved defaults in the print dialog and may change them for one
+export. PDF and DOCX use the same validated dimensions. Wide registers refuse
+a sheet too narrow to retain all reviewed fields.
+
+The Company logo comes from the native Company record and can be placed left,
+right or hidden for this print. The existing native Letter Head remains in
+non-card drafts; small cards use a compact header so a full Letter Head does
+not silently force a third face. Text watermarks are escaped and rendered
+behind content in PDF and Word. The draft/working-copy warning remains even
+when a custom watermark is selected. Review the preview and a physical test
+print for unusually long names, addresses, Bangla text or printer-specific
+scaling. Choosing another size never changes protected legal fields, source
+records or the saved template; the chosen settings are recorded in the native
+generation audit. A submitted layout printed with different settings is
+labeled as a working draft pending review of that presentation.
 
 ## Reviewed periodic return and history workflow
 

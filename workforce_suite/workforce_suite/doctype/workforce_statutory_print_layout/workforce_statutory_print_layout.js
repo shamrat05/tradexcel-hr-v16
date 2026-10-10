@@ -4,14 +4,14 @@
 frappe.ui.form.on("Workforce Statutory Print Layout", {
     refresh(frm) {
         if (frm.doc.docstatus !== 0) {
-            frm.add_custom_button(__("A4 Preview / PDF"), () => open_print_options(frm),
+            frm.add_custom_button(__("Preview / Download"), () => open_print_options(frm),
                 __("Print & Review"));
             return;
         }
         frm.add_custom_button(__("Load Suggested Columns"), () => load_suggested_columns(frm),
             __("Layout Tools"));
         if (!frm.is_new()) {
-            frm.add_custom_button(__("A4 Preview / PDF"), () => open_print_options(frm),
+            frm.add_custom_button(__("Preview / Download"), () => open_print_options(frm),
                 __("Print & Review"));
         }
     },
@@ -67,7 +67,8 @@ async function load_suggested_columns(frm) {
     await frm.set_value({
         form_family: source.form_family,
         data_source: source.data_source,
-        orientation: source.orientation,
+        orientation: source.id === "form_6" ? "Landscape" : source.orientation,
+        paper_size: source.id === "form_6" ? "A7 Card" : "A4",
         title_en: source.title,
     });
     frm.refresh_field("columns");
