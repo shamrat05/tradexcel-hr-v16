@@ -46,12 +46,14 @@ multiweek bundle can be added after the full-page legal layout is approved.
 
 ### Output formats by actual task
 
-- **A4 PDF**: primary format for draft previews and, after legal approval,
-  final statutory register/filing preservation.
-- **Editable DOCX**: appropriate for per-employee letters or working drafts,
-  not a good substitute for fixed-layout, multi-column statutory registers.
-  DOCX delivery is *not implemented in this branch* and must have separate
-  A4/translation tests before being exposed.
+- **PDF working copy**: the primary fixed-layout preview and archival candidate.
+  A4 remains the default for registers; Form 6 defaults to a two-sided A7
+  card, and compatible A5/A6/Letter/Legal/custom millimetre settings can be
+  selected or saved on the native draft layout.
+- **Editable DOCX working copy**: generated from the same authorized data and
+  validated page settings. It is suitable for editable letters/cards and
+  working copies, not a substitute for a legally reviewed fixed-layout
+  register. It is a real Word package, not renamed HTML.
 - **Excel**: preferable for large editable internal tabular analyses, using
   native report export rather than inaccurately labeling it as an official
   government-form print.
@@ -60,11 +62,12 @@ multiweek bundle can be added after the full-page legal layout is approved.
 
 ### Printing requirements
 
-- Both A4 portrait and A4 landscape are supported in a simple black-and-white
-  HTML/CSS renderer; long tables repeat table headers.
-- A4 CI independently renders multi-page synthetic samples and inspects PDF
-  geometry and extracted record markers, with all bounding boxes inside the
-  paper.
+- Compatible portrait/landscape page settings are supported in a simple
+  black-and-white HTML/CSS renderer; long tables repeat table headers. Card
+  output refuses a third face instead of silently overflowing.
+- CI independently renders multi-page synthetic samples and checks the
+  selected PDF/DOCX geometry and extracted record markers, with all bounding
+  boxes inside the paper.
 - The final production PDF converter may differ from the CI renderer; verify
   Frappe's actual generated PDF visually on a bench.
 - Government source-PDF footnotes/instructions are not inserted into the
