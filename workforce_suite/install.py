@@ -474,6 +474,10 @@ WORKSPACE_SHORTCUTS = [
     ("Employee Groups", "Employee Group", "DocType"),
     ("HR Settings", "HR Settings", "DocType"),
     ("Payroll Settings", "Payroll Settings", "DocType"),
+    ("Users & Roles", "User", "DocType"),
+    ("Role Profiles", "Role Profile", "DocType"),
+    ("User Permissions", "User Permission", "DocType"),
+    ("Site Announcements", "Navbar Settings", "DocType"),
 ]
 
 BULK_WORKSPACE_SHORTCUTS = [
@@ -486,6 +490,10 @@ BULK_WORKSPACE_SHORTCUTS = [
 # Frappe stores icons on Workspace Shortcut rows. These names are from the
 # installed timeless icon set, so no custom icon bundle is needed.
 WORKSPACE_SHORTCUT_ICONS = {
+    "Users & Roles": "users",
+    "Role Profiles": "users",
+    "User Permissions": "lock",
+    "Site Announcements": "notification",
     "Today's Attendance": "today",
     "Attendance Summary": "calendar",
     "Attendance Periods": "calendar",
@@ -609,61 +617,162 @@ WORKSPACE_SHORTCUT_ICONS = {
 }
 
 WORKSPACE_SECTIONS = (
-    ("Employees", "Maintain identity and use native records for employment changes.", (
-        "Employee Directory", "Joiners & Leavers", "Employee Transfers", "Employee Promotions", "Missing Employee Data",
+    ('Employees', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Employee Directory',
+        'Joiners & Leavers',
+        'Employee Transfers',
+        'Employee Promotions',
+        'Missing Employee Data',
     )),
-    ("Attendance & Shifts", "Review work evidence, attendance requests, and shift coverage.", (
-        "Today's Attendance", "Attendance Summary", "Attendance Fix Requests", "Attendance Records", "Punch Log",
-        "Mobile Attendance", "Field Duties", "Overtime Reviews", "Attendance Periods",
-        "Shift Assignments", "Bulk Shift Assignment", "Shift Requests", "Shift Schedule Assignments", "Shift Planner", "Shift Coverage",
-        "Shift Locations", "Overtime Types",
-        "Monthly Attendance Sheet", "Shift Attendance", "Employees Working on a Holiday",
+    ('Attendance', 'Native tasks and reviews; configuration is under Setup sections.', (
+        "Today's Attendance",
+        'Attendance Summary',
+        'Attendance Fix Requests',
+        'Attendance Records',
+        'Punch Log',
+        'Mobile Attendance',
+        'Field Duties',
+        'Overtime Reviews',
+        'Attendance Periods',
+        'Monthly Attendance Sheet',
+        'Employees Working on a Holiday',
     )),
-    ("Leave & Holidays", "Review requests and explicitly configured leave entitlements.", (
-        "Leave Requests", "Compensatory Leave Requests", "Leave Balances", "Leave Allocations", "Bulk Leave Allocation",
-        "Leave Encashment",
-        "Leave Policy Assignments", "Holiday List Assignments", "Holiday Lists", "Leave Types", "Leave Policies", "Leave Periods", "Leave Block Lists",
+    ('Shift Planning', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Shift Assignments',
+        'Bulk Shift Assignment',
+        'Shift Requests',
+        'Shift Schedule Assignments',
+        'Shift Planner',
+        'Shift Coverage',
+        'Shift Attendance',
     )),
-    ("Expenses & Travel", "Submit and review native employee expenses, advances and travel.", (
-        "Expense Claims", "Employee Advances", "Travel Requests",
-        "Employee Advance Summary", "Unpaid Expense Claims",
-        "Expense Claim Types", "Purpose of Travel",
+    ('Leave & Holidays', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Leave Requests',
+        'Compensatory Leave Requests',
+        'Leave Balances',
+        'Leave Allocations',
+        'Bulk Leave Allocation',
+        'Leave Encashment',
+        'Leave Policy Assignments',
+        'Holiday List Assignments',
     )),
-    ("Payroll", "Prepare and review native salary authority and payroll.", (
-        "Run Monthly Payroll", "Salary Setup Coverage", "Bulk Salary Structure Assignment", "Salary Assignments",
-        "Payroll Entries (Advanced)", "Salary Slips", "Extra Pay & Deductions", "Payroll Corrections", "Salary Arrears",
-        "Employee Incentive", "Retention Bonus", "Salary Withholding",
+    ('Expenses & Travel', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Expense Claims',
+        'Employee Advances',
+        'Travel Requests',
+        'Employee Advance Summary',
+        'Unpaid Expense Claims',
     )),
-    ("Recruitment", "Move reviewed hires through native recruitment and onboarding.", (
-        "Staffing Plans", "Job Requisitions", "Job Openings", "Job Applicants", "Interviews", "Interview Feedback",
-        "Employee Referrals", "Job Offers", "Appointment Letters", "Onboarding",
-        "Interview Types", "Appointment Letter Templates", "Recruitment Analytics",
+    ('Payroll', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Run Monthly Payroll',
+        'Salary Setup Coverage',
+        'Bulk Salary Structure Assignment',
+        'Salary Assignments',
+        'Payroll Entries (Advanced)',
+        'Salary Slips',
+        'Extra Pay & Deductions',
+        'Payroll Corrections',
+        'Salary Arrears',
+        'Employee Incentive',
+        'Retention Bonus',
+        'Salary Withholding',
+        'Payroll Register',
+        'Payroll Variance',
+        'Pay Component Register',
     )),
-    ("Development & Relations", "Manage employee grievances, training events and appraisals.", (
-        "Employee Grievances", "Training Programs", "Training Events", "Appraisals", "Goals", "Employee Skill Map",
-        "Training Feedback", "Training Results", "Appraisal Cycles",
-        "Grievance Types", "Appraisal Templates",
+    ('Recruitment', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Staffing Plans',
+        'Job Requisitions',
+        'Job Openings',
+        'Job Applicants',
+        'Interviews',
+        'Interview Feedback',
+        'Employee Referrals',
+        'Job Offers',
+        'Appointment Letters',
+        'Onboarding',
+        'Recruitment Analytics',
     )),
-    ("Separation", "Review operational exit and settlement separately.", (
-        "Exits / Separations", "Final Settlements",
+    ('Training & Reviews', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Employee Grievances',
+        'Training Programs',
+        'Training Events',
+        'Appraisals',
+        'Goals',
+        'Employee Skill Map',
+        'Training Feedback',
+        'Training Results',
+        'Appraisal Cycles',
     )),
-    ("Compliance", "Review explicit applicability without inventing legal values.", (
-        "Wage Floor Reviews", "Benefit Enrollments", "Working Time Reviews", "Maternity Reviews", "Welfare Reviews",
-        "Statutory Form Layouts", "Statutory Evidence Records",
+    ('Employee Exits', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Exits / Separations',
+        'Final Settlements',
     )),
-    ("Reports", "Open the reviews allowed for your role and scope.", (
-        "Anomaly Radar", "Payroll Register", "Payroll Variance", "Pay Component Register", "Biometric ID Audit",
+    ('Compliance', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Wage Floor Reviews',
+        'Benefit Enrollments',
+        'Working Time Reviews',
+        'Maternity Reviews',
+        'Welfare Reviews',
+        'Statutory Evidence Records',
+        'Anomaly Radar',
     )),
-    ("Setup", "Reviewed configuration for authorized administrators.", (
-        "Departments", "Designations", "Branches / Locations", "Employee Grades", "Employee Groups",
-        "HR Settings", "Payroll Settings",
-        "Shift Types", "Attendance Policies",
-        "Salary Structures", "Salary Components", "Payroll Rules", "Income Tax Slabs", "Payroll Periods",
-        "Statutory Exit Rules", "Wage Floor Rules", "Benefit Rules", "Working Time Rules", "Maternity Rules",
-        "Policy Exceptions", "Bulk Data Import",
+    ('Devices & Locations', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Biometric Devices',
+        'Employee Biometric IDs',
+        'Face Match Settings',
+        'Live Locations',
+        'Location Pings',
+        'Biometric ID Audit',
     )),
-    ("Devices", "Device and field evidence for authorized support roles.", (
-        "Biometric Devices", "Employee Biometric IDs", "Face Match Settings", "Live Locations", "Location Pings",
+    ('Organization Setup', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Departments',
+        'Designations',
+        'Branches / Locations',
+        'Employee Grades',
+        'Employee Groups',
+    )),
+    ('HR Setup', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'HR Settings',
+        'Shift Types',
+        'Shift Locations',
+        'Attendance Policies',
+        'Overtime Types',
+        'Holiday Lists',
+        'Leave Types',
+        'Leave Policies',
+        'Leave Periods',
+        'Leave Block Lists',
+        'Expense Claim Types',
+        'Purpose of Travel',
+        'Interview Types',
+        'Appointment Letter Templates',
+        'Grievance Types',
+        'Appraisal Templates',
+    )),
+    ('Payroll Setup', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Payroll Settings',
+        'Salary Structures',
+        'Salary Components',
+        'Payroll Rules',
+        'Income Tax Slabs',
+        'Payroll Periods',
+    )),
+    ('Legal Setup', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Statutory Form Layouts',
+        'Statutory Exit Rules',
+        'Wage Floor Rules',
+        'Benefit Rules',
+        'Working Time Rules',
+        'Maternity Rules',
+        'Policy Exceptions',
+    )),
+    ('Administration', 'Native tasks and reviews; configuration is under Setup sections.', (
+        'Users & Roles',
+        'Role Profiles',
+        'User Permissions',
+        'Site Announcements',
+        'Bulk Data Import',
     )),
 )
 
@@ -714,15 +823,24 @@ ATTENDANCE_REQUEST_GUIDANCE = (
     "authorized independent reviewer to submit. A draft does not create "
     "approved Attendance."
 )
+ANNOUNCEMENT_GUIDANCE = (
+    "Site-wide notice for signed-in Desk users across all companies. Do not include "
+    "confidential employee or payroll data. Save, then reload Desk to check it. "
+    "Users can dismiss it in their browser; dismissal is not a read receipt. "
+    "Change the message to publish a new notice, or clear it to remove the notice."
+)
 
 
 def ensure_operator_guidance():
     """Create native contextual help; preserve administrator-owned overrides."""
-    filters = {"doc_type": "Attendance Request", "field_name": "explanation", "property": "description"}
-    if not frappe.db.exists("Property Setter", filters):
-        from frappe.custom.doctype.property_setter.property_setter import make_property_setter
-        make_property_setter("Attendance Request", "explanation", "description",
-                             ATTENDANCE_REQUEST_GUIDANCE, "Small Text")
+    from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+    for doctype, field, description in (
+        ("Attendance Request", "explanation", ATTENDANCE_REQUEST_GUIDANCE),
+        ("Navbar Settings", "announcement_widget", ANNOUNCEMENT_GUIDANCE),
+    ):
+        filters = {"doc_type": doctype, "field_name": field, "property": "description"}
+        if not frappe.db.exists("Property Setter", filters):
+            make_property_setter(doctype, field, "description", description, "Small Text")
 
 
 def ensure_workspace_sidebar(shortcuts):

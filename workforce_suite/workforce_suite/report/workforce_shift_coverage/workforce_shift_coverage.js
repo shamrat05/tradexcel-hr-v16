@@ -3,6 +3,7 @@ frappe.query_reports["Workforce Shift Coverage"] = {
         return { ...options, checkboxColumn: true };
     },
     onload(report) {
+        workforce_suite.report_actions.begin(report);
         // Row actions only for users who can open the installed single tool.
         if (!(frappe.model.can_read && frappe.model.can_read("Shift Assignment Tool"))) return;
         const escape = frappe.utils.escape_html;
@@ -35,7 +36,7 @@ frappe.query_reports["Workforce Shift Coverage"] = {
             };
             frappe.set_route("List", "Shift Assignment", "List");
         };
-        report.page.add_inner_button(__("Review / Assign Shift"), () => {
+        report.workforce_actions.add(__("Review / Assign Shift"), () => {
             const rows = report.get_checked_items();
             if (!rows.length) {
                 frappe.msgprint(__("Select one or more Employees in the report first."));

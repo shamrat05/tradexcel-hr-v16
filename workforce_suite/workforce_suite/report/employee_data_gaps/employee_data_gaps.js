@@ -92,9 +92,10 @@ frappe.query_reports["Employee Data Gaps"] = {
         return value;
     },
     onload(report) {
+        workforce_suite.report_actions.begin(report);
         // Keep the current review task one click away. All other existing
         // workflows stay discoverable in Frappe's native, responsive dropdown.
-        report.page.add_inner_button(__("Review Employees"), () => {
+        report.workforce_actions.add(__("Review Employees"), () => {
             const names = (report.data || []).map((row) => row.employee).filter(Boolean);
             if (!names.length) {
                 frappe.msgprint(__("No matching Employees need review."));
@@ -112,14 +113,14 @@ frappe.query_reports["Employee Data Gaps"] = {
 
         // Frequent corrections first, then less-frequent employee workflows.
         if (hr_maker) {
-            report.page.add_inner_button(__("Open Salary Assignment Tool"), () => {
+            report.workforce_actions.add(__("Open Salary Assignment Tool"), () => {
                 frappe.route_options = { company: report.get_filter_value("company") };
                 frappe.set_route("Form", "Bulk Salary Structure Assignment");
             }, more_actions);
         }
 
         if (shift_maker) {
-            report.page.add_inner_button(__("Open Bulk Shift Assignment"), () => {
+            report.workforce_actions.add(__("Open Bulk Shift Assignment"), () => {
                 const route_options = { start_date: frappe.datetime.get_today() };
                 for (const fieldname of ["company", "branch", "department"]) {
                     const value = report.get_filter_value(fieldname);
@@ -132,7 +133,7 @@ frappe.query_reports["Employee Data Gaps"] = {
 
         if (!hr_maker) return;
 
-        report.page.add_inner_button(__("Create Employee Transfer"), () => {
+        report.workforce_actions.add(__("Create Employee Transfer"), () => {
             const rows = report.data || [];
             if (rows.length !== 1) {
                 frappe.msgprint(__("Filter this report to one Employee before opening a Transfer."));
@@ -141,7 +142,7 @@ frappe.query_reports["Employee Data Gaps"] = {
             frappe.new_doc("Employee Transfer", { employee: rows[0].employee });
         }, more_actions);
 
-        report.page.add_inner_button(__("Create Employee Promotion"), () => {
+        report.workforce_actions.add(__("Create Employee Promotion"), () => {
             const rows = report.data || [];
             if (rows.length !== 1) {
                 frappe.msgprint(__("Filter this report to one Employee before opening a Promotion."));
@@ -150,7 +151,7 @@ frappe.query_reports["Employee Data Gaps"] = {
             frappe.new_doc("Employee Promotion", { employee: rows[0].employee });
         }, more_actions);
 
-        report.page.add_inner_button(__("View Employee Onboardings"), () => {
+        report.workforce_actions.add(__("View Employee Onboardings"), () => {
             frappe.set_route("List", "Employee Onboarding");
         }, more_actions);
     },

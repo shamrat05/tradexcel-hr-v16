@@ -7,7 +7,8 @@ app_email = ""
 app_license = "MIT"
 
 app_include_css = ["workforce_suite.bundle.css"]
-app_include_js = ["workforce_suite.bundle.js"]
+app_include_js = ["workforce_suite.bundle.js", "report_actions.bundle.js", "native_announcements.bundle.js"]
+extend_bootinfo = "workforce_suite.navigation.extend_bootinfo"
 
 add_to_apps_screen = [{
     "name": "workforce_suite",

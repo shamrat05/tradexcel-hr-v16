@@ -1,6 +1,9 @@
 frappe.ui.form.on("Salary Slip", {
   refresh(frm) {
     if (frm.doc.docstatus !== 1) return;
+    const reviewers = ["System Manager", "Workforce Payroll Manager", "Workforce Suite Manager",
+      "Workforce Payroll Approver", "Workforce Owner/Director"];
+    if (frappe.session.user !== "Administrator" && !reviewers.some(role => frappe.user.has_role(role))) return;
 
     frm.add_custom_button(__("Review Payroll Adjustment"), () => {
       frappe.prompt([

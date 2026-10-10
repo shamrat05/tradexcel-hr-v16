@@ -28,7 +28,9 @@ frappe.query_reports["Biometric ID Audit"] = {
 		},
 	],
 	onload(report) {
-		report.page.add_inner_button(__("Assign Biometric ID"), () => {
+        workforce_suite.report_actions.begin(report);
+		if (frappe.model.can_create("Workforce Employee Biometric") || frappe.model.can_write("Workforce Employee Biometric"))
+		report.workforce_actions.add(__("Assign Biometric ID"), () => {
 			frappe.prompt(
 				[
 					{ fieldname: "employee", label: __("Employee"), fieldtype: "Link", options: "Employee", reqd: 1 },
@@ -51,7 +53,8 @@ frappe.query_reports["Biometric ID Audit"] = {
 				__("Save")
 			);
 		});
-		report.page.add_inner_button(__("Copy Biometric to Device"), () => {
+		if (frappe.model.can_write("Workforce Biometric Device"))
+		report.workforce_actions.add(__("Copy Biometric to Device"), () => {
 			frappe.prompt(
 				[
 					{ fieldname: "employee", label: __("Employee"), fieldtype: "Link", options: "Employee", reqd: 1 },
