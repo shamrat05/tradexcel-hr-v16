@@ -44,4 +44,10 @@ frappe.query_reports["Daily Attendance Summary"] = {
             default: "",
         },
     ],
+    onload(report) {
+        report.page.add_inner_button(__("Form 34 weekly draft"), () => {
+            const filters = report.get_values ? report.get_values() : {};
+            window.workforceStatutoryExport("form_34", filters || {});
+        }, __("Registers"));
+    },
 };

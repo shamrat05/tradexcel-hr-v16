@@ -1,0 +1,209 @@
+{
+ "doctype": "DocType",
+ "name": "Workforce Statutory Profile",
+ "module": "Workforce Suite",
+ "engine": "InnoDB",
+ "autoname": "hash",
+ "track_changes": 1,
+ "is_submittable": 1,
+ "allow_rename": 0,
+ "field_order": [
+  "company",
+  "branch",
+  "profile_version",
+  "effective_from",
+  "effective_to",
+  "establishment_en",
+  "establishment_bn",
+  "address_en",
+  "address_bn",
+  "registration_no",
+  "registration_applicability",
+  "registration_evidence",
+  "licence_no",
+  "licence_applicability",
+  "licence_evidence",
+  "industry_en",
+  "industry_bn",
+  "signatory_en",
+  "signatory_bn",
+  "annual_leave_type",
+  "casual_leave_type",
+  "sick_leave_type",
+  "legal_reference",
+  "review_notes",
+  "reviewed_by",
+  "reviewed_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Establishment Branch",
+   "options": "Branch"
+  },
+  {
+   "fieldname": "profile_version",
+   "fieldtype": "Data",
+   "label": "Profile Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "Effective From",
+   "reqd": 1
+  },
+  {
+   "fieldname": "effective_to",
+   "fieldtype": "Date",
+   "label": "Effective To"
+  },
+  {
+   "fieldname": "establishment_en",
+   "fieldtype": "Data",
+   "label": "Establishment Name (English)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "establishment_bn",
+   "fieldtype": "Data",
+   "label": "Establishment Name (Bangla)"
+  },
+  {
+   "fieldname": "address_en",
+   "fieldtype": "Small Text",
+   "label": "Establishment Address (English)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "address_bn",
+   "fieldtype": "Small Text",
+   "label": "Establishment Address (Bangla)"
+  },
+  {
+   "fieldname": "registration_no",
+   "fieldtype": "Data",
+   "label": "Reviewed Registration Number"
+  },
+  {
+   "fieldname": "registration_applicability",
+   "fieldtype": "Select",
+   "label": "Registration Applicability",
+   "options": "Required\nNot Applicable\nPending Review",
+   "default": "Pending Review",
+   "reqd": 1
+  },
+  {
+   "fieldname": "registration_evidence",
+   "fieldtype": "Small Text",
+   "label": "Registration Applicability Evidence"
+  },
+  {
+   "fieldname": "licence_no",
+   "fieldtype": "Data",
+   "label": "Reviewed Licence Number"
+  },
+  {
+   "fieldname": "licence_applicability",
+   "fieldtype": "Select",
+   "label": "Licence Applicability",
+   "options": "Required\nNot Applicable\nPending Review",
+   "default": "Pending Review",
+   "reqd": 1
+  },
+  {
+   "fieldname": "licence_evidence",
+   "fieldtype": "Small Text",
+   "label": "Licence Applicability Evidence"
+  },
+  {
+   "fieldname": "industry_en",
+   "fieldtype": "Data",
+   "label": "Industry (English)"
+  },
+  {
+   "fieldname": "industry_bn",
+   "fieldtype": "Data",
+   "label": "Industry (Bangla)"
+  },
+  {
+   "fieldname": "signatory_en",
+   "fieldtype": "Small Text",
+   "label": "Signature Area (English)"
+  },
+  {
+   "fieldname": "signatory_bn",
+   "fieldtype": "Small Text",
+   "label": "Signature Area (Bangla)"
+  },
+  {
+   "fieldname": "annual_leave_type",
+   "fieldtype": "Link",
+   "label": "Annual Leave Type",
+   "options": "Leave Type"
+  },
+  {
+   "fieldname": "casual_leave_type",
+   "fieldtype": "Link",
+   "label": "Casual Leave Type",
+   "options": "Leave Type"
+  },
+  {
+   "fieldname": "sick_leave_type",
+   "fieldtype": "Link",
+   "label": "Sick Leave Type",
+   "options": "Leave Type"
+  },
+  {
+   "fieldname": "legal_reference",
+   "fieldtype": "Small Text",
+   "label": "Applicable Law / Gazette / Evidence",
+   "reqd": 1
+  },
+  {
+   "fieldname": "review_notes",
+   "fieldtype": "Small Text",
+   "label": "Applicability and Review Notes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reviewed_at",
+   "fieldtype": "Datetime",
+   "label": "Reviewed At",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "print": 1
+  },
+  {
+   "role": "Workforce Compliance Auditor",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "submit": 1,
+   "print": 1
+  }
+ ]
+}

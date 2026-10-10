@@ -1,0 +1,499 @@
+{
+  "catalog_id": "bd-dife-khulna-2015-form-references",
+  "source": {
+    "title": "Bangladesh Labour Act 2006 and Labour Rules 2015 applicable registers, DIFE Khulna",
+    "url": "https://dife.khulna.gov.bd/pages/static-pages/69812dfe35ce18e1c06fa1b0",
+    "page_updated": "2025-10-15",
+    "review_date": "2026-10-08"
+  },
+  "warning": "Reference links only. No PDFs, legal template approval, or print-format implementation is included. Confirm current amendment, applicability, establishment and legal effective date.",
+  "entries": [
+    {
+      "index": 1,
+      "id": "appointment_letter_sample",
+      "title": "Worker appointment letter sample",
+      "kind": "sample",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/60f48f0617dc4a5187ab6889dc4792a8.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 3
+      },
+      "proposed_native_sources": [
+        "Employee",
+        "Company"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 2,
+      "id": "form_6",
+      "title": "Worker identity card",
+      "kind": "print",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2da6fa7f880f4621b264546c81e7d9d5.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Employee",
+        "Company"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 3,
+      "id": "form_6a",
+      "title": "Appointment, ID and service book issue register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/d1578b126dd14efda5e6959fc8e9efe0.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Employee",
+        "Appointment Letter"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 4,
+      "id": "form_7",
+      "title": "Worker service book",
+      "kind": "print",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/b3c0f14058f842feb32642452c076b9f.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 2
+      },
+      "proposed_native_sources": [
+        "Employee",
+        "Employee Transfer",
+        "Employee Promotion"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 5,
+      "id": "form_8",
+      "title": "Worker register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/8553994b778845f08395a2cd94478d7e.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Employee",
+        "Company",
+        "Branch"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 6,
+      "id": "form_9",
+      "title": "Leave register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/b55064e4ae13401dbeacdab3d6f7597f.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Leave Application",
+        "Leave Allocation",
+        "Leave Ledger Entry"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 7,
+      "id": "form_19",
+      "title": "Maternity benefits register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/1c7068eb7dc04c17bbf4faa85753661b.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Employee",
+        "Workforce Maternity Review"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 8,
+      "id": "form_20",
+      "title": "Whitewashing register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/b5f4059493a54a7196c9c4f051c14af3.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Facility Maintenance Record"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 9,
+      "id": "form_22",
+      "title": "Firefighting training",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/84c7ac8195c44eeeaabb644c5f5775e0.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Training Event"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 10,
+      "id": "form_22a",
+      "title": "Fire drill register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/7468059cc251419dae1856ce605e8c22.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Fire Drill Record"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 11,
+      "id": "form_23",
+      "title": "PPE issuance register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6baa84bb4360465887c6e7049de4be15.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "PPE Issue Record"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 12,
+      "id": "form_24",
+      "title": "Lifting equipment inspection",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/e24267bdcc574095bd102cbc113d7cd9.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 2
+      },
+      "proposed_native_sources": [
+        "Equipment Inspection"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 13,
+      "id": "form_25a",
+      "title": "Pressure vessel inspection",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6cc87e0bdb56470787bc538b3cddd1e8.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Equipment Inspection"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 14,
+      "id": "form_26",
+      "title": "Hazardous work health inspection",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/ad59c9326bea48dea126616b74be81c4.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Occupational Health Record"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 15,
+      "id": "form_26a",
+      "title": "Hazardous work health inspection supplement",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/6a6179ca4af046d78bfbdcec02408b04.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Occupational Health Record"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 16,
+      "id": "form_27",
+      "title": "Injury or death notice",
+      "kind": "notice",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/e1dba151a4824642a2f77543223ed996.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 2
+      },
+      "proposed_native_sources": [
+        "Workplace Incident"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 17,
+      "id": "form_28",
+      "title": "Accident register and monthly report",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/79c2dbe021af4bf98f790260a40a96a3.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Workplace Incident"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 18,
+      "id": "form_32",
+      "title": "Building fitness certificate",
+      "kind": "evidence",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/55b4428f5cb24a11a9561701ae34155f.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Facility Compliance Evidence"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 19,
+      "id": "form_33",
+      "title": "Compensatory leave register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2e04512bd50c46b78d45e6ec3349f35f.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Compensatory Leave Request",
+        "Leave Ledger Entry"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 20,
+      "id": "form_34",
+      "title": "Daily attendance and overtime register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/2a1b2ab3c15a4775a2185afc2d8c1af1.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Attendance",
+        "Overtime Slip",
+        "Employee"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 21,
+      "id": "form_35_35a",
+      "title": "Night shift consent and withdrawal",
+      "kind": "consent",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/9b5dfaf878564feb914eea440562d70a.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Employee",
+        "Night Work Consent"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 22,
+      "id": "form_36",
+      "title": "Night work consent register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/71f5b7d95de143f89fbc4cfa4b168a87.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Night Work Consent"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 23,
+      "id": "form_37_37a_37b",
+      "title": "One-, two-, or three-shift schedules",
+      "kind": "notice",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/348a2fee5ef5408f9d616552104d3c1a.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Shift Type",
+        "Shift Assignment"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 24,
+      "id": "form_38",
+      "title": "Wage register and wage slip",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/56158e6356b64f1eb62c6c7f4f65cdd5.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Salary Slip",
+        "Payroll Entry",
+        "Employee"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 25,
+      "id": "form_39",
+      "title": "Damage and loss wage deductions register",
+      "kind": "register",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/33f833ab5839418481e4364ee7c3188c.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Additional Salary",
+        "Salary Slip",
+        "Deduction Approval"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 26,
+      "id": "form_80",
+      "title": "Half-yearly establishment return",
+      "kind": "return",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/d3f092899b2246419fc7c54107e83c06.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 1
+      },
+      "proposed_native_sources": [
+        "Company",
+        "Employee",
+        "Attendance"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 27,
+      "id": "form_81",
+      "title": "Annual establishment return",
+      "kind": "return",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/9a81f5a004e94e1597bd9740dc4d518e.pdf",
+      "web_preview": {
+        "opened": true,
+        "pages": 11
+      },
+      "proposed_native_sources": [
+        "Company",
+        "Employee",
+        "Attendance"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 28,
+      "id": "schedule_7",
+      "title": "Establishment licence reference",
+      "kind": "evidence",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/079c2b69a272450ea0af15542dcb7ca1.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Establishment Licence"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    },
+    {
+      "index": 29,
+      "id": "rule_353",
+      "title": "Approved machinery layout plan reference",
+      "kind": "evidence",
+      "source_pdf_url": "https://objectstorage.ap-dcc-gazipur-1.oraclecloud15.com/n/axvjbnqprylg/b/V2Ministry/o/office-dife-khulna/2024/12/86a2fab679be47eaaff578ce392035c8.pdf",
+      "web_preview": {
+        "opened": false,
+        "pages": null
+      },
+      "proposed_native_sources": [
+        "Facility Layout Approval"
+      ],
+      "print_template_status": "not_implemented",
+      "legal_review_status": "pending"
+    }
+  ]
+}

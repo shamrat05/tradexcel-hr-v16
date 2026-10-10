@@ -3,6 +3,7 @@ name = "workforce_suite"
 authors = [{name = "Workforce"}]
 description = "Reusable HRMS workflows and controls for Frappe v16"
 requires-python = ">=3.14,<3.15"
+dependencies = ["python-docx>=1.2,<2"]
 dynamic = ["version"]
 
 [build-system]
