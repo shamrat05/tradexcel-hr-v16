@@ -1383,9 +1383,10 @@ def ensure_workspace() -> None:
             doc.icon = "users"
             doc.indicator_color = "blue"
 
-        # This cross-module home is role-gated, not gated on having a custom
-        # app DocType permission. Native HR-only approvers need their home too.
-        doc.module = None
+        # Frappe v16 requires Workspace.module on fresh inserts.  Keep the
+        # home role-gated while assigning it to the app's native module; the
+        # module value is metadata, not an authorization boundary.
+        doc.module = "Workforce Suite"
         doc.app = "workforce_suite"
         doc.set("roles", [{"role": role} for role in sorted(BOARD_ROLES)])
         doc.content = content

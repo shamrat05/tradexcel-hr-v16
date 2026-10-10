@@ -28,6 +28,16 @@ def test_white_label_app_identifiers():
     assert (APP / "workforce_suite" / "doctype" / "workforce_payroll_policy" / "workforce_payroll_policy.json").is_file()
 
 
+def test_fresh_workspace_install_keeps_required_module_metadata():
+    install_source = (ROOT / "workforce_suite" / "install.py").read_text(encoding="utf-8")
+    workspace = json.loads(
+        (APP / "workforce_suite" / "workspace" / "workforce_suite" / "workforce_suite.json")
+        .read_text(encoding="utf-8")
+    )
+    assert 'doc.module = "Workforce Suite"' in install_source
+    assert workspace["module"] == "Workforce Suite"
+
+
 def test_no_customer_branded_source_or_paths():
     violations = []
     for p in ROOT.rglob("*"):
