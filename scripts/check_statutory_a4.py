@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render synthetic statutory previews and verify physical A4 page bounds.
+"""Render synthetic statutory previews and verify their physical page bounds.
 
 Requires weasyprint and PyMuPDF in CI, not in the Frappe server app.
 Never uses or writes employee/customer data.
@@ -45,10 +45,12 @@ def form(code):
     }
 
 
-def check_pdf(output: Path, orientation: str, expected_id: str):
+def check_pdf(output: Path, page_setup: dict, expected_id: str):
     doc = fitz.open(output)
     assert len(doc) > 0
-    expected = (842, 595) if orientation == "Landscape" else (595, 842)
+    expected = tuple(page_setup[key] * 72 / 25.4 for key in ("width_mm", "height_mm"))
+    if page_setup["is_card"]:
+        assert len(doc) == 2, (output, "card must have exactly two sides", len(doc))
     for page in doc:
         actual = (page.rect.width, page.rect.height)
         assert all(abs(a-b) < 1.5 for a, b in zip(actual, expected)), (
@@ -69,6 +71,7 @@ def check_pdf(output: Path, orientation: str, expected_id: str):
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     renderer = load_renderer()
+    from workforce_suite.workforce_suite.statutory_page_setup import resolve_page_setup
     jobs = [
         ("form_6", 1, "employee_name", "SYN-EMP-0001"),
         ("form_34", 48, "employee_name", "SYN-EMP-0048"),
@@ -84,6 +87,7 @@ def main():
         code = source["id"]
         count, marker_field, final = stress.get(code, (1, source["columns"][-1]["field_key"], "SYN-FINAL-0001"))
         layout = form(code)
+        page_setup = resolve_page_setup(layout)
         for language in ("en", "bn"):
             rows = [
                 {**{col["field_key"]: str(i) for col in layout["columns"]},
@@ -102,9 +106,9 @@ def main():
                     rows[-1]["_history"][table["id"]][-1][marker_field] = final
             html = renderer(layout, rows, company_name="Synthetic Test Company" if language == "en" else "পরীক্ষামূলক প্রতিষ্ঠান",
                 from_date="2026-10-01", to_date="2026-10-07", is_draft=True, language=language)
-            pdf_path = OUTPUT / f"{code}_{language}_a4.pdf"
+            pdf_path = OUTPUT / f"{code}_{language}_{page_setup['paper_size'].lower().replace(' ', '_')}.pdf"
             HTML(string=html, base_url=str(ROOT)).write_pdf(str(pdf_path))
-            pages = check_pdf(pdf_path, layout["orientation"], final)
+            pages = check_pdf(pdf_path, page_setup, final)
             if language == "bn":
                 fonts = [font[3] for page in fitz.open(pdf_path) for font in page.get_fonts()]
                 assert any("Bengali" in font for font in fonts), (pdf_path, fonts)
@@ -112,13 +116,17 @@ def main():
             from zipfile import ZipFile
             from io import BytesIO
             docx = render_docx(layout, rows, company_name="Synthetic Test Company" if language == "en" else "পরীক্ষামূলক প্রতিষ্ঠান", language=language)
+            from docx import Document
+            section = Document(BytesIO(docx)).sections[0]
+            assert abs(section.page_width.mm - page_setup["width_mm"]) < 1
+            assert abs(section.page_height.mm - page_setup["height_mm"]) < 1
             with ZipFile(BytesIO(docx)) as archive:
                 assert archive.testzip() is None
                 body = archive.read("word/document.xml").decode()
                 assert final in body and 'w:w="' in body and 'w:h="' in body
             (OUTPUT / f"{code}_{language}.docx").write_bytes(docx)
-            print(f"A4 PDF + DOCX PASS {code} {language} {layout['orientation']} {pages} page(s), {count} entries")
-    print("ALL_SYNTHETIC_A4_TESTS_PASSED")
+            print(f"PDF + DOCX PASS {code} {language} {page_setup['paper_size']} {page_setup['orientation']} {pages} page(s), {count} entries")
+    print("ALL_SYNTHETIC_PAGE_TESTS_PASSED")
 
 
 if __name__ == "__main__":
