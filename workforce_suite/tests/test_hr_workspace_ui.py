@@ -89,20 +89,7 @@ def test_workspace_layout_and_progressive_disclosure():
 def test_curated_sidebar_sections_and_targets_exist():
     sidebar = frappe.get_doc("Workspace Sidebar", "Workforce Suite")
     section_breaks = [item.label for item in sidebar.items if item.type == "Section Break"]
-    expected_sections = [
-        "Employees",
-        "Attendance & Shifts",
-        "Leave & Holidays",
-        "Expenses & Travel",
-        "Payroll",
-        "Recruitment",
-        "Development & Relations",
-        "Separation",
-        "Compliance",
-        "Reports",
-        "Setup",
-        "Devices",
-    ]
+    expected_sections = [title for title, _, _ in WORKSPACE_SECTIONS]
     assert section_breaks == expected_sections
 
     links = [item for item in sidebar.items if item.type == "Link"]

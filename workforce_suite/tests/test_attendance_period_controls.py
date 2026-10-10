@@ -359,7 +359,7 @@ def test_attendance_period_discoverability_and_navigation_resolution():
     assert ("Attendance Periods", "Workforce Attendance Period", "DocType") in WORKSPACE_SHORTCUTS
     assert WORKSPACE_SHORTCUT_ICONS.get("Attendance Periods") == "calendar"
 
-    att_sections = [labels for title, _, labels in WORKSPACE_SECTIONS if title == "Attendance & Shifts"]
+    att_sections = [labels for title, _, labels in WORKSPACE_SECTIONS if title == "Attendance"]
     assert len(att_sections) == 1
     assert "Attendance Periods" in att_sections[0]
 

@@ -1,5 +1,8 @@
 frappe.ui.form.on("Payroll Entry", {
 	refresh(frm) {
+		const generation = frm.workforce_payroll_generation = (frm.workforce_payroll_generation || 0) + 1;
+		const name = frm.doc.name;
+		const current = () => frm.doc.name === name && frm.workforce_payroll_generation === generation;
 		if (!frm.doc.custom_workforce_run_key || frm.doc.docstatus !== 1) return;
 
 		frm.remove_custom_button(__("Submit Salary Slip"));
@@ -10,7 +13,7 @@ frappe.ui.form.on("Payroll Entry", {
 			method: "workforce_suite.workforce_suite.payroll_finalization.get_payroll_accrual_reconciliation",
 			args: { payroll_entry: frm.doc.name },
 		}).then(({ message }) => {
-			if (!message) return;
+			if (!current() || !message) return;
 
 			const statusMessages = {
 				PARTIAL_SUBMISSION: __("Some Salary Slips remain unsubmitted. Review the remaining slips before retrying."),
@@ -24,7 +27,7 @@ frappe.ui.form.on("Payroll Entry", {
 				frm.dashboard.set_headline(statusMessages[message.status]);
 			}
 
-			if (message.safe_to_retry && message.draft_slip_count) {
+			if (frm.has_perm("write") && message.safe_to_retry && message.draft_slip_count) {
 				const retry = message.submitted_slip_count > 0 || frm.doc.status === "Failed";
 				frm.add_custom_button(
 					retry ? __("Retry Unsubmitted Salary Slips") : __("Finalize Payroll"),
@@ -48,7 +51,7 @@ frappe.ui.form.on("Payroll Entry", {
 					method: "workforce_suite.workforce_suite.payment_readiness.get_payroll_payment_readiness",
 					args: { payroll_entry: frm.doc.name },
 				}).then(({ message: payment }) => {
-					if (!payment) return;
+					if (!current() || !payment) return;
 					const paymentMessages = {
 						ACCRUAL_NOT_READY: __("Payroll accrual is not reconciled."),
 						PAYMENT_ACCOUNT_MISSING: __("Choose a payment account on Payroll Entry."),
@@ -63,7 +66,7 @@ frappe.ui.form.on("Payroll Entry", {
 						CASH_PAYMENT_ACCOUNTING_POSTED: __("Cash payment accounting posted. Employee receipt is not confirmed."),
 					};
 					const warnings = (payment.warnings || []).map((finding) => finding.reason).filter(Boolean);
-					if (payment.status === "READY_TO_PREPARE_PAYMENT") {
+					if (payment.status === "READY_TO_PREPARE_PAYMENT" && frm.has_perm("write")) {
 						frm.dashboard.set_headline([__("Payment readiness is clear."), ...warnings].join(" "));
 						frm.add_custom_button(__("Prepare Payment"), () => frm.call({
 							doc: frm.doc,
@@ -83,14 +86,14 @@ frappe.ui.form.on("Payroll Entry", {
 							paymentMessages[payment.status] || __("Payment needs review. Check the payment findings and native linked records."),
 							...warnings,
 						].join(" "));
-						if (payment.payment_journal_entry) {
-							frm.add_custom_button(__("Open Payment Entry"), () =>
+						if (payment.payment_journal_entry && frappe.model.can_read("Journal Entry")) {
+							frm.add_custom_button(__("Open Journal Entry"), () =>
 								frappe.set_route("Form", "Journal Entry", payment.payment_journal_entry),
                                 __("Payment records")
 							);
 						}
 						const transaction = payment.bank_transactions && payment.bank_transactions[0];
-						if (transaction && transaction.name) {
+						if (transaction && transaction.name && frappe.model.can_read("Bank Transaction")) {
 							frm.add_custom_button(__("Open Bank Transaction"), () =>
 								frappe.set_route("Form", "Bank Transaction", transaction.name),
                                 __("Payment records")

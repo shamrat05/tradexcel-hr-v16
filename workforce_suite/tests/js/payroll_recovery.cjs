@@ -1,3 +1,4 @@
+const workforce_suite = {report_actions: {begin(report) {report.workforce_actions = {add: (...args) => report.page.add_inner_button(...args), primary: (...args) => report.page.set_primary_action(...args), is_current: () => true};}}};
 /*
  * TXUX-260930-007 offline UI contract for payroll/finance recovery.
  *
@@ -81,7 +82,7 @@ function loadReadiness() {
 			return dialog;
 		}
 	};
-	const sandbox = { frappe, __ };
+	const sandbox = { frappe, workforce_suite, __ };
 	vm.runInNewContext(fs.readFileSync(READINESS, 'utf8'), sandbox);
 	return { frappe, state, sandbox };
 }
@@ -124,6 +125,7 @@ async function run() {
 				{ label: 'Managed Payroll Entry', value: 'Not prepared' },
 			] },
 		};
+		frappe.query_report.workforce_actions = report.workforce_actions;
 		frappe.query_report.$prepare_payroll_button = button;
 		frappe.query_reports['Workforce Payroll Readiness'].after_datatable_render();
 		assert.equal(button.disabled, true, 'blocked employees must disable preparation');
@@ -177,7 +179,7 @@ async function run() {
 				return dialog;
 			}
 		};
-		vm.runInNewContext(fs.readFileSync(OVERTIME, 'utf8'), { frappe, __ });
+		vm.runInNewContext(fs.readFileSync(OVERTIME, 'utf8'), { frappe, workforce_suite, __ });
 		let button = null;
 		const listview = {
 			page: { add_inner_button: (_label, fn) => { button = fn; } },
@@ -224,7 +226,7 @@ async function run() {
 		for (const scenario of scenarios) {
 			const { frappe, state } = baseMock();
 			frappe.user.has_role = () => scenario.roles;
-			vm.runInNewContext(fs.readFileSync(TAX, 'utf8'), { frappe, __ });
+			vm.runInNewContext(fs.readFileSync(TAX, 'utf8'), { frappe, workforce_suite, __ });
 			let buttons = 0;
 			const frm = {
 				doc: { name: 'TAX-1', ...scenario.doc },

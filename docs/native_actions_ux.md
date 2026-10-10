@@ -1,6 +1,9 @@
 # Workforce Suite — Native action placement policy (phase 1)
 
-Status: **independent review branch** `feat/workforce-native-actions`.
+Status: **historical phase-one policy, integrated through PR #74**.
+For the subsequent native Sidebar, report lifecycle, role administration and
+announcement corrections, see [Native navigation and administration](native_ux_navigation.md).
+The implementation/evidence below describes phase one unless noted.
 Based on the observed v16 Desk report/form implementation and native
 `frappe.ui.Page` /`frm.add_custom_button` APIs.
 
@@ -32,7 +35,7 @@ Based on the observed v16 Desk report/form implementation and native
 | Biometric ID Audit | **Assign Biometric ID** | **Device actions**: Copy Biometric to Device | Existing server permissions and transfer confirmation |
 | Joiners and Leavers report | Native report toolbar | **Employee workflows**: View Employee Onboardings; View Employee Separations | HR-maker roles only |
 | Payroll Readiness report | **Prepare Payroll** (existing native primary action) | **More actions**: Review Structure Migration; **Open Payroll Entry for retry** stays visible when a failed run needs attention | Payroll Manager only; existing readiness disable checks remain authoritative |
-| Payroll Entry form | **Finalize Payroll**, **Retry Unsubmitted Salary Slips** or **Prepare Payment** (stage-specific) | **Payment records**: Open Payment Entry; Open Bank Transaction | Native readiness responses and already established state/permission checks |
+| Payroll Entry form | **Finalize Payroll**, **Retry Unsubmitted Salary Slips** or **Prepare Payment** (stage-specific) | **Payment records**: Open Journal Entry; Open Bank Transaction | Native readiness responses and already established state/permission checks |
 | Biometric Device form | **Check Bridge Health** | **Device actions**: Push Configuration to Bridge | Existing form state and backend guard |
 | Employee form | **Calendar** | **Onboarding** and **Separation** existing groups | Existing role/employee lifecycle rules |
 | Employee Checkin | Native form actions | **Evidence Review** existing group: Approve Evidence / Reject Evidence | Quarantined evidence and authorized reviewer only |

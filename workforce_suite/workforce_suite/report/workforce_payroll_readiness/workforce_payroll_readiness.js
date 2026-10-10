@@ -124,13 +124,15 @@ frappe.query_reports["Workforce Payroll Readiness"] = {
         },
     ],
     onload(report) {
+        workforce_suite.report_actions.begin(report);
         report.$prepare_payroll_button = null;
+        report.$open_payroll_entry_button = null;
         if (!frappe.user.has_role("Workforce Payroll Manager")) return;
 
-        report.$prepare_payroll_button = report.page.set_primary_action(
+        report.$prepare_payroll_button = report.workforce_actions.primary(
             __("Prepare Payroll"),
             () => {
-                frappe.call({
+                return frappe.call({
                     method: "workforce_suite.workforce_suite.report.workforce_payroll_readiness.workforce_payroll_readiness.prepare_payroll",
                     args: {
                         company: report.get_filter_value("company"),
@@ -154,7 +156,7 @@ frappe.query_reports["Workforce Payroll Readiness"] = {
             }
         );
         report.$prepare_payroll_button.prop("disabled", true);
-        report.page.add_inner_button(
+        report.workforce_actions.add(
             __("Review Structure Migration"),
             () => show_daily_wage_migration_preview(report),
             __("More actions")
@@ -188,7 +190,7 @@ frappe.query_reports["Workforce Payroll Readiness"] = {
     },
     after_datatable_render() {
         const report = frappe.query_report;
-        if (!report.$prepare_payroll_button || !report.raw_data?.report_summary) return;
+        if (!report.workforce_actions?.is_current() || !report.$prepare_payroll_button || !report.raw_data?.report_summary) return;
         const summary = Object.fromEntries(
             report.raw_data.report_summary.map((item) => [item.label, item.value])
         );
@@ -213,7 +215,7 @@ frappe.query_reports["Workforce Payroll Readiness"] = {
         );
 
         if (slipStatus === "Failed" && hasEntryName && !report.$open_payroll_entry_button) {
-            report.$open_payroll_entry_button = report.page.add_inner_button(
+            report.$open_payroll_entry_button = report.workforce_actions.add(
                 __("Open Payroll Entry for retry"),
                 () => frappe.set_route("Form", "Payroll Entry", entryStatus)
             );

@@ -7,10 +7,11 @@ frappe.query_reports["Workforce Daily Attendance Board"] = {
 		return { ...options, checkboxColumn: true };
 	},
 	onload(report) {
+        workforce_suite.report_actions.begin(report);
 		const roles = ["Workforce Suite Manager", "Workforce Suite/Attendance Officer"];
 		if (!roles.some((role) => frappe.user.has_role(role))) return;
 
-	report.page.add_inner_button(__("Prepare Attendance Corrections"), () => {
+	report.workforce_actions.add(__("Prepare Attendance Corrections"), () => {
 		const selected = report.get_checked_items().map((row) => row.employee).filter(Boolean);
 		if (!selected.length) {
 			frappe.msgprint(__("Select one or more Employees in the report first."));
